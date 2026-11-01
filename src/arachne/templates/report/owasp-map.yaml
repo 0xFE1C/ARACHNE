@@ -1,5 +1,5 @@
 # CWE → OWASP Top 10 mapping for the report's `classification.owasp_2025` field
-# (docs/spec/06- §1). Managed data (F-09-04): point ARACHNE_REPORT_OWASP_MAP at a file to
+# . Managed data (F-09-04): point ARACHNE_REPORT_OWASP_MAP at a file to
 # replace it. The category names carry the edition year because the spec allows either the
 # 2021 or a current-year mapping; this file uses the 2021 edition, which is still current.
 #

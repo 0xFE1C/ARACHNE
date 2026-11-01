@@ -5,7 +5,7 @@
   "$defs": {
     "Appendix": {
       "additionalProperties": false,
-      "description": "Section 11 of docs/spec/06- §3: payloads, audit, scope events, FP log, glossary.",
+      "description": "Section 11 of : payloads, audit, scope events, FP log, glossary.",
       "properties": {
         "evidence": {
           "default": [],
@@ -39,7 +39,7 @@
     },
     "AssetEntry": {
       "additionalProperties": false,
-      "description": "One discovered asset (docs/spec/06- §3 section 4).",
+      "description": "One discovered asset .",
       "properties": {
         "kind": {
           "title": "Kind",
@@ -87,7 +87,7 @@
     },
     "AssetRef": {
       "additionalProperties": false,
-      "description": "The affected asset (docs/spec/06- §1 ``asset``).",
+      "description": "The affected asset .",
       "properties": {
         "kind": {
           "title": "Kind",
@@ -115,7 +115,7 @@
     },
     "AuditHighlights": {
       "additionalProperties": false,
-      "description": "The audit-log summary and out-of-scope events (docs/spec/06- §3 appendix B/C).",
+      "description": "The audit-log summary and out-of-scope events .",
       "properties": {
         "actions": {
           "additionalProperties": {
@@ -305,7 +305,7 @@
     },
     "Classification": {
       "additionalProperties": false,
-      "description": "CWE/CVE/CAPEC and the OWASP Top-10 mapping (docs/spec/06- §1 ``classification``).",
+      "description": "CWE/CVE/CAPEC and the OWASP Top-10 mapping .",
       "properties": {
         "cwe": {
           "anyOf": [
@@ -357,7 +357,7 @@
     },
     "ExecutiveSummary": {
       "additionalProperties": false,
-      "description": "Section 2 of docs/spec/06- §3: narrative, counts and priority order.",
+      "description": "Section 2 of : narrative, counts and priority order.",
       "properties": {
         "posture": {
           "default": "unknown",
@@ -460,7 +460,7 @@
     },
     "Provenance": {
       "additionalProperties": false,
-      "description": "Which engine decided this finding, and on what corpus (F-03-05, docs/spec/06- §1).",
+      "description": "Which engine decided this finding, and on what corpus (F-03-05).",
       "properties": {
         "engine": {
           "default": "heuristic",
@@ -525,7 +525,7 @@
     },
     "RemediationPlan": {
       "additionalProperties": false,
-      "description": "A resolved catalog entry (docs/spec/06- §6): summary, steps, verification, refs.",
+      "description": "A resolved catalog entry : summary, steps, verification, refs.",
       "properties": {
         "id": {
           "title": "Id",
@@ -574,7 +574,7 @@
     },
     "ReportCover": {
       "additionalProperties": false,
-      "description": "Section 1 of docs/spec/06- §3 (the cover/header).",
+      "description": "Section 1: the cover and header.",
       "properties": {
         "title": {
           "title": "Title",
@@ -666,7 +666,7 @@
     },
     "ReportDiff": {
       "additionalProperties": false,
-      "description": "The scan-to-scan skeleton of F-06-05 / docs/spec/06- §7.\n\nFull trend rendering is S11; this is the data the diff section is written from and the\npayload persisted in ``scans_diff``.",
+      "description": "The scan-to-scan skeleton of F-06-05 / .\n\nFull trend rendering is S11; this is the data the diff section is written from and the\npayload persisted in ``scans_diff``.",
       "properties": {
         "scan_a": {
           "title": "Scan A",
@@ -728,7 +728,7 @@
     },
     "ReportEvidence": {
       "additionalProperties": false,
-      "description": "One evidence payload, addressed by its report id (docs/spec/06- §5, appendix A).",
+      "description": "One evidence payload, addressed by its report id (appendix A).",
       "properties": {
         "id": {
           "title": "Id",
@@ -788,7 +788,7 @@
     },
     "ReportFinding": {
       "additionalProperties": false,
-      "description": "One finding, exactly the docs/spec/06- §1 schema.",
+      "description": "One finding, exactly the report schema.",
       "properties": {
         "id": {
           "title": "Id",
@@ -914,7 +914,7 @@
     },
     "ScopeMethodology": {
       "additionalProperties": false,
-      "description": "Section 3 of docs/spec/06- §3: what was scanned, how, and under which limits.",
+      "description": "Section 3 of : what was scanned, how, and under which limits.",
       "properties": {
         "target_name": {
           "title": "Target Name",
@@ -1049,7 +1049,7 @@
     },
     "Score": {
       "additionalProperties": false,
-      "description": "The F-05-04 scoring output as the report prints it (docs/spec/06- §1 ``score``).",
+      "description": "The F-05-04 scoring output as the report prints it .",
       "properties": {
         "cvss_base": {
           "anyOf": [
@@ -1114,7 +1114,7 @@
     },
     "SeverityCounts": {
       "additionalProperties": false,
-      "description": "The counts table of docs/spec/06- §3 section 2 (confirmed findings only).",
+      "description": "The counts table (confirmed findings only).",
       "properties": {
         "critical": {
           "default": 0,
@@ -1152,7 +1152,7 @@
     },
     "Timestamps": {
       "additionalProperties": false,
-      "description": "When the finding was first/last seen and, if verified, when (docs/spec/06- §1).",
+      "description": "When the finding was first and last seen, and when it was verified.",
       "properties": {
         "first_seen": {
           "anyOf": [

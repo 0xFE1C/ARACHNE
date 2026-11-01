@@ -1,7 +1,7 @@
 """The FastAPI application: JSON API + web UI in one process (F-07-02/03, S12).
 
 One ASGI app serves both interfaces, because the spec makes the API the deployment and the
-UI a *view* of it (docs/spec/02- §1): the UI's pages call the same store, the same report
+UI a *view* of it : the UI's pages call the same store, the same report
 builder and the same webhook notifier the JSON routes do, so the two cannot disagree.
 
 Three cross-cutting pieces live here:

@@ -1,4 +1,4 @@
-"""Retries, backoff, pacing and the circuit breaker (docs/spec/03- §7, F-04-06).
+"""Retries, backoff, pacing and the circuit breaker (F-04-06).
 
 The policy is narrow on purpose and these tests pin the narrowness: retry **only** transient
 failures, honour ``Retry-After``, never retry a validation failure or a bad credential, and stop
@@ -106,7 +106,7 @@ async def test_the_attempts_budget_is_used_up_then_it_raises() -> None:
 
 
 async def test_a_non_transient_error_is_not_retried() -> None:
-    """A rejected credential cannot be fixed by trying again (docs/spec/03- §7)."""
+    """A rejected credential cannot be fixed by trying again ."""
     sleeper = Sleeper()
     provider = Recorder(ProviderAuthError("401", provider="p"))
     wrapper = RetryingProvider(provider, policy=policy(), sleep=sleeper)

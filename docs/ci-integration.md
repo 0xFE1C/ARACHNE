@@ -115,7 +115,7 @@ Inputs: `path`, `fail-on`, `format`, `api-url`, `api-key`, `sarif-file`, `upload
 
 ## GitLab CI
 
-Publish the component in a project as `templates/arachne-gate/template.yml`, then — see
+Publish the component in a project under `templates/arachne-gate/`, then — see
 `examples/ci/gitlab-ci.yml`:
 
 ```yaml

@@ -89,7 +89,7 @@ export interface FeedImport {
   source?: string | null;
 }
 
-/** A finding as the API/UI lists it (docs/spec/06- §1 fields + the store ids). */
+/** A finding as the API/UI lists it (fields + the store ids). */
 export interface FindingOut {
   id: number;
   scan_id: number;

@@ -31,7 +31,7 @@ Why the scan is on the AST and not on the text: a text search for ``subprocess``
 ``__import__("subprocess")`` and flags the word in a docstring; the AST sees the import and
 the call as they will actually execute. The scan is a *policy* gate, not a sandbox — it raises
 the cost of shipping a hostile pack and makes the honest mistake loud, and the pack still runs
-in-process afterwards, which `code/docs/security-review.md` states plainly rather than
+in-process afterwards, which `docs/security-review.md` states plainly rather than
 pretending the pipeline is a sandbox.
 
 Nothing here installs or executes a pack: :func:`review_pack` takes an already-verified

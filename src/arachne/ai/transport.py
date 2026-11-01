@@ -15,7 +15,7 @@ Two decisions worth stating:
   refused and audited rather than sent.
 * **Loopback is allowed only when an operator declared a local endpoint.** The URL policy
   refuses loopback and private addresses by default (F-08-03), which would make the documented
-  local path (Ollama/vLLM on the same host, docs/spec/03- §3) unusable. So the AI client's
+  local path (Ollama/vLLM on the same host) unusable. So the AI client's
   policy allows loopback/private addresses **iff** some configured provider base_url resolves
   to one — an explicit declaration of intent, exactly as the OSINT client treats a configured
   search endpoint (``modules.providers``). The target scan's policy is untouched.
@@ -57,7 +57,7 @@ __all__ = [
 
 _logger = get_logger("ai.transport")
 
-#: Statuses that mean "come back later" (docs/spec/03- §7).
+#: Statuses that mean "come back later" .
 _RETRYABLE_STATUS = frozenset({408, 409, 425, 429, 500, 502, 503, 504, 529})
 _AUTH_STATUS = frozenset({401, 403})
 _LOCAL_HOSTS = frozenset({"localhost", "localhost.localdomain", "host.docker.internal"})
@@ -72,7 +72,7 @@ def is_local_endpoint(base_url: str) -> bool:
 
     Deliberately conservative: an unresolvable name is *not* local, so the default policy
     still refuses it. A private address is local because the documented self-hosted paths
-    (Ollama, vLLM, LM Studio on a LAN box, docs/spec/03- §3) are private by nature.
+    (Ollama, vLLM, LM Studio on a LAN box) are private by nature.
     """
     host = _host_of(base_url)
     if not host:

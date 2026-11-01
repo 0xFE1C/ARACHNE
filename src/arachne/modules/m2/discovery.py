@@ -2,7 +2,7 @@
 
 These four checks are the front of M2's pipeline and the only ones that talk about *hosts*
 rather than services. Read together with :mod:`arachne.modules.m2.support`, they implement
-research methods 1-11 of chapter 2 in the order the table in docs/spec/05- lists them:
+research methods 1-11 of chapter 2 in the order the table lists them:
 
 ===========================  ==========  =========================================
 check                        ref         what it establishes
@@ -19,8 +19,8 @@ goes through :class:`~arachne.core.net.ScopedNetClient`, so the per-host rate li
 audit trail apply to a fifty-port sweep exactly as they do to a single banner read.
 
 The coverage-matrix note from M1 applies here too: the ``research_ref`` values are the
-canonical method numbers in ``docs/research/02-`` (whose numbering drifted from the table in
-docs/spec/05-), recorded in ADR-080.3.
+canonical method numbers in ``docs/research/02-active-scanning-and-enumeration.md``
+(whose numbering drifted from the earlier table), recorded in ADR-080.3.
 """
 
 from __future__ import annotations

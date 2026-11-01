@@ -10,7 +10,7 @@ Two properties matter more than the feature list:
 * **Reproducible.** The document is a pure function of the installed environment and
   an explicit timestamp: sorted keys, sorted components, a deterministic
   ``serialNumber`` derived from the component set, and the clock taken from
-  ``SOURCE_DATE_EPOCH`` (see ``code/docs/reproducible-builds.md``) rather than
+  ``SOURCE_DATE_EPOCH`` (see ``docs/reproducible-builds.md``) rather than
   ``now()``. Two machines with the same environment produce byte-identical SBOMs.
 * **Honest.** Components come from the installed distributions actually reachable from
   ARACHNE's declared dependencies (``importlib.metadata``), transitively — not from

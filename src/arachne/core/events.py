@@ -1,4 +1,4 @@
-"""Typed event bus (docs/spec/02- §2.1): the Orchestrator's observable output.
+"""Typed event bus : the Orchestrator's observable output.
 
 The Orchestrator publishes what happened; the scheduler, the REST API and the webhook
 integrations (S11/S12) subscribe. The five domain events the spec names —
@@ -10,7 +10,7 @@ Three properties matter more than features:
 * **Typed payloads, not free-form dicts.** Each domain event has a factory that takes named
   arguments, so the orchestrator cannot publish a ``finding_raised`` without a severity.
 * **Subscribers cannot break a scan.** A handler that raises is logged and counted; the
-  scan continues (docs/spec/07- §4, "errors are data"). A webhook that is down must not
+  scan continues ("errors are data"). A webhook that is down must not
   abort a scan in progress.
 * **Payloads are redacted on construction.** An event can carry target-derived text, so it
   is redacted at emission (F-08-04) — a later subscriber cannot leak what it never got.
@@ -48,7 +48,7 @@ _logger = get_logger("core.events")
 class EventType(StrEnum):
     """The event vocabulary.
 
-    Domain events use the spec's snake_case names verbatim (docs/spec/02- §2.1); lifecycle
+    Domain events use the spec's snake_case names verbatim; lifecycle
     events use dotted names so a subscriber can filter ``scan.*`` cheaply.
     """
 
@@ -399,7 +399,7 @@ class EventBus:
         """Deliver ``event`` to every matching subscriber.
 
         A raising subscriber is logged and counted but never propagates: the scan must
-        survive a broken consumer (docs/spec/07- §4).
+        survive a broken consumer .
         """
         self._history.append(event)
         if len(self._history) > self._history_limit:

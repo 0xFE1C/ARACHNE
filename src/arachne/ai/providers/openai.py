@@ -1,4 +1,4 @@
-"""The OpenAI family: ``openai``, ``openai_compatible`` and ``mistral`` (docs/spec/03- §3).
+"""The OpenAI family: ``openai``, ``openai_compatible`` and ``mistral`` .
 
 One implementation, three names, because the API format is one thing. ``openai`` is the
 canonical ``POST /chat/completions``; ``openai_compatible`` is the same request aimed at a
@@ -7,7 +7,7 @@ Groq, OpenRouter, Together, Fireworks, DeepSeek and Azure OpenAI (an Azure deplo
 same body with the deployment in the URL and ``api-version`` in the query — both configurable);
 ``mistral`` is the same schema at ``api.mistral.ai``.
 
-Structured output (docs/spec/03- §6), in preference order:
+Structured output, in preference order:
 
 1. ``response_format: {"type": "json_schema", ...}`` — a schema the provider enforces;
 2. ``guided_json`` — vLLM/llama.cpp grammar-constrained decoding, when the deployment declares
@@ -138,7 +138,7 @@ class OpenAIProvider(OpenAICompatibleProvider):
 
 
 class MistralProvider(OpenAICompatibleProvider):
-    """Mistral's chat completions (OpenAI-compatible schema, docs/spec/03- §3)."""
+    """Mistral's chat completions (OpenAI-compatible schema)."""
 
     name = "mistral"
 

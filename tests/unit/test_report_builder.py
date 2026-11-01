@@ -1,4 +1,4 @@
-"""The builder: stored rows → the report DTO (docs/spec/06- §1/§2/§3)."""
+"""The builder: stored rows → the report DTO (/§3)."""
 
 from __future__ import annotations
 

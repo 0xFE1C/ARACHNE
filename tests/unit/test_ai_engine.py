@@ -1,14 +1,14 @@
-"""``AiEngine``: the AI analyzer anchored on the deterministic verdict (docs/spec/03- §4-§9).
+"""``AiEngine``: the AI analyzer anchored on the deterministic verdict (-§9).
 
 The properties under test are the ones the spec makes promises about:
 
 * AI mode enriches an analysis (narrative, remediation, reasoning, explanation) and records
   ``prompt_hash``/``template_version``/``model``/``provider`` in provenance (F-03-05, F-04-04);
 * the finding set and the verdict stay the deterministic ones for deterministic checks, and an
-  AI disagreement is *recorded* rather than silently applied (docs/spec/04- §5);
+  AI disagreement is *recorded* rather than silently applied;
 * an explicitly authoritative check does adopt the AI verdict (F-03-04);
 * every failure path degrades to the heuristic result with the reason in provenance, and the
-  scan keeps every finding (docs/spec/03- §7, DONE criterion 3);
+  scan keeps every finding (DONE criterion 3);
 * the budget cap and the cache are enforced/used (F-04-07).
 """
 
@@ -86,7 +86,7 @@ async def test_the_ai_prompt_carries_target_data_delimited_and_tokenized() -> No
     content = triage.messages[-1]["content"]
     assert "[TARGET_DATA]" in content
     assert "<delim>" in content
-    # The asset URL was tokenized by the redact privacy mode (docs/spec/03- §8).
+    # The asset URL was tokenized by the redact privacy mode .
     assert "https://target.example/.env" not in content
     assert "[U1]" in content
 
@@ -108,7 +108,7 @@ async def test_a_stage_output_is_stored_with_its_own_metadata() -> None:
 
 
 async def test_the_deterministic_verdict_is_kept_and_the_disagreement_is_recorded() -> None:
-    """docs/spec/04- §5: parity for deterministic checks; the AI's view is visible, not applied."""
+    """: parity for deterministic checks; the AI's view is visible, not applied."""
     engine, _provider = make_engine()
     candidates = (env_candidate(),)
     anchor = engine.heuristic.analyze(candidates, scan_context(*candidates))[0]

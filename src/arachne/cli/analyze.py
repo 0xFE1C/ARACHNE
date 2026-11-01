@@ -13,7 +13,7 @@ Two uses, one command:
     Print the analyses the scan already stored, without re-running anything.
 
 ``--engine ai`` (or ``hybrid`` with a provider configured) re-runs with the AI engine, which
-anchors on the heuristic verdict and annotates it (docs/spec/03- §4). It performs provider
+anchors on the heuristic verdict and annotates it . It performs provider
 calls, so it is explicit: without a configured provider it fails rather than silently falling
 back (F-03-03).
 

@@ -10,7 +10,7 @@ info:
 
 # The native ARACHNE signature format: the same matchers and extractors as a nuclei template,
 # but over a non-HTTP subject — here the banner inside a service-fingerprint evidence payload
-# (docs/spec/04- §2.2 "native ARACHNE signature format for non-HTTP checks").
+# .
 subject: note
 field: service.identity.banner
 matchers:

@@ -1,8 +1,8 @@
-# M5 cloud/container/supply-chain corpus (S10, docs/spec/05- M5, F-09-04).
+# M5 cloud/container/supply-chain corpus (S10, F-09-04).
 #
 # Everything an M5 check asks or matches is *data* here, so an operator can narrow or extend
 # it without touching code (F-09-04) and a reviewer can read exactly what leaves the scanner
-# in one place. The M5 safety contract (docs/spec/05- "M5 · Safety") governs every entry:
+# in one place. The M5 safety contract governs every entry:
 #
 #   1. **Read-only.** Cloud checks use documented read-only calls only; bucket/registry/Firebase
 #      probes are GET; the metadata probe (behind its own switch) sends a GET and reports the

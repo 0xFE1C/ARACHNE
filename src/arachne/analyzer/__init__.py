@@ -1,8 +1,8 @@
-"""The Analyzer: one interface, two engines (docs/spec/02- §2.3, docs/spec/04-).
+"""The Analyzer: one interface, two engines.
 
 ``analyze(candidates, context) -> list[Analysis]`` is the contract both engines implement.
 :class:`~arachne.analyzer.engine.HeuristicEngine` is the default engine in this build — the
-whole non-AI stack of ``docs/spec/04-``: rules, signature templates, correlation, scoring,
+whole non-AI stack of ````: rules, signature templates, correlation, scoring,
 confidence and explanation synthesis. The AI engine lands in S9 and plugs into the same
 interface and the same ``Analysis`` schema (F-03-01..05, G-05).
 

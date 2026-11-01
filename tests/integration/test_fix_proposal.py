@@ -520,8 +520,8 @@ async def test_a_pre_existing_finding_in_the_same_file_does_not_block_the_fix(
     repo = build_lab_repo(tmp_path, plant=("privileged", "host-network"))
     harness = make_api_harness(tmp_path, settings=_settings(tmp_path))
     try:
-        # deploy/api.yaml carries *two* policy findings (privileged and host networking); the
-        # proposal repairs one of them and must not be blamed for the other.
+        # the generated fixture manifest carries *two* policy findings (privileged and host
+        # networking); the proposal repairs one and must not be blamed for the other.
         _scan_id, finding_id = await _scan_and_find(harness, repo.asset_value, "k8s-privileged")
         engine = _engine(harness, tmp_path, repo)
         proposal = await engine.propose(finding_id, actor="pytest")

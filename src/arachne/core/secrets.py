@@ -17,7 +17,7 @@ the raw match is discarded. What the manifest does contain — which systems hol
 of credential — is still sensitive, so the file is **encrypted at rest**. The default is
 also *off*: a deployment that has not set ``ARACHNE_SECRETS_MANIFEST`` writes nothing.
 
-Encryption is dependency-free on purpose (the runtime stack of docs/spec/07- §2 has no
+Encryption is dependency-free on purpose (the runtime stack has no
 crypto library): scrypt derives a 32-byte key from the operator's passphrase, a SHAKE-256
 keystream (keyed with a random 128-bit nonce and salt) encrypts, and HMAC-SHA256 over the
 header, salt, nonce and ciphertext authenticates. That is encrypt-then-MAC with a fresh

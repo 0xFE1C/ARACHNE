@@ -49,6 +49,29 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: mypy src
 
+  docs:
+    name: documentation integrity (REQ-DOC-001, REQ-DOC-002)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history: the check verifies that every commit a document cites exists
+          # (`git cat-file -t`), which a shallow clone cannot answer.
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      # Every Markdown link, backticked path and docstring path resolves, and no document
+      # cites a commit that is not in the repository.
+      - run: python -m arachne.tools.doccheck .
+      # The badge and prose counts are the registry's and the suite's, not typed by hand.
+      - run: python -m arachne.tools.counts --check
+      # The committed report schema is what the generator produces.
+      - run: python -m arachne.tools.report_schema --check
+
   tests:
     name: tests (${{ matrix.python-version }})
     runs-on: ubuntu-latest

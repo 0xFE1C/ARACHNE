@@ -1,4 +1,4 @@
-"""Recorded-fixture loading and replay (docs/spec/07- §6).
+"""Recorded-fixture loading and replay .
 
 Fixture loading is the part of the test infrastructure that ships in ``src/`` (so a real
 deployment can run ``--osint-fixtures``), which means it needs its own tests: a recording

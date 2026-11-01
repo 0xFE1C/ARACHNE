@@ -1,4 +1,4 @@
-"""Explanation synthesis (docs/spec/04- §2.5, F-05-05).
+"""Explanation synthesis (F-05-05).
 
 The narrative is generated, never written by a model, and it must always exist: these tests
 pin the interpolation rules (drop an unresolvable section, step aside when it is required),

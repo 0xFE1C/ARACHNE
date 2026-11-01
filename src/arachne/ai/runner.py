@@ -1,9 +1,9 @@
-"""One stage call, with every policy docs/spec/03- §5-§7 attaches to it.
+"""One stage call, with every policy -§7 attaches to it.
 
 :class:`StageRunner` is the only place a model is called. It sequences the things that must
 happen around a call, in order, and it never raises: a failed stage returns an outcome whose
 ``fallback`` names the reason, which is what lets the engine degrade one candidate while the
-rest of the scan keeps its AI analysis (docs/spec/03- §7).
+rest of the scan keeps its AI analysis .
 
 The order is deliberate:
 
@@ -16,7 +16,7 @@ The order is deliberate:
 5. **estimate and check the budget** (``ai.budget``), so the cap is enforced before the spend;
 6. **call** through the retrying, rate-limited provider (``ai.reliability``);
 7. **validate** against the stage's pydantic schema (``ai.structured``), with the single
-   repair retry docs/spec/03- §5 allows;
+   repair retry the budget allows;
 8. **record** usage, latency and outcome on the ledger, the metrics and the audit trail.
 """
 
@@ -107,7 +107,7 @@ class StageOutcome:
 
 @dataclass
 class StageRunner:
-    """Runs one stage per call, under the policies of docs/spec/03- §5-§7."""
+    """Runs one stage per call, under the policies of -§7."""
 
     provider: RetryingProvider
     prompts: PromptStore
@@ -122,7 +122,7 @@ class StageRunner:
     max_tokens: int = 2000
     timeout_s: float = 60.0
     constrained_decoding: bool = False
-    #: One repair attempt when validation fails (docs/spec/03- §5).
+    #: One repair attempt when validation fails .
     allow_repair: bool = True
 
     async def run(
@@ -328,7 +328,7 @@ class StageRunner:
         spec: Any,
         rendered: Any,
     ) -> tuple[dict[str, Any], Any, str] | None:
-        """The single repair attempt docs/spec/03- §5 allows, if the budget permits it."""
+        """The single repair attempt permitted by the budget."""
         repair = CompletionRequest(
             model=request.model,
             system=request.system,

@@ -1,4 +1,4 @@
-"""Outbound scan-completion integrations (F-06-06, docs/spec/06- §8, S12/S22).
+"""Outbound scan-completion integrations (F-06-06, S12/S22).
 
 Six destinations, one shape. A :class:`WebhookPayload` is a fully-rendered
 ``(name, url, headers, body)`` tuple; ``render_payloads`` produces them from an immutable

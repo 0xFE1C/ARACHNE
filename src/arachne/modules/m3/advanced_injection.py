@@ -1,7 +1,7 @@
 """M3 extended injection families: SSTI (ch03#6), XXE (ch03#7), command injection (ch03#8)
 and insecure deserialization (ch03#9).
 
-All four follow the M3 contract exactly (docs/spec/05- M3 "Safety"): a probe is detection-only
+All four follow the M3 contract exactly : a probe is detection-only
 and confirmation is a *measured difference* against a baseline the check establishes first.
 None of them attempts code execution or reads a credential:
 

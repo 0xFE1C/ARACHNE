@@ -1,10 +1,10 @@
-"""The remediation catalog (docs/spec/04- §2.6/§3, docs/spec/06- §6, F-06-04).
+"""The remediation catalog (F-06-04).
 
 A finding without an action is a complaint, so every analysis carries a :class:`Remediation`
 resolved from data. Lookup order, most specific first:
 
-1. the rule's ``remediation:`` reference — ``remediation-catalog/env-file-exposure.yaml``
-   (docs/spec/04- §2.1's own spelling), a bare entry id, or a path to a catalog file;
+1. the rule's ``remediation:`` reference — an entry id,
+   a bare entry id, or a path to a catalog file;
 2. the catalog entry naming the **check** that fired;
 3. the catalog entry for the finding's **CWE**;
 4. the catalog's ``default`` block.
@@ -67,7 +67,7 @@ _FALLBACK_VERIFICATION: Final[tuple[str, ...]] = (
 
 
 def ref_to_entry_id(reference: str) -> str:
-    """``remediation-catalog/env-file-exposure.yaml`` → ``env-file-exposure``.
+    """an entry id → ``env-file-exposure``.
 
     The spec writes remediation references as catalog paths; the catalog itself is keyed by
     entry id, so the translation happens in exactly one place.
@@ -88,14 +88,14 @@ class RemediationEntry(BaseModel):
     id: str = Field(min_length=2, max_length=128)
     summary: str = Field(min_length=10, max_length=2000)
     steps: tuple[str, ...] = ()
-    #: "Verification of fix" steps (docs/spec/06- §6). Optional in data so an operator's
+    #: "Verification of fix" steps . Optional in data so an operator's
     #: older entry still loads; :meth:`to_remediation` supplies the documented fallback.
     verify: tuple[str, ...] = ()
     references: tuple[str, ...] = ()
     cwe: str | None = None
     #: Check ids this entry owns (``m4.env-file-probe``); more specific than the CWE match.
     checks: tuple[str, ...] = ()
-    #: Optional product substring, so one CWE can have per-product guidance (docs/spec/06- §6).
+    #: Optional product substring, so one CWE can have per-product guidance .
     product: str | None = None
     title: str | None = None
 
@@ -272,7 +272,7 @@ def load_remediation_catalog(path: str | None = None) -> RemediationCatalog:
 
 
 def _load_entries_from_dir(directory: Path) -> Iterable[RemediationEntry]:
-    """One entry per ``*.yaml`` file — the per-file layout docs/spec/04- §2.1 references."""
+    """One entry per ``*.yaml`` file — the per-file layout the catalog references."""
     for candidate_path in sorted(directory.glob("*.y*ml")):
         data = _safe_yaml(candidate_path.read_text(encoding="utf-8"), source=str(candidate_path))
         if not isinstance(data, Mapping):

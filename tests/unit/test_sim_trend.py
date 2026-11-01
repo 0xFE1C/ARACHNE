@@ -174,7 +174,7 @@ def test_a_provider_with_nothing_to_model_records_no_point() -> None:
 
 
 async def test_a_failing_resimulation_is_counted_and_never_reaches_the_scan() -> None:
-    """A trend point is never worth a failed scan (docs/spec/07- §4)."""
+    """A trend point is never worth a failed scan ."""
     store = MemorySimulationStore()
     sink = MemoryAuditSink()
     bus = EventBus()

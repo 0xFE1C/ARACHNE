@@ -108,7 +108,7 @@ class SecretScanAtScale(Module):
             yield skip(
                 ctx,
                 "no local repository to scan: declare a repo:/path or file:// target "
-                "(a remote git URL is never cloned — docs/spec/05- M5)",
+                "(a remote git URL is never cloned — )",
             )
             return
         produced = 0

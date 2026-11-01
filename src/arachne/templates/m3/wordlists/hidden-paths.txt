@@ -1,7 +1,7 @@
 # Hidden/undocumented endpoint wordlist for m3.api-surface (research ch03#31).
 #
 # Managed data (F-09-04): point ARACHNE_WEB_PAYLOADS at a directory with your own
-# ``wordlists/hidden-paths.txt`` to replace it. One path per line; ``#`` comments and blank
+# ``templates/m3/wordlists/hidden-paths.txt`` to replace it. One path per line; ``#`` comments and blank
 # lines are ignored. Entries are probed with GET (and OPTIONS for the verb advertisement),
 # compared against the application's own not-found baseline — a path only becomes a finding
 # when its response actually differs from that baseline and from the SPA catch-all page.

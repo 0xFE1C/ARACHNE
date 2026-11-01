@@ -11,7 +11,7 @@ questions the rest of the scanner asks:
   ``enabled_by_default`` / opt-in flags, and returns the checks that will actually execute.
 * **What versions did we run?** :meth:`ModuleRegistry.summary` and
   :meth:`ModuleRegistry.check_versions` produce the version metadata a scan report records
-  (F-02-10, docs/spec/07- §4 "version everything").
+  (F-02-10).
 
 Two failures it treats as fatal at load time, because both corrupt a plan silently: a
 duplicate check id (two implementations claiming one identity) and a group whose checks do
@@ -46,9 +46,9 @@ _MODULE_ORDER: tuple[str, ...] = ("M1", "M2", "M3", "M4", "M5", "M6")
 
 @dataclass(frozen=True, slots=True)
 class ModuleGroup:
-    """A module (M1..M6): a titled bundle of checks with its own version (docs/spec/02- §2.2).
+    """A module (M1..M6): a titled bundle of checks with its own version .
 
-    ``research_chapter`` is the corpus chapter the module maps 1:1 to (docs/spec/05-), which
+    ``research_chapter`` is the corpus chapter the module maps 1:1 to, which
     is what makes the coverage matrix a per-chapter question as well as a per-method one.
     """
 
@@ -86,7 +86,7 @@ class ModuleGroup:
 
     @property
     def step(self) -> ScanStep:
-        """The pipeline step this module's checks belong to (docs/spec/02- §3)."""
+        """The pipeline step this module's checks belong to ."""
         return MODULE_STEP[self.id]
 
     def metadata(self) -> tuple[CheckMetadata, ...]:

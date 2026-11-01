@@ -94,7 +94,7 @@ services:
       dockerfile: docker/Dockerfile
     environment:
       <<: *arachne-env
-      # Recorded responses: the demo makes no outbound request (docs/spec/07- §9.1).
+      # Recorded responses: the demo makes no outbound request .
       ARACHNE_HTTP_FIXTURES: /app/demo/http
       ARACHNE_OSINT_ENABLED: "true"
       ARACHNE_OSINT_FIXTURES: /app/demo/osint

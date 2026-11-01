@@ -1,9 +1,9 @@
-"""Check results and the error model (docs/spec/07- §4, F-02-08 note).
+"""Check results and the error model (F-02-08 note).
 
 "Errors are data": a check that raises must produce
 ``CheckResult(status="error")`` with an exception summary, never abort the scan. The
 :class:`CheckResult` / :class:`Evidence` pair is the plugin contract from
-``docs/spec/02-`` §5; the module base class and registry are stage S3.
+```` §5; the module base class and registry are stage S3.
 """
 
 from __future__ import annotations
@@ -64,7 +64,7 @@ def sha256_of(payload: str | bytes) -> str:
 
 
 def confidence_percent(value: float) -> int:
-    """Convert a check's 0-1 confidence to the report's 0-100 scale (docs/spec/06- §2).
+    """Convert a check's 0-1 confidence to the report's 0-100 scale .
 
     The store keeps one unit for the column — percent — so a finding's confidence means the
     same thing whether it was just raised by a check or already analysed. The conversion

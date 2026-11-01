@@ -1,6 +1,6 @@
 """A stdlib-only vulnerable *web* lab: real HTTP on loopback, no Docker required.
 
-docs/spec/07- §6 wants the integration layer to run against the Docker compose lab (DVWA,
+ wants the integration layer to run against the Docker compose lab (DVWA,
 OWASP Juice Shop, a misconfigured Nginx). That fixture exists (``docker/docker-compose.yml``,
 ``docker/lab/``), but the S6 acceptance criteria — "find ≥ 60% of the planted vulnerabilities,
 false-positive rate ≤ 15%" — need a lab whose *planted set is known and checkable*, and a

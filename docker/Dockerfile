@@ -1,4 +1,4 @@
-# ARACHNE container image (F-07-04, docs/spec/07- §3).
+# ARACHNE container image (F-07-04).
 #
 # One image, three roles, selected by the compose command:
 #

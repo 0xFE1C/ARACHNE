@@ -1,6 +1,6 @@
 # ARACHNE dork corpus — M1 `m1.dork-sweep` (research ch.01 method 1, GHDB-aligned).
 #
-# This file is data, not code (ADR-04, docs/spec/07- §4) and is versioned with the
+# This file is data, not code (ADR-04) and is versioned with the
 # repository: `arachne.spec` F-09-04 asks for dork management as a shareable artefact, and
 # `ARACHNE_OSINT_DORK_CORPUS` points a project at its own copy.
 #

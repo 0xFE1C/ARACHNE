@@ -509,7 +509,7 @@ def build_osint_access(
     """Build the OSINT access object for a live run, or ``None`` when it is switched off.
 
     ``None`` is a first-class answer: the checks see "no OSINT access" and report a skipped
-    result, which is what keeps a default scan offline (F-02-09, docs/spec/07- §9.1).
+    result, which is what keeps a default scan offline (F-02-09).
 
     The client's scope is the hosts of the *enabled* providers only — plus a configured
     search endpoint and any explicitly declared extra host — so an index that is not named

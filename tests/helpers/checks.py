@@ -365,7 +365,7 @@ def _rekey(
 ) -> dict[tuple[str, str, int], Any]:
     """Let a test key its scripted routes by the *asset* while the transport sees the address.
 
-    The network client resolves a name before it dials (resolve-and-pin, docs/spec/07- §5), so
+    The network client resolves a name before it dials (resolve-and-pin), so
     the transport is always called with an address. Rewriting the keys here keeps the tests
     readable — ``("tcp", "lab.test", 53)`` — without pretending the client dials names.
     """

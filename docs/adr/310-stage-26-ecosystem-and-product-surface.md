@@ -2,7 +2,7 @@
 
 - **Status:** accepted (S26)
 - **Requirements:** REQ-ECOS-001...006
-- **Phase/gate:** P6, gate G6 (`docs/03-delivery-plan.md` §8)
+- **Phase/gate:** P6, gate G6 (`historical` spec path `docs/03-delivery-plan.md` §8)
 - **Supersedes:** nothing. **Extends:** ADR-190 (packaging & ecosystem), ADR-170 (the API/UI
   split), ADR-130 (one report DTO), ADR-300 (signed content packs, and the 0011 trade-off this
   migration repeats).

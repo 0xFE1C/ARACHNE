@@ -1,4 +1,4 @@
-"""The Orchestrator (docs/spec/02- §2.1, F-01-02/03/04/09/10).
+"""The Orchestrator (F-01-02/03/04/09/10).
 
 The Orchestrator owns the three gates that must all pass before a scan may touch a
 network, and it owns the wiring between them:
@@ -849,7 +849,7 @@ class Orchestrator:
         With ``ARACHNE_HTTP_FIXTURES`` set, the transport reads recorded responses instead of
         opening a socket. Everything else about the request path is unchanged — validation,
         scope, rate limiting, redaction, audit — so a replayed scan exercises the real code
-        (docs/spec/07- §6) and a demonstration run needs no network (docs/spec/07- §9.1).
+        and a demonstration run needs no network .
         """
         fixtures = self.settings.http_fixtures
         # The operator's masked-credential ledger (F-08-04, S7); ``None`` unless configured.

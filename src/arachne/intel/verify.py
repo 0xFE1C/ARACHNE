@@ -18,7 +18,7 @@ the report's freshness section, so "which data is this deployment's scanning bui
 it verified?" is answerable from the evidence rather than from a log line.
 
 The RSA verifier is stdlib-only (``pow``-based RSASSA-PKCS1-v1_5, the same construction S17
-uses for OIDC ID tokens) because the runtime stack of ``docs/spec/07-`` §2 has no crypto
+uses for OIDC ID tokens) because the runtime stack of ```` §2 has no crypto
 library. Ed25519/GPG signatures are refused rather than downgraded — a mode that silently
 weakens is worse than a mode that is absent.
 """

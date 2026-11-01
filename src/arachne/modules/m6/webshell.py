@@ -3,7 +3,8 @@
 A webshell is a script an attacker planted in a web root to run commands, move files and
 pivot. Two things make detecting it more than a signature match:
 
-* The PHP2SHELL case study (docs/research/06- §Case studies (a)) is explicit that the first
+* The PHP2SHELL case study (``docs/research/06-correlation-and-detection.md``,
+  Case studies (a)) is explicit that the first
   exploitation of an embargoed RCE *precedes* CVE-specific signatures, and that defenders must
   therefore watch behaviour — oversized single lines, encoded blocks, eval-heavy code,
   anomalous file timestamps — as well as markers. This check runs both: the corpus's signature
@@ -14,7 +15,7 @@ pivot. Two things make detecting it more than a signature match:
   candidates) and a local web root when the target declares one.
 
 Nothing here is written, uploaded, renamed or executed: the scan is file-read-only and the
-served half is GET-only (docs/spec/05- M6 "Safety").
+served half is GET-only .
 """
 
 from __future__ import annotations

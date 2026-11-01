@@ -19,11 +19,21 @@ HTTP_CLIENT_MODULE = "core/http.py"
 
 #: The only modules allowed to start a process (ADR-180, ADR-190.4). Each call shape is
 #: asserted: ``test_pdf_backend_process_call_is_fixed_argv_with_timeout``,
-#: ``test_plugin_installer_process_call_is_fixed_argv_with_timeout``, and for the S27 fix
+#: ``test_plugin_installer_process_call_is_fixed_argv_with_timeout``,
+#: ``test_documentation_tools_call_fixed_argv_with_a_timeout``, and for the S27 fix
 #: engine ``test_fix_safety.py::test_every_process_call_is_a_sequence_with_no_shell_and_a_timeout``
 #: (which additionally asserts that every argv[0] is a literal from the runner allowlist).
 SHELL_EXEMPT_MODULES = frozenset(
-    {"report/pdf_backend.py", "plugins/installer.py", "fix/gitops.py"}
+    {
+        "report/pdf_backend.py",
+        "plugins/installer.py",
+        "fix/gitops.py",
+        # The documentation gate asks the checkout's own git whether a cited commit exists,
+        # and the count generator asks pytest what it collects. Both are read-only questions
+        # about this repository, asked with a fixed argv.
+        "tools/doccheck.py",
+        "tools/counts.py",
+    }
 )
 
 #: Libraries that would bypass the scoped client.
@@ -190,6 +200,49 @@ def test_plugin_installer_process_call_is_fixed_argv_with_timeout() -> None:
     assert "sys.executable" in source, "the installer must invoke the current interpreter"
     for literal in ('"-m"', '"pip"', '"install"'):
         assert literal in source, f"the pip argv must stay literal: {literal} is missing"
+
+
+def test_documentation_tools_call_fixed_argv_with_a_timeout() -> None:
+    """The two documentation tools' ``subprocess`` exemptions, asserted (REQ-DOC-001/002).
+
+    Both ask a read-only question about this checkout — "does this commit exist?"
+    (``git cat-file -t``) and "what does pytest collect?" — and both must stay data-only:
+
+    1. ``argv[0]`` is a string literal: a program named in the source, never by input;
+    2. the command is an argv sequence, not a shell string, and carries fixed flag literals;
+    3. ``shell`` is never passed;
+    4. a ``timeout`` is always set.
+
+    The commit sha and the repository path are *data* passed as arguments; nothing derived
+    from scanned content can reach an argv position that names a program.
+    """
+    for relative in ("tools/doccheck.py", "tools/counts.py"):
+        path = SRC / relative
+        assert path.is_file(), f"{relative} is missing; drop its exemption"
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        run_calls = [
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "run"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "subprocess"
+        ]
+        assert run_calls, f"{relative} no longer calls subprocess.run; drop its exemption"
+        for call in run_calls:
+            assert call.args, "subprocess.run must be given an argv"
+            argv = call.args[0]
+            assert isinstance(argv, ast.List), "argv must be a literal sequence, not a string"
+            head = argv.elts[0]
+            assert isinstance(head, ast.Constant) and isinstance(head.value, str), (
+                f"{relative}: argv[0] must be a literal program name"
+            )
+            literals = [element for element in argv.elts if isinstance(element, ast.Constant)]
+            assert len(literals) >= 3, f"{relative}: the argv must be a fixed template"
+            keywords = {keyword.arg: keyword.value for keyword in call.keywords}
+            assert "shell" not in keywords, "subprocess.run must not pass shell= at all"
+            assert "timeout" in keywords, "subprocess.run must always set a timeout"
 
 
 #: Call sites allowed to turn redaction off or raise the body cap for one client instance.

@@ -1,6 +1,6 @@
 # ARACHNE M6 offline local-privilege-escalation index — managed data (ch06#16, F-09-04).
 #
-# The offline half of "version-based local privilege-escalation matching" (docs/spec/05- M6):
+# The offline half of "version-based local privilege-escalation matching" :
 # m6.lpe-discovery matches the OS/service versions M6 learned (from the M2 fingerprint
 # inventory, the web crawl's Server banner, or an operator-supplied asset export) against this
 # table, so a scan reports real privesc CVEs with no network access.

@@ -1,8 +1,8 @@
-# M6 automation/AI-era/post-exploit corpus (S11, docs/spec/05- M6, F-09-04).
+# M6 automation/AI-era/post-exploit corpus (S11, F-09-04).
 #
 # Everything an M6 check matches is *data* here, so an operator can narrow or extend it
 # without touching code (F-09-04) and a reviewer can read in one place exactly what the
-# module looks at. The M6 safety contract (docs/spec/05- "M6 · Safety") governs every entry:
+# module looks at. The M6 safety contract governs every entry:
 #
 #   1. **File-read-only.** Nothing in M6 writes, drops, claims or executes anything. The
 #      webshell scan reads files and served content; it never uploads or evaluates a payload.
@@ -11,9 +11,10 @@
 #      (``ARACHNE_M6_LOG_ACCESS`` / ``ARACHNE_M6_DECEPTION``); without it they ship the rule
 #      set and ingest nothing.
 #   3. **No post-exploitation action.** "Post-exploit signals" means *detecting the artifacts
-#      and behaviours*, never reproducing them (docs/spec/07- §8).
+#      and behaviours*, never reproducing them .
 #
-# The PHP2SHELL case study (docs/research/06- §Case studies (a)) is the reason the webshell
+# The PHP2SHELL case study (docs/research/06-correlation-and-detection.md, Case
+# studies (a)) is the reason the webshell
 # section is signature + behaviour rather than signature only: the first exploitation of an
 # embargoed RCE precedes CVE-specific signatures, so the heuristics (eval density, encoded
 # blocks, anomalous timestamps, oversized single lines) matter as much as the markers.
@@ -203,7 +204,7 @@ sigma:
 # --------------------------------------------------------------------------- local privesc (ch06#16)
 lpe:
   # The offline LPE index (linux-exploit-suggester-class). Kept in its own file so refreshing
-  # it is a data update, not a code change (docs/spec/07- §4).
+  # it is a data update, not a code change .
   index: "lpe-index.yaml"
   # Product names a service fingerprint may use for the Linux kernel.
   kernel_products: ["linux-kernel", "linux kernel", "kernel", "linux"]

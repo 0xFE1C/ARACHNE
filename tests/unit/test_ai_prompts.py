@@ -98,7 +98,7 @@ def test_a_zero_limit_disables_truncation() -> None:
 
 
 def test_the_untrusted_limit_is_per_template(store: PromptStore) -> None:
-    """The narrative template ships a tighter limit than triage (docs/spec/03- §5's default)."""
+    """The narrative template ships a tighter limit than triage ."""
     triage = store.template("triage")
     narrative = store.template("narrative")
     assert narrative.untrusted_limit <= triage.untrusted_limit

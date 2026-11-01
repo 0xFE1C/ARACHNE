@@ -1,4 +1,4 @@
-"""Diff and trend rendering (F-06-05, docs/spec/06- §7; S11 completes the S8 skeleton)."""
+"""Diff and trend rendering (F-06-05, S11 completes the S8 skeleton)."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""False-positive reduction (docs/spec/04- §2.6, F-05-07).
+"""False-positive reduction (F-05-07).
 
 Three mechanisms, in the order an operator would want them:
 
@@ -17,7 +17,7 @@ body), which is dropped.
 **The FP tuner** — operators mark findings ``fp``, and the tuner turns those marks into a
 per-(check, asset kind, signature) false-positive rate that raises the confidence a finding
 needs before it is reported. The rate is read once per analysis run, so the result stays
-deterministic for a given feedback state (docs/spec/04- §4), and the store is a protocol so
+deterministic for a given feedback state, and the store is a protocol so
 the SQLite implementation (``fp_feedback``) can be swapped for an API-backed one in S12.
 """
 
@@ -268,7 +268,7 @@ class HttpVerifier:
 
     The client is the same one the check used, so a verification request is validated,
     scope-checked, rate-limited, audited and redacted exactly like the original — there is
-    no second, privileged egress path (ADR-05, docs/spec/07- §5).
+    no second, privileged egress path (ADR-05).
     """
 
     def __init__(self, http: Any, *, max_verifications: int = 25, require_body_match: bool = True):
@@ -338,7 +338,7 @@ class HttpVerifier:
 
 
 def feedback_key(candidate: Candidate, *, signature: str | None = None) -> str:
-    """The identity the tuner learns on: ``check|asset-kind|signature`` (docs/spec/04- §2.6)."""
+    """The identity the tuner learns on: ``check|asset-kind|signature`` ."""
     return "|".join(
         [
             candidate.check_id or "unknown",
@@ -494,7 +494,7 @@ class FpTuner:
 
         The engine is built once per deployment (its thresholds are managed data), while the
         feedback is read once per *scan*; this is the join between the two, and it keeps the
-        result deterministic for a given feedback state (docs/spec/04- §4).
+        result deterministic for a given feedback state .
         """
         return FpTuner(stats, threshold=self.threshold, thresholds=self.thresholds)
 

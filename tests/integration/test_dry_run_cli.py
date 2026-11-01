@@ -1,6 +1,6 @@
 """Acceptance: ``arachne scan`` plans completely, performs zero requests, and refuses.
 
-The stage's headline requirement (F-01-10, docs/spec/08- Phase 0) is checked here through
+The stage's headline requirement (F-01-10, Phase 0) is checked here through
 the *real* entry point (``arachne.cli.main.run``), not by calling the Typer app directly,
 so what is verified is what an operator gets — including the process exit code.
 
@@ -62,7 +62,7 @@ def _isolated_cli(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[N
     monkeypatch.setenv("ARACHNE_LOG_JSON", "false")
     monkeypatch.setenv("ARACHNE_AUDIT_LOG_PATH", str(tmp_path / "audit.jsonl"))
     # Every CLI test replays recorded target responses: a live scan reads them instead of
-    # opening a socket, so no test in this module can reach the network (docs/spec/07- §6).
+    # opening a socket, so no test in this module can reach the network .
     monkeypatch.setenv("ARACHNE_HTTP_FIXTURES", str(REPLAY_FIXTURES))
     # A live scan of the replay fixture runs every module's probes. Replayed responses are
     # instant, so the per-host rate limit (5/s in production) is what would make the test

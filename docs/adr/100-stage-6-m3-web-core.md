@@ -102,7 +102,7 @@ Out of scope, recorded rather than implied:
 Research ch03#11 confirms a traversal by content, and its own "how it works" section names
 `/etc/passwd`. §1.5 says to prefer the safer interpretation. The compromise
 implemented: the marker set is **data** (`templates/m3/payloads.yaml`), it contains only
-**world-readable, non-secret** files (`/etc/passwd`, `windows/win.ini`), a finding requires the
+**world-readable, non-secret** files (`/etc/passwd`, `/windows/win.ini`), a finding requires the
 file's *header line* in a response whose benign baseline did not contain it, and an operator who
 prefers a benign in-tree marker file can replace the list without touching code (F-09-04). No
 write, no privilege, no credential file, and nothing that a public file listing would not

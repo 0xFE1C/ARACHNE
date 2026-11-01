@@ -1,6 +1,6 @@
 """FastAPI application, auth, web UI and webhooks (spec 01- F-07-02/03, F-06-06; S12).
 
-The interface layer of docs/spec/02- §1: the REST API and the web UI a human uses. It
+The interface layer of : the REST API and the web UI a human uses. It
 depends on the scanner; the scanner never depends on it — :func:`create_app` is imported
 lazily by the CLI's ``serve`` command and by tests, so a plain scan installs no ASGI stack.
 

@@ -1,4 +1,4 @@
-"""Structured output: four mechanisms in, one pydantic validator out (docs/spec/03- §6, F-04-03).
+"""Structured output: four mechanisms in, one pydantic validator out (F-04-03).
 
 The table in §6 names ``json_object``, tool-use, ``responseMimeType``, Ollama's ``format`` and
 constrained decoding. The mechanisms differ per adapter (tested in ``test_ai_providers.py``);

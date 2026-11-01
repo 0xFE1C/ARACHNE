@@ -1,6 +1,6 @@
-"""Retry, backoff, pacing and the circuit breaker (docs/spec/03- §7, F-04-06).
+"""Retry, backoff, pacing and the circuit breaker (F-04-06).
 
-docs/spec/03- §7 asks for four things at once, and they interact, so they live together:
+ asks for four things at once, and they interact, so they live together:
 
 **Retries with exponential backoff + jitter**, "only on transient errors (429/5xx/network),
 never on validation failures". The classification comes from the error itself
@@ -17,7 +17,7 @@ candidate*: a scan with 200 candidates would spend 600 timeouts learning what th
 already proved. After ``failure_threshold`` consecutive transient failures the provider is
 marked degraded, further calls fail immediately, and the engine's degradation chain takes over.
 That is what "any provider failure falls back to heuristic mode or to the previous successful
-analysis without losing the scan" (docs/spec/03- §1) means in practice.
+analysis without losing the scan" means in practice.
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ _DEFAULT_MAX_DELAY: Final = 20.0
 class RetryPolicy:
     """How hard to try, and how long to wait between tries."""
 
-    #: Total attempts, including the first (docs/spec/03- §7's default is 3).
+    #: Total attempts, including the first .
     attempts: int = 3
     base_delay_s: float = 0.5
     max_delay_s: float = _DEFAULT_MAX_DELAY

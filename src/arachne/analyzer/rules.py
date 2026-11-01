@@ -1,12 +1,12 @@
-"""The declarative rule engine (docs/spec/04- §2.1, F-05-01).
+"""The declarative rule engine (F-05-01).
 
 A rule is data: which candidates it applies to (``check_ref``), named conditions over the
 candidate's evidence, and the verdict each condition implies (``severity_if``,
 ``confidence``). Evaluating one is pure — no network, no clock, no database — so a scan can
-push millions of candidates through it per hour (docs/spec/04- §2.1) and two runs over the
-same evidence always produce the same verdict (docs/spec/04- §4).
+push millions of candidates through it per hour and two runs over the
+same evidence always produce the same verdict .
 
-The YAML shapes, both of which docs/spec/04- §2.1 uses, are accepted:
+The YAML shapes, both of which the engine uses, are accepted:
 
 .. code-block:: yaml
 
@@ -24,7 +24,7 @@ whose key is a bare path is read as an equality, so both spellings work.
 Rules are ranked by specificity and the most specific one that fires wins, so a general
 "anything M4 reports is at least medium" rule never overrides a precise one. Every clause
 that fired is kept in the :class:`~arachne.analyzer.model.RuleTraceEntry` trace, which is
-what makes the narrative explainable (docs/spec/04- §2.5) and the report defensible.
+what makes the narrative explainable and the report defensible.
 """
 
 from __future__ import annotations
@@ -165,7 +165,7 @@ class RuleClause:
 
 
 class Rule(BaseModel):
-    """One rule (docs/spec/04- §2.1)."""
+    """One rule ."""
 
     model_config = _MODEL_CONFIG
 

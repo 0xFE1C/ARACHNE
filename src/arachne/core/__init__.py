@@ -16,9 +16,9 @@ Module                          Requirement
 :mod:`~arachne.core.target`     target definition, exclusions, attestation (F-01-01/09)
 :mod:`~arachne.core.catalog`    the planning catalogue of checks (F-01-10)
 :mod:`~arachne.core.planner`    scan plan + dry-run estimation (F-01-03, F-01-10)
-:mod:`~arachne.core.events`     typed event bus (docs/spec/02- §2.1)
+:mod:`~arachne.core.events`     typed event bus
 :mod:`~arachne.core.lifecycle`  scan state machine + resumability (F-01-04)
-:mod:`~arachne.core.orchestrator`  gates, wiring, plan/run/resume (docs/spec/02- §2.1)
+:mod:`~arachne.core.orchestrator`  gates, wiring, plan/run/resume
 ==============================  ====================================================
 """
 

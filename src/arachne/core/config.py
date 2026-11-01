@@ -1,4 +1,4 @@
-"""Configuration, read from the environment only (F-08-01, docs/spec/07- §4).
+"""Configuration, read from the environment only (F-08-01).
 
 There is no config file format in this stage on purpose: secrets and deployment knobs
 come from environment variables (F-04-02 keeps provider keys env-only too), so nothing
@@ -131,8 +131,8 @@ class NetSettings:
     ``tls_tool``
         An external deep-TLS tool (``testssl.sh`` or ``sslscan``) to run *in addition to*
         the stdlib probe. Off by default, and invoked with a fixed argument vector and no
-        shell (docs/spec/07- §5): the stdlib probe is the offline/fallback path
-        (docs/spec/07- §9.1), the external tool is opt-in depth.
+        shell: the stdlib probe is the offline/fallback path;
+        the external tool adds depth when an operator asks for it.
     """
 
     connect_timeout_s: float = 3.0
@@ -294,20 +294,20 @@ COMMONCRAWL_DEFAULT_INDEX: Final = "CC-MAIN-2024-51"
 
 @dataclass(frozen=True, slots=True)
 class OsintSettings:
-    """Third-party OSINT access for M1 (F-02-02, F-02-09, docs/spec/07- §5).
+    """Third-party OSINT access for M1 (F-02-02, F-02-09).
 
     Passive reconnaissance queries *other people's* indexes (certificate transparency,
     web archives, scan databases), so two switches decide whether it happens at all:
 
     * ``enabled`` — **off by default**. Nothing in M1 is allowed to contact a third party
       unless the deployment says so, which is what keeps a default scan offline (the
-      offline demo of docs/spec/07- §9.1) and keeps the test suite internet-free.
+      offline demo) and keeps the test suite internet-free.
     * ``providers`` — which sources are allowed; the OSINT client's scope is exactly the
       hosts of this list (plus ``search_url``'s host and ``extra_hosts``), so an index that
       is not named here is out of scope and the request is refused and audited.
 
     ``fixtures_dir`` replays recorded responses instead of contacting anything
-    (vcrpy-style, docs/spec/07- §6): the checks run end to end, with no packet leaving the
+    (vcrpy-style): the checks run end to end, with no packet leaving the
     process. ``github_token`` is a secret read from the environment only (F-08-01); it is
     wrapped in :class:`~pydantic.SecretStr`, so it cannot be printed or logged by accident.
     """
@@ -490,7 +490,7 @@ class WebSettings:
         check characterizes anti-automation controls; it never mounts a brute-force.
     ``upload_probe``
         Whether ``m3.upload-audit`` may store its inert marker file. **Off by default**: the
-        M3 safety text (docs/spec/05-) says "no stored payloads", so an operator must opt in
+        M3 safety text says "no stored payloads", so an operator must opt in
         explicitly (``ARACHNE_WEB_UPLOAD_PROBE=true``) before the single benign marker is
         written. With it off the check still reports what the endpoint's validation *response*
         reveals, but does not confirm fetchability.
@@ -541,7 +541,7 @@ class WebSettings:
     #: WebSocket probe from a read into a conversation.
     ws_probe: bool = False
     #: Bounded probe counts for the extended families (S10): these oracles must never become a
-    #: fuzzing campaign (docs/spec/05- M3 "Safety").
+    #: fuzzing campaign .
     smuggling_probes: int = 4
     race_concurrency: int = 8
     jwt_max_tokens: int = 4
@@ -633,7 +633,7 @@ class M5Settings:
 
     M5 is the module that most often needs *credentials* or a *local artifact*: a cloud
     account (read-only), a repository clone, an image reference. Every switch here exists to
-    keep the default posture offline and non-destructive (docs/spec/05- M5 "Safety"):
+    keep the default posture offline and non-destructive :
 
     ``max_paths`` / ``max_findings_per_check``
         The usual per-check hard caps; a cloud/exposure probe must not become a sweep.
@@ -699,7 +699,7 @@ class M6Settings:
     """Bounds and switches for the M6 automation/AI-era/post-exploit checks (S11, F-02-07).
 
     M6 is the module that looks at *files, logs and feeds* rather than at the live web
-    surface (docs/spec/05- M6 "Safety": "YARA scanning is file-read-only; telemetry checks
+    surface: "YARA scanning is file-read-only; telemetry checks
     require explicit log-access grants"). Every knob exists to keep that boundary explicit:
 
     ``max_paths`` / ``max_findings_per_check`` / ``max_file_bytes`` / ``max_repo_files``
@@ -716,7 +716,7 @@ class M6Settings:
         a CISA KEV JSON and an asset/version inventory export; with none set the shipped
         snapshots are used, so a scan needs no network to correlate CVE/EPSS (ch06#7).
     ``log_access`` / ``log_paths``
-        **Off by default.** The explicit log-access grant of docs/spec/05- M6: without it
+        **Off by default.** The explicit log-access grant of : without it
         ``m6.sigma-hunt-rules`` only ships the rule set and ingests nothing.
     ``deception``
         **Off by default.** Whether ``m6.deception-listeners`` may read the honeytoken
@@ -1135,7 +1135,7 @@ class AnalysisSettings:
     — a rule corpus is not a release artefact in the same sense as code — while the shipped
     defaults keep a default scan working with nothing configured.
 
-    ``criticality`` is the OWASP impact input (docs/spec/04- §2.4): ``pattern=level`` pairs,
+    ``criticality`` is the OWASP impact input : ``pattern=level`` pairs,
     where a pattern is an asset value or a suffix such as ``*.example.com`` and a level is
     ``critical|high|normal|low|internal``. Everything unmatched is ``normal``.
     """
@@ -1156,7 +1156,7 @@ class AnalysisSettings:
     #: (F-05-07, "verification re-request before accepting high-severity findings").
     verify_high_severity: bool = True
     max_verifications: int = 25
-    #: Below this confidence a finding is a low-confidence observation (docs/spec/06- §2).
+    #: Below this confidence a finding is a low-confidence observation .
     min_confidence: int = 55
     correlation_enabled: bool = True
     fp_tuner_enabled: bool = True
@@ -1200,9 +1200,9 @@ class AnalysisSettings:
 
 @dataclass(frozen=True, slots=True)
 class AiSettings:
-    """The AI integration layer's deployment knobs (S9, docs/spec/03- §3/§7/§8).
+    """The AI integration layer's deployment knobs (S9, /§8).
 
-    The *provider table* is not here: docs/spec/03- §3 puts it in a file
+    The *provider table* is not here: the registry puts it in a file
     (``ARACHNE_AI_CONFIG``, see ``arachne.ai.config``), because a deployment configures several
     providers with different models and endpoints. What lives here is the environment's share —
     the one default provider override and the policy knobs — so a local demo needs no file at
@@ -1213,12 +1213,12 @@ class AiSettings:
         ARACHNE_AI_MODEL=qwen3:32b
         arachne scan --target lab.yaml --engine ai
 
-    ``privacy`` defaults to ``redact`` (docs/spec/03- §8) and ``local-only`` is enforced in
+    ``privacy`` defaults to ``redact`` and ``local-only`` is enforced in
     ``ai.privacy`` before any call. ``budget_tokens``/``budget_cost_usd`` are ``None`` until an
     operator sets them, so the file's ``budget`` block wins when present (F-04-07).
 
     ``authoritative_checks`` is the escape hatch from the parity anchor: an empty list means
-    every check keeps its deterministic verdict (docs/spec/04- §5). ``prompts``/``pricing`` are
+    every check keeps its deterministic verdict . ``prompts``/``pricing`` are
     managed-data overrides (F-09-04) and ``cache_dir`` makes the analysis cache durable.
     """
 
@@ -1263,10 +1263,10 @@ class AiSettings:
 
 @dataclass(frozen=True, slots=True)
 class ReportSettings:
-    """Report-engine knobs (docs/spec/06- §2/§5, F-06-*).
+    """Report-engine knobs (F-06-*).
 
     ``min_confidence`` is the threshold below which a finding is a *low-confidence
-    observation* rather than a confirmed finding (docs/spec/06- §2). It defaults to the
+    observation* rather than a confirmed finding . It defaults to the
     spec's 55 and is deliberately separate from the analyzer's own ``min_confidence``: the
     analyzer decides what to call a finding, the report decides what to publish as one.
 
@@ -1280,7 +1280,7 @@ class ReportSettings:
 
     min_confidence: int = 55
     evidence_body_limit: int = 8192
-    #: Keep low-confidence observations in the report (docs/spec/06- §2/§6). Turning this
+    #: Keep low-confidence observations in the report . Turning this
     #: off omits the section but not the count in the executive summary.
     include_low_confidence: bool = True
     owasp_map: str | None = None
@@ -1326,7 +1326,7 @@ SEVERITY_LEVELS: Final[tuple[str, ...]] = ("info", "low", "medium", "high", "cri
 class ApiSettings:
     """The REST API and web UI surface (F-07-02/03, F-08-02, S12).
 
-    The API is part of the *interface* layer (docs/spec/02- §1), never a dependency of the
+    The API is part of the *interface* layer, never a dependency of the
     scanner: the CLI and the orchestrator run with no API installed or configured.
 
     ``keys``
@@ -1556,7 +1556,7 @@ class WebhookSettings:
 
     ``min_severity``
         The severity at or above which the summary card reports a scan as actionable, and
-        the floor for the per-finding Jira issues. ``docs/spec/06- §8`` asks for "Jira issue
+        the floor for the per-finding Jira issues. ```` asks for "Jira issue
         per high/critical finding", which is ``min_severity = "high"``.
     ``max_findings``
         A hard cap on how many issues one notification creates, so a scan that finds 300
@@ -2276,7 +2276,7 @@ class Settings:
     #: Directory (or file) of recorded HTTP responses for the *target* client. Setting it
     #: turns any scan into a replay: the shared client still validates, throttles, audits and
     #: redacts, but its transport reads recordings instead of opening a socket, so a scan can
-    #: be demonstrated and tested with no network at all (docs/spec/07- §6, §9.1).
+    #: be demonstrated and tested with no network at all (§9.1).
     http_fixtures: str | None = None
     #: M3 web-application probe bounds and switches (S6). Appended last so every existing
     #: positional/keyword construction of ``Settings`` keeps its meaning.
@@ -2968,7 +2968,7 @@ def _env_secret(env: Mapping[str, str], key: str) -> SecretStr | None:
 
 
 def _env_file_secret(env: Mapping[str, str], key: str) -> SecretStr | None:
-    """Read a secret from the file ``key`` names (the docker/Helm secrets path, F-07-04).
+    """Read a secret from the file ``key`` names (the docker or Helm secrets path, F-07-04).
 
     A missing or unreadable file is a configuration error rather than "no secret", because
     the surrounding setting (``ARACHNE_INTEGRITY_KEY_FILE``) says the operator intended one.

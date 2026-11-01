@@ -1,8 +1,9 @@
 # ADR-290 — Stage 24: detection validation (purple team)
 
 **Status:** accepted (S24, area VALID — REQ-VALID-001...006)
-**Context:** `docs/02-system-requirements.md` area VALID, `docs/03-delivery-plan.md` §7 (G5),
-`docs/04-verification-and-acceptance.md` §2
+**Context:** `historical` spec paths: `docs/02-system-requirements.md` area VALID,
+`docs/03-delivery-plan.md` §7 (G5) (`historical`),
+`docs/04-verification-and-acceptance.md` §2 (`historical`)
 
 ## 290.1 The problem
 

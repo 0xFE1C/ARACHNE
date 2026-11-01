@@ -109,7 +109,7 @@ class RepoCheck:
 
     ``repo:<path>`` / ``file://<path>`` / a bare filesystem path all resolve through
     :func:`local_root`; a remote git URL has no local clone in a scan, so the check reports
-    itself skipped rather than cloning (docs/spec/05- M5: "runs on local clones only").
+    itself skipped rather than cloning ("runs on local clones only").
     """
 
     def supports(self, asset: Asset) -> bool:

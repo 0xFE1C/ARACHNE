@@ -1,6 +1,6 @@
 """Acceptance: a live M2 scan discovers the lab, its services and its TLS issues.
 
-This is the stage's headline behaviour (docs/spec/08- Phase 1): the seventeen M2 checks run
+This is the stage's headline behaviour (Phase 1): the M2 checks run
 end to end against real TCP/UDP/TLS endpoints and produce evidence-bearing candidates.
 
 The lab is `tests/lab/arachne_lab.py` — real sockets on loopback speaking deliberately
@@ -145,7 +145,7 @@ def lab_settings(catalog: Path, *, allow_udp: bool = True) -> Settings:
             read_timeout_s=1.0,
             banner_wait_s=0.2,
             # A short suite list keeps the lab scan quick; the full list is the default and
-            # is covered by tests/unit/test_m2_tls.py.
+            # is covered by tests/unit/test_m2_checks.py.
             tls_cipher_probes=("DES-CBC3-SHA", "AES128-SHA"),
             max_ports=20,
             max_hosts=4,
@@ -291,7 +291,7 @@ def test_tls_issues_are_reported_with_evidence(lab_run: LabRun) -> None:
     # TLS 1.2 is detected as supported (an exact probe, available on any modern interpreter).
     # TLS 1.0/1.1 are reported as *undetermined* on an interpreter that refuses legacy
     # protocol pinning (Python 3.14 with deprecations-as-errors, which is how pytest runs
-    # here) — see tests/unit/test_m2_tls.py for the deterministic per-version behaviour.
+    # here) — see the per-version TLS cases in tests/unit/test_m2_checks.py.
     assert "tlsv1.2" in blob
     # The evidence includes the parsed certificate.
     tls_evidence = [
@@ -347,7 +347,7 @@ def test_cve_correlation_finds_the_planted_old_versions(lab_run: LabRun) -> None
 
 
 def test_correlation_is_offline_and_needs_no_third_party(lab_run: LabRun) -> None:
-    """The offline index is the default path (docs/spec/07- §9.1, F-09-03)."""
+    """The offline index is the default path (F-09-03)."""
     assert not [event for event in lab_run.sink.events if event.action is AuditAction.OSINT_QUERY]
 
 

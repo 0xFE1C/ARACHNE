@@ -4,7 +4,7 @@ Alembic owns the migration graph (``migrations/``) and its ``alembic_version`` t
 the authoritative schema version. :data:`LATEST_SCHEMA_REVISION` is the revision this
 code expects; tests assert the two agree, so forgetting to run/commit a migration fails
 CI instead of failing in production. Every scan report carries this value so a report can
-be read against the schema that produced it (docs/spec/07- §4, "version everything").
+be read against the schema that produced it ("version everything").
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ LATEST_SCHEMA_REVISION: Final = "0014"
 #: Table Alembic uses to record the applied revision.
 ALEMBIC_VERSION_TABLE: Final = "alembic_version"
 
-#: The evidence-store tables defined in docs/spec/02- §2.4, in dependency order.
+#: The evidence-store tables defined in in dependency order.
 SPEC_TABLE_NAMES: Final[tuple[str, ...]] = (
     "targets",
     "scans",

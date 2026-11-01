@@ -1,4 +1,4 @@
-"""Cost control and observability for model calls (docs/spec/03- §7, F-04-07).
+"""Cost control and observability for model calls (F-04-07).
 
 Two objects, one purpose each:
 
@@ -6,7 +6,7 @@ Two objects, one purpose each:
     The per-scan token and cost budget. Every call is *estimated* before it is made and
     *recorded* after, so the cap is enforced rather than reported: a stage that would cross
     the cap raises :class:`~arachne.core.errors.BudgetExhaustedError` and the engine degrades
-    that stage to the heuristic result (docs/spec/03- §7's degradation chain). ``low_water``
+    that stage to the heuristic result . ``low_water``
     is the signal the engine uses to skip the expensive stages (``explain``, ``narrative``)
     when the budget is nearly spent.
 
@@ -198,7 +198,7 @@ class BudgetLedger:
 
     @property
     def low_water(self) -> bool:
-        """True when the expensive stages should be skipped (docs/spec/03- §7).
+        """True when the expensive stages should be skipped .
 
         "Low" is 80% of either cap, or "no tokens left at all" when a cap is disabled and the
         ledger has still spent a lot of a local model's time.
@@ -244,7 +244,7 @@ class BudgetLedger:
 
 @dataclass
 class Metrics:
-    """Prometheus-friendly counters and latency observations (docs/spec/03- §7)."""
+    """Prometheus-friendly counters and latency observations ."""
 
     counters: dict[str, float] = field(default_factory=dict)
     observations: dict[str, tuple[float, int]] = field(default_factory=dict)

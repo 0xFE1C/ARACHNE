@@ -1,10 +1,10 @@
 """The seven provider adapters, the transport mapping and the scope of the AI egress path.
 
-docs/spec/03- §3 is a table of API formats; this module tests that each adapter produces the
+ is a table of API formats; this module tests that each adapter produces the
 request that table describes and reads the answer it returns. ``plan()`` is asserted directly
 (no socket, exact bytes), ``complete()`` is driven through a scripted transport, and one case
 replays a **vcrpy cassette** so the real ``httpx`` path — through the shared scoped client —
-is covered by a recorded fixture rather than by a live endpoint (docs/spec/07- §6).
+is covered by a recorded fixture rather than by a live endpoint .
 """
 
 from __future__ import annotations
@@ -132,7 +132,7 @@ def test_openai_plan_is_the_canonical_chat_completion() -> None:
         "content": "You are a triage analyst.",
     }
     assert call.payload["messages"][1]["role"] == "user"
-    # json_schema is the strongest mechanism when a schema exists (docs/spec/03- §6).
+    # json_schema is the strongest mechanism when a schema exists .
     assert call.payload["response_format"] == {
         "type": "json_schema",
         "json_schema": {"name": "emit", "schema": SCHEMA, "strict": True},
@@ -211,7 +211,7 @@ def test_anthropic_plan_is_the_messages_api_with_tool_use() -> None:
     assert call.url == "https://api.anthropic.com/v1/messages"
     assert call.headers["x-api-key"] == "ak-test"
     assert call.headers["anthropic-version"] == "2023-06-01"
-    # system is top-level; the user turn is a message (docs/spec/03- §3).
+    # system is top-level; the user turn is a message .
     assert call.payload["system"] == "You are a triage analyst."
     assert call.payload["messages"][0]["role"] == "user"
     assert "You are a triage analyst." not in json.dumps(call.payload["messages"])

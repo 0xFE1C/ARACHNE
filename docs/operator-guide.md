@@ -619,12 +619,12 @@ arachne coverage --include-templates               # also count catalogue refere
 
 The tool greps `research_ref` values out of `src/arachne/modules` and compares them with the
 numbered methods in `docs/research/`. `arachne module coverage` is the same command under the
-`module` group. At the time of writing `arachne coverage` reports **137/175 (78.3%)** of the
-research methods mapped to checks; the per-chapter breakdown is printed with the matrix.
+`module` group. `arachne coverage` reports **148/175 (84.6%)** of the research methods mapped
+to checks; the per-chapter breakdown is printed with the matrix.
 
-> **Note.** No `coverage_matrix.md` is committed. Generate one with
-> `arachne coverage --write coverage_matrix.md` before
-> citing it.
+> **Note.** The generated matrix is committed at `coverage_matrix.md`, and a test fails when
+> it goes stale. Refresh it with `arachne coverage --write coverage_matrix.md` after adding a
+> check or a `research_ref`.
 
 The module inventory is separate:
 
@@ -3439,7 +3439,7 @@ target:
   operator can see it before anything is read.
 - The check is **opt-in** and declares **L0**: it contacts nothing at all. It makes zero network
   requests, executes nothing, decompiles nothing and unpacks nothing — the zip container is read as
-  bytes and its code/manifest entries are decoded as text.
+  bytes and its code and manifest entries are decoded as text.
 - Findings: credential patterns as detector names (values masked, F-08-04), and the endpoints the
   artifact names, **recorded as assets** so M1 and M3 pick them up on the next scan.
 

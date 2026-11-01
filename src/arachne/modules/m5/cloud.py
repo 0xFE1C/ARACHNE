@@ -1,8 +1,8 @@
 """M5 cloud-facing checks: buckets, leaked credentials, metadata/IMDS, managed identity, GCP SA
 keys and the IAM review (research ch05#1-#6).
 
-These are the module's "cloud account" checks. Their safety contract (docs/spec/05- M5
-"Safety") is *read-only*: bucket probing is GET, the metadata probe reports the IMDSv1-vs-v2
+These are the module's "cloud account" checks. Their safety contract ("Safety") is
+*read-only*: bucket probing is GET, the metadata probe reports the IMDSv1-vs-v2
 posture (behind ``ARACHNE_M5_IMDS_PROBE``) and never the credential the service would return,
 credential *validation* (``sts:GetCallerIdentity``-class) is off by default and only ever uses a
 key the deployment configured, and the live IAM review is off unless a read-only credential is

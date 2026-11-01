@@ -1,11 +1,11 @@
-"""M6 · Automation, AI-Era & Post-Exploit Signals (docs/spec/05- M6, research ch. 06).
+"""M6 · Automation, AI-Era & Post-Exploit Signals .
 
 M6 answers two things the other modules do not: "is something *already* wrong inside what we
 host?" (a planted webshell, a committed secret, a leaked CI token) and "what does the AI-era
 attack surface and exploit-readiness picture look like?" (GenAI endpoints, EPSS/KEV correlation,
 post-exploit telemetry). Its evidence is mostly files and logs rather than HTTP responses, and
 its default posture is offline: it reads what the scan already has and never takes a
-post-exploitation action (docs/spec/05- M6 "Safety").
+post-exploitation action .
 
 ========================================  ===========  ============================================
 check                                      ref          what it establishes
@@ -22,13 +22,14 @@ check                                      ref          what it establishes
 ========================================  ===========  ============================================
 
 **Numbering.** As for M1-M5, ``research_ref`` values are the canonical method numbers of
-``docs/research/06-`` (the universe G-01 counts) and the check **ids** are docs/spec/05-'s; the
+``docs/research/06-correlation-and-detection.md`` (the universe G-01 counts) and the
+check **ids** are the corpus's; the
 spec table gives ``m6.ci-secret-leak`` and ``m6.sigma-hunt-rules`` the same ch06#23, which
 ADR-S11.4 records. ``m6.sigma-hunt-rules`` cites the ``ch06#18-23`` range because the rules it
 ships encode those discovery methods (Kerberoasting, ticket abuse, lateral movement, persistence,
 Sigma hunting).
 
-**Safety** (docs/spec/05- M6 "Safety"). File-read-only throughout: the webshell scan reads
+**Safety** . File-read-only throughout: the webshell scan reads
 files and served content (GET-only) and never uploads or evaluates anything; the secret/CI scans
 only read; the AD check parses an export and never authenticates; nothing performs a
 post-exploitation action. The telemetry checks require an explicit log-access grant
@@ -67,7 +68,7 @@ M6_CHECKS: tuple[type[Module], ...] = (
     CredentialHunt,
 )
 
-#: The M6 module group (docs/spec/02- §2.2). Bump the version when the set or a check's
+#: The M6 module group . Bump the version when the set or a check's
 #: behaviour changes: scan reports record it (F-02-10).
 M6 = ModuleGroup(
     id="M6",

@@ -1,4 +1,4 @@
-"""JSON renderer and the versioned report schema (docs/spec/06- §4, F-06-02).
+"""JSON renderer and the versioned report schema (F-06-02).
 
 The JSON format is the machine/CI view: the *full* :class:`~arachne.report.model.ReportData`
 DTO, every finding and every evidence payload, with a stable, versioned schema. Two

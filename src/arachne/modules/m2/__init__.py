@@ -1,8 +1,8 @@
-"""M2 · Network & Services (docs/spec/05- M2, research ch. 02).
+"""M2 · Network & Services .
 
 M2 turns "some hostnames and ranges" into a precise inventory of live hosts, open ports,
 services, versions and protocol postures — the inventory every later module and the CVE
-correlation consume. Its twenty-two checks split into four layers that run in order inside the
+correlation consume. Its checks split into four layers that run in order inside the
 ``discovery`` pipeline step (``core.planner.MODULE_STEP``):
 
 1. **reachability** — :mod:`arachne.modules.m2.discovery` (``host-discovery``, ``port-scan``,
@@ -51,7 +51,7 @@ implemented — M2 establishes existence, never exploitable access. The one cred
 the vault to prove or disprove that access exists; it is opt-in, active, attested, and never
 guesses, sprays or reuses a credential across targets (ADR-240.4).
 
-**The numbering deviation** that S3 recorded for M1 applies again: docs/spec/05-'s M2 table
+**The numbering deviation** that S3 recorded for M1 applies again: 's M2 table
 numbers its references up to ``ch02#35``, while the corpus chapter (the universe the G-01
 coverage matrix counts) has 30 numbered methods. The ``research_ref`` values here are the
 canonical corpus numbers; the check **ids** are exactly the spec's. See ADR-080.3.
@@ -125,7 +125,7 @@ M2_CHECKS: tuple[type[Module], ...] = (
     OtProtocolProbe,
 )
 
-#: The M2 module group (docs/spec/02- §2.2). Bump the version when the check set or a check's
+#: The M2 module group . Bump the version when the check set or a check's
 #: behaviour changes: scan reports record it (F-02-10).
 M2 = ModuleGroup(
     id="M2",

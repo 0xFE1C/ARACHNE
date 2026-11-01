@@ -349,7 +349,7 @@ class CodeSecretMining(Module):
         for label, matches in per_query.items():
             # The search API returns paths, not file bodies, so the candidate is "this file
             # is committed and reachable" — extracting the value itself is a separate,
-            # deeper step (docs/spec/05- M6 secret scan at scale).
+            # deeper step (secret scan at scale).
             secrets = [
                 found for match in matches for found in detect_secrets(" ".join(match.values()))
             ]

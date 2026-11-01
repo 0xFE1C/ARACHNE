@@ -3,7 +3,7 @@
 The corpus is *data*: what an M3 check sends, what it matches a response against, and the
 parameter-name hints that decide where a family is tried. Modelling it here (rather than
 inlining strings in each check) keeps the "detection-only, differential" contract of
-docs/spec/05- M3 reviewable in one file, and gives an operator a documented override
+ reviewable in one file, and gives an operator a documented override
 (``ARACHNE_WEB_PAYLOADS``).
 
 The loader validates the shape it depends on and raises :class:`ConfigurationError` with the
@@ -311,7 +311,7 @@ def load_wordlist(
 ) -> tuple[str, ...]:
     """Load an M3 wordlist: an operator directory first, then the packaged one.
 
-    ``name`` is the corpus value (``wordlists/hidden-paths.txt``); an operator's
+    ``name`` is the corpus value (``templates/m3/wordlists/hidden-paths.txt``); an operator's
     ``override_dir`` may hold the same relative path. Comments and blank lines are ignored.
     """
     cap = min(limit, MAX_WORDLIST_ENTRIES)

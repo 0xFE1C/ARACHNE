@@ -1,6 +1,6 @@
 # ADR-240 — Stage 19: authenticated & agent-based scanning (area CREDS)
 
-*Status: accepted (S19). Requirements: REQ-CREDS-001…005. Gate: G3 (`docs/03-delivery-plan.md`
+*Status: accepted (S19). Requirements: REQ-CREDS-001…005. Gate: G3 (`historical` spec path `docs/03-delivery-plan.md`
 §5).*
 
 ## 240.1 Credentialed web scanning rides the existing HTTP path

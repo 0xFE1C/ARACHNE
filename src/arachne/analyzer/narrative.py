@@ -1,4 +1,4 @@
-"""Explanation synthesis — "the AI-like voice" without an AI (docs/spec/04- §2.5, F-05-05).
+"""Explanation synthesis — "the AI-like voice" without an AI (F-05-05).
 
 Every finding gets a narrative, and the narrative is generated from **templates, facts and
 the rule trace** — never from a model. The templates are data
@@ -6,7 +6,7 @@ the rule trace** — never from a model. The templates are data
 with conditional sections so one template can cover "file exists" and "file exists *and*
 holds secrets" without a sentence that lies about the weaker case.
 
-A narrative answers the four questions docs/spec/04- §1 names — *what is this, how bad is
+A narrative answers the four questions the templates name — *what is this, how bad is
 it, how sure are we, what should be done* — plus *why*: the closing justification cites the
 rule that fired and the corpus method it maps to, which is exactly the trace a report must
 be able to defensible-ly reproduce.
@@ -74,7 +74,7 @@ _MATCH_KEYS: Final[tuple[str, ...]] = (
     "category",
 )
 
-#: ``confidence`` wording bands (docs/spec/04- §2.5's closing "Confidence: high").
+#: ``confidence`` wording bands .
 _CONFIDENCE_BANDS: Final[tuple[tuple[int, str], ...]] = (
     (85, "high"),
     (70, "moderate"),

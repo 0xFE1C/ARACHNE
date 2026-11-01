@@ -1,4 +1,4 @@
-"""Error-model tests (docs/spec/07- §4, F-02-08 note)."""
+"""Error-model tests (F-02-08 note)."""
 
 from __future__ import annotations
 

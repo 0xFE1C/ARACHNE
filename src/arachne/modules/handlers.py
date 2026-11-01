@@ -7,7 +7,7 @@ The pipeline steps are S2's; this module supplies the handlers that give the ``r
     S2's offline seeding first (the declared targets become the inventory), then every
     selected check whose module maps to the recon step — today all of M1. M1 runs *before*
     endpoint discovery, because its whole purpose is to feed the inventory the later modules
-    attach to (docs/spec/02- §3).
+    attach to .
 ``discovery``
     S2's offline endpoint derivation first (web endpoint candidates from the seeded hosts),
     then the M2 checks (S4). M2's checks form a pipeline of their own — liveness → open ports
@@ -27,7 +27,7 @@ Design rules that keep this honest and testable:
 * **Selection happens here, per scan** (F-02-09): ``ctx.options.modules`` and the
   active-checks switch decide; the registry only describes.
 * **One check failure never ends a step.** ``guard_check`` turns an exception into a single
-  ``status="error"`` result, which is recorded and counted (docs/spec/07- §4).
+  ``status="error"`` result, which is recorded and counted .
 * **Candidates are persisted, info results are not.** A ``vulnerable`` result becomes a
   ``findings`` row with its evidence; an ``info`` result (an asset discovered) shows up in
   the asset inventory and the step statistics, which is where it belongs.
@@ -181,7 +181,7 @@ def build_handlers(
         analyses=analyses,
         engine=analysis_engine,
         correlation=correlation_engine,
-        # The AI engine audits every stage call on the scan's trail (S9, docs/spec/03- §7).
+        # The AI engine audits every stage call on the scan's trail (S9).
         auditor=auditor,
     )
     handlers: dict[ScanStep, StepHandler] = {
@@ -342,7 +342,7 @@ def make_checks_handler(
     """Crawl the web surface once, then run the checks-step modules (M3).
 
     The crawl is built here — once for the step — for the same reason M2's inventory is built
-    in the discovery handler: M3's twelve checks must not each re-crawl the application. It is
+    in the discovery handler: M3's checks must not each re-crawl the application. It is
     handed to every check through ``ctx.web``; ``None`` in dry-run mode (there is no HTTP
     client) turns every M3 check into a skipped result rather than pretending it looked
     (F-01-10). Steps with no enabled check report themselves skipped.

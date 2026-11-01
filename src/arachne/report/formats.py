@@ -184,7 +184,7 @@ class ReportFormatRegistry:
 
 # --------------------------------------------------------------------------- built-ins
 def _builtin_formats() -> list[ReportFormat]:
-    """The formats docs/spec/06- §4 names; imports are local to avoid an import cycle.
+    """The formats the engine names; imports are local to avoid an import cycle.
 
     ``report/__init__`` imports this module, so a module-level import of the renderers
     would import the package mid-initialisation.
@@ -205,7 +205,7 @@ def _builtin_formats() -> list[ReportFormat]:
             render=render_markdown,
             media_type="text/markdown; charset=utf-8",
             aliases=("markdown",),
-            description="Markdown skeleton of docs/spec/06- §9 (the default).",
+            description="Markdown skeleton (the default).",
         ),
         ReportFormat(
             name="html",

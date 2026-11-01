@@ -1,7 +1,7 @@
-"""Markdown renderer — the default report format (docs/spec/06- §3/§4/§9).
+"""Markdown renderer — the default report format (/§9).
 
 Markdown is the human/Git format, so it is the one that must read like the sample skeleton
-in docs/spec/06- §9 *exactly*: the same numbered sections (executive summary, scope,
+in the report *exactly*: the same numbered sections (executive summary, scope,
 inventory, findings grouped critical→info, low-confidence observations, patch-gap, appendix)
 and the same per-finding block (asset · CVSS · first seen, description, evidence, remediation,
 provenance).
@@ -996,7 +996,7 @@ def _diff_section(report: ReportData) -> list[str]:
 
 
 def _severity_trend(trend: dict[str, dict[str, int]]) -> list[str]:
-    """The F-06-05 trend table: severity counts over the compared scans (docs/spec/06- §7)."""
+    """The F-06-05 trend table: severity counts over the compared scans ."""
     if len(trend) < 2:
         return []
     labels = list(trend)
@@ -1015,7 +1015,7 @@ def _severity_trend(trend: dict[str, dict[str, int]]) -> list[str]:
 
 
 def render_markdown(report: ReportData) -> str:
-    """Render ``report`` as the Markdown skeleton of docs/spec/06- §9."""
+    """Render ``report`` as the Markdown skeleton."""
     cover = report.cover
     brand = report.branding
     lines: list[str] = []

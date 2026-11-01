@@ -1,4 +1,4 @@
-"""The signature system: a Nuclei-compatible template subset (docs/spec/04- §2.2, F-05-02).
+"""The signature system: a Nuclei-compatible template subset (F-05-02).
 
 Templates are the passive half of the engine — they say *what the bytes look like* when a
 known exposure is present, where rules say what a combination of signals means. Two formats
@@ -26,7 +26,7 @@ evidence, and both are restricted to **regex + JSONPath** exactly as F-05-02 req
 Nothing here performs I/O: a template *describes* a request, and
 ``Signature.matches_request(url, method)`` tells the caller whether a request it already
 made (or is about to make) is one the template covers. Running requests is the check layer's
-job, which is what keeps "no network in the rule engine" (docs/spec/04- §2.1) true here too.
+job, which is what keeps "no network in the rule engine" true here too.
 """
 
 from __future__ import annotations
@@ -721,7 +721,7 @@ class SignatureLibrary:
         return tuple(views)
 
     def match(self, candidate: Candidate) -> tuple[SignatureMatch, ...]:
-        """Every signature that matched, in id order (deterministic, docs/spec/04- §4)."""
+        """Every signature that matched, in id order (deterministic)."""
         if not self.signatures:
             return ()
         subjects = self.subjects(candidate)

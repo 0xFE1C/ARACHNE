@@ -19,7 +19,7 @@ shortfalls are recorded below rather than papered over: **G-01 coverage** (ADR-1
 this is a deliberate, recorded shortfall, not an oversight.
 
 Per chapter, after S13 (regenerate with `arachne coverage --write coverage_matrix.md`; the
-committed `code/coverage_matrix.md` is current and a staleness test pins it):
+committed `coverage_matrix.md` is current and a staleness test pins it):
 
 | Chapter | Mapped | Total | % |
 |---|---|---|---|

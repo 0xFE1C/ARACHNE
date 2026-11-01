@@ -1,4 +1,4 @@
-"""False-positive reduction (docs/spec/04- §2.6, F-05-07).
+"""False-positive reduction (F-05-07).
 
 Three mechanisms, three sets of tests: the context filters (a placeholder page is not a
 finding), verification (a second request either reproduces or contradicts), and the tuner

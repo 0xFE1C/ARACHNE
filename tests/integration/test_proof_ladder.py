@@ -1,6 +1,6 @@
 """The proof-ladder demo (S15, gate G1 evidence): a lab target scanned L1→L4, zero residue.
 
-This is the ``VM`` verification of ``docs/04-verification-and-acceptance.md`` §4 — one
+This is the ``VM`` verification of the proof-ladder acceptance clause — one
 scan over the web lab that climbs the whole ladder and proves the safety properties at
 each rung:
 

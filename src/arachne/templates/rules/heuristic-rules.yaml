@@ -1,4 +1,4 @@
-# ARACHNE heuristic rule corpus (docs/spec/04- §2.1, F-05-01).
+# ARACHNE heuristic rule corpus (F-05-01).
 #
 # Managed data, not code (F-09-04): point ARACHNE_ANALYSIS_RULES at another file to replace
 # it. A rule is evaluated by the restricted condition language in
@@ -1087,7 +1087,7 @@ rules:
 
   # ----------------------------------------------------------------- signature bridge
   # A rule may key on a *template* match instead of a byte pattern of its own, which is how
-  # the imported nuclei corpus participates in the heuristic decisions (docs/spec/04- §2.2):
+  # the imported nuclei corpus participates in the heuristic decisions :
   # the signature engine says "this response is an exposed .env", and the rule says how bad
   # that is and what to do about it.
   - id: exposure.matched-signature
@@ -1112,7 +1112,7 @@ rules:
   # ----------------------------------------------------------------- module floors
   # A module baseline is a floor, not a decision: it fires only when no more specific rule
   # did, and it decides nothing beyond "this is at least worth reading" (severity_hint and the
-  # score model still raise it — docs/spec/05- "severity_hint").
+  # score model still raise it — ).
   - id: baseline.m1-recon
     title: "Reconnaissance observation"
     check_ref: ["M1"]

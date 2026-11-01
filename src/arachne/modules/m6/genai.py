@@ -4,8 +4,8 @@ Prompt injection is the fastest-growing web flaw class (HackerOne's 2025 report 
 surge in valid findings), and the surface it lives on — model endpoints, agent tool configs,
 leaked model keys and exposed system prompts — is visible from things a scan already has: the
 shared web crawl and, when the target declares one, a repository clone. This check therefore
-reads *only* those; it never sends an injection payload at a model endpoint (docs/spec/05- M6
-"Safety": nothing M6 does is an active exploitation of the AI itself).
+reads *only* those; it never sends an injection payload at a model endpoint
+("Safety": nothing M6 does is an active exploitation of the AI itself).
 
 Four signals, each a separate artifact so the rules can reason about them:
 

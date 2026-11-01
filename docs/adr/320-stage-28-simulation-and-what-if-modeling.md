@@ -2,7 +2,7 @@
 
 - **Status:** accepted (S28)
 - **Requirements:** REQ-SIM-001...006
-- **Phase/gate:** P7, gate G7 (`docs/03-delivery-plan.md` §9)
+- **Phase/gate:** P7, gate G7 (`historical` spec path `docs/03-delivery-plan.md` §9)
 - **Supersedes:** nothing. **Extends:** ADR-05 (one HTTP egress path — this stage's guarantee is
   the mirror image of it), ADR-190 (attack-path composition, whose composer this stage reuses),
   ADR-160 (continuous exposure management, whose trend this stage feeds), ADR-200 (the proof

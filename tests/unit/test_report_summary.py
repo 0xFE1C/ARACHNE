@@ -1,4 +1,4 @@
-"""Executive-summary synthesis in heuristic mode (docs/spec/06- §3, docs/spec/04- §2.5)."""
+"""Executive-summary synthesis in heuristic mode."""
 
 from __future__ import annotations
 

@@ -2,7 +2,7 @@
 
 Both engines — :class:`~arachne.analyzer.engine.HeuristicEngine` today,
 ``AiEngine`` in S9 — consume the same ``Candidate`` plus a ``ScanContext`` and produce the
-same :class:`Analysis` (docs/spec/04- §5, docs/spec/02- §2.3). The report engine must not be
+same :class:`Analysis`. The report engine must not be
 able to tell which engine ran except through :class:`Provenance`, so everything an engine
 decides lives here as data: severity, confidence, the score breakdown, the narrative, the
 remediation reference, the rule trace and the merged-evidence list.
@@ -10,14 +10,14 @@ remediation reference, the rule trace and the merged-evidence list.
 Three deliberate choices:
 
 * **``Candidate`` is not the store's row.** The analyzer may not import the module layer or
-  the ORM (docs/spec/07- §4 keeps the engine testable and offline), so the caller builds a
+  the ORM (keeps the engine testable and offline), so the caller builds a
   plain value object from whatever the checks step persisted. One adapter
   (``analyzer.handlers``) does that translation, which is also where check metadata
   (``severity_hint``, ``research_ref``, ``verifiable``) is joined in.
 * **Severity is an ordered vocabulary, not a number.** ``critical > high > medium > low >
   info``; the score is a *separate* field so a rule author can say "high" and the report can
   still print "CVSS 7.5". Promotion in the correlation engine is ``raise_severity``.
-* **Confidence is an integer 0-100** (docs/spec/06- §2) even though the rules write it as a
+* **Confidence is an integer 0-100** even though the rules write it as a
   fraction: the two spellings meet exactly once, in :func:`normalize_confidence`.
 """
 
@@ -53,7 +53,7 @@ __all__ = [
     "worst_severity",
 ]
 
-#: The severity vocabulary of docs/spec/06- §1/§2, in ascending order.
+#: The severity vocabulary, in ascending order.
 SEVERITY_ORDER: tuple[str, ...] = ("info", "low", "medium", "high", "critical")
 
 Severity = Literal["critical", "high", "medium", "low", "info"]
@@ -61,11 +61,11 @@ SEVERITIES: frozenset[str] = frozenset(get_args(Severity))
 
 #: ``analyzed`` is a finding the engine stands behind; ``dropped`` is one an FP filter
 #: rejected (verification contradiction, placeholder page) — the row survives so an operator
-#: can see *why* it was not reported (docs/spec/04- §2.6); ``merged`` is one the dedupe pass
-#: folded into another finding with the same root cause (docs/spec/05- dedupe rules).
+#: can see *why* it was not reported; ``merged`` is one the dedupe pass
+#: folded into another finding with the same root cause (dedupe rules).
 Verdict = Literal["analyzed", "dropped", "merged"]
 
-#: Findings below this confidence are "low-confidence observations" (docs/spec/06- §2).
+#: Findings below this confidence are "low-confidence observations" .
 CONFIDENCE_THRESHOLD = 55
 
 
@@ -101,7 +101,7 @@ def clamp_confidence(value: float) -> int:
 def normalize_confidence(value: float) -> int:
     """Accept a rule's ``0..1`` fraction or its ``0..100`` percentage as 0-100.
 
-    Rules in docs/spec/04- §2.1 write ``0.92``; docs/spec/06- §2 reports ``92``. A value
+    Rules write ``0.92``, reports ``92``. A value
     above ``1.0`` can only be a percentage, so the two spellings cannot be confused, and the
     conversion itself is :func:`arachne.core.results.confidence_percent` — one implementation
     shared with the candidate-persisting layer.
@@ -114,7 +114,7 @@ class EvidenceFact:
     """One captured artifact, as the analyzer sees it (redacted already, F-08-04).
 
     ``id`` is the ``evidences`` row id when the caller has one, which is what lets a
-    correlated finding list the evidence it merged (docs/spec/04- §2.3 ``merge_evidence``).
+    correlated finding list the evidence it merged .
     """
 
     kind: str
@@ -190,7 +190,7 @@ class VerificationOutcome:
     """Result of the F-05-07 re-request for one candidate.
 
     ``count`` is the number of successful confirmations *including* the original capture, so
-    ``count >= 2`` means "reproducible" exactly as docs/spec/04- §2.1's
+    ``count >= 2`` means "reproducible" exactly as the
     ``verified_reproducible`` condition reads it.
     """
 
@@ -224,9 +224,9 @@ class FpStats:
 
 @dataclass(frozen=True, slots=True)
 class ScanContext:
-    """Everything the analyzer needs beyond the candidates (docs/spec/02- §2.3).
+    """Everything the analyzer needs beyond the candidates .
 
-    ``asset_criticality`` feeds the OWASP impact term (docs/spec/04- §2.4), ``epss`` is the
+    ``asset_criticality`` feeds the OWASP impact term, ``epss`` is the
     optional exploit-likelihood feed of F-09-03 keyed by CVE, and ``verification``/``fp``
     carry the F-05-07 inputs the check layer produced.
     """
@@ -305,12 +305,12 @@ class ScoreBreakdown:
 
 @dataclass(frozen=True, slots=True)
 class Remediation:
-    """A remediation plan (docs/spec/06- §6): the catalog entry, resolved.
+    """A remediation plan : the catalog entry, resolved.
 
     ``verification`` is the "verification of fix" half of a catalog entry — the steps an
     operator takes to prove the exposure is gone (re-run the check, look for the alert, read
     the deny rule back). It is separate from ``steps`` because "how to fix it" and "how to
-    know you fixed it" are different instructions, and docs/spec/06- §6 requires both.
+    know you fixed it" are different instructions, and the report requires both.
     """
 
     id: str
@@ -335,7 +335,7 @@ class Remediation:
 class Provenance:
     """Which engine produced an analysis, and on what evidence of its own (F-03-05).
 
-    ``provider`` and ``fallback`` are the AI layer's two extra facts (S9, docs/spec/03- §7):
+    ``provider`` and ``fallback`` are the AI layer's two extra facts (S9):
 
     * ``provider`` names the adapter that answered (``ollama``, ``openai_compatible``, ...);
     * ``fallback`` records the degradation chain. ``None`` means "everything configured ran".
@@ -369,7 +369,7 @@ class Provenance:
 
 @dataclass(frozen=True, slots=True)
 class Analysis:
-    """The result of analysing one candidate (docs/spec/04- §5 ``Analysis``)."""
+    """The result of analysing one candidate ."""
 
     title: str
     severity: str
@@ -385,14 +385,14 @@ class Analysis:
     verdict: Verdict = "analyzed"
     drop_reason: str | None = None
     #: True when a ``verifiable`` candidate was re-requested and reproduced — which is what
-    #: moves a finding to ``verified`` status (F-05-07, docs/spec/06- §2).
+    #: moves a finding to ``verified`` status (F-05-07).
     verified: bool = False
     #: Set on a ``merged`` analysis: the finding id that now represents this root cause.
     merged_into: int | None = None
     score: ScoreBreakdown = field(default_factory=ScoreBreakdown)
     provenance: Provenance = field(default_factory=Provenance)
     rule_trace: tuple[RuleTraceEntry, ...] = ()
-    #: Finding ids this analysis subsumes (correlation/dedupe, docs/spec/04- §2.3).
+    #: Finding ids this analysis subsumes (correlation/dedupe).
     contributors: tuple[int, ...] = ()
     #: Evidence ids merged from contributors, so the report can render one evidence list.
     merged_evidence_refs: tuple[int, ...] = ()
@@ -403,7 +403,7 @@ class Analysis:
     #: The AI stages' structured outputs, keyed by stage (``triage``, ``explain``,
     #: ``remediate``, ``narrative``), plus ``policy``/``fallback``/``deviation``. Empty for the
     #: heuristic engine, which is what keeps the two engines' payloads distinguishable only
-    #: through provenance and this field (docs/spec/04- §5).
+    #: through provenance and this field .
     ai: Mapping[str, Any] = field(default_factory=dict)
 
     @property
@@ -413,7 +413,7 @@ class Analysis:
 
     @property
     def status(self) -> str:
-        """The ``findings.status`` this analysis implies (F-05-07, docs/spec/06- §1)."""
+        """The ``findings.status`` this analysis implies (F-05-07)."""
         if self.verdict == "dropped":
             return "fp"
         if self.verdict == "merged":
@@ -460,7 +460,7 @@ def confidence_reasons(
 
 @dataclass(frozen=True, slots=True)
 class ConfidenceBreakdown:
-    """A confidence value and every term that produced it (docs/spec/04- §2.4/§2.6)."""
+    """A confidence value and every term that produced it ."""
 
     base: int
     adjustments: tuple[tuple[str, int], ...] = ()

@@ -17,7 +17,7 @@ platform itself returns*:
     ``/_cluster/health``, ``/app/kibana``, ``/api/status``) with product JSON/HTML (ch05#21).
 
 Every check is GET-only: no write, no credential, no account call. A 401/403 on a probe is
-the *hardened* answer and is never reported (docs/spec/05- M5 "Safety").
+the *hardened* answer and is never reported .
 """
 
 from __future__ import annotations

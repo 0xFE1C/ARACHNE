@@ -1,11 +1,11 @@
-"""Report engine and renderers (docs/spec/06-, F-06-*).
+"""Report engine and renderers (F-06-*).
 
 The pipeline is three steps and one contract:
 
 1. :mod:`arachne.report.builder` reads the evidence store and produces the immutable
-   :class:`~arachne.report.model.ReportData` DTO (the finding schema of docs/spec/06- §1).
+   :class:`~arachne.report.model.ReportData` DTO (the finding schema).
 2. :mod:`arachne.report.summary` writes the executive summary from that DTO in heuristic
-   mode (docs/spec/06- §3 section 2, docs/spec/04- §2.5).
+   mode.
 3. A renderer formats the *same* DTO. Formats live in :mod:`arachne.report.formats`: the
    built-ins are Markdown (default), HTML, JSON and PDF, and a third-party package can add
    one through the ``arachne.report_formats`` entry-point group without a core change

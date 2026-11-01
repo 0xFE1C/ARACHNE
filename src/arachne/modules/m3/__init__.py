@@ -1,12 +1,12 @@
-"""M3 · Web Application (docs/spec/05- M3, research ch. 03).
+"""M3 · Web Application .
 
 M3 tests web endpoints for the vulnerability families of the corpus using the
 **differential-oracle methodology**: it confirms that a class is present by measuring a
-difference a benign probe caused, and never exploits the condition it found. The twelve checks
-of this stage are the *core* set of the roadmap's Phase 1; the remaining M3 families
+difference a benign probe caused, and never exploits the condition it found. The checks
+of this stage are the *core* set of the roadmap's Phase 1 plus the extended M3 families
 (NoSQL/SSTI/XXE/command injection/deserialization/LFI/header injection/smuggling/cache/JWT/
 OAuth/SAML/HPP/mass-assignment/prototype-pollution/race/business-logic/GraphQL/WebSocket/
-subdomain-takeover) arrive in S10.
+subdomain-takeover).
 
 ======================================  ==========  ==========================================
 check                                    ref         what it establishes
@@ -28,8 +28,9 @@ check                                    ref         what it establishes
 ======================================  ==========  ==========================================
 
 **The numbering deviation** S3 recorded for M1 and S4 for M2 applies again: ``research_ref``
-values are the canonical method numbers in ``docs/research/03-`` (the universe the G-01
-coverage matrix counts), while the check **ids** are exactly docs/spec/05-'s. See ADR-100.3.
+values are the canonical method numbers in ``docs/research/03-web-application-testing.md``
+(the universe the G-01 coverage matrix counts), while the check **ids** are the corpus's.
+See ADR-100.3.
 
 **Safety.** The active checks (everything except ``security-headers``, ``csrf-audit`` and
 ``api-surface``) need ``--active-checks`` *and* an attestation that authorizes active checks
@@ -37,7 +38,7 @@ coverage matrix counts), while the check **ids** are exactly docs/spec/05-'s. Se
 reflection markers, a reserved non-resolving redirect host, ``1=1``/``1=2`` predicate pairs);
 nothing is stored or exploited; the traversal marker set is world-readable and non-secret; and
 ``upload-audit`` stores its single inert marker only when ``ARACHNE_WEB_UPLOAD_PROBE`` is set,
-because docs/spec/05- M3 forbids stored payloads by default. Every request goes through the
+because the M3 safety rules forbid stored payloads by default. Every request goes through the
 shared scoped, rate-limited, redacted, audited client (ADR-05).
 
 **Credentialed scanning** (S19, area CREDS, REQ-CREDS-001). When a scan names a credential
@@ -173,7 +174,7 @@ M3_CHECKS: tuple[type[Module], ...] = (
     ClientSecretVerify,
 )
 
-#: The M3 module group (docs/spec/02- §2.2). Bump the version when the check set or a check's
+#: The M3 module group . Bump the version when the check set or a check's
 #: behaviour changes: scan reports record it (F-02-10).
 M3 = ModuleGroup(
     id="M3",

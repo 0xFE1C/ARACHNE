@@ -1,4 +1,4 @@
-# Correlation rules (docs/spec/04- §2.3, F-05-03) and the dedupe policy (docs/spec/05-).
+# Correlation rules (F-05-03) and the dedupe policy .
 #
 # A correlation rule names weak signals that are individually unremarkable and jointly a
 # story. Findings are grouped (`group_by`: asset, host, asset_kind, module) and when at least
@@ -16,14 +16,14 @@ version: "1.0"
 
 dedupe:
   enabled: true
-  # Findings sharing a root cause are merged by CWE + asset (docs/spec/05- dedupe rules).
+  # Findings sharing a root cause are merged by CWE + asset (dedupe rules).
   # The owner is the most specific module that reported it; the others attach as contributors.
   key: cwe_asset
   owner_preference: [M4, M3, M6, M5, M2, M1]
   min_severity: info
 
 rules:
-  # The spec's own example (docs/spec/04- §2.3): an exposed administrative surface that is also
+  # The spec's own example : an exposed administrative surface that is also
   # missing the hardening that would contain a compromise.
   - id: correlation.unhardened-admin-surface
     title: "Unhardened administrative surface with permissive cross-origin policy"

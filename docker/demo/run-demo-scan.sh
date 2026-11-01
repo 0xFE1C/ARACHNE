@@ -3,7 +3,7 @@
 #
 # Runs the real orchestrator in heuristic mode against the bundled offline target: the
 # target's own responses and every third-party OSINT answer come from recordings mounted at
-# /app/demo, so this works on a host with no outbound network (docs/spec/07- §9.1). Then it
+# /app/demo, so this works on a host with no outbound network . Then it
 # renders the Markdown and HTML reports to the `reports` volume.
 #
 # The scan id is read from `arachne scan --json` (stdout is JSON; logs go to stderr).

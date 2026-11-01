@@ -1,6 +1,6 @@
 """Error model for ARACHNE.
 
-Errors are data (``docs/spec/07-`` §4): a failing check yields
+Errors are data (```` §4): a failing check yields
 ``CheckResult(status="error")`` rather than crashing the scan (F-02-08 note). Every
 exception that can cross a module boundary is therefore a subclass of
 :class:`ArachneError`, and :func:`error_info` turns any exception into a bounded,
@@ -116,7 +116,7 @@ class NetProbeError(ArachneError):
     The non-HTTP counterpart of :class:`RequestError`: M2's probes go through
     :class:`~arachne.core.net.ScopedNetClient`, and a refused, timed-out or reset
     connection is data about the target, not a crash. A check turns this into a
-    ``status="error"`` result (docs/spec/07- §4).
+    ``status="error"`` result .
     """
 
     category = ErrorCategory.TRANSPORT
@@ -131,7 +131,7 @@ class OsintError(ArachneError):
 
     Raised by the provider layer (``arachne.modules.providers``). A check turns it into a
     ``status="error"`` result, so an unreachable index degrades one check instead of the
-    whole scan (docs/spec/07- §4).
+    whole scan .
     """
 
     category = ErrorCategory.TRANSPORT

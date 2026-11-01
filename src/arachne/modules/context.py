@@ -1,4 +1,4 @@
-"""What a check is given: :class:`CheckContext` (docs/spec/02- §5, F-02-01).
+"""What a check is given: :class:`CheckContext` (F-02-01).
 
 A check receives **one** context and nothing else. It names exactly four capabilities:
 
@@ -94,7 +94,7 @@ def require_osint(
 
 @dataclass(frozen=True, slots=True)
 class ModuleConfig:
-    """The configuration a check may read (docs/spec/02- §5 ``config``).
+    """The configuration a check may read .
 
     Deliberately a frozen value object built once per run from :class:`Settings`, so a
     check cannot mutate the scan's configuration, and so tests can construct the exact
@@ -265,7 +265,7 @@ class ModuleConfig:
 
 @dataclass
 class CheckContext:
-    """Everything one check may use for one asset (docs/spec/02- §5)."""
+    """Everything one check may use for one asset ."""
 
     step: StepContext
     module: Module

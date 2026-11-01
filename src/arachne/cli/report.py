@@ -3,8 +3,7 @@
 One command, three jobs:
 
 ``arachne report --scan ID``
-    print the complete Markdown report (the default format, the one docs/spec/06- §9
-    specifies) to stdout.
+    print the complete Markdown report (the default format) to stdout.
 ``--format json``
     print the machine-readable document, whose schema is versioned and shipped
     (``REPORT_SCHEMA_VERSION``).

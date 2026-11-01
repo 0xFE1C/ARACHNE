@@ -1,4 +1,4 @@
-{#- Slack summary card for a finished scan (F-06-06, docs/spec/06- §8).
+{#- Slack summary card for a finished scan (F-06-06).
     Rendered to text; the caller wraps it in {"text": ...}. Plain text with Slack's
     mrkdwn subset: *bold*, no HTML. -#}
 {{ ":rotating_light:" if counts.critical else (":warning:" if counts.high else ":white_check_mark:") }} *ARACHNE scan {{ scan_id }} completed* — {{ target }}

@@ -10,7 +10,7 @@ and it is what the parity test exercises.
 
 **Degradation.** A failed or unavailable AI stage never empties the proposal set: the reasoner
 falls back to the heuristic engine and records ``fallback="heuristic_fallback:…"`` on the
-proposal, mirroring the analyzer's ``Provenance.fallback`` (docs/spec/03- §7). The failure's
+proposal, mirroring the analyzer's ``Provenance.fallback`` . The failure's
 *reason* travels with it, so an operator can tell "the provider was down" from "the model
 answered something unusable".
 

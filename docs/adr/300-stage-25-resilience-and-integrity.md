@@ -2,7 +2,7 @@
 
 - **Status:** accepted (S25)
 - **Requirements:** REQ-RESIL-001…006, REQ-TRUST-005/006/007
-- **Phase/gate:** P6, gate G6 (`docs/03-delivery-plan.md` §8)
+- **Phase/gate:** P6, gate G6 (`historical` spec path `docs/03-delivery-plan.md` §8)
 - **Supersedes:** nothing. **Extends:** ADR-210 (the queue is the broker), ADR-250 (evidence
   storage, retention), ADR-290 (the nonce seam), ADR-05 (one egress path).
 

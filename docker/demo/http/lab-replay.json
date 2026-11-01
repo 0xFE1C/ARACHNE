@@ -1,5 +1,5 @@
 {
-  "description": "Recorded responses for the M1 recon demonstration (docs/spec/07- §6). Used by ARACHNE_HTTP_FIXTURES (the target client) and by the M1 integration tests. The bodies are synthetic: they mimic the shape of the real providers without containing anyone's data.",
+  "description": "Recorded responses for the M1 recon demonstration . Used by ARACHNE_HTTP_FIXTURES (the target client) and by the M1 integration tests. The bodies are synthetic: they mimic the shape of the real providers without containing anyone's data.",
   "responses": [
     {
       "method": "GET",

@@ -1,4 +1,4 @@
-"""The CWE → OWASP Top-10 map for the report's classification block (docs/spec/06- §1).
+"""The CWE → OWASP Top-10 map for the report's classification block .
 
 The spec's finding schema has an ``owasp_2025`` category beside the CWE. ARACHNE's scoring
 model already computes an OWASP-style *risk* (likelihood x impact), but a Top-10 category

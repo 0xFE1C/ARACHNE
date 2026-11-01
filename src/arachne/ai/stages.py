@@ -1,4 +1,4 @@
-"""The six AI analysis stages of docs/spec/03- §4, as data plus input builders.
+"""The six AI analysis stages of as data plus input builders.
 
 Each stage is three things and nothing more: a **name**, a **pydantic output model** (which is
 also its JSON schema, via :mod:`arachne.ai.structured`) and a **builder** that turns analyzer
@@ -62,7 +62,7 @@ __all__ = [
     "schema_for",
 ]
 
-#: The stage vocabulary (docs/spec/03- §4), in pipeline order.
+#: The stage vocabulary, in pipeline order.
 STAGES: Final[tuple[str, ...]] = (
     "triage",
     "explain",
@@ -88,7 +88,7 @@ _SEVERITY_ENUM: Final[dict[str, Any]] = {"enum": list(SEVERITY_ORDER)}
 
 
 class TriageOutput(BaseModel):
-    """``triage`` — the verdict a model proposes for one candidate (docs/spec/03- §4/§9).
+    """``triage`` — the verdict a model proposes for one candidate .
 
     Every field the merge reads is **required**: a model that leaves the severity out has not
     answered, and a missing field must fail validation (and be repaired) rather than
@@ -113,7 +113,7 @@ class TriageOutput(BaseModel):
 
 
 class ExplainOutput(BaseModel):
-    """``explain`` — a condensed reading of a long capture (docs/spec/03- §4)."""
+    """``explain`` — a condensed reading of a long capture ."""
 
     model_config = _MODEL
 
@@ -122,7 +122,7 @@ class ExplainOutput(BaseModel):
 
 
 class RemediateOutput(BaseModel):
-    """``remediate`` — numbered, copy-ready steps (docs/spec/03- §4, 06- §6)."""
+    """``remediate`` — numbered, copy-ready steps (06- §6)."""
 
     model_config = _MODEL
 
@@ -132,7 +132,7 @@ class RemediateOutput(BaseModel):
 
 
 class NarrativeOutput(BaseModel):
-    """``narrative`` — the per-finding prose for the report (docs/spec/03- §4)."""
+    """``narrative`` — the per-finding prose for the report ."""
 
     model_config = _MODEL
 
@@ -141,7 +141,7 @@ class NarrativeOutput(BaseModel):
 
 
 class CorrelateOutput(BaseModel):
-    """``correlate`` — how a group of candidates compounds (docs/spec/03- §4)."""
+    """``correlate`` — how a group of candidates compounds ."""
 
     model_config = _MODEL
 
@@ -162,7 +162,7 @@ class CorrelateOutput(BaseModel):
 
 
 class PrioritizeOutput(BaseModel):
-    """``prioritize`` — a recommended fix order with rationale (docs/spec/03- §4)."""
+    """``prioritize`` — a recommended fix order with rationale ."""
 
     model_config = _MODEL
 
@@ -225,7 +225,7 @@ class StageInput:
     """The two prompt payloads of one stage call, before privacy is applied.
 
     ``context`` is trusted (our own analysis), ``target_data`` is everything the scan observed
-    at the target (docs/spec/03- §5). Keeping them separate here is what lets the engine apply
+    at the target . Keeping them separate here is what lets the engine apply
     the privacy mode to each with one rule: context is tokenized too, because it embeds the
     asset value.
     """

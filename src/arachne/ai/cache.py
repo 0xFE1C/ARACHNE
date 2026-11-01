@@ -1,4 +1,4 @@
-"""The per-project analysis cache (docs/spec/03- §7, F-04-07).
+"""The per-project analysis cache (F-04-07).
 
 "Identical analysis requests hit the cache; the cache is per-project, bounded, and excluded
 from cost accounting." The key is the hash of everything that can change the answer — the
@@ -39,7 +39,7 @@ def cache_key(
     model: str,
     prompt: str,
 ) -> str:
-    """The stable identity of one analysis request (docs/spec/03- §7)."""
+    """The stable identity of one analysis request ."""
     digest = hashlib.sha256()
     for part in (CACHE_KEY_VERSION, stage, template_version, model, prompt):
         digest.update(part.encode("utf-8"))

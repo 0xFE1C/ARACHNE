@@ -1,4 +1,4 @@
-"""The heuristic engine end to end (docs/spec/04-, F-03-01, F-05-01..07).
+"""The heuristic engine end to end (F-03-01, F-05-01..07).
 
 These are the tests that state the contract: a candidate goes in, an ``Analysis`` with a
 severity, a confidence, a CWE, a narrative and a remediation comes out — deterministically,
@@ -293,7 +293,7 @@ def test_engine_selection_is_explicit() -> None:
 
 
 def test_hybrid_prefers_the_ai_engine_when_one_is_configured() -> None:
-    """docs/spec/04- §4: hybrid is heuristics + AI when AI is configured, heuristics alone else."""
+    """: hybrid is heuristics + AI when AI is configured, heuristics alone else."""
     stub = _StubEngine("ai")
     heuristic = HeuristicEngine()
     assert select_engine("hybrid", heuristic=heuristic, ai=stub) is stub

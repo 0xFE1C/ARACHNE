@@ -6,7 +6,7 @@ bind a non-loopback address without a certificate (``ARACHNE_API_TLS_CERT`` /
 "TLS by default" requirement applied where the socket is actually opened.
 
 The API is imported lazily so an ordinary ``arachne scan`` never loads the ASGI stack — the
-scanner does not depend on its interface (docs/spec/02- §1).
+scanner does not depend on its interface .
 """
 
 from __future__ import annotations

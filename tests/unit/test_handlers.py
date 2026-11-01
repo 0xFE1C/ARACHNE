@@ -4,7 +4,7 @@
 guarantees rather than about any one check:
 
 * selection honours the scan's module choices and the two active-check switches (F-02-09);
-* a check that raises becomes one ``error`` result and the step continues (docs/spec/07- §4);
+* a check that raises becomes one ``error`` result and the step continues;
 * a candidate is persisted with its evidence and announced as an event, and an ``info``
   result is not persisted as a finding (ADR-02);
 * the step's statistics describe exactly what happened, because that is what a resume and an

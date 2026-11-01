@@ -1,4 +1,4 @@
-"""Google Gemini ``generateContent`` adapter (docs/spec/03- §3).
+"""Google Gemini ``generateContent`` adapter .
 
 The shape is Google's: ``contents[].parts[].text`` in, ``candidates[].content.parts[].text``
 out, with the system prompt in ``systemInstruction`` and the structured-output request in

@@ -1,4 +1,4 @@
-"""The nine M6 checks, driven against purpose-built fixtures (S11, docs/spec/05- M6).
+"""The M6 checks, driven against purpose-built fixtures (S11).
 
 Each check is run directly, the way the checks step would, over the asset kind it accepts:
 a local web root or repository for the artifact checks, a live lab origin for the served half

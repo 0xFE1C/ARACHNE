@@ -1,4 +1,4 @@
-"""The scoring and confidence model (docs/spec/04- §2.4/§2.6, F-05-04/F-05-06).
+"""The scoring and confidence model (F-05-04/F-05-06).
 
 Three scores, one severity:
 
@@ -20,8 +20,8 @@ The final ``severity`` is the rule author's verdict when a rule fired (F-05-01 �
 *is* the decision), and the banded score otherwise. Either way the score is reported, so a
 report can print both and a reader can see a disagreement.
 
-Confidence (0-100, docs/spec/06- §2) is additive and auditable: a base term plus the
-evidence-quality and FP-heuristic terms of docs/spec/04- §2.4/§2.6, each named in
+Confidence (0-100) is additive and auditable: a base term plus the
+evidence-quality and FP-heuristic terms of each named in
 :class:`~arachne.analyzer.model.ConfidenceBreakdown` so a report can explain the number.
 """
 
@@ -65,7 +65,7 @@ __all__ = [
 #: Where the derived-vector table ships inside the package.
 DEFAULT_VECTOR_RESOURCE: Final = ("scoring", "cvss-vectors.yaml")
 
-#: Score → severity boundaries (docs/spec/04- §2.4, docs/spec/06- §2).
+#: Score → severity boundaries.
 _SCORE_BANDS: Final[tuple[tuple[float, str], ...]] = (
     (9.0, "critical"),
     (7.0, "high"),
@@ -338,7 +338,7 @@ class ScoringModel:
         contradicted: bool = False,
         fp_penalty: bool = False,
     ) -> float:
-        """Evidence-quality likelihood on the OWASP 0-9 scale (docs/spec/04- §2.4).
+        """Evidence-quality likelihood on the OWASP 0-9 scale .
 
         Read as "how likely is this finding to be exploitable as described": a captured
         request *and* response, a second confirming observation, and a definite (rather than

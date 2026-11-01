@@ -12,7 +12,7 @@ signature so a rotation is visible in the artifact and a verifier can name the k
 refused (``v1:<key id>:<hex>``).
 
 Why symmetric and not a public-key scheme: this runtime stack is deliberately
-dependency-free (docs/spec/07- §2 — no ``cryptography``), and a stdlib RSA *private-key*
+dependency-free (— no ``cryptography``), and a stdlib RSA *private-key*
 operation would mean hand-rolling ASN.1 DER parsing in the signing path, where a mistake
 is silent. The verifier role (the operator running ``arachne verify-chain``) is the same
 party that holds the key, so an HMAC is the honest primitive here. The trade-off — an

@@ -1,8 +1,8 @@
-"""The restricted condition language the rule engine evaluates (docs/spec/04- §2.1, F-08-06).
+"""The restricted condition language the rule engine evaluates (F-08-06).
 
 Rule bodies are *data*: an operator edits a YAML file, not the scanner. That makes rule
 evaluation a security boundary — the expression text is parsed here and interpreted by a
-hand-written evaluator, and **``eval``/``exec`` never appear** (docs/spec/07- §5, F-08-06;
+hand-written evaluator, and **``eval``/``exec`` never appear** (F-08-06;
 ``tests/unit/test_no_eval_exec.py`` keeps the whole tree free of them). The grammar is
 deliberately tiny:
 
@@ -22,7 +22,7 @@ Paths address the *fact space* (:func:`build_facts`): ``evidence.http_response.b
 several values (three ``artifact`` evidence rows, say) compares with **any** semantics, and a
 path that resolves to nothing makes every comparison false, so a rule can never fire on a
 fact the candidate does not have. A few bare names are aliases, so a rule can read like
-docs/spec/04- §2.1's example (``http_status == 200``).
+ (``http_status == 200``).
 
 Rule-local condition names (``conditions:`` in the YAML) resolve first, which is what lets
 one named condition be reused by both ``severity_if`` and ``confidence``.
@@ -371,7 +371,7 @@ def parse_expression(text: str) -> ParsedExpression:
 
 # --------------------------------------------------------------------------- fact space
 
-#: Bare names docs/spec/04- §2.1 writes in its examples, mapped onto the fact they mean.
+#: Bare names the examples use, mapped onto the fact they mean.
 ALIASES: Final[dict[str, str]] = {
     "http_status": "evidence.http_response.status_code",
     "http_body": "evidence.http_response.body",
@@ -394,7 +394,7 @@ ALIASES: Final[dict[str, str]] = {
     "severity_hint": "check.severity_hint",
     "evidence_count": "analysis.evidence_count",
     "evidence_kinds": "analysis.evidence_kinds",
-    # docs/spec/04- §2.1's own example writes ``evidence.http_status`` and
+    # The check writes ``evidence.http_status`` and
     # ``evidence.verification_count``; both are facts under an evidence-ish spelling, so a
     # corpus can keep the spec's wording.
     "evidence.http_status": "evidence.http_response.status_code",
@@ -652,7 +652,7 @@ def build_facts(
     analysis-level inputs the engine already computed (asset criticality, the verification
     outcome, matched signature ids). Everything here is derived from the candidate's own
     evidence, so two runs over the same candidate produce the same facts — which is what
-    makes the whole engine deterministic (docs/spec/04- §4).
+    makes the whole engine deterministic .
     """
     from arachne.analyzer.model import Candidate, VerificationOutcome
 

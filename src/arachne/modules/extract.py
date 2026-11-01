@@ -4,7 +4,7 @@ Checks need to pull *structured* facts out of target-controlled text: secrets, e
 email addresses, sensitive paths, script URLs. Every helper here is a bounded regular
 expression or a bounded string scan — never an interpreter — and every one returns at most
 ``limit`` items, so a hostile body cannot turn a check into a denial-of-service against the
-scanner (docs/spec/07- §4; the linear-time discipline of the redaction patterns applies
+scanner (the linear-time discipline of the redaction patterns applies
 here too).
 
 Secrets are matched with the *same* pattern table the redactor uses
@@ -52,7 +52,7 @@ _SCRIPT_SRC_RE = re.compile(
 #: Values that look like a version identifier, used to name assets found in markup.
 _META_URL_RE = re.compile(r"""<meta[^>]{0,300}?content=["']([^"']{1,2048})["']""", re.IGNORECASE)
 
-#: Path fragments that make an archived or harvested URL worth flagging (docs/spec/05- M1:
+#: Path fragments that make an archived or harvested URL worth flagging (:
 #: "diff results into asset/exposure ledger"). Deliberately short and specific: a long list
 #: turns into a false-positive generator, and analysis (not the check) is where judgement
 #: belongs (ADR-02).

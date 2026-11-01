@@ -118,7 +118,7 @@ provisioning feed.
 
 1. Add `provisioned_principals` (one migration; no change to `service_accounts`,
    `auth_sessions`, `scans` or `audit_log`).
-2. Add `/api/v1/scim/v2` routes in an `api/scim_routes.py`; reuse `CredentialStore` and
+2. Add `/api/v1/scim/v2` routes in a new `scim_routes` module; reuse `CredentialStore` and
    `SsoSettings.role_for` unchanged.
 3. Make the login path prefer a provisioned principal's stored groups over fresh claims
    only if a deployment opts in (`ARACHNE_SCIM_AUTHORITATIVE=true`); otherwise claims win

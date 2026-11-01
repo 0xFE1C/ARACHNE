@@ -1,4 +1,4 @@
-"""Anthropic Messages API adapter (docs/spec/03- §3).
+"""Anthropic Messages API adapter .
 
 Three differences from the OpenAI shape matter, and each is encoded here rather than papered
 over:

@@ -65,7 +65,7 @@ class ScanStep(StrEnum):
 
 
 #: F-01-03's pipeline, in order. The optional verification and diff stages of the
-#: lifecycle diagram (docs/spec/02- §3) belong to later phases and are not steps here.
+#: lifecycle diagram belong to later phases and are not steps here.
 #: ``HYPOTHESIS`` (S21) is deliberately absent — it is opt-in per scan, see the enum.
 DEFAULT_PIPELINE: Final[tuple[ScanStep, ...]] = (
     ScanStep.RECON,
@@ -96,7 +96,7 @@ def pipeline_with_hypotheses(pipeline: Sequence[ScanStep]) -> tuple[ScanStep, ..
     ordered.insert(position, ScanStep.HYPOTHESIS)
     return tuple(ordered)
 
-#: Which pipeline step a module's checks belong to (docs/spec/02- §3 "Discover"/"Detect").
+#: Which pipeline step a module's checks belong to (/"Detect").
 MODULE_STEP: Final[dict[str, ScanStep]] = {
     "M1": ScanStep.RECON,
     "M2": ScanStep.DISCOVERY,

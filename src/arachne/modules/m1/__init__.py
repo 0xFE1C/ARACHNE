@@ -1,8 +1,8 @@
-"""M1 · Recon & Attack Surface (docs/spec/05- M1, research ch. 01).
+"""M1 · Recon & Attack Surface .
 
 M1 maps the target's surface from third-party and read-only sources *before* any active
-contact, and feeds the asset inventory the other modules attach to. Its sixteen checks are
-the ones docs/spec/05- lists for this stage plus the three S18 intel checks (each strictly
+contact, and feeds the asset inventory the other modules attach to. Its checks are
+the ones listed for this stage plus the three S18 intel checks (each strictly
 opt-in, because each one asks somebody else's service about the target):
 
 ======================================  ==========  =====================================
@@ -26,7 +26,7 @@ check                                    ref         what it does
 ``m1.breach-exposure``                   ch01#18     HIBP breach summary (opt-in, keyed)
 ======================================  ==========  =====================================
 
-A note on the ``research_ref`` values: docs/spec/05-'s M1 table lists a reference number per
+A note on the ``research_ref`` values: the M1 table lists a reference number per
 check, and several of those numbers are off by one or two against the method numbering in
 ``docs/research/01-reconnaissance-and-osint.md`` (its ``ch01#7`` is FOFA, while CT log
 mining is method 8, and so on). The reference stored here is the **canonical method number in
@@ -62,7 +62,7 @@ from arachne.modules.registry import ModuleGroup
 
 __all__ = ["M1", "M1_CHECKS"]
 
-#: Every M1 check class, in the order docs/spec/05- lists the module.
+#: Every M1 check class, in the order the module lists them.
 M1_CHECKS: tuple[type[Module], ...] = (
     DorkSweep,
     CodeSecretMining,
@@ -85,7 +85,7 @@ M1_CHECKS: tuple[type[Module], ...] = (
     MobileArtifactScan,
 )
 
-#: The M1 module group (docs/spec/02- §2.2). Its version is the module's own: bump it when
+#: The M1 module group . Its version is the module's own: bump it when
 #: the set of checks or their behaviour changes, and the scan report records it (F-02-10).
 M1 = ModuleGroup(
     id="M1",

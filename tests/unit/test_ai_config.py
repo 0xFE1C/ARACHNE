@@ -1,4 +1,4 @@
-"""Provider configuration: docs/spec/03- §3's file, credentials from the environment (F-04-02)."""
+"""Provider configuration: credentials from the environment (F-04-02)."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from arachne.core.errors import ConfigurationError
 
 
 def test_the_shipped_adapters_are_exactly_the_specs_table() -> None:
-    """docs/spec/03- §3 lists seven adapters; the registry must implement exactly those."""
+    """ lists seven adapters; the registry must implement exactly those."""
     assert set(ADAPTERS) == {
         "openai",
         "openai_compatible",
@@ -49,7 +49,7 @@ def test_nothing_configured_means_no_ai() -> None:
 
 
 def test_the_spec_example_config_loads(tmp_path: Path) -> None:
-    """The YAML of docs/spec/03- §3, verbatim in shape, resolves with env-only credentials."""
+    """The YAML of verbatim in shape, resolves with env-only credentials."""
     path = tmp_path / "ai.yaml"
     path.write_text(
         """
@@ -161,7 +161,7 @@ def test_base_url_must_be_http() -> None:
 
 
 def test_the_environment_can_configure_a_local_provider_alone() -> None:
-    """A local demo needs no config file: three variables are enough (docs/spec/03- §3)."""
+    """A local demo needs no config file: three variables are enough ."""
     env = {
         "ARACHNE_AI_PROVIDER": "ollama",
         "ARACHNE_AI_BASE_URL": "http://localhost:11434",

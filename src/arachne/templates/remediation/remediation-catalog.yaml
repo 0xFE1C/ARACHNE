@@ -1,4 +1,4 @@
-# Remediation catalog (docs/spec/04- §2.6, docs/spec/06- §6, F-06-04).
+# Remediation catalog (F-06-04).
 #
 # Looked up in this order: the rule's `remediation:` reference, the entry naming the check that
 # fired, the entry for the finding's CWE, then `default`. Managed data (F-09-04): point

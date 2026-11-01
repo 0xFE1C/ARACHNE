@@ -608,8 +608,8 @@ def _backup_candidates(ctx: CheckContext) -> tuple[str, ...]:
 
     The iteration order is deliberate: the first ``max_paths`` entries must cover the
     interesting names *and* the backup directories, not exhaust the root directory first.
-    A ``db.sql`` candidate is therefore tried as ``db.sql``, ``backup/db.sql``,
-    ``db/db.sql`` … before the second name is considered.
+    A ``db.sql`` candidate is therefore tried as ``db.sql``, ``/backup/db.sql``,
+    ``/db/db.sql`` … before the second name is considered.
     """
     corpus = corpus_for(ctx)
     extensions = corpus.backup_extensions()

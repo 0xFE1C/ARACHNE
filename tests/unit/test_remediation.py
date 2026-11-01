@@ -1,4 +1,4 @@
-"""The remediation catalog (docs/spec/04- §2.6, docs/spec/06- §6, F-06-04).
+"""The remediation catalog (F-06-04).
 
 Lookup order is the contract: the rule's reference wins, then the check, then the CWE, then
 the catalog default, then the built-in fallback. A finding must never come out of the

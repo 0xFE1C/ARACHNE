@@ -1,10 +1,10 @@
-"""Safety suite (docs/spec/07- §6): the properties that must never regress.
+"""Safety suite : the properties that must never regress.
 
 1. **Redaction is applied at capture time** (F-08-01, F-08-04) — a secret a target returns
    in a body, a header, or a redirect URL is already gone from the evidence object, the
    audit record, and the log line, so no later stage can leak it.
 2. **Rate limits hold** (F-01-07) — per-host and global token buckets, including across
-   retries, which must not be a way to bypass the budget (docs/spec/07- §5).
+   retries, which must not be a way to bypass the budget .
 3. **Private-IP URLs are blocked** (F-08-03) — a literal private address, a DNS name that
    resolves to one, and a redirect pointing at one are all refused before any request is
    sent, and the refusal is audited (F-01-08).
@@ -121,7 +121,7 @@ def test_redaction_applied_to_log_output() -> None:
     secret form (prefixed keys, assignments, JWTs, credentialed URLs, PEM blocks) is
     scrubbed on both the message and the extra fields. A bare high-entropy string with no
     recognisable form is not detectable — which is why the rule is "never log secrets in
-    the first place" (see the S1 gotchas in STATE.md).
+    the first place" (the S1 gotchas).
     """
     stream = StringIO()
     configure_logging("INFO", json_output=True, stream=stream)
@@ -185,7 +185,7 @@ async def test_global_rate_limit_spreads_requests_across_hosts(make_client, fake
 
 
 async def test_retries_do_not_bypass_rate_limits(make_client, fake_clock) -> None:
-    """Each retry re-acquires tokens (docs/spec/07- §5)."""
+    """Each retry re-acquires tokens ."""
     calls = {"n": 0}
 
     def flaky(request: httpx.Request) -> httpx.Response:
@@ -1055,7 +1055,7 @@ async def _enqueue_on_node(tmp_path: Any, request: Any, *, name: str) -> tuple[A
 
 
 def _with_overrides(settings: Any, **overrides: Any) -> Any:
-    """Rebuild a frozen Settings with replaced sub-settings (tests/helpers/api pattern)."""
+    """Rebuild a frozen Settings with replaced sub-settings (the helpers/api.py pattern)."""
     from dataclasses import fields
 
     return settings.__class__(

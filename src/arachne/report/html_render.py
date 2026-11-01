@@ -5,7 +5,7 @@ web font. That is a requirement rather than a preference — a report is a secur
 that gets attached to tickets and mailed to people who will open it offline, so it must not
 fetch anything to render.
 
-It mirrors :mod:`arachne.report.markdown` section for section (docs/spec/06- §3 and the §9
+It mirrors :mod:`arachne.report.markdown` section for section (and the §9
 skeleton), because a reader who compares the two must not be able to find a fact in one that
 is missing from the other. The differences are the ones the medium earns:
 
@@ -18,7 +18,7 @@ is missing from the other. The differences are the ones the medium earns:
 
 Everything target-controlled is escaped with :func:`html.escape`. The Markdown renderer
 neutralises fences and pipes; this one must not be a softer target, or the same evidence
-would be safe in one format and not in another (docs/spec/06- §10, "no unredacted secrets in
+would be safe in one format and not in another ("no unredacted secrets in
 any format" — and no injected markup either).
 """
 

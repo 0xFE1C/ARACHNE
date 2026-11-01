@@ -5,13 +5,13 @@ Three requirements name a golden artifact in their accept criteria:
 * REQ-ECOS-005 — "golden report in the second language" (``report-fr.md``);
 * REQ-ECOS-006 — "branded report golden test" (``report-mspp-fr.md``, white-label mode);
 * REQ-ECOS-004 — "golden screenshots at the gate" (the three ``.svg`` files, plus the
-  normalized page snapshots in ``tests/integration/test_ui_golden.py``).
+  normalized page snapshots in ``tests/integration/test_ui_ecos.py``).
 
 **On "screenshots":** the suite has no headless browser and adding one would make this gate
 flaky and environment-dependent. The UI's visualizations are SVG the server writes, so the
 committed ``.svg`` *is* the screenshot — deterministic, diffable, and reviewable in a pull
 request, which a PNG is not. The report pages themselves are covered by normalized HTML
-snapshots against the real app. `code/docs/operator-guide.md` §42 states this plainly.
+snapshots against the real app. `docs/operator-guide.md` §42 states this plainly.
 
 The report goldens use the shared deterministic fixture (``tests/helpers/report.py``), so the
 only variable between runs is the code under test.

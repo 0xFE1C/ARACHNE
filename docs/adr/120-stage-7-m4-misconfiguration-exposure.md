@@ -190,7 +190,7 @@ The two checks' behaviour when they do run:
 ## 120.9 Bucket probing is wordlist-based and non-destructive
 
 `m4.bucket-exposure` derives names from a declared domain (prefix/suffix combinations from
-`wordlists/bucket-names.txt`, capped by `max_bucket_names`) and probes three provider shapes:
+`templates/m4/wordlists/bucket-names.txt`, capped by `max_bucket_names`) and probes three provider shapes:
 an operator-declared endpoint, S3 virtual-host style, GCS `storage.googleapis.com`, and Azure
 Blob `*.blob.core.windows.net`. A finding needs a **listing** (a bucket XML/JSON body with
 object entries) or an **ACL** read (`AllUsers`/`allUsers` grant), not a bare 200 or 403. The

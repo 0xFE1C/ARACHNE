@@ -8,7 +8,7 @@ GitHub code search.
 
 Parsing is total: a body that does not look like what the provider documents yields an empty
 result rather than an exception, because a provider changing its shape is a normal event and
-must degrade to "nothing found" instead of failing the check (docs/spec/07- §4 — errors are
+must degrade to "nothing found" instead of failing the check (— errors are
 data, and so is an unparseable body).
 """
 

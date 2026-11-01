@@ -1,4 +1,4 @@
-"""SQLAlchemy models for the evidence store (``docs/spec/02-`` §2.4, F-09-02).
+"""SQLAlchemy models for the evidence store (```` §2.4, F-09-02).
 
 Nine tables, one per row of the spec's data-model table. Design rules from ADR-03:
 
@@ -178,7 +178,7 @@ class Check(Base):
     """The check catalogue: one row per implemented check (F-02-10, F-09-01).
 
     ``research_ref`` carries the traceability link to the research corpus
-    (e.g. ``ch04#1``), and ``version`` feeds "version everything" (docs/spec/07- §4).
+    (e.g. ``ch04#1``), and ``version`` feeds "version everything" .
     """
 
     __tablename__ = "checks"
@@ -350,7 +350,7 @@ class ScanDiff(Base):
 class ScanStepRecord(Base):
     """Per-step progress of a scan, which is what makes a scan resumable (F-01-04).
 
-    Stage S2 adds this table to the nine of docs/spec/02- §2.4 (ADR-060.2). A step row is
+    Stage S2 adds this table to the nine of the initial schema (ADR-060.2). A step row is
     written *before* the step runs and updated when it finishes, so a hard kill leaves a
     durable record of where the scan stopped; ``UNIQUE (scan_id, step)`` makes the write an
     upsert keyed by position in the pipeline.
@@ -459,7 +459,7 @@ class RiskAcceptance(Base):
 
 
 class FpFeedback(Base):
-    """Operator false-positive feedback, the FP tuner's input (F-05-07, docs/spec/04- §2.6).
+    """Operator false-positive feedback, the FP tuner's input (F-05-07).
 
     Stage S5 adds this table to the spec's core set: F-05-07's tuner "learns per (check,
     asset-type, signature)", and learning that survives a restart has to be persisted. One

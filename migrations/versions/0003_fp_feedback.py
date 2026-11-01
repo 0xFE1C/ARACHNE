@@ -4,7 +4,7 @@ Revision ID: 0003
 Revises: 0002
 Create Date: 2026-10-28
 
-Stage S5 adds the second extension table. docs/spec/04- §2.6's FP tuner "learns per (check,
+Stage S5 adds the second extension table. 's FP tuner "learns per (check,
 asset-type, signature) and adjusts rule confidence thresholds", and learning that survives a
 restart has to be stored: one row is one operator decision, and the tuner reads the aggregate
 over a key rather than any individual row (which is what makes it re-tunable without

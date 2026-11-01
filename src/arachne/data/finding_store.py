@@ -1,4 +1,4 @@
-"""Candidate findings and their evidence (F-02-08, F-09-02, docs/spec/02- §2.4).
+"""Candidate findings and their evidence (F-02-08, F-09-02).
 
 A detection check yields :class:`~arachne.core.results.CheckResult` objects; the checks step
 (``arachne.modules.handlers``) turns each one into a durable row here. Two deliberate
@@ -6,13 +6,13 @@ choices:
 
 * **Only the implemented checks are versioned in the ``checks`` table** — ``(module, name,
   version)`` is the key, so what a report says about a finding is what actually ran
-  (F-02-10, docs/spec/07- §4 "version everything").
+  (F-02-10).
 * **Severity is left NULL.** The module stack does not score (ADR-02); the analyzer (S5/S9)
   fills ``severity``, ``remediation_id`` and ``status`` transitions later. Writing a
   severity here would quietly move analysis into the checks.
 
 The candidate's ``detail`` and its check provenance are stored as a ``note`` evidence row
-rather than as a new column: the evidence store's schema is the spec's (docs/spec/02- §2.4),
+rather than as a new column: the evidence store's schema is the spec's schema,
 and "here is why this was reported, with its research reference" *is* evidence. Every
 candidate therefore also satisfies F-02-08's "structured evidence" requirement even when the
 check itself captured no request.
@@ -87,7 +87,7 @@ class EvidenceRecord:
 class CandidateRecord:
     """One stored candidate finding, with its check provenance and evidence.
 
-    ``confidence`` is on the report's **0-100** scale (docs/spec/06- §2) even for a
+    ``confidence`` is on the report's **0-100** scale even for a
     candidate the analyzer has not touched: the check's own 0-1 value is converted at this
     boundary, so the column has one meaning at every stage of a scan's life.
     """

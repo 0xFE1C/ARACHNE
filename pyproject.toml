@@ -20,7 +20,7 @@ classifiers = [
   "Topic :: Security",
   "Typing :: Typed",
 ]
-# Reference stack: docs/spec/07-ai-developer-guidelines.md §2
+# Reference stack (the runtime dependency set).
 dependencies = [
   "httpx>=0.27",
   "pydantic>=2.7,<3",
@@ -46,7 +46,7 @@ dev = [
   # Provider tests (S9): cassettes record/replay the real HTTP path of the AI adapters.
   "vcrpy>=6.0",
 ]
-# Dependency hygiene (docs/spec/07- §5): installed in a dedicated CI step so a
+# Dependency hygiene : installed in a dedicated CI step so a
 # transient advisory never breaks the primary test job, and release-blocking on a
 # tag push (S22, REQ-TRUST-003). Upper-bounded so a major audit-tool change is a
 # reviewed decision, not a surprise.
@@ -133,6 +133,11 @@ ignore = [
 # noqa on each of the runners' branches would add noise, not information.
 "src/arachne/fix/gitops.py" = ["S603", "S607"]
 "migrations/**" = ["INP001", "I001"]
+# The documentation checker asks the checkout's own `git` whether a cited commit exists
+# (`git cat-file -t`). That is deliberately the operator's git, resolved from PATH rather
+# than a pinned absolute path, because the gate has to answer the same question an operator
+# would ask. The argv is a fixed list of literals with no shell.
+"src/arachne/tools/doccheck.py" = ["S607"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["arachne"]
@@ -174,10 +179,10 @@ asyncio_default_fixture_loop_scope = "function"
 addopts = "-ra --strict-markers --strict-config"
 filterwarnings = ["error::DeprecationWarning:arachne.*"]
 markers = [
-  "integration: needs the docker lab fixture (docs/spec/07- §6)",
+  "integration: needs the docker lab fixture ",
   "lab: runs against the local vulnerable lab",
-  "parity: AI/heuristic parity suite (docs/spec/04- §5)",
-  "report_qa: golden-file report validation (docs/spec/06- §10)",
+  "parity: AI/heuristic parity suite ",
+  "report_qa: golden-file report validation ",
   "perf: wall-clock benchmark of a synthetic 50-host/200-endpoint heuristic scan (G-06)",
 ]
 

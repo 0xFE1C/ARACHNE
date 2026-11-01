@@ -13,7 +13,7 @@ Three mapping rules matter:
   narrative, score breakdown and rule trace come from ``analysis_log``. A finding with no
   analysis row is still rendered (a scan can be reported before analysis, and a dropped
   candidate stays visible in the appendix) at ``info`` with the check's own confidence.
-* **Low-confidence findings go to their own section** (docs/spec/06- §2). The threshold is a
+* **Low-confidence findings go to their own section** . The threshold is a
   report setting, not a second scoring decision: nothing is dropped, it is only moved.
 * **Dropped and merged findings never appear as confirmed findings.** ``fp`` goes to the
   false-positive appendix with its reason; ``merged`` is a dedupe artefact and is counted in
@@ -63,7 +63,7 @@ __all__ = [
     "split_check_key",
 ]
 
-#: Statuses that are not confirmed findings (docs/spec/06- §1 ``status``).
+#: Statuses that are not confirmed findings .
 EXCLUDED_STATUSES: frozenset[str] = frozenset({"fp", "merged"})
 
 _GLOSSARY: dict[str, str] = {
@@ -389,7 +389,7 @@ def _finding_proof(
 ) -> m.FindingProof | None:
     """The ``proof`` evidence of a candidate — or of a candidate merged into it (S15).
 
-    The dedupe rule (docs/spec/05-) folds same-CWE/same-asset findings into one owner and
+    The dedupe rule folds same-CWE/same-asset findings into one owner and
     keeps the contributors' evidence as merged refs. The proof ladder's artifact must
     survive that fold: "this sink was *proven* with a one-shot echo / a restored marker
     row" is exactly what the report exists to say, so a proof carried by a merged
@@ -661,7 +661,7 @@ def _provenance(analysis: StoredAnalysis | None, engine: str) -> m.Provenance:
 
 
 def _patch_gap(findings: Sequence[m.ReportFinding]) -> dict[str, Any]:
-    """The M6 patch-gap block (docs/spec/06- §3.7): CVE-correlated and EPSS-ranked items."""
+    """The M6 patch-gap block : CVE-correlated and EPSS-ranked items."""
     correlated = [item for item in findings if item.classification.cve]
     epss = [item for item in findings if item.score.epss is not None]
     webshell = [item for item in findings if item.check_id == "m6.webshell-yara"]
@@ -692,7 +692,7 @@ def _patch_gap(findings: Sequence[m.ReportFinding]) -> dict[str, Any]:
 
 
 def build_report_data(inputs: ReportInputs) -> m.ReportData:
-    """Join the stored pieces into the immutable report DTO (docs/spec/06- §1/§3)."""
+    """Join the stored pieces into the immutable report DTO ."""
     settings = inputs.settings
     report_settings = settings.report if settings is not None else ReportSettings()
     threshold = report_settings.min_confidence

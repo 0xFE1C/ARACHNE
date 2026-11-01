@@ -1,4 +1,4 @@
-"""Evidence store: schema, models, migrations and stores (``docs/spec/02-`` §2.4).
+"""Evidence store: schema, models, migrations and stores (```` §2.4).
 
 S1 delivers the schema (nine tables, Alembic-versioned), the engine/session helpers, and
 the SQL audit sink. Query/repository helpers and the report-facing reads arrive with the

@@ -1,4 +1,4 @@
-"""Privacy modes (docs/spec/03- §8, F-04-08): what may leave the process, and as what.
+"""Privacy modes (F-04-08): what may leave the process, and as what.
 
 ``redact`` is the default and the interesting one: it must replace the addressable evidence
 (URLs, hosts, IPs, e-mails, credentials) with stable tokens, keep the local reverse mapping, and

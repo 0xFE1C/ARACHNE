@@ -1,4 +1,4 @@
-"""Remediation catalog coverage and verification-of-fix (docs/spec/06- §6, F-06-04).
+"""Remediation catalog coverage and verification-of-fix (F-06-04).
 
 S8 owns the catalog QA gate: every CWE a shipped check or rule can emit must resolve to an
 entry, and every entry must carry the four parts the spec names (summary, numbered steps,

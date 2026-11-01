@@ -1,4 +1,4 @@
-"""Recorded-response replay (vcrpy-style, docs/spec/07- §6).
+"""Recorded-response replay (vcrpy-style).
 
 Live network calls in ARACHNE are optional; the tests, and an offline demonstration run,
 must work against **recorded** third-party responses. A recording is plain JSON — a list of

@@ -1,4 +1,4 @@
-"""The plugin contract (docs/spec/02- §5, F-02-01): metadata, assets, and the M1 inventory.
+"""The plugin contract (F-02-01): metadata, assets, and the M1 inventory.
 
 These tests pin the properties a plugin author and the framework depend on:
 
@@ -6,7 +6,7 @@ These tests pin the properties a plugin author and the framework depend on:
   opt-in is a programming error, not a runtime surprise);
 * an asset's applicability mapping is total (a declared ``ip`` target and an ``ip``-scoped
   check can never disagree);
-* the M1 module group is complete, versioned, and its metadata matches docs/spec/05-.
+* the M1 module group is complete, versioned, and its metadata matches .
 """
 
 from __future__ import annotations
@@ -212,7 +212,7 @@ def test_m1_is_complete_versioned_and_in_step_order() -> None:
 
 
 def test_every_m1_check_maps_to_a_real_research_method() -> None:
-    """Traceability (docs/spec/05-, principle #5): the refs must exist in ch01."""
+    """Traceability (principle #5): the refs must exist in ch01."""
     from arachne.modules.coverage import default_research_dir, parse_research_methods
 
     research = default_research_dir()
@@ -270,7 +270,7 @@ def test_m1_check_ids_and_defaults() -> None:
 
 
 def test_m1_is_passive_except_the_read_only_hybrids() -> None:
-    """docs/spec/05- M1 safety: passive, or a hybrid that only reads public content."""
+    """ safety: passive, or a hybrid that only reads public content."""
     hybrids = {c.metadata.id for c in M1.checks if c.metadata.type == "hybrid"}
     assert hybrids == {
         "m1.js-asset-scan",

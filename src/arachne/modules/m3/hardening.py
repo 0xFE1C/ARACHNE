@@ -1,7 +1,7 @@
 """M3 hardening-family oracles: NoSQL injection (ch03#2), path traversal (ch03#12), file
 inclusion (ch03#13) and CRLF / HTTP header injection (ch03#15).
 
-All four follow the M3 contract exactly (docs/spec/05- M3 "Safety"): a probe is detection-only
+All four follow the M3 contract exactly : a probe is detection-only
 and a confirmation is a *measured difference* against a baseline the check establishes first
 (or a canary the probe can only have caused). None of them extracts data, executes code or
 writes anything:

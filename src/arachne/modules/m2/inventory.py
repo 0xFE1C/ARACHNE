@@ -5,7 +5,7 @@ M2's checks are separate registry entries (``m2.host-discovery``, ``m2.port-scan
 to open ports to service identities to protocol enumeration to CVE correlation. The asset
 table is the wrong place for that flow — a port or a banner is not a target-defined asset,
 and writing one row per open port would flood the inventory with entries no later module
-wants (docs/spec/02- §2.4's ``assets`` table is the *inventory of things*, not of
+wants ('s ``assets`` table is the *inventory of things*, not of
 observations).
 
 So the hand-off lives here: a :class:`NetworkInventory` built once per discovery step,

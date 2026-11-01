@@ -4,7 +4,7 @@ Revision ID: 0002
 Revises: 0001
 Create Date: 2026-10-28
 
-Stage S2 adds one table to the nine of docs/spec/02- §2.4. A scan's plan says what will
+Stage S2 adds one table to the nine of the initial schema. A scan's plan says what will
 run; ``scan_steps`` records what *has* run, which is what lets a crashed scan resume from
 its last completed step instead of starting over. ``UNIQUE (scan_id, step)`` makes a
 progress write an upsert keyed by the step's position in the pipeline.

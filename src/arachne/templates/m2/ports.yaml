@@ -1,4 +1,4 @@
-# ARACHNE M2 port catalogue — managed data, not code (docs/spec/07- §4).
+# ARACHNE M2 port catalogue — managed data, not code .
 #
 # Two consumers read this file:
 #   * `m2.port-scan` uses `tcp` (frequency order) as its **default top-ports policy** and

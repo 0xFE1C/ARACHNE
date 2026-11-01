@@ -6,7 +6,7 @@
 # an English report unchanged (S14, extended in S26).
 #
 # Keys are dotted and namespaced by the layer that owns them:
-#   report.section.*    the numbered headings of docs/spec/06- §9 (the renderer supplies the
+#   report.section.*    the numbered headings of  (the renderer supplies the
 #                       number and the leading `##`)
 #   report.appendix.*   the lettered sub-headings of the appendix section
 #   report.finding.*    the per-finding bold labels
@@ -31,7 +31,7 @@ version: "1.0"
 locale: en
 
 strings:
-  # ---- numbered sections (docs/spec/06- §9) ------------------------------------------
+  # ---- numbered sections ------------------------------------------
   report.section.executive_summary: "Executive summary"
   report.section.scope: "Scope & methodology"
   report.section.assets: "Asset inventory"

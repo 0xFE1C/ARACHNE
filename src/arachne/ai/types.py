@@ -1,4 +1,4 @@
-"""The provider-neutral vocabulary of the AI layer (docs/spec/03- §2, F-04-01).
+"""The provider-neutral vocabulary of the AI layer (F-04-01).
 
 Everything above the adapters — the pipeline stages, the prompt store, the budget ledger, the
 caching and the retry policy — talks only to :class:`LLMProvider` and these value types. That
@@ -48,7 +48,7 @@ __all__ = [
 
 
 class ResponseFormat(StrEnum):
-    """What shape of answer a stage wants (docs/spec/03- §2 ``response_format``)."""
+    """What shape of answer a stage wants ."""
 
     #: Any valid JSON object (``response_format: {"type": "json_object"}``).
     JSON = "json"
@@ -60,7 +60,7 @@ class ResponseFormat(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class CompletionRequest:
-    """One model call, in provider-neutral terms (docs/spec/03- §2).
+    """One model call, in provider-neutral terms .
 
     ``messages`` is a sequence (not a list) because the request is frozen: a stage builds one
     request and may reuse it across retries and repair attempts, and nothing downstream should
@@ -73,7 +73,7 @@ class CompletionRequest:
     response_format: ResponseFormat = ResponseFormat.JSON
     json_schema: Mapping[str, Any] | None = None
     max_tokens: int = 2000
-    #: 0.0 by default: analysis wants the same answer twice (docs/spec/04- §4).
+    #: 0.0 by default: analysis wants the same answer twice .
     temperature: float = 0.0
     timeout_s: float = 60.0
     #: ``guided_json``-style constrained decoding, when the provider supports it.
@@ -122,13 +122,13 @@ class Usage:
 
 @dataclass(frozen=True, slots=True)
 class CompletionResult:
-    """A provider's answer, plus what it cost and how it was obtained (docs/spec/03- §2)."""
+    """A provider's answer, plus what it cost and how it was obtained ."""
 
     text: str
     raw: Mapping[str, Any] = field(default_factory=dict)
     usage: Usage | None = None
     model: str = ""
-    #: The structured-output mechanism that produced ``text`` (docs/spec/03- §6's table):
+    #: The structured-output mechanism that produced ``text`` :
     #: ``json_object``/``json_schema``/``tool_use``/``response_mime``/``format``/``text``.
     mechanism: str = "text"
     attempts: int = 1
@@ -185,7 +185,7 @@ class LlmTransport(Protocol):
 
 @runtime_checkable
 class LLMProvider(Protocol):
-    """The unified provider interface of docs/spec/03- §2 (F-04-01).
+    """The unified provider interface of the AI layer (F-04-01).
 
     Everything above the adapters talks only to this: the stage runner, the prompt store, the
     budget ledger and the retry wrapper. A test can therefore substitute a provider that
@@ -213,7 +213,7 @@ class AiError(ArachneError):
 class ProviderError(AiError):
     """A provider call failed.
 
-    ``transient`` is the retry policy's input (docs/spec/03- §7: "only on transient errors
+    ``transient`` is the retry policy's input ("only on transient errors
     (429/5xx/network), never on validation failures"), and ``retry_after`` carries a server's
     own pacing instruction when it sent one.
     """
@@ -256,7 +256,7 @@ class ProviderAuthError(ProviderError):
 
 
 class StructuredOutputError(AiError):
-    """No schema-valid object could be obtained (docs/spec/03- §5/§6).
+    """No schema-valid object could be obtained .
 
     Raised after the repair attempt, and always caught by the engine, which degrades the
     stage to the heuristic result and records the reason in provenance.

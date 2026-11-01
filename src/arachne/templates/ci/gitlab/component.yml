@@ -1,8 +1,8 @@
 # ARACHNE IaC gate — a reusable GitLab CI/CD component (S26, REQ-ECOS-003).
 #
 # Place this file in the component project as
-# `templates/arachne-gate/template.yml`; callers then `include` it (see
-# `code/examples/ci/gitlab-ci.yml`) with their own inputs. The job runs ARACHNE's offline
+# `templates/arachne-gate/`; callers then `include` it (see
+# `examples/ci/gitlab-ci.yml`) with their own inputs. The job runs ARACHNE's offline
 # IaC/CI review and publishes the `codequality` report, which GitLab renders in the merge
 # request widget — the GitLab equivalent of the GitHub Action's annotations.
 #

@@ -1,4 +1,4 @@
-"""Evidence projection: kind mapping, redaction, truncation and ids (docs/spec/06- §5)."""
+"""Evidence projection: kind mapping, redaction, truncation and ids ."""
 
 from __future__ import annotations
 

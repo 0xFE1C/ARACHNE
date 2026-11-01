@@ -4,7 +4,7 @@
 *heuristic* scan (analysis engine = heuristic, i.e. no AI provider) over a synthetic estate
 of 50 hosts and 200 crawl endpoints, from the scope/authorization gates through the
 discovery seed, the M3/M4 web crawl and checks, the heuristic analysis step and the
-correlation step. The G-06 budget is "under 60 min" (docs/spec/07- §6, Performance row);
+correlation step. The G-06 budget is "under 60 min" (Performance row);
 the assertion below pins that budget (``< 3600`` s) so a regression that is orders of
 magnitude slower than today fails while CI stays meaningful, and the measured number is
 printed for the record.
@@ -64,7 +64,7 @@ HOST_COUNT = 50
 ENDPOINTS_PER_HOST = 4
 ENDPOINT_TOTAL = HOST_COUNT * ENDPOINTS_PER_HOST
 
-#: The G-06 budget (docs/spec/07- §6): a heuristic scan of this estate must finish well under
+#: The G-06 budget : a heuristic scan of this estate must finish well under
 #: 60 minutes. We assert against the full budget so a catastrophic regression fails, while a
 #: machine- and load-independent margin keeps CI green.
 G06_BUDGET_SECONDS = 3600.0

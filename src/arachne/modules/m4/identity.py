@@ -7,7 +7,7 @@ authentication attempt, so it is **off by default three times over**: the check 
 ``--active-checks`` and the attestation), and ``ARACHNE_M4_DEFAULT_CREDENTIALS`` must be
 true. With all three on it makes *one* vendor-default attempt per detected product, paced,
 never retried, and reports only a successful authentication. That is existence
-verification, not credential testing (research ch04#10, docs/spec/05- M2 safety text).
+verification, not credential testing (research ch04#10, safety text).
 """
 
 from __future__ import annotations

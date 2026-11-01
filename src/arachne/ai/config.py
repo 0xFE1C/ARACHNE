@@ -1,4 +1,4 @@
-"""Provider configuration: the docs/spec/03- §3 YAML, with credentials from the environment.
+"""Provider configuration: the provider YAML, with credentials from the environment.
 
 The spec's block is a *file* of provider definitions and an *environment* of secrets::
 
@@ -21,7 +21,7 @@ but env vars for the local path (``ARACHNE_AI_BASE_URL=http://localhost:11434``)
 
 Three properties are enforced at load time, because each one is a silent-failure class:
 
-* a provider's name must be one of the seven adapters (docs/spec/03- §3's table);
+* a provider's name must be one of the seven adapters;
 * ``base_url`` must be an ``http(s)`` URL;
 * a provider that needs a credential must name the environment variable that holds it — the
   key itself is never read from the file.
@@ -57,7 +57,7 @@ __all__ = [
     "parse_ai_config",
 ]
 
-#: The seven adapters of docs/spec/03- §3, in the spec's order.
+#: The seven adapters of in the spec's order.
 ADAPTERS: Final[tuple[str, ...]] = (
     "openai",
     "openai_compatible",
@@ -106,7 +106,7 @@ _MODEL = ConfigDict(frozen=True, extra="forbid")
 
 
 class ProviderConfig(BaseModel):
-    """One provider block of the docs/spec/03- §3 YAML."""
+    """One provider block of the provider YAML."""
 
     model_config = _MODEL
 
@@ -118,7 +118,7 @@ class ProviderConfig(BaseModel):
     timeout_s: float = Field(default=60.0, gt=0)
     max_tokens: int = Field(default=3000, gt=0)
     temperature: float = Field(default=0.0, ge=0.0, le=2.0)
-    #: Force a structured-output mechanism instead of the adapter's default (docs/spec/03- §6).
+    #: Force a structured-output mechanism instead of the adapter's default .
     response_format: ResponseFormat | None = None
     #: vLLM/llama.cpp style grammar-constrained decoding (``guided_json``).
     constrained_decoding: bool = False
@@ -136,7 +136,7 @@ class ProviderConfig(BaseModel):
             raise ValueError("provider name is required")
         if self.name not in ADAPTERS:
             raise ValueError(f"unknown provider {self.name!r}; known adapters: {list(ADAPTERS)}")
-        # Fill the published defaults for this adapter (docs/spec/03- §3's table) so a file may
+        # Fill the published defaults for this adapter so a file may
         # say just ``model: gpt-4o-mini`` under ``openai``.
         if not self.base_url:
             object.__setattr__(self, "base_url", DEFAULT_BASE_URLS.get(self.name, ""))
@@ -248,14 +248,14 @@ class AiConfig(BaseModel):
     budget: BudgetConfig = Field(default_factory=BudgetConfig)
     providers: dict[str, ProviderConfig] = Field(default_factory=dict)
     privacy: PrivacyMode = PrivacyMode.REDACT
-    #: Which docs/spec/03- §4 stages the AI engine runs, in order.
+    #: Which analysis stages the AI engine runs, in order.
     stages: tuple[str, ...] = ("triage", "explain", "remediate", "narrative")
-    #: Retry attempts per provider call, including the first (docs/spec/03- §7).
+    #: Retry attempts per provider call, including the first .
     retries: int = Field(default=3, ge=1, le=10)
     #: A correlation group of at least this many candidates gets an AI compound suggestion.
     correlate_threshold: int = Field(default=3, ge=2)
     #: Check modules/ids whose AI verdict is authoritative (empty: every check keeps the
-    #: deterministic verdict, which is what docs/spec/04- §5's parity guarantee needs).
+    #: deterministic verdict, which is what determinism needs).
     authoritative_checks: tuple[str, ...] = ()
 
     @model_validator(mode="after")
@@ -343,7 +343,7 @@ def load_ai_config(
 
     Precedence, most specific first: an explicit environment override for the default
     provider (``ARACHNE_AI_BASE_URL``/``ARACHNE_AI_MODEL``/``ARACHNE_AI_API_KEY_ENV``), the
-    YAML file, the built-in defaults of docs/spec/03- §3. With neither a file nor a base URL
+    YAML file, the built-in defaults. With neither a file nor a base URL
     in the environment the result is *unconfigured* (``configured`` is False), which is how
     F-03-03 stays true: no provider configured means no call is ever made.
     """
@@ -377,7 +377,7 @@ def _environ() -> Mapping[str, str]:
 
 
 def _apply_env_overrides(config: AiConfig, ai: Any, env: Mapping[str, str]) -> AiConfig:
-    """Overlay the environment onto the file's configuration (docs/spec/03- §3)."""
+    """Overlay the environment onto the file's configuration ."""
     updates: dict[str, Any] = {}
     if ai is not None:
         if ai.engine:

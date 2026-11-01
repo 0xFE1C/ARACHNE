@@ -1,9 +1,9 @@
-"""The report QA gate (docs/spec/06- §10, tests/report_qa).
+"""The report QA gate (tests/report_qa).
 
 Every generated report must pass these checks before release. This module builds one
 report from a **real, full lab scan** — the shared stdlib web lab, M3 and M4 with their
 active checks, the full analyzer and correlation pipeline — and then asserts the five
-properties docs/spec/06- §10 names:
+properties the report names:
 
 1. every finding carries evidence refs, severity, confidence and provenance;
 2. no unredacted secret appears in any rendered format;
@@ -58,7 +58,7 @@ from arachne.report.builder import ReportInputs
 from tests.lab.web_lab import WebLab, start_web_lab
 
 #: The credentials the lab serves in ``/.env`` and ``/app.js``. None may survive into a
-#: report, in any format (docs/spec/06- §10).
+#: report, in any format .
 LAB_SECRETS = (
     "AKIAIOSFODNN7EXAMPLE",
     "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
@@ -214,7 +214,7 @@ def test_the_full_lab_report_matches_the_sample_skeleton(lab_report: LabReport) 
     assert report.scope.checks_skipped >= 1  # the M4 opt-in checks did not run
     for heading in _SECTION_HEADINGS:
         assert heading in lab_report.markdown, heading
-    # The cover names the scan, version, engine and attestation (docs/spec/06- §3.1).
+    # The cover names the scan, version, engine and attestation .
     assert f"Scan: {report.scan_id}" in lab_report.markdown
     assert "engine: heuristic" in lab_report.markdown
     assert "attested by" in lab_report.markdown
@@ -223,7 +223,7 @@ def test_the_full_lab_report_matches_the_sample_skeleton(lab_report: LabReport) 
 def test_every_finding_carries_evidence_severity_confidence_and_provenance(
     lab_report: LabReport,
 ) -> None:
-    """QA property 1 (docs/spec/06- §10)."""
+    """QA property 1 ."""
     report = lab_report.report
     findings = list(report.findings) + list(report.low_confidence)
     assert findings
@@ -294,7 +294,7 @@ def test_the_json_report_validates_against_the_versioned_schema(
 def test_low_confidence_observations_are_not_mixed_with_confirmed_findings(
     lab_report: LabReport,
 ) -> None:
-    """QA property 5 (docs/spec/06- §2/§6)."""
+    """QA property 5 ."""
     report = lab_report.report
     findings_text = lab_report.markdown[
         lab_report.markdown.index("## 4.") : lab_report.markdown.index("## 9.")

@@ -23,7 +23,7 @@ Three sources, all published as machine-readable documents:
 Parsing is total by construction: a body that does not look like what the source documents
 yields an empty result (or a clear ``ConfigurationError`` when the document is structurally
 wrong), because a broken mirror is a normal event and must not take the deployment down
-(``docs/spec/07-`` §4 — errors are data).
+(```` §4 — errors are data).
 """
 
 from __future__ import annotations

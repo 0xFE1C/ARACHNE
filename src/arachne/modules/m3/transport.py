@@ -19,7 +19,7 @@
     endpoints whose anti-automation posture matters (login, password reset), then the same
     number again with a rotating client-supplied ``X-Forwarded-For``. The finding is the
     *absence* of throttling (or a throttle that a spoofable header defeats) — this check
-    characterizes controls; it never mounts a brute-force (docs/spec/05- M3 Safety).
+    characterizes controls; it never mounts a brute-force (Safety).
 """
 
 from __future__ import annotations

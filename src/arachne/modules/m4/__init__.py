@@ -1,4 +1,4 @@
-"""M4 · Misconfiguration & Exposure (docs/spec/05- M4, research ch. 04).
+"""M4 · Misconfiguration & Exposure .
 
 Misconfiguration is the largest root-cause category in real breaches, and it is also the
 cheapest to detect: each method is a finite set of GET requests, a marker, and a
@@ -40,7 +40,8 @@ check                                      ref         what it establishes
 ========================================  ==========  ==========================================
 
 **Numbering.** As for M1/M2/M3, ``research_ref`` values are the canonical method numbers of
-``docs/research/04-`` (the universe G-01 counts); the check **ids** are docs/spec/05-'s.
+``docs/research/04-exposure-and-misconfiguration.md`` (the universe G-01 counts); the
+check **ids** are the corpus's.
 The spec table's refs drift from the corpus from ``debug-endpoints`` onwards; ADR-120.3
 records the reconciliation.
 
@@ -135,7 +136,7 @@ M4_CHECKS: tuple[type[Module], ...] = (
     AliasTraversal,
 )
 
-#: The M4 module group (docs/spec/02- §2.2). Bump the version when the set or a check's
+#: The M4 module group . Bump the version when the set or a check's
 #: behaviour changes: scan reports record it (F-02-10).
 M4 = ModuleGroup(
     id="M4",

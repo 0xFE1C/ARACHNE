@@ -147,7 +147,7 @@ class ScanDetail(ScanSummary):
 
 
 class FindingOut(BaseModel):
-    """A finding as the API/UI lists it (docs/spec/06- §1 fields + the store ids)."""
+    """A finding as the API/UI lists it (fields + the store ids)."""
 
     model_config = _MODEL
 

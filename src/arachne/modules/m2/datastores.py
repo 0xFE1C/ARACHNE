@@ -5,7 +5,7 @@ product and version; method 23 detects *unauthenticated* datastores (Redis, Mong
 Elasticsearch, CouchDB, memcached), which are the exposure class that turns a network
 finding into an immediate data-theft incident.
 
-Where the line is drawn, because it matters for the safety framing of docs/spec/05-:
+Where the line is drawn, because it matters for the safety framing of :
 
 * **Read-only, protocol-level.** Every probe here is the smallest exchange the protocol
   defines for "who are you?" — the MySQL/MSSQL/PostgreSQL handshake, Redis ``PING``,

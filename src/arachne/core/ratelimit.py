@@ -1,6 +1,6 @@
 """Token-bucket rate limiting enforced in the shared HTTP client (F-01-07).
 
-Two budgets apply to every outbound request (docs/spec/07- §5, "never bypassed by
+Two budgets apply to every outbound request ("never bypassed by
 retries"): a **per-host** budget and a **global** budget. Both are classic token
 buckets: ``rate`` tokens are added per second up to ``burst`` capacity, and a caller
 waits until a token is available.

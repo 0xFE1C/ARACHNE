@@ -1,4 +1,4 @@
-"""The correlation engine: dedupe and compound findings (docs/spec/04- §2.3, F-05-03).
+"""The correlation engine: dedupe and compound findings (F-05-03).
 
 The headline behaviour is the demo the stage asks for: two weak signals on one asset become
 one compound finding whose severity is upgraded, with the contributors and their evidence

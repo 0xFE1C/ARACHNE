@@ -20,7 +20,7 @@ Three oracles, in the order the research names them, each cheaper than the next:
 
 Scope of the probe: **query-string parameters of pages the crawl fetched.** Injection into
 POST bodies is deliberately out of scope for this stage — it would mean sending request bodies
-to state-changing endpoints, which docs/spec/05- M3's safety text ("no data modification
+to state-changing endpoints, which the M3 safety rules constrain ("no data modification
 beyond benign requests") and F-02's safe defaults rule out. The limitation is recorded in
 ADR-100.4.
 """

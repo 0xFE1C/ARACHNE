@@ -1,4 +1,4 @@
-"""Cost control: the per-scan ledger, the cache and the metrics (docs/spec/03- §7, F-04-07)."""
+"""Cost control: the per-scan ledger, the cache and the metrics (F-04-07)."""
 
 from __future__ import annotations
 

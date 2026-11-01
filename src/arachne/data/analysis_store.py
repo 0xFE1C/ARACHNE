@@ -10,7 +10,7 @@ a reason:
     reportable.
 ``analysis_log``
     The whole analysis — score, rule trace, narrative, provenance — as ``output_json``
-    (docs/spec/02- §2.4, F-03-05). It is the report's narrative source and the audit trail of
+    (F-03-05). It is the report's narrative source and the audit trail of
     *why* a finding has the severity it has; keeping it out of ``findings`` is what lets the
     schema stay the spec's.
 ``fp_feedback``
@@ -65,7 +65,7 @@ class StoredAnalysis:
     engine: str
     remediation_id: str | None = None
     template_version: str | None = None
-    #: ``analysis_log.id`` — the report's ``provenance.analysis_log_id`` (docs/spec/06- §1).
+    #: ``analysis_log.id`` — the report's ``provenance.analysis_log_id`` .
     log_id: int | None = None
     created_at: datetime | None = None
     payload: Mapping[str, Any] = field(default_factory=dict)

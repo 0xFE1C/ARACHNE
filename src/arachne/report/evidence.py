@@ -9,7 +9,7 @@ reason:
   that built an :class:`~arachne.core.results.Evidence` by hand) could reach a report
   unredacted. The report QA gate scans the rendered output for secret patterns; this is the
   layer that makes it pass.
-* **It truncates bodies** to the configurable report limit (docs/spec/06- §5: "truncated at
+* **It truncates bodies** to the configurable report limit ("truncated at
   configurable size, default 8 KB"). The capture limit (64 KB) is for detection; a report
   carries a readable excerpt and the hash of the whole capture.
 * **It maps the internal kinds onto the spec's kind vocabulary** (``tls_certificate`` →
@@ -41,10 +41,10 @@ __all__ = [
     "truncate_text",
 ]
 
-#: docs/spec/06- §5: response bodies are truncated at 8 KB by default in a report.
+#: : response bodies are truncated at 8 KB by default in a report.
 DEFAULT_EVIDENCE_BODY_LIMIT: Final = 8192
 
-#: Internal evidence kinds → the docs/spec/06- §5 vocabulary.
+#: Internal evidence kinds → the report vocabulary.
 KIND_MAP: Final[dict[str, str]] = {
     "http_request": "http_request",
     "http_response": "http_response",

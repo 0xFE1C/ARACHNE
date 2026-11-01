@@ -1,4 +1,4 @@
-"""The restricted condition language (docs/spec/04- §2.1, F-08-06).
+"""The restricted condition language (F-08-06).
 
 The language is a security boundary: rule authors write expressions, and the scanner must
 never execute them. These tests pin the grammar, the any-semantics of a multi-valued fact,
@@ -75,7 +75,7 @@ def test_expressions_evaluate_as_documented(expression: str, expected: bool) -> 
 
 
 def test_a_missing_fact_satisfies_nothing() -> None:
-    """A rule must never fire on a fact the candidate does not have (docs/spec/04- §2.1)."""
+    """A rule must never fire on a fact the candidate does not have ."""
     space = facts()
     for expression in (
         "evidence.artifact.cvss >= 7.0",
@@ -125,7 +125,7 @@ def test_parenthesised_sub_expressions_and_precedence() -> None:
 
 
 def test_rule_local_conditions_resolve_before_facts() -> None:
-    """A named condition shadows a fact alias of the same name (docs/spec/04- §2.1)."""
+    """A named condition shadows a fact alias of the same name ."""
     space = facts()
     expression = parse_expression("reproducible")
     assert expression.evaluate(space, {"reproducible": False}) is False

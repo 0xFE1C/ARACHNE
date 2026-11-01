@@ -1,13 +1,13 @@
-"""The plugin contract (docs/spec/02- §5, F-02-01, F-09-01).
+"""The plugin contract (F-02-01, F-09-01).
 
 One :class:`Module` is one **check**: a thin, typed, async unit that inspects one asset and
 yields :class:`~arachne.core.results.CheckResult` objects. It declares its metadata up
-front (the common check metadata of docs/spec/05-) and never decides severity or writes
+front (the common check metadata) and never decides severity or writes
 prose — analysis is the Analyzer's job (ADR-02).
 
-The names in this module follow docs/spec/02- §5 verbatim: the base class is ``Module``,
+The names in this module follow the plugin contract verbatim: the base class is ``Module``,
 it carries ``name`` / ``version`` / ``description`` / ``research_ref``, and it exposes
-``supports(asset)`` and ``run(ctx)``. The M1..M6 grouping from docs/spec/02- §2.2 is a
+``supports(asset)`` and ``run(ctx)``. The M1..M6 grouping is a
 separate, thinner concept (:class:`~arachne.modules.registry.ModuleGroup`), because one
 class cannot be both "a check" (single ``research_ref``, ``supports(one asset)``) and "a
 package of thirteen checks".
@@ -55,13 +55,13 @@ __all__ = [
 ]
 
 #: ``passive`` never touches the target (third-party indexes only); ``active`` talks to the
-#: target; ``hybrid`` does both (docs/spec/05- "Common check metadata").
+#: target; ``hybrid`` does both .
 CheckType = Literal["passive", "active", "hybrid"]
 
 #: A *hint* for the analyzer's default scoring, never a severity decision (ADR-02).
 SeverityHint = Literal["info", "low", "medium", "high", "critical"]
 
-#: The asset vocabulary (``assets.kind``, docs/spec/02- §2.4 plus the S2 seed mapping in
+#: The asset vocabulary (``assets.kind``, plus the S2 seed mapping in
 #: ``core.steps.seed_asset``): a declared domain, a host name or address, a URL, a network,
 #: a Git reference, a cloud resource.
 ASSET_KINDS: frozenset[str] = frozenset(
@@ -77,7 +77,7 @@ _CVE = re.compile(r"^CVE-\d{4}-\d{4,7}$")
 
 @dataclass(frozen=True, slots=True)
 class CheckMetadata:
-    """The common check metadata of docs/spec/05-, validated on construction.
+    """The common check metadata of validated on construction.
 
     ``id`` is the module-qualified identity (``m1.ct-lookup``) used in plans, reports and
     the coverage matrix; ``(module, name, version)`` is the tuple the ``checks`` table and
@@ -150,7 +150,7 @@ class CheckMetadata:
             problems.append("an active check must set requires_active_checks=True")
         if self.requires_active_checks and not self.safe:
             # "safe" means "read-only, no state change". An unsafe active check has no
-            # place in a scanner that detects rather than exploits (docs/spec/07- §8).
+            # place in a scanner that detects rather than exploits .
             problems.append("requires_active_checks=True with safe=False is not supported")
         try:
             # One coercion point: check authors may write proof="L1", and every consumer
@@ -192,7 +192,7 @@ class CheckMetadata:
 
 @dataclass(frozen=True, slots=True)
 class Asset:
-    """The thing a check inspects (docs/spec/02- §5 ``supports(asset)``).
+    """The thing a check inspects .
 
     ``kind`` uses the asset vocabulary (``host``, ``network``, ...) while check metadata
     declares applicability in *target* kinds (``ip``, ``cidr``, ...); :meth:`selector_kind`
@@ -280,7 +280,7 @@ def _is_ip_literal(value: str) -> bool:
 
 
 class Module(ABC):
-    """A detection check (docs/spec/02- §5, F-02-01).
+    """A detection check (F-02-01).
 
     Subclasses set :attr:`metadata` and implement :meth:`run`. Everything else — name,
     version, description, research reference, applicability — is derived from the metadata

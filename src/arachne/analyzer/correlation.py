@@ -1,8 +1,8 @@
-"""The correlation engine: weak signals into compound findings (docs/spec/04- §2.3, F-05-03).
+"""The correlation engine: weak signals into compound findings (F-05-03).
 
 Two passes, in this order, because each makes the next one more meaningful:
 
-**Dedupe** merges findings that describe one root cause — docs/spec/05-'s rule is "by CWE +
+**Dedupe** merges findings that describe one root cause — "by CWE +
 asset", keeping the most specific module as owner and attaching the others as contributors.
 Without it, the same exposed database reported by M2 and M4 would count twice in a report
 and inflate every severity histogram.
@@ -15,7 +15,7 @@ sentences. The compound carries the merged evidence, the contributors' ids, a sh
 remediation and a severity promoted by ``upgrade_if``.
 
 Both passes are pure functions of the analyses they are given, so a scan's correlation
-result is reproducible (docs/spec/04- §4) and the whole thing is unit-testable without a
+result is reproducible and the whole thing is unit-testable without a
 scan at all.
 """
 
@@ -66,7 +66,7 @@ DEFAULT_CORRELATION_RESOURCE: Final = ("correlation", "correlation-rules.yaml")
 
 _MODEL_CONFIG = ConfigDict(frozen=True, extra="forbid")
 
-#: Module specificity order for dedupe (docs/spec/05- "keep the most specific module as
+#: Module specificity order for dedupe ("keep the most specific module as
 #: owner"): the exposure/misconfiguration modules describe the *root cause* more precisely
 #: than a generic service probe does, so they own the merged finding.
 DEFAULT_OWNER_PREFERENCE: Final[tuple[str, ...]] = ("M4", "M3", "M6", "M5", "M2", "M1")
@@ -135,7 +135,7 @@ class SignalMatcher(BaseModel):
 
 
 class CorrelationRule(BaseModel):
-    """One correlation rule (docs/spec/04- §2.3): signals, threshold, upgrade."""
+    """One correlation rule : signals, threshold, upgrade."""
 
     model_config = _MODEL_CONFIG
 
@@ -186,7 +186,7 @@ class CorrelationRule(BaseModel):
 
 
 class DedupePolicy(BaseModel):
-    """How findings that share a root cause are merged (docs/spec/05- dedupe rules)."""
+    """How findings that share a root cause are merged (dedupe rules)."""
 
     model_config = _MODEL_CONFIG
 
@@ -404,7 +404,7 @@ class CorrelationEngine:
         compounds, groups = self._correlate(deduped)
         final = tuple(analysis for analysis, _ in deduped) + compounds
         # The dropped analyses are kept in the result: a report must be able to say why a
-        # finding was not reported (docs/spec/04- §2.6).
+        # finding was not reported .
         dropped = tuple(analysis for analysis, _ in pairs if analysis.verdict == "dropped")
         return CorrelationOutcome(
             analyses=final + dropped + tuple(analysis for analysis, _ in merged),
@@ -491,7 +491,7 @@ class CorrelationEngine:
                             drop_reason=(
                                 "merged into finding "
                                 f"{owner_analysis.finding_id} (same CWE and asset, "
-                                "docs/spec/05- dedupe rules)"
+                                " dedupe rules)"
                             ),
                         ),
                         candidate,

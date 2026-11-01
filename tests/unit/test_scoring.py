@@ -1,8 +1,8 @@
-"""The scoring and confidence model (docs/spec/04- §2.4/§2.6, F-05-04/F-05-06).
+"""The scoring and confidence model (F-05-04/F-05-06).
 
 The CVSS part is checked against published CVSS v3.1 base vectors, because a report that
 prints "CVSS 7.5" has to mean what CVSS 7.5 means. The rest pins the project's own
-conventions: the severity bands of docs/spec/04- §2.4, the OWASP likelihood x impact model,
+conventions: the severity bands of the OWASP likelihood x impact model,
 the EPSS context rule (F-09-03), and every confidence term with its name.
 """
 

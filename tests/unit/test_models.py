@@ -1,4 +1,4 @@
-"""Data-model tests (docs/spec/02- §2.4, F-09-02).
+"""Data-model tests (F-09-02).
 
 These assert the spec's column contract and the relational behaviour the orchestrator
 will rely on (FK enforcement, cascades), not SQLAlchemy itself.
@@ -30,7 +30,7 @@ from arachne.data.models import (
 )
 from arachne.data.schema import TABLE_NAMES
 
-#: Columns required by docs/spec/02- §2.4 (extra bookkeeping columns are allowed).
+#: Columns required by the evidence store (extra columns are allowed).
 SPEC_COLUMNS: dict[str, set[str]] = {
     "targets": {"id", "name", "scope_json", "auth_attestation", "created_at"},
     "scans": {
@@ -238,7 +238,7 @@ def test_sql_audit_sink_persists_events(engine: Engine) -> None:
     assert rows[0].actor == "pytest"
     assert rows[0].meta_json["meta"]["status"] == 200
     # SQLite has no timezone type: values round-trip as naive UTC. Compare the instant,
-    # not the tzinfo (see the S1 gotcha note in STATE.md).
+    # not the tzinfo.
     assert rows[0].ts.replace(tzinfo=None) == event.ts.replace(tzinfo=None)
 
 

@@ -126,14 +126,14 @@ def test_build_coverage_reports_the_m1_m2_m3_and_m4_rows() -> None:
     assert ch03.total == 35
     assert ch03.mapped == 34
     mapped_m3 = {item.method.ref: item.checks for item in ch03.methods if item.mapped}
-    assert mapped_m3["ch03#1"] == ("sqli-oracle",)
-    assert mapped_m3["ch03#3"] == ("xss-oracle",)
+    assert mapped_m3["ch03#1"] == ("sqli-oob", "sqli-oracle", "state-marker")
+    assert mapped_m3["ch03#3"] == ("client-secret-verify", "xss-oracle")
     assert mapped_m3["ch03#11"] == ("traversal-oracle",)
     assert mapped_m3["ch03#24"] == ("security-headers",)
     # S10's extended families are mapped too.
     assert mapped_m3["ch03#5"] == ("ssrf-probe",)
     assert mapped_m3["ch03#16"] == ("smuggling-oracle",)
-    assert mapped_m3["ch03#32"] == ("graphql-audit",)
+    assert mapped_m3["ch03#32"] == ("graphql-audit", "graphql-depth-abuse", "graphql-resolver-auth")
     assert mapped_m3["ch03#34"] == ("subdomain-takeover",)
     assert mapped_m3["ch03#12"] == ("directory-traversal",)  # S13
     ch06 = next(chapter for chapter in report.chapters if chapter.chapter == "ch06")
@@ -158,12 +158,12 @@ def test_build_coverage_reports_the_m1_m2_m3_and_m4_rows() -> None:
     mapped = {item.method.ref: item.checks for item in ch01.methods if item.mapped}
     assert mapped["ch01#1"] == ("dork-sweep",)
     assert mapped["ch01#5"] == ("internetdb-triage",)
-    assert mapped["ch01#8"] == ("ct-lookup",)
-    assert mapped["ch01#26"] == ("js-asset-scan",)
+    assert mapped["ch01#8"] == ("ct-lookup", "ct-surprise")
+    assert mapped["ch01#26"] == ("js-asset-scan", "mobile-artifact")
     assert mapped["ch01#23"] == ("favicon-hash",)  # S13
     assert mapped["ch01#25"] == ("dns-txt-mining",)  # S13
     # A method the M1 checks do not cover is reported as unmapped, with no guesswork.
-    assert "ch01#3" in report.unmapped  # Shodan search: M2/M4 territory
+    assert "ch01#6" in report.unmapped  # WHOIS/registration archaeology: no check reads it
     assert not [item for item in ch01.methods if item.method.ref == "ch01#7" and item.mapped]
 
 

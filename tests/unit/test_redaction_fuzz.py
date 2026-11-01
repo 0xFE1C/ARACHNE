@@ -1,4 +1,4 @@
-"""Redaction fuzz test (F-08-01, F-08-04; docs/spec/07- §5 and §9 #3).
+"""Redaction fuzz test (F-08-01, F-08-04, and §9 #3).
 
 Where ``test_redaction.py`` pins a handful of literals, this file drives the redactor with
 a broad, *generated* corpus of credential shapes so a regression in any one detector — or a

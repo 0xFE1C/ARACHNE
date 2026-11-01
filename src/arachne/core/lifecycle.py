@@ -13,7 +13,7 @@ survivable:
 * **A failing step is data, not a crash.** The exception is summarized (bounded, redacted)
   into the step row and the scan is marked ``failed``; the exception is re-raised so the
   caller can decide the process exit code.
-* **Orchestration state lives in the store, never in globals** (docs/spec/07- §4). The
+* **Orchestration state lives in the store, never in globals** . The
   machine holds a :class:`ScanStateStore` and nothing else that a restart would lose.
 
 The store is a protocol so the persistence backend is replaceable — ``SQLite`` today

@@ -52,7 +52,7 @@ def test_bundled_catalogue_covers_every_module_and_is_versioned() -> None:
     assert catalog.catalog_version == "1.10"
     assert catalog.modules() == ("M1", "M2", "M3", "M4", "M5", "M6")
     assert len(catalog.checks) >= 30
-    # "Version everything" (docs/spec/07- §4): every check carries a version and a
+    # "Version everything" : every check carries a version and a
     # traceability link into the research corpus.
     assert all(check.version and check.research_ref for check in catalog.checks)
     # Every row declares its proof level (S15). The original checks are L1 — 129 of them,

@@ -1,4 +1,4 @@
-"""The nine M1 checks, one section each (docs/spec/05- M1, research ch. 01).
+"""The M1 checks, one section each .
 
 Every check is run the way the pipeline runs it — through :class:`CheckContext` with recorded
 OSINT responses — so what these tests assert is the *contract each check owes the framework*:

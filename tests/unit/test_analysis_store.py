@@ -1,4 +1,4 @@
-"""Analysis persistence and FP feedback (F-03-05, F-05-07, docs/spec/02- §2.4).
+"""Analysis persistence and FP feedback (F-03-05, F-05-07).
 
 What must hold: an analysis updates the finding row (severity, confidence, remediation,
 status), the whole analysis lands in ``analysis_log.output_json``, a compound finding gets

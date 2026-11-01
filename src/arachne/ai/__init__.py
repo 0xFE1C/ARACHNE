@@ -1,14 +1,14 @@
-"""The AI integration layer (docs/spec/03-, F-04-*): optional, explicit and swappable.
+"""The AI integration layer (F-04-*): optional, explicit and swappable.
 
 The layer is built so that every capability it adds has a heuristic counterpart already
-(``docs/spec/04-``), and so that a scan's *result* never depends on a model being reachable:
+(````), and so that a scan's *result* never depends on a model being reachable:
 
 ============================  ==================================================
 ``ai.types``                  the provider-neutral request/result vocabulary
-``ai.config``                 the docs/spec/03- §3 provider file, credentials from env
+``ai.config``                 the  provider file, credentials from env
 ``ai.transport``              the scope-bound HTTP path (ADR-05's second client)
 ``ai.providers``              seven adapters, one module per API shape
-``ai.structured``             four mechanisms → one pydantic validator (docs/spec/03- §6)
+``ai.structured``             four mechanisms → one pydantic validator
 ``ai.prompts``                versioned templates + the untrusted-data policy (§5)
 ``ai.privacy``                ``local-only`` / ``redact`` / ``default`` (§8)
 ``ai.budget``                 per-scan token and cost caps, and Prometheus counters (§7)

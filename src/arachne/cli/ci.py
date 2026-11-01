@@ -1,4 +1,4 @@
-"""CI gate exit-code policy (F-07-05, docs/spec/06- §8).
+"""CI gate exit-code policy (F-07-05).
 
 A pipeline needs one number: did this scan find anything at or above my threshold? The
 policy is deliberately tiny and pure so it can be unit-tested and reused by any caller
@@ -29,7 +29,7 @@ SEVERITY_LEVELS: Final[tuple[str, ...]] = ("info", "low", "medium", "high", "cri
 #: ``none`` disables the gate; every other value is a severity the ladder knows.
 THRESHOLDS: Final[tuple[str, ...]] = ("none", *SEVERITY_LEVELS)
 
-#: Exit codes (docs/spec/06- §8).
+#: Exit codes .
 EXIT_CLEAN: Final = 0
 EXIT_BELOW_THRESHOLD: Final = 1
 EXIT_AT_OR_ABOVE: Final = 2
@@ -69,7 +69,7 @@ def gate_exit_code(counts: Mapping[str, int], threshold: str) -> int:
 
 
 def gate_summary(counts: Mapping[str, int], threshold: str) -> dict[str, object]:
-    """The machine-readable gate block for ``--json`` (docs/spec/06- §8)."""
+    """The machine-readable gate block for ``--json`` ."""
     return {
         "threshold": threshold,
         "enabled": threshold != "none",

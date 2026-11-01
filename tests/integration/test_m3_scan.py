@@ -10,14 +10,14 @@ Juice Shop patterns — and measures the result against that lab's published gro
 The scan goes through the real wiring (``build_handlers`` + the lifecycle machine + the
 analyzer), not by calling checks one at a time, because the thing being measured is the whole
 pipeline: crawl, oracles, candidate persistence, heuristic rules, severity. The measurements
-are recorded in ``docs/adr/110-stage-6-m3-web-core.md`` and in ``STATE.md``.
+are recorded in ``docs/adr/100-stage-6-m3-web-core.md``.
 
 Two runs, because they answer different questions:
 
 ``default``
     The shipped defaults plus the two switches F-01-09 requires to run *anything* active
     (``--active-checks`` and an attestation that authorizes them). ``ARACHNE_WEB_UPLOAD_PROBE``
-    stays off, which is the documented safe default — no stored payloads (docs/spec/05- M3).
+    stays off, which is the documented safe default — no stored payloads .
     The false-positive rate is measured here, because this is "default tuning".
 ``tuned``
     The same scan with the upload-validation probe enabled, so the upload family is exercised

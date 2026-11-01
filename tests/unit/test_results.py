@@ -1,4 +1,4 @@
-"""CheckResult / Evidence / error-model tests (F-02-08 note, docs/spec/02- §5)."""
+"""CheckResult / Evidence / error-model tests (F-02-08 note)."""
 
 from __future__ import annotations
 

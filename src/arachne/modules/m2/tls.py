@@ -1,6 +1,6 @@
 """TLS deep scan: protocols, cipher suites, certificate and trust posture (ch02#14).
 
-The stdlib pass, which is the default and the offline path (docs/spec/07- §9.1):
+The stdlib pass, which is the default and the offline path :
 
 1. **Negotiate once** to learn what the endpoint offers by default and to collect the
    certificate DER (``certificate_der``).

@@ -1,4 +1,4 @@
-"""Structured JSON logging (docs/spec/07- §4).
+"""Structured JSON logging .
 
 Every log line is a single JSON object with a stable envelope, so log pipelines can
 index fields without regex parsing. Secret redaction is applied by the formatter, which

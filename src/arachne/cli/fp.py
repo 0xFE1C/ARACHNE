@@ -1,4 +1,4 @@
-"""``arachne fp`` — false-positive feedback and tuning (F-05-07, docs/spec/04- §2.6).
+"""``arachne fp`` — false-positive feedback and tuning (F-05-07).
 
 Four verbs, one learner:
 

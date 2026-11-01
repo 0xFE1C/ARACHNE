@@ -21,7 +21,7 @@ evidence is a *posture* rather than a response body.
 
 The 18 new M3 check ids are exactly 's (`m3.ssrf-probe`, `m3.ssti-oracle`...);
 their `research_ref` values are the spec table's corpus references (`ch03#5`, `ch03#6`, ...).
-For this set the spec table and the numbered methods in `docs/research/03-` agree, so no
+For this set the spec table and the numbered methods in `docs/research/03-web-application-testing.md` agree, so no
 reconciliation is needed (unlike M1/M2/M4, ADR-070.3/080.3/120.2). The M5 ids and refs follow
 the same rule; two checks carry a **range** (`m5.tfstate-exposure` = `ch05#11-12` for the state
 file + IaC review, `m5.k8s-exposure` = `ch05#13-14` for RBAC/API + kubelet/dashboard) because the

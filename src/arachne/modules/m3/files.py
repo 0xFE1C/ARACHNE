@@ -8,18 +8,18 @@
     the parameters whose *names* say they take a file name, and reports the first encoding per
     parameter whose response carries a marker the baseline did not.
 
-    The marker set is deliberately tiny and non-secret: ``/etc/passwd`` and ``windows/win.ini``
+    The marker set is deliberately tiny and non-secret: ``/etc/passwd`` and ``/windows/win.ini``
     are world-readable files whose header lines prove a read happened without exfiltrating
     anything sensitive. It is managed data (F-09-04), so an operator who prefers a benign
     in-tree marker file can swap it in without touching code, and ADR-100.5 records why this
-    is the defensible middle ground between research ch03#11's "confirm by content" and
-    docs/spec/07- §1.5's "prefer the safer interpretation".
+    is the defensible middle ground between research ch03#11's "confirm by content" and the
+    safety rules' "prefer the safer interpretation".
 
 ``m3.upload-audit``
     The validation matrix of research ch03#10 — extension mutation, content-type mismatch,
     magic-byte/polyglot classes — against every multipart form the crawl found. It is **opt-in
     beyond the active-checks gate** (``ARACHNE_WEB_UPLOAD_PROBE``): storing a file, even an
-    inert plain-text marker, is a write to the target, and docs/spec/05- M3's safety text says
+    inert plain-text marker, is a write to the target, and the safety rules say
     "no stored payloads". With the knob off the check reports itself skipped and sends nothing;
     with it on it writes one inert marker per extension class and immediately reads it back to
     confirm whether active/executable extensions are accepted — never executing it.
@@ -252,7 +252,7 @@ class UploadAudit(WebCheck, Module):
             yield skip(
                 ctx,
                 "the upload validation probe stores one inert plain-text marker file; it is "
-                "opt-in because docs/spec/05- M3 forbids stored payloads by default "
+                "opt-in because the M3 safety rules forbid stored payloads by default "
                 "(set ARACHNE_WEB_UPLOAD_PROBE=true to enable it)",
             )
             return

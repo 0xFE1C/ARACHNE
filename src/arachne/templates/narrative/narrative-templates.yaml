@@ -1,4 +1,4 @@
-# Narrative templates (docs/spec/04- §2.5, F-05-05).
+# Narrative templates (F-05-05).
 #
 # Every finding gets a narrative generated from these templates, the interpolated facts of the
 # candidate's own evidence, and the rule trace. Placeholders are `{path}` references into the

@@ -82,13 +82,14 @@ python -m arachne.tools.credentials_gate .
 
 - **Match the surrounding code.** Comment density, naming, and idiom are local conventions.
 - **Docstrings explain *why*.** The code says what; the docstring says which requirement or
-  invariant it serves, with the reference (`docs/spec/…` is dead — use `.spec/…` or the
-  requirement id).
+  invariant it serves, with the reference that makes it checkable — a shipped document under
+  `docs/` (`docs/architecture.md`, `docs/operator-guide.md`) or the requirement id. A path in
+  prose must resolve; `python -m arachne.tools.doccheck .` is the gate.
 - **No `print`.** CLI output goes through `typer.echo`; logging through the structured logger.
 - **No bare `except`.** Use the typed errors in `src/arachne/core/errors.py`.
 - **No new top-level package.** New subsystems go into an existing layer
-  (`.spec/04-architecture.md` §4).
-- **Respect the dependency direction** (`.spec/04-architecture.md` §2.2): a module at layer N
+  (`docs/architecture.md` §"Layers").
+- **Respect the dependency direction** (`docs/architecture.md`): a module at layer N
   imports from N-1 or lower, never upward.
 
 ### 3.3 Test layers

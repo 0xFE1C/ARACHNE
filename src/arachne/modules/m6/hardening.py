@@ -2,7 +2,7 @@
 credential hunting (research ch06#3, #5 and #17).
 
 All three read what the scan already has or ships as managed data, and none performs an
-exploitation action (docs/spec/05- M6 "Safety"):
+exploitation action :
 
 ``m6.template-scan``
     A minimal, offline, *strictly a matcher* pass over the served origin: it loads simple

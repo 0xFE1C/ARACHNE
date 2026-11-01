@@ -10,7 +10,7 @@ model's answers.
 Four things are proven here:
 
 1. AI mode produces the same finding set as heuristic mode, with AI provenance recorded
-   (docs/spec/04- §5, F-03-05).
+   (F-03-05).
 2. Structured output is validated and used: the stored narrative and the triage verdict in
    ``analysis_log`` are the model's.
 3. Killing the endpoint mid-scan leaves a completed scan with every finding, each degraded
@@ -165,7 +165,7 @@ async def test_ai_mode_finds_the_same_findings_and_records_ai_provenance(
         (record.check_key, record.title)
         for record in findings_a.list_candidates(session_a.scan_id or 0)
     }
-    assert ai_set == heuristic_set, "AI mode changed the finding set (docs/spec/04- §5)"
+    assert ai_set == heuristic_set, "AI mode changed the finding set "
 
     # The AI half really ran, and the model saw delimited target data.
     assert server.requests, "no model call was made in AI mode"
@@ -223,7 +223,7 @@ async def test_the_stored_analysis_carries_the_models_narrative_and_verdict(
     assert row["provenance"]["model"] == "fake-model-1"
     assert row["provenance"]["prompt_hash"]
     assert row["ai"]["stages"]["triage"]["severity"] == "critical"
-    # The verdict itself stayed the deterministic one (docs/spec/04- §5).
+    # The verdict itself stayed the deterministic one .
     assert row["severity"] == row["score"]["derived_severity"] or row["severity"] in {
         "critical",
         "high",
@@ -272,7 +272,7 @@ async def test_killing_the_endpoint_mid_scan_completes_with_provenance_marked(
     # The candidate's analysis kept the AI stages that succeeded before the endpoint died.
     assert ai_stats["engines"]
 
-    # The degradation is in the audit trail, not only in the statistics (docs/spec/03- §7).
+    # The degradation is in the audit trail, not only in the statistics .
     degraded = [event for event in sink.events if event.action is AuditAction.AI_DEGRADED]
     assert degraded
     assert any("provider_error" in str(event.meta.get("outcome")) for event in degraded)
@@ -346,7 +346,7 @@ async def test_ai_mode_without_a_provider_is_refused_at_plan_time(
 
 
 async def test_hybrid_without_a_provider_is_the_heuristic_engine() -> None:
-    """docs/spec/04- §4: hybrid is heuristics alone when nothing is configured."""
+    """: hybrid is heuristics alone when nothing is configured."""
     settings = build_settings()
     _orch, findings, _analyses, _sink, _bus, session = await run_scan(settings, engine="hybrid")
     assert session.status is ScanStatus.COMPLETED

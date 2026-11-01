@@ -1,4 +1,4 @@
-# AI price table (docs/spec/03- §7, F-04-07): USD per million tokens.
+# AI price table (F-04-07): USD per million tokens.
 #
 # Managed data (F-09-04): point ARACHNE_AI_PRICING at your own table when your rates differ.
 # The values are the public list prices at the time of writing and exist for one purpose —

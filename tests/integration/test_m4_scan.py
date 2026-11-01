@@ -13,8 +13,8 @@ The S7 definition of done is qualitative in shape and quantitative in outcome:
    appear in a candidate, the audit trail or the manifest's bytes, and the manifest
    decrypts to masked fingerprints only.
 4. **The M3/M4 overlap is deduplicated** — one CWE-942 finding survives for the permissive
-   CORS endpoint however many modules and probe origins reported it (docs/spec/05-
-   "Deduplication & overlap rules").
+   CORS endpoint however many modules and probe origins reported it
+   ("Deduplication & overlap rules").
 
 The numbers are recorded in ``docs/adr/120-stage-7-m4-misconfiguration-exposure.md``.
 """
@@ -328,7 +328,7 @@ async def test_secrets_never_reach_evidence_and_the_manifest_is_encrypted(
 
 
 async def test_m3_and_m4_cors_findings_are_deduplicated_by_cwe_and_asset(lab: WebLab) -> None:
-    """docs/spec/05- dedupe: one root cause, one finding, whichever module saw it first."""
+    """ dedupe: one root cause, one finding, whichever module saw it first."""
     findings, analyses, session, _settings, _sink = await run_scan(lab, modules=("M3", "M4"))
     assert session.status is ScanStatus.COMPLETED
     scan_id = session.scan_id or 0

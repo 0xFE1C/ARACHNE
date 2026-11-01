@@ -40,10 +40,10 @@ __all__ = [
 
 SeverityCounts = dict[str, int]
 
-#: Every severity a stored finding may carry (docs/spec/06- §2).
+#: Every severity a stored finding may carry .
 SEVERITIES: tuple[str, ...] = ("critical", "high", "medium", "low", "info")
 
-#: Statuses the API may set on a finding (F-05-07, docs/spec/06- §1).
+#: Statuses the API may set on a finding (F-05-07).
 FINDING_STATUSES: frozenset[str] = frozenset({"open", "verified", "fp", "merged"})
 
 

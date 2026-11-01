@@ -98,7 +98,7 @@ def test_sql_store_persists_a_candidate_with_its_evidence(
     assert record.id is not None
     assert record.severity is None, "the module layer must not score (ADR-02)"
     assert record.status == "open"
-    # The check's 0-1 confidence is stored on the report's 0-100 scale (docs/spec/06- §2), so
+    # The check's 0-1 confidence is stored on the report's 0-100 scale, so
     # the column means one thing whether or not the analyzer has run yet.
     assert record.confidence == 70
     # Two captured exchanges plus the provenance note: a candidate always carries evidence.

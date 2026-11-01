@@ -1,4 +1,4 @@
-The report QA gate (docs/spec/06- §10, docs/spec/07- §6).
+The report QA gate.
 
 `test_report_qa.py` builds one report from a **real full lab scan** — the shared stdlib web
 lab (`tests/lab/web_lab.py`) with M1 (offline checks skip; js-asset-scan runs), M3 and M4
@@ -39,7 +39,7 @@ rendered document.
 On "golden screenshots": the suite has **no headless browser**, and adding one would trade a
 deterministic gate for an installation dependency. The UI's visualizations are SVG the server
 writes, so the committed `.svg` is the screenshot — diffable and reviewable in a pull request.
-The pages carrying them are snapshotted as HTML. `code/docs/operator-guide.md` §42 says so
+The pages carrying them are snapshotted as HTML. `docs/operator-guide.md` §42 says so
 plainly rather than implying a pixel comparison.
 
 Re-bless after an intended change:

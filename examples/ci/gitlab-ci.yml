@@ -4,7 +4,7 @@
 # renders in the merge request widget. A finding at or above `fail_on` fails the job
 # (`allow_failure: false` by default), blocking the merge.
 #
-# Publish the component in a project as `templates/arachne-gate/template.yml`
+# Publish the component in a project as `templates/arachne-gate/`
 # (`src/arachne/templates/ci/gitlab/component.yml` is that file), then include it below.
 # The `component:` path is `<host>/<group>/<project>/arachne-gate@<version>`.
 

@@ -1,7 +1,7 @@
 """Remote-access service checks: SSH, SMTP and RDP/VNC (research ch02#20, #24, #25).
 
 These three checks all answer "what does this reachable service give away before anyone
-authenticates?" — which is precisely the question the M2 safety framing of docs/spec/05- is
+authenticates?" — which is precisely the question the M2 safety framing is
 about: they establish *existence* (a version, a supported algorithm, a valid mailbox, a
 passwordless remote desktop) and stop there. Nothing here submits a credential, and nothing
 here attempts an authentication beyond what the protocol itself answers to an anonymous

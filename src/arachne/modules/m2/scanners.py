@@ -1,6 +1,6 @@
 """Scanner backends: the python-nmap wrapper and the pure-Python connect fallback.
 
-docs/spec/07- §2 asks for "python-nmap (thin), masscan wrapper, ... pure-Python fallbacks
+ asks for "python-nmap (thin), masscan wrapper, ... pure-Python fallbacks
 for core HTTP checks", and M2 is where that trade-off is real: ``nmap`` gives better port
 state classification and service/version fingerprints, but it is an external binary that
 many deployments (and every CI runner without the package installed) do not have. So M2
@@ -10,7 +10,7 @@ always has a working backend:
     Pure Python, on top of :class:`~arachne.core.net.ScopedNetClient`. It is the **default**
     and the fallback: a TCP ``connect()`` scan over a top-ports policy, plus the active
     identification suite of ``m2.fingerprint``. It needs no privileges and no external tool,
-    which is what makes the offline lab scan of docs/spec/07- §9.1 possible.
+    which is what makes the offline lab scan possible.
 ``NmapBackend``
     A thin adapter over ``python-nmap``, used when the library *and* the ``nmap`` binary are
     both present and ``ARACHNE_NET_NMAP_ENABLED`` is set. It is deliberately thin: it maps

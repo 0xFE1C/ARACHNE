@@ -1,4 +1,4 @@
-"""The parity guarantee (docs/spec/04- §5, G-05, F-03-02) — completed in S9.
+"""The parity guarantee (G-05, F-03-02) — completed in S9.
 
 The guarantee is narrow and testable, and this module tests exactly it: for *deterministic*
 checks (all of M1-M4 in this build) the heuristic engine and the AI engine produce the **same
@@ -64,7 +64,7 @@ ANALYZER_REQUIRED_FIELDS = (
 )
 
 #: The fields both engines must agree on for the *same* candidate. ``provenance`` is excluded
-#: by design: it is the one field allowed to differ (docs/spec/04- §5).
+#: by design: it is the one field allowed to differ .
 PARITY_FIELDS = ("severity", "confidence", "cwe", "verdict", "title")
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
@@ -202,7 +202,7 @@ def test_the_heuristic_finding_set_is_deterministic() -> None:
 
 
 async def test_heuristic_and_ai_engines_agree_on_the_finding_set() -> None:
-    """The cross-engine half of G-05 (docs/spec/04- §5)."""
+    """The cross-engine half of G-05 ."""
     heuristic = HeuristicEngine(signatures=SignatureLibrary.load())
     ai, provider = make_engine(heuristic=HeuristicEngine(signatures=SignatureLibrary.load()))
     candidates = (env_candidate(), service_candidate())
@@ -314,7 +314,7 @@ def endpoint() -> Any:
 async def test_a_whole_scan_in_both_modes_yields_the_same_findings(
     endpoint: FakeOpenAI, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A whole-scan parity run (docs/spec/04- §5): the same scan, two engines, one finding set.
+    """A whole-scan parity run : the same scan, two engines, one finding set.
 
     The scan is the recorded M1 replay (deterministic, offline apart from loopback), so the
     comparison is about the *engines*, not about a live target's mood.
@@ -344,7 +344,7 @@ async def test_a_whole_scan_in_both_modes_yields_the_same_findings(
     baseline_rows = index(baseline["analyses"])
     upgraded_rows = index(upgraded["analyses"])
     assert set(upgraded_rows) == set(baseline_rows), (
-        "the finding set differs between engines (docs/spec/04- §5)"
+        "the finding set differs between engines "
     )
     for key, row in upgraded_rows.items():
         counterpart = baseline_rows[key]
@@ -352,7 +352,7 @@ async def test_a_whole_scan_in_both_modes_yields_the_same_findings(
             assert row[field] == counterpart[field], f"{key}: {field} differs between engines"
         assert row["score"] == counterpart["score"]
         assert row["verdict"] in {"analyzed", "dropped"}
-        # Provenance is where the two engines are *allowed* to differ (docs/spec/04- §5) ...
+        # Provenance is where the two engines are *allowed* to differ ...
         assert counterpart["provenance"]["engine"] == "heuristic"
         assert row["provenance"]["engine"] in {"ai", "heuristic"}
         assert row["narrative"] and counterpart["narrative"]

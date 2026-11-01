@@ -6,7 +6,7 @@ an HTTP client?", "what did the crawl find?", "where does this family of payload
 the request/response pair that proved it plus one machine-readable ``artifact`` the heuristic
 rules read. Those shared parts live here so the checks themselves read as oracle logic.
 
-Three rules this module exists to enforce (docs/spec/05- M3 "Safety", docs/spec/07- §5/§8):
+Three rules this module exists to enforce:
 
 * **One egress shape.** Every M3 request goes through :func:`fetch`, which routes to the shared
   scoped client (``ctx.http``) with the operator's session headers attached and redirect
@@ -266,7 +266,7 @@ async def safe_fetch(ctx: CheckContext, url: str, **kwargs: Any) -> HttpExchange
     """Like :func:`fetch`, but a refusal/failure is ``None`` (already audited by the client).
 
     A check makes dozens of probes; one blocked or failed request must not abort the rest —
-    "errors are data" (docs/spec/07- §4). The client audits a scope/safety refusal, so
+    "errors are data" . The client audits a scope/safety refusal, so
     swallowing it here loses no evidence.
     """
     try:
@@ -581,7 +581,7 @@ def web_candidate(
 
     The request/response pair satisfies F-02-08 ("request, response, headers, timing"); the
     ``artifact`` carries the oracle's verdict as *facts* so a rule in the shipped corpus can
-    fire on them (docs/spec/04- §2.1) instead of re-deriving the comparison. The proof-ladder
+    fire on them instead of re-deriving the comparison. The proof-ladder
     checks (S15) append their ``proof`` evidence through ``extra_evidence`` so a finding can
     carry its level, method and cleanup status next to the oracle's facts.
     """

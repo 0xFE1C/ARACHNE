@@ -7,7 +7,7 @@
     user-enumeration oracle — a plausible privileged name versus a random one, both with a
     single dummy password, compared for a differential. The enumeration pass is
     *existence verification*, bounded and lockout-safe, exactly as M2's Kerberos check is
-    (research ch02#19); it never tries a real credential (F-01-09, docs/spec/05- "Safety").
+    (research ch02#19); it never tries a real credential (F-01-09).
     Session fixation and logout invalidation are **not** implemented — both need a successful
     login, which would mean supplying real credentials; ADR-100.6 records the gap.
 

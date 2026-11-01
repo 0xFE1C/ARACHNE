@@ -1,10 +1,10 @@
-"""Ollama's native API adapter (docs/spec/03- §3) — the fully local path.
+"""Ollama's native API adapter — the fully local path.
 
 ``POST {base_url}/api/chat`` with ``stream: false``. Structured output uses Ollama's own
 ``format`` field: the string ``"json"`` for JSON mode, or a full JSON **schema object**, which
 current Ollama versions turn into a grammar (constrained decoding). That is why the local path
 is the one that can genuinely *guarantee* a shape without a hosted provider's tool-use support,
-and it is the path docs/spec/03- §6 calls out with "``format: \"json\"`` + optional
+and it is the path the documentation calls out with "``format: \"json\"`` + optional
 JSONSchema grammar".
 
 No credential: Ollama has no authentication, and the scope/URL policy is what decides whether

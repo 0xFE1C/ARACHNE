@@ -1,4 +1,4 @@
-# FP-tuner threshold table (F-05-07, docs/spec/04- §2.6).
+# FP-tuner threshold table (F-05-07).
 #
 # `default` is the confidence a finding must reach to be reported as a *confirmed* finding
 # rather than a low-confidence observation; it mirrors ARACHNE_MIN_CONFIDENCE.

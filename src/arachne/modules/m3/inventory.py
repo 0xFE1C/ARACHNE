@@ -1,10 +1,10 @@
 """The M3 web inventory: one bounded crawl every M3 check reads (ADR-100.2).
 
 M2's checks share a :class:`~arachne.modules.m2.inventory.NetworkInventory` so the port scan
-happens once; M3's checks share this object for the same reason. Twelve checks each crawling
-the application would multiply the request count by twelve, make the plan's estimate fiction,
-and — worst — turn twelve independent guesses about "what are the parameters here?" into
-twelve different answers.
+happens once; M3's checks share this object for the same reason. Every M3 check crawling
+the application independently would multiply the request count, make the plan's estimate
+fiction, and — worst — turn independent guesses about "what are the parameters here?" into
+as many different answers.
 
 The crawl is deliberately narrow, because it is the only thing in M3 that runs before a check
 has decided anything:
@@ -490,7 +490,7 @@ def extract_document(html: str, base_url: str) -> tuple[tuple[str, ...], tuple[F
     try:
         parser.feed(html)
         parser.close()
-    except Exception:  # a broken document must not break the crawl (docs/spec/07- §4)
+    except Exception:  # a broken document must not break the crawl
         return tuple(dict.fromkeys(parser.links)), tuple(parser.forms)
     return tuple(dict.fromkeys(parser.links)), tuple(parser.forms)
 

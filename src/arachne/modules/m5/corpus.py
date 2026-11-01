@@ -5,7 +5,7 @@ open bucket, a public Firebase rule set, a committed ``.tfstate``, an unauthenti
 a risky GitHub Actions workflow. Almost all of the module is therefore **data** — which paths
 to probe, which marker proves a hit, which constructs a workflow review flags — and keeping
 that in one reviewable file matters more here than in M3/M4 because the corpus is also the
-module's *documentation of what it sends* (docs/spec/05- M5 "Safety").
+module's *documentation of what it sends*.
 
 The loader mirrors ``m4.corpus``: typed accessors over the raw mapping, validated lazily so a
 corpus without, say, an IAM section still supports every other check, and a malformed regex

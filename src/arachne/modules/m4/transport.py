@@ -9,7 +9,7 @@ it is off unless OSINT is enabled and the ``dns`` provider is selected.
 The overlap with M3 is deliberate and resolved by the correlation engine: ``CWE-693``
 (headers), ``CWE-614`` (cookies) and ``CWE-942`` (CORS) are the same root cause whichever
 module observes it, so the dedupe pass keeps one finding with both modules as contributors
-(docs/spec/05- "Deduplication & overlap rules").
+.
 """
 
 from __future__ import annotations

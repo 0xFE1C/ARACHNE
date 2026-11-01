@@ -1,4 +1,4 @@
-# Context filters for false-positive reduction (docs/spec/04- §2.6, F-05-07).
+# Context filters for false-positive reduction (F-05-07).
 #
 # These are the pages that make a scanner noisy: a web server's default page, a "coming soon"
 # placeholder, a WAF interstitial, a login wall. Each filter matches case-insensitive

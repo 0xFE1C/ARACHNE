@@ -1,4 +1,4 @@
-"""Structured output: four mechanisms, one validator (docs/spec/03- §6, F-04-03).
+"""Structured output: four mechanisms, one validator (F-04-03).
 
 The spec's table is "how each provider class is *asked*"; this module is the **one place the
 answer is judged**. Whatever mechanism a provider used — ``json_object``, ``json_schema``,
@@ -16,7 +16,7 @@ Three deliberate properties:
 * **Parsing is tolerant; validation is not.** Fences, leading prose and trailing commas are
   recovered (a model that produced the right object with a fence around it is not a failure);
   a missing or mistyped field is.
-* **The repair attempt gets the error, not the whole prompt again.** docs/spec/03- §5 allows
+* **The repair attempt gets the error, not the whole prompt again.** The budget allows
   one retry with a repair prompt; sending the validator's complaint back is what makes that
   retry worth its tokens.
 """
@@ -61,7 +61,7 @@ class SchemaSpec:
 
     @property
     def schema_version(self) -> str:
-        """A short, stable digest of the schema (recorded as provenance, docs/spec/03- §5)."""
+        """A short, stable digest of the schema (recorded as provenance)."""
         import hashlib
 
         payload = json.dumps(self.json_schema, sort_keys=True)
@@ -186,7 +186,7 @@ def parse_structured(text: str, spec: SchemaSpec) -> dict[str, Any]:
 
 
 def repair_prompt(error: str, spec: SchemaSpec) -> str:
-    """The one repair attempt docs/spec/03- §5 allows, carrying the validator's complaint."""
+    """The one repair attempt the budget allows, carrying the validator's complaint."""
     return (
         "Your previous answer was rejected by the schema validator. "
         f"Reason: {error}. "

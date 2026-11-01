@@ -1,4 +1,4 @@
-"""Structured logging tests (docs/spec/07- §4, F-08-01)."""
+"""Structured logging tests (F-08-01)."""
 
 from __future__ import annotations
 

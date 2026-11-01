@@ -1,4 +1,4 @@
-"""The ``analysis`` and ``correlation`` pipeline steps (docs/spec/02- §3 steps 5-6).
+"""The ``analysis`` and ``correlation`` pipeline steps .
 
 These two handlers are the seam between the detection layer and the analyzer, and they exist
 separately for one reason: **the analyzer must not import the module layer or the ORM.** So
@@ -129,8 +129,8 @@ class EngineResolver:
     The engine is a per-scan choice (``ScanOptions.engine``), not a deployment-wide one, so the
     handler cannot be built around a single instance. This holds the deployment's settings and
     hands out the right engine per step context: ``heuristic`` always works, ``hybrid`` is the
-    AI engine when a provider is configured and the heuristic engine otherwise
-    (docs/spec/04- §4), and ``ai`` without a provider is refused loudly rather than silently
+    AI engine when a provider is configured and the heuristic engine otherwise,
+    and ``ai`` without a provider is refused loudly rather than silently
     downgraded (F-03-03).
 
     The AI engine is built lazily and once per resolver, so a deployment that configures AI but
@@ -554,9 +554,9 @@ def make_correlation_handler(
 
     With the AI engine selected for the scan, a group of at least
     ``ai.correlate_threshold`` candidates gets an AI-written title and reasoning
-    (docs/spec/03- §4 ``correlate``). The *existence*, the contributors and the severity of the
+    . The *existence*, the contributors and the severity of the
     compound stay the correlation engine's decision, so the finding set is identical in both
-    engine modes (docs/spec/04- §5) and only the prose differs.
+    engine modes and only the prose differs.
     """
     metadata = metadata_map(registry)
 
@@ -795,7 +795,7 @@ def select_analysis_engine(settings: Settings | None, engine_name: str) -> Any:
     """Resolve the scan's engine by name, building the AI engine when it is configured.
 
     ``ai`` without a provider is refused (F-03-03); ``hybrid`` falls back to the heuristic
-    engine, which is the docs/spec/04- §4 default behaviour for a deployment with no AI.
+    engine, which is the default behaviour for a deployment with no AI.
     """
     resolver = EngineResolver(settings)
     return select_engine(

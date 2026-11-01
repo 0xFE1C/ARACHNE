@@ -1,6 +1,6 @@
 """The report data model — one immutable DTO every renderer consumes (ADR-06, F-06-01).
 
-``ReportData`` is the contract of docs/spec/06- §1 and §3. The heuristic engine, the AI
+``ReportData`` is the contract of the report. The heuristic engine, the AI
 engine (S9) and every renderer (Markdown, JSON, later HTML/PDF) all speak this shape, so a
 report can never be more (or less) than what the scan actually recorded. Three rules make
 that true:
@@ -11,11 +11,11 @@ that true:
 * **Every value a reader sees is in here.** A Markdown renderer that pulled a severity from
   the database would be able to disagree with the JSON renderer; keeping all input in one
   frozen object is what makes the two byte-for-byte derivable from the same source.
-* **The schema is versioned** (docs/spec/07- §4 "version everything"). ``schema_version`` is
+* **The schema is versioned** . ``schema_version`` is
   carried in the JSON document and in the shipped JSON Schema, so a consumer can validate
   a report written by an older build.
 
-The field names follow docs/spec/06- §1 literally (``check_id``, ``evidence_refs``,
+The field names follow the report contract literally (``check_id``, ``evidence_refs``,
 ``score.confidence``); where the spec's sample shows a nullable value (``cve``, ``epss``,
 ``verified_at``) the field is ``None`` rather than absent, so a consumer's validation is
 uniform.
@@ -65,7 +65,7 @@ __all__ = [
     "finding_id",
 ]
 
-#: Bumped whenever the serialized report changes shape. The contract of docs/spec/06- §1.
+#: Bumped whenever the serialized report changes shape. The contract.
 #: 1.1 (S14) adds the optional ``branding`` block for white-labelled MSSP reports.
 #: 1.2 (S15) adds the per-finding ``proof`` artifact and the report-level ``state_changes``
 #: table (area PROOF, REQ-PROOF-013).
@@ -101,24 +101,24 @@ REPORT_SCHEMA_VERSION = "1.11"
 
 Severity = Literal["critical", "high", "medium", "low", "info"]
 
-#: Severity order every renderer sorts by (docs/spec/06- §3 "grouped by severity").
+#: Severity order every renderer sorts by .
 SEVERITY_ORDER: tuple[str, ...] = ("critical", "high", "medium", "low", "info")
 
 _MODEL = ConfigDict(frozen=True, extra="forbid")
 
 
 def finding_id(number: int) -> str:
-    """``42`` → ``F-000042`` (docs/spec/06- §1's id format)."""
+    """``42`` → ``F-000042``."""
     return f"F-{number:06d}"
 
 
 def evidence_id(number: int) -> str:
-    """``1`` → ``E-0001`` (docs/spec/06- §1's evidence-ref format)."""
+    """``1`` → ``E-0001`` (evidence-ref format)."""
     return f"E-{number:04d}"
 
 
 class AssetRef(BaseModel):
-    """The affected asset (docs/spec/06- §1 ``asset``)."""
+    """The affected asset (``asset``)."""
 
     model_config = _MODEL
 
@@ -128,7 +128,7 @@ class AssetRef(BaseModel):
 
 
 class Score(BaseModel):
-    """The F-05-04 scoring output as the report prints it (docs/spec/06- §1 ``score``)."""
+    """The F-05-04 scoring output as the report prints it (``score``)."""
 
     model_config = _MODEL
 
@@ -140,7 +140,7 @@ class Score(BaseModel):
 
 
 class Classification(BaseModel):
-    """CWE/CVE/CAPEC and the OWASP Top-10 mapping (docs/spec/06- §1 ``classification``)."""
+    """CWE/CVE/CAPEC and the OWASP Top-10 mapping (``classification``)."""
 
     model_config = _MODEL
 
@@ -151,7 +151,7 @@ class Classification(BaseModel):
 
 
 class Provenance(BaseModel):
-    """Which engine decided this finding, and on what corpus (F-03-05, docs/spec/06- §1)."""
+    """Which engine decided this finding, and on what corpus (F-03-05)."""
 
     model_config = _MODEL
 
@@ -164,7 +164,7 @@ class Provenance(BaseModel):
 
 
 class Timestamps(BaseModel):
-    """When the finding was first/last seen and, if verified, when (docs/spec/06- §1)."""
+    """When the finding was first and last seen, and when it was verified."""
 
     model_config = _MODEL
 
@@ -174,7 +174,7 @@ class Timestamps(BaseModel):
 
 
 class RemediationPlan(BaseModel):
-    """A resolved catalog entry (docs/spec/06- §6): summary, steps, verification, refs."""
+    """A resolved catalog entry: summary, steps, verification, refs."""
 
     model_config = _MODEL
 
@@ -187,7 +187,7 @@ class RemediationPlan(BaseModel):
 
 
 class ReportEvidence(BaseModel):
-    """One evidence payload, addressed by its report id (docs/spec/06- §5, appendix A)."""
+    """One evidence payload, addressed by its report id (appendix A)."""
 
     model_config = _MODEL
 
@@ -240,7 +240,7 @@ class StateChangeEntry(BaseModel):
 
 
 class ReportFinding(BaseModel):
-    """One finding, exactly the docs/spec/06- §1 schema."""
+    """One finding, exactly the report schema."""
 
     model_config = _MODEL
 
@@ -264,13 +264,13 @@ class ReportFinding(BaseModel):
     status: str = "open"
     provenance: Provenance = Field(default_factory=Provenance)
     timestamps: Timestamps = Field(default_factory=Timestamps)
-    #: True when the finding is below the confidence threshold (docs/spec/06- §2). Such a
+    #: True when the finding is below the confidence threshold . Such a
     #: finding is rendered in its own section and never in a severity table.
     low_confidence: bool = False
 
 
 class SeverityCounts(BaseModel):
-    """The counts table of docs/spec/06- §3 section 2 (confirmed findings only)."""
+    """The counts table (confirmed findings only)."""
 
     model_config = _MODEL
 
@@ -299,7 +299,7 @@ class SeverityCounts(BaseModel):
 
 
 class ExecutiveSummary(BaseModel):
-    """Section 2 of docs/spec/06- §3: narrative, counts and priority order."""
+    """Section 2: narrative, counts and priority order."""
 
     model_config = _MODEL
 
@@ -329,7 +329,7 @@ class CheckRun(BaseModel):
 
 
 class ScopeMethodology(BaseModel):
-    """Section 3 of docs/spec/06- §3: what was scanned, how, and under which limits."""
+    """Section 3: what was scanned, how, and under which limits."""
 
     model_config = _MODEL
 
@@ -359,7 +359,7 @@ class ScopeMethodology(BaseModel):
 
 
 class AssetEntry(BaseModel):
-    """One discovered asset (docs/spec/06- §3 section 4)."""
+    """One discovered asset (section 4)."""
 
     model_config = _MODEL
 
@@ -371,7 +371,7 @@ class AssetEntry(BaseModel):
 
 
 class AuditHighlights(BaseModel):
-    """The audit-log summary and out-of-scope events (docs/spec/06- §3 appendix B/C)."""
+    """The audit-log summary and out-of-scope events (appendix B/C)."""
 
     model_config = _MODEL
 
@@ -396,7 +396,7 @@ class FalsePositiveEntry(BaseModel):
 
 
 class ReportDiff(BaseModel):
-    """The scan-to-scan skeleton of F-06-05 / docs/spec/06- §7.
+    """The scan-to-scan skeleton of F-06-05.
 
     Full trend rendering is S11; this is the data the diff section is written from and the
     payload persisted in ``scans_diff``.
@@ -430,7 +430,7 @@ class ReportDiff(BaseModel):
 
 
 class Appendix(BaseModel):
-    """Section 11 of docs/spec/06- §3: payloads, audit, scope events, FP log, glossary."""
+    """Section 11: payloads, audit, scope events, FP log, glossary."""
 
     model_config = _MODEL
 
@@ -441,7 +441,7 @@ class Appendix(BaseModel):
 
 
 class ReportCover(BaseModel):
-    """Section 1 of docs/spec/06- §3 (the cover/header)."""
+    """Section 1: the cover and header."""
 
     model_config = _MODEL
 
@@ -870,10 +870,10 @@ class ReportData(BaseModel):
     scope: ScopeMethodology
     assets: tuple[AssetEntry, ...] = ()
     #: Confirmed findings, sorted by severity (critical first) then id. Low-confidence
-    #: findings live in :attr:`low_confidence` and never here (docs/spec/06- §2).
+    #: findings live in :attr:`low_confidence` and never here .
     findings: tuple[ReportFinding, ...] = ()
     low_confidence: tuple[ReportFinding, ...] = ()
-    #: The M6 patch-gap/exposure block; ``None`` when M6 did not run (docs/spec/06- §3.7).
+    #: The M6 patch-gap/exposure block; ``None`` when M6 did not run .
     patch_gap: dict[str, Any] | None = None
     #: Every state change an L4 proof made (S15, REQ-PROOF-013): what/where/before/after/
     #: restored. Empty when nothing changed — which is the normal case.

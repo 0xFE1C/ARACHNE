@@ -1,4 +1,4 @@
-"""Provider adapters: the docs/spec/03- §3 table, one module per API shape.
+"""Provider adapters: the provider table, one module per API shape.
 
 ``base``      the plan → send → interpret seam every adapter fills in
 ``openai``    ``openai``, ``openai_compatible``, ``mistral`` (one format, three names)

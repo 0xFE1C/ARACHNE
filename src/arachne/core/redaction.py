@@ -1,4 +1,4 @@
-"""Secret redaction (F-08-01, F-08-04, docs/spec/07- §5).
+"""Secret redaction (F-08-01, F-08-04).
 
 Redaction is applied **at evidence-capture time**, not at render time, so a later stage
 cannot accidentally leak a value it never received. The same functions back the HTTP
@@ -354,7 +354,7 @@ def _is_sensitive_key(identifier: str) -> bool:
     and ``AWS-SECRET-ACCESS-KEY`` all collapse onto the same haystack. Substring matching
     (rather than whole-name equality) is deliberate: it is what catches composite names
     such as ``aws_secret_access_key`` and ``X-Auth-Token`` that no fixed list would
-    enumerate, and over-redaction is the safe direction (docs/spec/07- §1.5).
+    enumerate, and over-redaction is the safe direction .
     """
     collapsed = re.sub(r"[^a-z0-9]", "", identifier.lower())
     return any(marker in collapsed for marker in _SENSITIVE_KEY_SUBSTRINGS)

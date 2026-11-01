@@ -1,4 +1,4 @@
-"""The adapter registry: provider name → class (docs/spec/03- §3's table).
+"""The adapter registry: provider name → class .
 
 One table, so "supported providers" is answerable in one place and the configuration loader's
 vocabulary (``ai.config.ADAPTERS``) cannot drift from what can actually be built. A test asserts

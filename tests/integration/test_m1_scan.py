@@ -1,6 +1,6 @@
 """Acceptance: M1 runs against recorded data and emits evidence-bearing candidates.
 
-This is the stage's headline behaviour (docs/spec/08- Phase 1, roadmap): the nine M1 checks
+This is the stage's headline behaviour (Phase 1, roadmap): the M1 checks
 execute end to end, discover assets, raise candidates with evidence, respect the scope guard,
 and never touch a network — third-party responses come from recorded fixtures
 (``ARACHNE_OSINT_FIXTURES``) and the target's own content from a recording too
@@ -157,7 +157,7 @@ async def test_m1_discovers_assets_and_raises_candidates() -> None:
     assert step.stats["candidates"] == len(candidates)
     assert step.stats["checks_run"] >= 9
 
-    # The check-completion and finding events fired (docs/spec/02- §2.1).
+    # The check-completion and finding events fired .
     types = bus.types()
     assert EventType.HOST_DISCOVERED in types
     assert EventType.CHECK_COMPLETED in types
@@ -214,7 +214,7 @@ async def test_secrets_are_reported_masked_never_in_the_clear() -> None:
 
 
 async def test_a_budget_that_runs_out_degrades_to_a_recorded_finding() -> None:
-    """The request budget bounds a scan; hitting it is data, not a crash (docs/spec/07- §4)."""
+    """The request budget bounds a scan; hitting it is data, not a crash ."""
     settings = build_settings()
     settings = Settings(
         database_url=settings.database_url,

@@ -1,6 +1,6 @@
-"""PDF renderer — the formal-delivery format (F-06-02, docs/spec/06- §4).
+"""PDF renderer — the formal-delivery format (F-06-02).
 
-The contract is docs/spec/06- §4: *"generated from the HTML render via headless renderer;
+The contract is : *"generated from the HTML render via headless renderer;
 page numbers, cover"*. This module honours the first half literally — the input is exactly
 what :func:`arachne.report.html_render.render_html` produced, parsed back into blocks — and
 offers two kinds of headless renderer for the second:
@@ -516,7 +516,7 @@ class _BlockParser(HTMLParser):
             return
         if tag == "section":
             if self._cover:
-                # The cover is its own sheet (docs/spec/06- §4): one explicit break, never one
+                # The cover is its own sheet : one explicit break, never one
                 # per element, or a two-line cover would consume a page per line.
                 self._flush("paragraph")
                 self.blocks.append(_Block(kind="pagebreak"))
@@ -825,7 +825,7 @@ class ExternalBackend:
 
 
 def render_pdf(report: ReportData, *, backend: str | None = None) -> PdfResult:
-    """Render ``report`` to PDF (F-06-02, docs/spec/06- §4).
+    """Render ``report`` to PDF (F-06-02).
 
     The HTML render happens first and unconditionally: it is the input to both paths, so a
     caller can always inspect what the PDF was made from. With no external engine installed

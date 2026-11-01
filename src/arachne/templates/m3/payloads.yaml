@@ -1,9 +1,8 @@
-# M3 web-application probe corpus (S6, docs/spec/05- M3, F-09-04).
+# M3 web-application probe corpus (S6, F-09-04).
 #
 # Everything an M3 oracle sends is *data* here, so an operator can narrow or extend it
 # without touching code (F-09-04) and so a reviewer can read exactly what leaves the scanner
-# in one place. Two rules govern every entry, and they are the M3 safety contract
-# (docs/spec/05- "M3 · Safety", docs/spec/07- §8):
+# in one place. Two rules govern every entry, and they are the M3 safety contract:
 #
 #   1. **Detection-only.** A payload is a probe, not an exploit: single-character deltas, a
 #      benign reflection marker, an encoding variant. Nothing here stores hostile content,
@@ -117,7 +116,7 @@ auth:
   # Plausible privileged names the enumeration differential compares against a random one.
   # This is *existence* probing with a single dummy password, lockout-safe and bounded — the
   # same posture M2 takes for Kerberos user enumeration (research ch02#19), never a
-  # credential attack (F-01-09, docs/spec/05- "Safety").
+  # credential attack (F-01-09).
   usernames: ["admin", "administrator", "root", "test", "user"]
   dummy_password: "arachne-not-a-credential"
   # Field-name hints, so a login form is recognised structurally rather than by page title.

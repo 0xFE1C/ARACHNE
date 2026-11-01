@@ -1,4 +1,4 @@
-"""The analysis and correlation step handlers (docs/spec/02- §3 steps 5-6).
+"""The analysis and correlation step handlers .
 
 These are the seam tests: a stored candidate row must become exactly the analyzer input the
 engine expects (dot-form check id, asset identity, check metadata, evidence), and the two

@@ -49,11 +49,11 @@ class ProviderCall:
 
 
 class HttpProvider(ABC):
-    """Base class for the seven HTTP adapters of docs/spec/03- §3."""
+    """Base class for the seven HTTP adapters."""
 
     #: The adapter name as spelled in the configuration (``openai_compatible``, ``ollama``, ...).
     name: str = ""
-    #: The structured-output mechanism this API uses by default (docs/spec/03- §6's table).
+    #: The structured-output mechanism this API uses by default .
     mechanism: str = "text"
 
     def __init__(self, config: ResolvedProvider, transport: LlmTransport) -> None:

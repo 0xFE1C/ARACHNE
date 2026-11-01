@@ -1,13 +1,13 @@
-"""The heuristic engine: an ``Analyzer`` that needs no model (docs/spec/04-, F-03-01/F-05-*).
+"""The heuristic engine: an ``Analyzer`` that needs no model (F-03-01/F-05-*).
 
 ``HeuristicEngine.analyze(candidates, context)`` is the whole analysis stage in one pure,
 synchronous call: for each candidate it matches the byte-level signals (``SignatureLibrary``),
 evaluates the rules, scores, computes confidence, drops what the FP filters reject, and
 synthesises the narrative. No network, no clock, no database — which is what makes it the
-deterministic default engine (docs/spec/04- §4) and the fallback every AI mode falls back to
+deterministic default engine and the fallback every AI mode falls back to
 (F-03-04).
 
-The interface is docs/spec/02- §2.3, verbatim::
+The interface is verbatim::
 
     Analyzer.analyze(candidates, context) -> list[Analysis]
 
@@ -15,8 +15,8 @@ Two deliberate divisions of labour:
 
 * **Verification is not here.** F-05-07's re-request is I/O, so the *caller* (the analysis
   step handler) runs the :class:`~arachne.analyzer.fp.Verifier` and hands the outcome in
-  through :class:`~arachne.analyzer.model.ScanContext`. That keeps this call pure and keeps
-  docs/spec/04- §2.1's "no network in the rule engine" true of the engine as a whole.
+  through :class:`~arachne.analyzer.model.ScanContext`. That keeps this call pure, and keeps
+  the "no network in the rule engine" rule true of the engine as a whole.
 * **Selection is a data question.** Which engine runs is ``ScanOptions.engine``; this module
   answers "is the requested engine available in this build?", so an ``ai`` scan fails with an
   actionable message instead of silently degrading (F-03-03 — AI is opt-in and explicit).
@@ -83,7 +83,7 @@ _UNVERIFIED_HIGH_PENALTY: int = 15
 
 @runtime_checkable
 class Analyzer(Protocol):
-    """The engine interface both engines implement (docs/spec/02- §2.3, F-03-01)."""
+    """The engine interface both engines implement (F-03-01)."""
 
     name: str
 
@@ -94,7 +94,7 @@ class Analyzer(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class AnalysisPolicies:
-    """The knobs a deployment can turn on the heuristic engine (docs/spec/04- §2.6)."""
+    """The knobs a deployment can turn on the heuristic engine ."""
 
     #: Drop a candidate whose verification contradicted it (F-05-07).
     drop_on_contradiction: bool = True
@@ -102,7 +102,7 @@ class AnalysisPolicies:
     drop_on_placeholder: bool = True
     #: Apply the operator FP tuner to confidence (F-05-07).
     tuner_enabled: bool = True
-    #: Below this confidence a finding is a "low-confidence observation" (docs/spec/06- §2).
+    #: Below this confidence a finding is a "low-confidence observation" .
     minimum_confidence: int = 55
     #: A high/critical finding must have reproduced on a re-request to be accepted as
     #: confirmed; one that could not be re-verified keeps its severity but is flagged and
@@ -163,7 +163,7 @@ class HeuristicEngine:
     def analyze(
         self, candidates: Sequence[Candidate], context: ScanContext
     ) -> tuple[Analysis, ...]:
-        """Analyse every candidate, in input order (deterministic, docs/spec/04- §4)."""
+        """Analyse every candidate, in input order (deterministic)."""
         return tuple(self.analyze_one(candidate, context) for candidate in candidates)
 
     def analyze_one(self, candidate: Candidate, context: ScanContext) -> Analysis:
@@ -211,7 +211,7 @@ class HeuristicEngine:
         )
         if rule_match is None:
             # No rule spoke, so the score decides — but never below what the check itself
-            # declared as its floor (docs/spec/05- "severity_hint").
+            # declared as its floor .
             severity = worst_severity(severity, score.derived_severity)
         if signature_severity is not None and rule_match is None:
             severity = worst_severity(severity, signature_severity)
@@ -253,7 +253,7 @@ class HeuristicEngine:
         if verdict == "analyzed" and confidence < required:
             risk_note = (
                 f"low-confidence observation ({confidence} < {required}): "
-                "reported separately from confirmed findings (docs/spec/06- §2)"
+                "reported separately from confirmed findings "
             )
         else:
             risk_note = ""
@@ -434,7 +434,7 @@ def select_engine(
 ) -> Analyzer:
     """Resolve ``ScanOptions.engine`` to an engine instance (F-03-01/F-03-04).
 
-    ``hybrid`` is the docs/spec/04- §4 default recommendation: heuristics run everything, and
+    ``hybrid`` is the default recommendation: heuristics run everything, and
     the AI engine engages *on top of* the heuristic result when a provider is configured. With
     no provider, "hybrid" is exactly "heuristic" — a deployment that has not configured AI gets
     the deterministic engine, not an error.

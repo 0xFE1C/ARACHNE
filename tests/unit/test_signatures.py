@@ -1,4 +1,4 @@
-"""The signature system: the Nuclei-compatible subset (docs/spec/04- §2.2, F-05-02).
+"""The signature system: the Nuclei-compatible subset (F-05-02).
 
 Two properties matter most: the community template shape imports unchanged, and nothing a
 template says can execute. The matchers are the nuclei vocabulary (status/word/regex/dsl/size)

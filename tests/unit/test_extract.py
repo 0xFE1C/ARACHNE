@@ -49,7 +49,7 @@ def test_detect_secrets_deduplicates_and_respects_the_limit() -> None:
 
 
 def test_detect_secrets_is_linear_on_pathological_input() -> None:
-    """A body that is all key prefixes must not blow up the scanner (docs/spec/07- §4)."""
+    """A body that is all key prefixes must not blow up the scanner ."""
     started = time.monotonic()
     detect_secrets("AKIA" * 200_000)
     assert time.monotonic() - started < 5.0

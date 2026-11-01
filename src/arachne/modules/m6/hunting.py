@@ -1,7 +1,7 @@
 """Post-exploitation signal hunting: Sigma rules, deception triggers and AD paths.
 
 Three checks that look for signs an attacker is *already inside* — and none of which takes a
-post-exploitation action (docs/spec/05- M6 "Safety"), so building them is defensive:
+post-exploitation action, so building them is defensive:
 
 ``m6.sigma-hunt-rules``
     Ships the detection-as-code corpus (Kerberoasting 4769, AS-REP 4768, LSASS access,
@@ -165,7 +165,7 @@ class SigmaHuntRules(Module):
             yield skip(
                 ctx,
                 "no log-access grant: set ARACHNE_M6_LOG_ACCESS=true to hunt the exported "
-                "telemetry (docs/spec/05- M6 'Safety')",
+                "telemetry ('Safety')",
             )
             return
         corpus = corpus_for(ctx)

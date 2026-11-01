@@ -1,9 +1,9 @@
-"""M5 · Cloud, Container & Supply Chain (docs/spec/05- M5, research ch. 05).
+"""M5 · Cloud, Container & Supply Chain .
 
 M5 answers "what did we leave reachable, and what are we building from?" It is the module that
 most often needs something *other* than the target's web surface: a cloud reference (read-only),
 a repository clone, an image/registry reference, or an exposure-visible service (a bucket, a
-dashboard, a metadata endpoint). The sixteen checks split into three groups:
+dashboard, a metadata endpoint). The checks split into three groups:
 
 ========================================  ==========  ==========================================
 check                                      ref         what it establishes
@@ -31,10 +31,11 @@ check                                      ref         what it establishes
 ========================================  ==========  ==========================================
 
 **Numbering.** As for M1-M4, ``research_ref`` values are the canonical method numbers of
-``docs/research/05-`` and the check **ids** are docs/spec/05-'s; the spec table's refs drift from
-the corpus after ``imds-ssrf``, and ADR-S10-3 records the reconciliation.
+``docs/research/05-cloud-and-supply-chain.md`` and the check **ids** are the corpus's; the
+spec table's refs drift from the corpus after ``imds-ssrf``, and ADR-S10-3 records the
+reconciliation.
 
-**Safety** (docs/spec/05- M5 "Safety"): read-only cloud calls with a documented permission list;
+**Safety** : read-only cloud calls with a documented permission list;
 bucket/registry probes non-destructive; repo/pipeline analysis on **local clones only**. The two
 metadata checks are off by default on top of the active-checks gate (``ARACHNE_M5_IMDS_PROBE``);
 credential validation is off by default (``ARACHNE_M5_VALIDATE_CLOUD_KEYS``) and uses only a
@@ -104,7 +105,7 @@ M5_CHECKS: tuple[type[Module], ...] = (
     AzureMiAudit,
 )
 
-#: The M5 module group (docs/spec/02- §2.2). Bump the version when the set or a check's
+#: The M5 module group . Bump the version when the set or a check's
 #: behaviour changes: scan reports record it (F-02-10).
 M5 = ModuleGroup(
     id="M5",

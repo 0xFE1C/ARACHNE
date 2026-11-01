@@ -84,6 +84,6 @@ works with no arguments; a published module should pin `chart_path` (or vendor t
 The module is written to be `terraform init && terraform validate`-able against the Helm and
 Kubernetes providers (this has not been run here — the `terraform` binary is **not** part of
 the ARACHNE test environment, and no `terraform validate` was executed). The test suite pins
-the module's structure instead (`code/tests/test_ci_surfaces.py`): every declared variable is
+the module's structure instead (`tests/test_ci_surfaces.py`): every declared variable is
 referenced and every output is defined. Run `terraform fmt -check` and `terraform validate`
 locally before changing it.

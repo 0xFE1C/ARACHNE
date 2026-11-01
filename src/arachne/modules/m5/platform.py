@@ -8,7 +8,7 @@ claimed.
 
 ``m5.tfstate-exposure`` also runs the IaC misconfiguration review (ch05#12, tfsec/checkov-class)
 over a local clone's ``.tf``/manifest files when the asset names one, so the state-file exposure
-and the static review share one check as docs/spec/05- M5 pairs them.
+and the static review share one check as the module pairs them.
 """
 
 from __future__ import annotations

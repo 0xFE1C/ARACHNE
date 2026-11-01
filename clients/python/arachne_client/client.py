@@ -216,7 +216,7 @@ class FeedImport(TypedDict):
 
 
 class FindingOut(TypedDict):
-    """A finding as the API/UI lists it (docs/spec/06- §1 fields + the store ids)."""
+    """A finding as the API/UI lists it (fields + the store ids)."""
 
     id: int
     scan_id: int

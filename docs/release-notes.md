@@ -86,13 +86,16 @@ corpora live in `src/arachne/templates/` and can be replaced by an operator.
 
 | What | Result |
 |---|---|
-| Tests passing | **3,967** (3,992 collected, 23 skipped) |
-| Primary safety suite | **59 tests** in `tests/test_safety.py`; across all safety files, 200 |
+| Tests | **4,023** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Primary safety suite | **59 tests** in `tests/test_safety.py`; **259** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol and mobile fixtures with planted false-positive traps |
-| Strict type checking | clean across 355 source files |
+| Strict type checking | clean under `mypy --strict` across the **357** Python modules in `src/` |
 | Lint | clean over `src/` and `tests/` |
+| Research coverage | **148/175 (84.6%)** of the corpus's numbered methods have an implementing check |
 
-Reproduce the numbers with the commands in the [operator guide](operator-guide.md).
+Every figure here is generated rather than typed: `python -m arachne.tools.counts --check`
+fails the build when one of them drifts from the registry, the suite or the coverage tool.
+Reproduce them with the commands in the [operator guide](operator-guide.md).
 
 ### Known limitations
 
@@ -123,8 +126,11 @@ discover. Each is a candidate for a future release.
 10. **The PII retention re-mask is configured and documented but not implemented.** The
     setting is accepted and no re-mask occurs. Treat evidence retention as manual until this
     is fixed. This is the most significant known defect in this snapshot.
-11. **`arachne coverage` returns zero results** because the research corpus it reads is not
-    present in this repository, and 23 tests skip for the same reason.
+11. **`arachne coverage` reports 148 of 175 methods (84.6%) mapped.** The remaining 27 are
+    named gaps, each with the reason it is absent (see `docs/research/README.md`). Seven of
+    them are absent because the technique would need a capability ARACHNE refuses; the rest
+    are simply not built yet. The committed `coverage_matrix.md` is the same number, and a
+    test fails when it goes stale.
 12. **The reporting pipeline step is declared but has no handler.** Reports are generated out
     of band with `arachne report`; the plan output marks the step "not executable".
 13. **A DNS-rebinding window remains** between address validation and connect. Per-hop

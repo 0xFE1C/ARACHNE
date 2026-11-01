@@ -1,4 +1,4 @@
-"""Scan-to-scan diff: the data half of F-06-05 (docs/spec/06- §7).
+"""Scan-to-scan diff: the data half of F-06-05 .
 
 Full diff *reporting* is S11; this module is the skeleton S8 must land: compare two scans'
 finding sets by ``(check_id, asset)`` and classify each as ``new``, ``fixed``, ``regressed``
@@ -51,7 +51,7 @@ def suppression_summary(diff: ReportDiff) -> str:
         "the record."
     )
 
-#: The change kinds persisted in ``scans_diff.changes_json`` (docs/spec/06- §7).
+#: The change kinds persisted in ``scans_diff.changes_json`` .
 CHANGE_KINDS: Final[tuple[str, ...]] = ("new", "fixed", "regressed", "recurring")
 
 
@@ -103,7 +103,7 @@ def build_diff(
     scan_b: str,
     suppressions: SuppressionSet | None = None,
 ) -> ReportDiff:
-    """Compare two scans' confirmed findings (docs/spec/06- §7).
+    """Compare two scans' confirmed findings .
 
     ``suppressions`` is the rule set in force (S21): a *new* finding a rule covers is moved out
     of ``new`` into ``suppressed``. Only the new side is filtered — a finding that was already

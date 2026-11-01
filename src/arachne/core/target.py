@@ -13,8 +13,7 @@ Two deliberate properties:
   planner can ask "would this be allowed?" without a single packet (F-01-10).
 * **The attestation gate is deny-by-default.** :meth:`TargetDefinition.assert_authorized`
   is the single function the orchestrator calls before a live scan starts; if it returns,
-  every declared target is covered by a live, unexpired attestation (F-01-02, docs/spec/07-
-  §5).
+  every declared target is covered by a live, unexpired attestation.
 """
 
 from __future__ import annotations
@@ -67,7 +66,7 @@ __all__ = [
     "parse_scan_request",
 ]
 
-#: Bumped when the serialized target definition changes shape (docs/spec/07- §4).
+#: Bumped when the serialized target definition changes shape .
 TARGET_DEFINITION_VERSION = "1.0"
 
 _MODEL_CONFIG = ConfigDict(frozen=True, extra="forbid")

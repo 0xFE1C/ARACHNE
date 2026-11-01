@@ -1,4 +1,4 @@
-"""The report DTO: ids, counts and immutability (docs/spec/06- §1/§2, ADR-06)."""
+"""The report DTO: ids, counts and immutability (ADR-06)."""
 
 from __future__ import annotations
 

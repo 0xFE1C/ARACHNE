@@ -4,7 +4,7 @@ The database URL comes from :mod:`arachne.core.config` (env var
 ``ARACHNE_DATABASE_URL``, default: a SQLite file in the working directory). Session
 handling is deliberately explicit — callers get a session from a factory and own its
 transaction — so the orchestrator (S2) can keep scan state out of globals
-(docs/spec/07- §4, "orchestration state lives in the store").
+("orchestration state lives in the store").
 """
 
 from __future__ import annotations

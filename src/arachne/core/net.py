@@ -1,7 +1,7 @@
 """The scoped, rate-limited, audited **network** client (S4/M2, F-01-07/08, F-08-03).
 
 M2 talks to targets with TCP, UDP and TLS — not HTTP — so the shared HTTP client cannot be
-the only egress path. Rather than let sixteen checks open sockets, this module is the exact
+the only egress path. Rather than let every check open sockets, this module is the exact
 structural counterpart of :mod:`arachne.core.http`: one object that, for **every** probe,
 
 1. **authorizes** — the host is checked against the compiled ``Scope`` (F-01-02) and every

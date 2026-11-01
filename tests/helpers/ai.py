@@ -9,7 +9,7 @@ Three ideas keep the AI tests fast and honest:
   what the engine and the provider agree on, so a test that renames a template cannot silently
   start answering the wrong stage.
 * **A scripted provider can fail on purpose**: after N calls, with a chosen error, or with
-  unparseable text. That is how the degradation tests drive docs/spec/03- §7 without a network.
+  unparseable text. That is how the degradation tests drive the degradation path without a network.
 """
 
 from __future__ import annotations

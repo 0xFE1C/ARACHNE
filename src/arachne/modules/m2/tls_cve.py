@@ -460,7 +460,7 @@ async def _vulners_enrich(
 
     Returns ``{}`` unless the deployment enabled the provider *and* supplied a key. Every
     failure degrades to "no online enrichment", because a third-party feed being unavailable
-    must not turn into a failed check (docs/spec/07- §4).
+    must not turn into a failed check .
     """
     if ctx.osint is None or not ctx.osint.available("vulners"):
         return {}

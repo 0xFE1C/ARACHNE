@@ -5,7 +5,7 @@ HeuristicEngine` — ``analyze_async(candidates, context) -> tuple[Analysis, ...
 design is best stated as one sentence: **the heuristic verdict is the anchor, and the AI
 annotates it.**
 
-Why anchor at all? Because docs/spec/04- §5 (G-05) requires the finding set — and, for
+Why anchor at all? Because G-05 requires the finding set — and, for
 deterministic checks, the verdict — to be identical in both engines, so that a report "cannot
 tell which engine produced a finding except via the ``provenance`` field". Anchoring makes that
 a structural property instead of a coincidence: the AI engine runs the heuristic engine first and
@@ -13,9 +13,9 @@ only *enriches* what it produced (narrative, remediation when the catalog has no
 reasoning, the explanation, a prioritisation). An AI assessment that disagrees is **recorded**,
 in ``risk_notes`` and in the analysis payload, and it is adopted only for checks a deployment
 has explicitly declared authoritative (``ARACHNE_AI_AUTHORITATIVE_CHECKS``) — the M5/M6 and
-novel-combination cases docs/spec/04- §4 says AI is for.
+novel-combination cases are what AI is for.
 
-The degradation chain of docs/spec/03- §7 is implemented by *not* special-casing it: every
+The degradation chain is implemented by *not* special-casing it: every
 stage returns an outcome (``ai.runner``), a failed stage leaves its part of the analysis at the
 heuristic value, and an analysis with no successful stage is marked
 ``engine="heuristic"`` + ``provenance.fallback="heuristic_fallback:<reason>"``. A scan therefore
@@ -79,14 +79,14 @@ __all__ = [
 
 _logger = get_logger("ai.engine")
 
-#: Remediation sources that outrank a model's proposal (docs/spec/06- §6, ADR-130).
+#: Remediation sources that outrank a model's proposal (ADR-130).
 #:
 #: A *specific* catalog entry (by rule reference or check/CWE) is authoritative. The generic
 #: ``catalog-default`` is the catalog saying "nothing matched", which is exactly the case
-#: docs/spec/06- §6 lets an AI proposal fill — and then only as ``source="ai-suggested"``.
+#: Fields an AI proposal may fill — and then only as ``source="ai-suggested"``.
 _AUTHORITATIVE_REMEDIATION = frozenset({"catalog", "rule-ref+catalog"})
 
-#: Stages skipped first when the budget is nearly spent (docs/spec/03- §7).
+#: Stages skipped first when the budget is nearly spent .
 _EXPENSIVE_STAGES = frozenset({"explain", "remediate", "narrative", "correlate", "prioritize"})
 
 #: The builder for each per-candidate stage.
@@ -112,7 +112,7 @@ class AiPolicies:
     minimum_confidence: int = 55
 
     def policy_for(self, candidate: Candidate) -> str:
-        """``"ai"`` or ``"preserve"`` for one candidate (docs/spec/04- §5's parity rule)."""
+        """``"ai"`` or ``"preserve"`` for one candidate ."""
         identifiers = {
             candidate.check_id or "",
             candidate.check_module or "",
@@ -236,11 +236,11 @@ class AiEngine:
         members: Sequence[tuple[str, str, str]],
         trigger: str,
     ) -> CompoundSuggestion | None:
-        """Ask the model to describe a correlation group (docs/spec/03- §4 ``correlate``).
+        """Ask the model to describe a correlation group .
 
         The *existence* of the compound is still the correlation engine's decision; this only
         supplies a better title/reasoning for a group it already found, so the finding set is
-        unaffected (docs/spec/04- §5).
+        unaffected .
         """
         if len(members) < max(2, self.policies.correlate_threshold):
             return None
@@ -415,7 +415,7 @@ class AiEngine:
                     notes,
                     deviation
                     + "; the deterministic verdict stands so the finding set and verdicts stay "
-                    "reproducible (docs/spec/04- §5)",
+                    "reproducible ",
                 )
 
         remediation = anchor.remediation
@@ -523,7 +523,7 @@ def _combined_prompt_hash(outcomes: Sequence[StageOutcome]) -> str | None:
 
 
 def _fallback_marker(stages: Mapping[str, Any], fallbacks: Sequence[str]) -> str | None:
-    """The provenance marker of the degradation chain (docs/spec/03- §7).
+    """The provenance marker of the degradation chain .
 
     ``None`` when every configured stage succeeded; ``heuristic_fallback:<reason>`` when none
     did; ``partial:<stage>:<reason>`` when the analysis carries both AI and heuristic parts.

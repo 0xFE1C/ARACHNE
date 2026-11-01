@@ -1,4 +1,4 @@
-"""The rule engine and the shipped corpus (docs/spec/04- §2.1, F-05-01).
+"""The rule engine and the shipped corpus (F-05-01).
 
 The important properties are behavioural: both YAML spellings from the spec mean the same
 thing, the most specific rule wins, the first matching clause decides, and a rule that fires
@@ -55,7 +55,7 @@ SPEC_RULE = {
             "id": "exposure.env-file",
             "title": "Sensitive environment file exposed",
             "check_ref": ["M4#env-file-probe", "research:ch04#1"],
-            # The inline form from docs/spec/04- §2.1.
+            # The inline form from .
             "severity_if": [
                 "secrets_found and http_status == 200 -> high",
                 "file_exists and http_status == 200 -> medium",

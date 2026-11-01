@@ -1,4 +1,4 @@
-"""The typed event bus (docs/spec/02- §2.1)."""
+"""The typed event bus ."""
 
 from __future__ import annotations
 
@@ -112,7 +112,7 @@ async def test_async_handlers_are_awaited() -> None:
 
 
 async def test_a_failing_subscriber_never_breaks_the_scan() -> None:
-    """docs/spec/07- §4: a broken consumer (a webhook, say) must not abort a scan."""
+    """: a broken consumer (a webhook, say) must not abort a scan."""
     bus = EventBus()
     seen: list[str] = []
 

@@ -1,7 +1,7 @@
 """Integration: the CI gate exit codes over a real scan (S12, F-07-05).
 
 Runs the actual ``arachne scan`` command against the M1 recorded-fixture target with a
-throwaway database, and asserts the exit-code policy of docs/spec/06- §8 (0 clean, 1 below
+throwaway database, and asserts the exit-code policy (0 clean, 1 below
 threshold, 2 at-or-above) plus the machine-readable ``severities`` block ``--json`` emits.
 """
 

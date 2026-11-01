@@ -1,4 +1,4 @@
-# Derived CVSS v3.1 vectors (docs/spec/04- §2.4, F-05-04).
+# Derived CVSS v3.1 vectors (F-05-04).
 #
 # The scoring model derives a base vector for each finding instead of asking a check for one:
 # defaults first, then the module layer, then the CWE layer, then the check layer, each
@@ -15,7 +15,7 @@ version: "1.0"
 # Conservative defaults for an unclassified finding: remotely reachable, no authentication,
 # low confidentiality impact, no integrity or availability impact. It is deliberately *not*
 # "high" — an unknown finding is not a severe one, and the severity hint plus the OWASP
-# likelihood term still raise an individual finding (see docs/spec/04- §2.4).
+# likelihood term still raise an individual finding (see ).
 defaults:
   AV: "N"
   AC: "H"

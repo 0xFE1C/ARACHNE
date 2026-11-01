@@ -1,7 +1,7 @@
 """The shared, scoped, rate-limited, audited HTTP client (ADR-05, F-01-07/08, F-08-03/04).
 
 Every outbound HTTP interaction in ARACHNE goes through :class:`ScopedHttpClient`. No
-module may use ``httpx`` or ``requests`` directly (docs/spec/07- §4); ``tests/unit/
+module may use ``httpx`` or ``requests`` directly; ``tests/unit/
 test_http_hygiene.py`` enforces that mechanically.
 
 Order of operations for **every** request, including every redirect hop and every retry
@@ -742,7 +742,7 @@ class ScopedHttpClient:
         while attempts < max_attempts:
             attempts += 1
             if attempts > 1:
-                # Rate limits are never bypassed by retries (docs/spec/07- §5).
+                # Rate limits are never bypassed by retries .
                 await self.limiter.acquire(host_key)
             try:
                 response = await client.request(
@@ -961,7 +961,7 @@ class RecordedResponse:
 
 
 def fixture_transport(responses: Iterable[RecordedResponse]) -> httpx.AsyncBaseTransport:
-    """Build a transport that replays recorded responses (docs/spec/07- §6).
+    """Build a transport that replays recorded responses .
 
     Lives here — the one module allowed to import ``httpx`` (ADR-05) — so recorded-fixture
     mode is a property of the shared client rather than a second egress path. Matching is by

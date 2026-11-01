@@ -1,4 +1,4 @@
-"""Privacy modes for outbound model calls (docs/spec/03- §8, F-04-08, F-08-01).
+"""Privacy modes for outbound model calls (F-04-08, F-08-01).
 
 Evidence is redacted at *capture* time (F-08-04), so what this module protects is the second
 leak surface: the prompt. Three modes, exactly the spec's table:
@@ -59,7 +59,7 @@ _HOST_RE: Final = re.compile(
     re.IGNORECASE,
 )
 
-#: Token prefixes per addressable kind (docs/spec/03- §8's ``[H1]``/``[K3]`` spelling).
+#: Token prefixes per addressable kind ('s ``[H1]``/``[K3]`` spelling).
 _TOKEN_PREFIX: Final[dict[str, str]] = {
     "url": "U",
     "host": "H",
@@ -195,7 +195,7 @@ def enforce_local_only(mode: PrivacyMode, base_urls: Iterable[str]) -> None:
 
 
 def assert_no_provider_secrets(text: str, secrets: Iterable[SecretStr | str | None]) -> None:
-    """Refuse a prompt that contains a configured provider credential (docs/spec/03- §5/§8).
+    """Refuse a prompt that contains a configured provider credential .
 
     A match is a hard error, not a redaction: it means a secret reached prompt construction,
     and silently masking it would hide the bug that put it there.

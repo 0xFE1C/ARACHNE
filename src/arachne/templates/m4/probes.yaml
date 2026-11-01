@@ -1,4 +1,4 @@
-# ARACHNE M4 probe corpus (docs/spec/05- M4, research ch. 04). Managed data, not code
+# ARACHNE M4 probe corpus . Managed data, not code
 # (F-09-04): point ARACHNE_M4_PROBES at another file to replace it.
 #
 # Every entry here is *detection-only*: a GET/HEAD read of a well-known path, a marker a

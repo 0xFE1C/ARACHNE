@@ -84,7 +84,7 @@ def _find_project_root() -> Path:
         candidates.append(Path(from_env).expanduser())
     candidates.append(Path(__file__).resolve().parents[3])
     candidates.append(Path.cwd())
-    candidates.append(Path("/app"))  # the image's WORKDIR (docs/spec/07- §3)
+    candidates.append(Path("/app"))  # the image's WORKDIR
 
     for candidate in candidates:
         if (candidate / "alembic.ini").is_file():

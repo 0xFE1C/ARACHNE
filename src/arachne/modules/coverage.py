@@ -1,7 +1,7 @@
 """Coverage matrix: which research methods are mapped to checks (G-01).
 
 Goal G-01 asks for "≥ 90% of research methods mapped to checks", tracked in a generated
-``coverage_matrix.md``. The tool works the way `docs/spec/07-` §9.5 describes: it **greps
+``coverage_matrix.md``. The tool works the way `` §9.5 describes: it **greps
 ``research_ref:`` values** out of the source tree and reports them against the method
 universe parsed from ``docs/research/``.
 
@@ -387,7 +387,7 @@ def render_coverage_text(report: CoverageReport) -> str:
 
 
 def render_coverage_markdown(report: CoverageReport) -> str:
-    """The ``coverage_matrix.md`` document (docs/spec/07- §9.5)."""
+    """The ``coverage_matrix.md`` document ."""
     # Paths are rendered relative to the repository root: the matrix is committed, and a file
     # that changes with every developer's home directory is not a useful artefact.
     corpus = _relative(report.research_dir) if report.research_dir else "(not found)"

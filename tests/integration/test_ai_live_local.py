@@ -1,4 +1,4 @@
-"""Optional live check against a local Ollama (the fully local path of docs/spec/03- §3).
+"""Optional live check against a local Ollama (the fully local path).
 
 The suite never depends on a model being installed: without one this module skips with the
 reason, which is the honest form of "test it if it is there". With Ollama running it exercises

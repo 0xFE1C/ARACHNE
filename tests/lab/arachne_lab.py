@@ -1,6 +1,6 @@
 """A stdlib-only vulnerable lab: real sockets on loopback, no Docker required.
 
-docs/spec/07- §6 wants the integration layer to run against a Docker compose lab (DVWA,
+ wants the integration layer to run against a Docker compose lab (DVWA,
 Juice Shop, a misconfigured Nginx, a weak-TLS endpoint), and that fixture now exists
 (``docker/docker-compose.yml``, ``docker/lab/``). But M2's checks talk raw TCP, UDP and TLS —
 and proving *those* paths work needs real sockets, real banners and a real handshake, not a

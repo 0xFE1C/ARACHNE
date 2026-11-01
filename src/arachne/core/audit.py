@@ -1,4 +1,4 @@
-"""Audit log: fixed event schema and sinks (F-01-08, F-08-05, docs/spec/07- §5).
+"""Audit log: fixed event schema and sinks (F-01-08, F-08-05).
 
 Every request ARACHNE makes — and every request it *refuses* to make — produces one
 :class:`AuditEvent`. The schema is fixed (extra fields are rejected) so downstream
@@ -99,14 +99,14 @@ class AuditAction(StrEnum):
     NET_BLOCKED = "net.blocked"
     #: S5 (analyzer): what the heuristic engine decided. ``analysis.dropped`` is the record of
     #: a candidate an FP filter (verification contradiction, placeholder page) rejected — the
-    #: reason is kept because "we saw it, then we did not" is information (docs/spec/04- §2.6).
+    #: reason is kept because "we saw it, then we did not" is information .
     ANALYSIS_COMPLETED = "analysis.completed"
     ANALYSIS_DROPPED = "analysis.dropped"
     CORRELATION_COMPLETED = "correlation.completed"
     #: S9 (AI layer): one line per model stage call — stage, provider, model, mechanism, tokens,
     #: cost, prompt hash and outcome — so "what did the model see and cost?" is answerable from
     #: the audit trail alone. ``ai.degraded`` marks a stage that fell back to the heuristic
-    #: result, which is the provenance half of the degradation chain (docs/spec/03- §7).
+    #: result, which is the provenance half of the degradation chain .
     AI_REQUEST = "ai.request"
     AI_DEGRADED = "ai.degraded"
     #: S12 (API + webhooks): one line per HTTP request the API answers — method, path, status,

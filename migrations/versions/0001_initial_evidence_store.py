@@ -1,4 +1,4 @@
-"""initial evidence-store schema (docs/spec/02- §2.4)
+"""initial evidence-store schema
 
 Creates the nine core tables: targets, scans, assets, checks, findings, evidences,
 analysis_log, audit_log, scans_diff.
