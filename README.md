@@ -156,10 +156,10 @@ own.
 | Module | Checks | What it covers |
 |---|:---:|---|
 | **M1** Recon & OSINT | 17 | dork sweeps, subdomains, certificate transparency, breach exposure, provider drift (Shodan/Censys) |
-| **M2** Network & Services | 23 | ports, fingerprints, TLS, DNS/AXFR, SMB auth, database & ICS probing, CVE correlation |
-| **M3** Web Application | 42 | SQLi/XSS/SSRF/IDOR, command & template injection, XXE, smuggling, cache poisoning, GraphQL, JWT/OAuth/SAML |
+| **M2** Network & Services | 27 | ports, fingerprints, TLS, DNS/AXFR, SMB auth, database & ICS probing, CVE correlation |
+| **M3** Web Application | 47 | SQLi/XSS/SSRF/IDOR, command & template injection, XXE, smuggling, cache poisoning, GraphQL, JWT/OAuth/SAML |
 | **M4** Misconfiguration | 29 | `.env`/`.git` exposure, backups, debug endpoints, headers, cookies, default credentials |
-| **M5** Cloud & Supply Chain | 19 | IMDS/metadata, buckets, Kubernetes, registries, CI/CD, dependency confusion, IAM |
+| **M5** Cloud & Supply Chain | 20 | IMDS/metadata, buckets, Kubernetes, registries, CI/CD, dependency confusion, IAM |
 | **M6** AI-era & Post-Exploit | 12+ | webshell signatures, secret scanning, LPE, AD attack paths, GenAI surface, Sigma hunts |
 
 *(+ distributed fuzzing, simulation, purple-team validation and remediation-as-code —
