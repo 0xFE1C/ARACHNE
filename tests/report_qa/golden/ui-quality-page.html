@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quality — findings decisions</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/htmx.min.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <span class="brand">ARACHNE</span>
+  <nav>
+    <a href="/ui/">Dashboard</a>
+    <a href="/ui/scans">Scans</a>
+    <a href="/ui/posture">Posture</a>
+    <a href="/ui/modules">Modules</a>
+    <a href="/ui/feeds">Feeds</a>
+    <a href="/ui/plugins">Plugins</a>
+    <a href="/ui/quality">Quality</a>
+    <a href="/ui/schedules">Schedules</a>
+    <a href="/docs" target="_blank" rel="noopener">API</a>
+  </nav>
+  <span class="spacer"></span>
+  <span class="muted small"><PRINCIPAL></span>
+  <form method="post" action="/ui/logout" class="inline"><button type="submit">Sign out</button></form>
+</header>
+<main>
+<h1>Quality</h1>
+<p class="muted small">
+  Tenant self-service for this workspace (<strong>Acme Corp</strong>): suppression rules
+  and risk acceptances scoped to this project, plus the deployment-wide ones that apply here.
+  A <strong>suppression</strong> says a finding is not one (attributed, commented, versioned); an
+  <strong>acceptance</strong> says it is real and is owned until a date — when that date passes,
+  the finding is re-opened automatically.
+</p>
+<p class="muted small">
+  <a href="/ui/quality?scope=all">Show every tenant's rules</a>
+</p>
+
+
+<section>
+  <h2>Suppression rules (v1)</h2>
+  <table>
+    <thead><tr><th>#</th><th>Kind</th><th>Check</th><th>Asset pattern</th><th>Reason</th><th>By</th><th></th></tr></thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>rule</td>
+        <td><code>m3.rule-for-acme</code></td>
+        <td><code>—</code></td>
+        <td>hardened at the WAF for this tenant</td>
+        <td>scanner</td>
+        <td>
+          <form hx-post="/ui/quality/suppressions/1/revoke" hx-swap="none" method="post">
+            <button type="submit">Revoke</button>
+          </form>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Add a rule</h3>
+  <form hx-post="/ui/quality/suppressions" hx-swap="none" method="post">
+    <label>Kind
+      <select name="kind">
+        <option value="rule">rule (one check, everywhere)</option>
+        <option value="pattern">pattern (one check, some assets)</option>
+        <option value="finding">finding (one finding)</option>
+      </select>
+    </label>
+    <label>Check id <input name="check_id" placeholder="m3.xss-oracle"></label>
+    <label>Asset pattern <input name="asset_pattern" placeholder="https://app.example/*"></label>
+    <label>Finding id <input name="finding_id" inputmode="numeric" placeholder="42"></label>
+    <label>Reason (required) <input name="reason" minlength="8" placeholder="hardened at the WAF"></label>
+    <button type="submit">Record</button>
+  </form>
+</section>
+
+<section>
+  <h2>Risk acceptances</h2>
+  <table>
+    <thead><tr><th>#</th><th>Finding</th><th>Check</th><th>Owner</th><th>Expires</th><th>Justification</th><th></th></tr></thead>
+    <tbody>
+      <tr><td colspan="7" class="muted">No acceptances recorded.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Accept a risk</h3>
+  <form hx-post="/ui/quality/acceptances" hx-swap="none" method="post">
+    <label>Finding id <input name="finding_id" inputmode="numeric" placeholder="42"></label>
+    <label>Check id <input name="check_id" placeholder="m3.xss-oracle"></label>
+    <label>Owner <input name="owner" placeholder="platform-team"></label>
+    <label>Justification <input name="justification" minlength="12" placeholder="mitigated by the network control"></label>
+    <label>Days <input name="ttl_days" inputmode="numeric" placeholder="30"></label>
+    <button type="submit">Accept</button>
+  </form>
+
+  <form hx-post="/ui/quality/expire" hx-swap="none" method="post">
+    <button type="submit">Re-open expired acceptances</button>
+  </form>
+</section>
+</main>
+</body>
+</html>

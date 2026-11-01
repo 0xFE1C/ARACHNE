@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Quality — findings decisions{% endblock %}
+{% block content %}
+<h1>Quality</h1>
+<p class="muted small">
+  Tenant self-service for this workspace (<strong>{{ project.name }}</strong>): suppression rules
+  and risk acceptances scoped to this project, plus the deployment-wide ones that apply here.
+  A <strong>suppression</strong> says a finding is not one (attributed, commented, versioned); an
+  <strong>acceptance</strong> says it is real and is owned until a date — when that date passes,
+  the finding is re-opened automatically.
+</p>
+<p class="muted small">
+  {% if scope_all %}
+  Showing <strong>every tenant's</strong> rules (an MSSP audit view).
+  <a href="/ui/quality">Back to {{ project.name }}</a>
+  {% else %}
+  <a href="/ui/quality?scope=all">Show every tenant's rules</a>
+  {% endif %}
+</p>
+
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+<section>
+  <h2>Suppression rules (v{{ version }})</h2>
+  <table>
+    <thead><tr><th>#</th><th>Kind</th><th>Check</th><th>Asset pattern</th><th>Reason</th><th>By</th><th></th></tr></thead>
+    <tbody>
+    {% for rule in suppressions %}
+      <tr>
+        <td>{{ rule.id }}</td>
+        <td>{{ rule.kind }}</td>
+        <td><code>{{ rule.check_id or "—" }}</code></td>
+        <td><code>{{ rule.asset_pattern or "—" }}</code></td>
+        <td>{{ rule.reason }}</td>
+        <td>{{ rule.actor }}</td>
+        <td>
+          {% if rule.active %}
+          <form hx-post="/ui/quality/suppressions/{{ rule.id }}/revoke" hx-swap="none" method="post">
+            <button type="submit">Revoke</button>
+          </form>
+          {% else %}<span class="muted small">revoked</span>{% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" class="muted">No suppression rules recorded.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <h3>Add a rule</h3>
+  <form hx-post="/ui/quality/suppressions" hx-swap="none" method="post">
+    <label>Kind
+      <select name="kind">
+        <option value="rule">rule (one check, everywhere)</option>
+        <option value="pattern">pattern (one check, some assets)</option>
+        <option value="finding">finding (one finding)</option>
+      </select>
+    </label>
+    <label>Check id <input name="check_id" placeholder="m3.xss-oracle"></label>
+    <label>Asset pattern <input name="asset_pattern" placeholder="https://app.example/*"></label>
+    <label>Finding id <input name="finding_id" inputmode="numeric" placeholder="42"></label>
+    <label>Reason (required) <input name="reason" minlength="8" placeholder="hardened at the WAF"></label>
+    <button type="submit">Record</button>
+  </form>
+</section>
+
+<section>
+  <h2>Risk acceptances</h2>
+  <table>
+    <thead><tr><th>#</th><th>Finding</th><th>Check</th><th>Owner</th><th>Expires</th><th>Justification</th><th></th></tr></thead>
+    <tbody>
+    {% for item in acceptances %}
+      <tr>
+        <td>{{ item.id }}</td>
+        <td>{{ item.finding_id or "—" }}</td>
+        <td><code>{{ item.check_id or "—" }}</code></td>
+        <td>{{ item.owner }}</td>
+        <td>{{ item.expires_at }}</td>
+        <td>{{ item.justification }}</td>
+        <td>
+          {% if not item.revoked_at %}
+          <form hx-post="/ui/quality/acceptances/{{ item.id }}/revoke" hx-swap="none" method="post">
+            <button type="submit">Withdraw</button>
+          </form>
+          {% else %}<span class="muted small">withdrawn</span>{% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" class="muted">No acceptances recorded.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <h3>Accept a risk</h3>
+  <form hx-post="/ui/quality/acceptances" hx-swap="none" method="post">
+    <label>Finding id <input name="finding_id" inputmode="numeric" placeholder="42"></label>
+    <label>Check id <input name="check_id" placeholder="m3.xss-oracle"></label>
+    <label>Owner <input name="owner" placeholder="platform-team"></label>
+    <label>Justification <input name="justification" minlength="12" placeholder="mitigated by the network control"></label>
+    <label>Days <input name="ttl_days" inputmode="numeric" placeholder="30"></label>
+    <button type="submit">Accept</button>
+  </form>
+
+  <form hx-post="/ui/quality/expire" hx-swap="none" method="post">
+    <button type="submit">Re-open expired acceptances</button>
+  </form>
+</section>
+{% endblock %}

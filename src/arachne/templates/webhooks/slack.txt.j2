@@ -1,0 +1,16 @@
+{#- Slack summary card for a finished scan (F-06-06, docs/spec/06- §8).
+    Rendered to text; the caller wraps it in {"text": ...}. Plain text with Slack's
+    mrkdwn subset: *bold*, no HTML. -#}
+{{ ":rotating_light:" if counts.critical else (":warning:" if counts.high else ":white_check_mark:") }} *ARACHNE scan {{ scan_id }} completed* — {{ target }}
+Engine: {{ engine }} · {{ arachne_version }} · {{ generated_at }}
+Threshold: {{ threshold }}+ · {{ at_or_above | length }} finding(s) at or above
+Severity: *{{ counts.critical }}* critical / *{{ counts.high }}* high / {{ counts.medium }} medium / {{ counts.low }} low / {{ counts.info }} info ({{ total }} total)
+{% if top %}
+Top findings:
+{% for item in top -%}
+• [{{ item.severity | upper }}] {{ item.title }} ({{ item.module or "unknown" }}{% if item.cwe %}, {{ item.cwe }}{% endif %}) — {{ item.asset }}
+{% endfor -%}
+{% else %}
+No confirmed findings.
+{% endif %}
+Report: {{ report_url }}

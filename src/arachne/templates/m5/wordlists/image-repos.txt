@@ -1,0 +1,21 @@
+# Container image repositories to probe on a registry (one per line).
+library/nginx
+library/redis
+library/postgres
+library/mysql
+app
+api
+backend
+frontend
+web
+worker
+gateway
+admin
+internal/api
+internal/worker
+company/api
+company/backend
+services/api
+services/auth
+infra/terraform
+tools/ci

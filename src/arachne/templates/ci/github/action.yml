@@ -1,0 +1,172 @@
+# ARACHNE IaC gate — a composite GitHub Action (S26, REQ-ECOS-003).
+#
+# One step a workflow adds to a pull request: run ARACHNE's offline IaC/CI review over the
+# repository and turn the findings into annotations GitHub renders on the diff. The scan is
+# local by construction (`repo:<path>`; no clone, no fetch, no target contact), so the action
+# works on a runner with no network access.
+#
+# What the caller must do first:
+#   * `actions/checkout@v4` — the action reviews the working tree, it does not check out.
+#   * install ARACHNE (`pip install arachne`, or `pip install -e code`), or pass `python`
+#     pointing at an interpreter that can import it.
+#
+# Permissions (set on the *job*, not here; least privilege is the caller's call):
+#   permissions:
+#     contents: read            # always: read the tree
+#     security-events: write    # only when upload-sarif is true (Code Scanning upload)
+#     pull-requests: write      # only when you want annotations on forked PRs
+# The offline gate itself needs none of these: annotations are written to stdout, which
+# GitHub parses, and no token is read.
+#
+# Security note: `api-key` is a secret. Pass it as `${{ secrets.ARACHNE_API_KEY }}`; the
+# action never echoes it and the offline path ignores it entirely.
+
+name: ARACHNE IaC gate
+description: >-
+  Run ARACHNE's offline IaC/CI gate and annotate the pull request (GitHub workflow
+  commands), optionally uploading SARIF to Code Scanning (REQ-ECOS-003).
+author: ARACHNE project
+
+inputs:
+  path:
+    description: Tree to review (Terraform, Kubernetes manifests, CI workflow files).
+    required: false
+    default: "."
+  fail-on:
+    description: Gate threshold the exit code follows (info|low|medium|high|critical|none).
+    required: false
+    default: high
+  format:
+    description: >-
+      Artefact the action emits: github (workflow-command annotations, the default),
+      gitlab (Code Quality JSON on stdout), sarif (written to sarif-file, for Code
+      Scanning), or json (the gate summary).
+    required: false
+    default: github
+  api-url:
+    description: >-
+      Optional ARACHNE control-plane base URL. When set, the gate summary is uploaded so a
+      deployment keeps the CI review in its own history. Leave empty for a pure-CI run.
+    required: false
+    default: ""
+  api-key:
+    description: >-
+      Optional ARACHNE API key for the upload (scanner role or above). Pass it from
+      secrets; never inline it.
+    required: false
+    default: ""
+  sarif-file:
+    description: Where to write the SARIF document when format is sarif.
+    required: false
+    default: arachne-results.sarif
+  upload-sarif:
+    description: >-
+      Upload the SARIF document to GitHub Code Scanning (github/codeql-action) when the
+      file exists. Requires `security-events: write` on the job.
+    required: false
+    default: "true"
+  python:
+    description: Interpreter used to run the ARACHNE module.
+    required: false
+    default: python
+
+outputs:
+  exit-code:
+    description: The gate's exit code (0 clean / 1 below threshold / 2 at or above).
+    value: ${{ steps.gate.outputs.exit-code }}
+  sarif-file:
+    description: Path of the SARIF document written (empty when not requested).
+    value: ${{ steps.gate.outputs.sarif-file }}
+
+runs:
+  using: composite
+  steps:
+    - name: Ensure the ARACHNE schema exists (idempotent)
+      shell: bash
+      env:
+        ARACHNE_PYTHON: ${{ inputs.python }}
+      run: |
+        # The gate runs a real scan, which needs the control-plane schema. A fresh runner
+        # has an empty database; `db upgrade` creates it and is a no-op afterwards. A
+        # caller that set ARACHNE_DATABASE_URL (a real Postgres) keeps it.
+        export ARACHNE_DATABASE_URL="${ARACHNE_DATABASE_URL:-sqlite:///${RUNNER_TEMP}/arachne-ci.db}"
+        export ARACHNE_LOG_LEVEL="${ARACHNE_LOG_LEVEL:-WARNING}"
+        "$ARACHNE_PYTHON" -m arachne.cli.main db upgrade
+
+    - name: Run the gate and emit annotations
+      id: gate
+      shell: bash
+      env:
+        ARACHNE_PATH: ${{ inputs.path }}
+        ARACHNE_FAIL_ON: ${{ inputs.fail-on }}
+        ARACHNE_FORMAT: ${{ inputs.format }}
+        ARACHNE_SARIF: ${{ inputs.sarif-file }}
+        ARACHNE_PYTHON: ${{ inputs.python }}
+      run: |
+        export ARACHNE_DATABASE_URL="${ARACHNE_DATABASE_URL:-sqlite:///${RUNNER_TEMP}/arachne-ci.db}"
+        export ARACHNE_LOG_LEVEL="${ARACHNE_LOG_LEVEL:-WARNING}"
+        # The annotations must reach stdout for GitHub to render them, so nothing here
+        # swallows the tool's output. `set +e` lets us capture the gate's exit code and
+        # still run the SARIF upload; the final step re-raises it.
+        set +e
+        if [ "$ARACHNE_FORMAT" = "sarif" ]; then
+          "$ARACHNE_PYTHON" -m arachne.tools.ci_annotate \
+            --path "$ARACHNE_PATH" --format sarif \
+            --fail-on "$ARACHNE_FAIL_ON" --output "$ARACHNE_SARIF"
+        else
+          "$ARACHNE_PYTHON" -m arachne.tools.ci_annotate \
+            --path "$ARACHNE_PATH" --format "$ARACHNE_FORMAT" \
+            --fail-on "$ARACHNE_FAIL_ON"
+        fi
+        code=$?
+        set -e
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+        if [ "$ARACHNE_FORMAT" = "sarif" ] && [ -f "$ARACHNE_SARIF" ]; then
+          echo "sarif-file=$ARACHNE_SARIF" >> "$GITHUB_OUTPUT"
+          echo "sarif-written=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "sarif-file=" >> "$GITHUB_OUTPUT"
+          echo "sarif-written=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Upload SARIF to GitHub Code Scanning (only when the file exists)
+      if: ${{ inputs.upload-sarif == 'true' && steps.gate.outputs.sarif-written == 'true' }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ steps.gate.outputs.sarif-file }}
+        category: arachne-iac-gate
+
+    - name: Upload the gate summary to an ARACHNE control plane (only when api-url is set)
+      if: ${{ inputs.api-url != '' }}
+      shell: bash
+      env:
+        ARACHNE_API_URL: ${{ inputs.api-url }}
+        ARACHNE_API_KEY: ${{ inputs.api-key }}
+        ARACHNE_PYTHON: ${{ inputs.python }}
+        ARACHNE_PATH: ${{ inputs.path }}
+        ARACHNE_FAIL_ON: ${{ inputs.fail-on }}
+      run: |
+        # The offline gate never dials out; this step only runs when the caller pointed the
+        # action at a control plane. The ingest path is deployment-specific — adjust it to
+        # the endpoint your ARACHNE release exposes.
+        summary="$(mktemp)"
+        "$ARACHNE_PYTHON" -m arachne.tools.ci_annotate \
+          --path "$ARACHNE_PATH" --format json --fail-on "$ARACHNE_FAIL_ON" \
+          --output "$summary" || true
+        curl --fail-with-body -sS \
+          -X POST "${ARACHNE_API_URL}/api/v1/ci/annotations" \
+          -H "Authorization: Bearer ${ARACHNE_API_KEY}" \
+          -H "Content-Type: application/json" \
+          --data @"$summary"
+
+    - name: Fail the step with the gate's exit code
+      shell: bash
+      env:
+        ARACHNE_EXIT_CODE: ${{ steps.gate.outputs.exit-code }}
+      run: |
+        # The gate's verdict, forwarded: 0 clean, 1 findings below the threshold,
+        # 2 at or above (F-07-05). The earlier steps always succeeded so the uploads could
+        # run; this is the one that decides whether the job is red.
+        code="${ARACHNE_EXIT_CODE:-0}"
+        echo "ARACHNE IaC gate exit code: ${code}"
+        exit "${code}"

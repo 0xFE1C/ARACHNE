@@ -1,0 +1,1910 @@
+# ARACHNE heuristic rule corpus (docs/spec/04- §2.1, F-05-01).
+#
+# Managed data, not code (F-09-04): point ARACHNE_ANALYSIS_RULES at another file to replace
+# it. A rule is evaluated by the restricted condition language in
+# `arachne/analyzer/conditions.py` — no code execution, ever (F-08-06).
+#
+# Structure
+#   check_ref   which candidates the rule applies to: `m2.smb-enum` (check id), `M2#smb-enum`
+#               (module#check), `M2` (a whole module), `ch02#16` / `research:ch02#16` (corpus
+#               method), `*` (any). Globs are allowed in the check-name part.
+#   conditions  named booleans over the fact space (see `analyzer/conditions.py`); the body
+#               is an expression string, or the spec's single-key mapping shorthand
+#               (`{path matches "re"}`) where that is still valid YAML
+#   severity_if / confidence   ordered `<condition> -> <value>` clauses; first match wins
+#   default_severity          used when no severity clause fires (turns the rule into a floor)
+#
+# Rules are ranked by specificity, so a precise check-id rule always beats a module baseline.
+# Facts available: check.*, asset.*, finding.*, analysis.*, evidence.<kind>.<path>,
+# signature.*, derived.*, plus the aliases http_status, verification_count, reproducible,
+# asset_kind, asset_value, research_ref, cwe, cve, title, confidence, severity_hint.
+
+version: "1.0"
+
+rules:
+  # ----------------------------------------------------------------- M1 · Recon
+  - id: recon.client-side-secret-exposure
+    title: "Credential material in client-side assets"
+    check_ref: ["m1.js-asset-scan", "research:ch01#24"]
+    conditions:
+      secret_kinds_found: {evidence.artifact.matched_patterns}
+      fetched_many_scripts: {evidence.artifact.scripts_analysed >= 3}
+    severity_if:
+      - "secret_kinds_found and fetched_many_scripts -> high"
+      - "secret_kinds_found -> medium"
+    confidence:
+      - "secret_kinds_found and fetched_many_scripts -> 0.8"
+      - "secret_kinds_found -> 0.65"
+    cwe: CWE-798
+    remediation: remediation-catalog/client-side-secret-exposure.yaml
+    narrative: recon.client-side-secret-exposure
+    tags: [secrets, client-side]
+
+  - id: recon.indexed-source-secrets
+    title: "Credentials indexed in public code search"
+    check_ref: ["m1.code-secret-mining", "research:ch01#2"]
+    severity_if:
+      - "evidence.artifact.matches >= 5 -> high"
+      - "evidence.artifact.matches -> medium"
+    confidence:
+      - "evidence.artifact.matches >= 5 -> 0.75"
+      - "evidence.artifact.matches -> 0.6"
+    cwe: CWE-540
+    remediation: remediation-catalog/source-code-secret-exposure.yaml
+    narrative: recon.indexed-source-secrets
+    tags: [secrets, osint]
+
+  - id: recon.known-vulnerable-address
+    title: "Third-party index reports known vulnerabilities"
+    check_ref: ["m1.internetdb-triage", "research:ch01#5"]
+    severity_if:
+      - "evidence.artifact.vulns -> medium"
+    confidence:
+      - "evidence.artifact.vulns -> 0.6"
+    cwe: CWE-1035
+    remediation: remediation-catalog/patch-management.yaml
+    narrative: recon.known-vulnerable-address
+    tags: [cve, passive]
+
+  - id: recon.exposed-document-in-index
+    title: "Search index exposes a sensitive document"
+    check_ref: ["m1.dork-sweep", "research:ch01#1"]
+    severity_if:
+      - "evidence.artifact.results -> low"
+    cwe: CWE-200
+    remediation: remediation-catalog/sensitive-document-exposure.yaml
+    narrative: recon.exposed-document-in-index
+    tags: [osint, exposure]
+
+  - id: recon.archived-sensitive-path
+    title: "Archived URLs match sensitive path patterns"
+    check_ref: ["m1.webarchive-harvest", "research:ch01#12-13"]
+    conditions:
+      matched_paths: {evidence.artifact.matches}
+    severity_if:
+      - "matched_paths -> low"
+    cwe: CWE-200
+    remediation: remediation-catalog/sensitive-path-exposure.yaml
+    narrative: recon.archived-sensitive-path
+    tags: [osint, exposure]
+
+  - id: recon.email-pattern-inferable
+    title: "Employee address pattern is publicly inferable"
+    check_ref: ["m1.email-harvest", "research:ch01#15"]
+    severity_if:
+      - "evidence.artifact.pattern -> low"
+    default_severity: info
+    cwe: CWE-200
+    remediation: remediation-catalog/email-pattern-exposure.yaml
+    narrative: recon.email-pattern-inferable
+    tags: [osint]
+
+  # ----------------------------------------------------------------- M2 · Data stores
+  - id: net.unauthenticated-datastore
+    title: "Datastore accepts unauthenticated access"
+    check_ref: ["m2.db-service-probe", "research:ch02#22-23"]
+    conditions:
+      no_authentication:
+        {title matches "unauthenticated|without any authentication|without authentication"}
+      version_named: {evidence.note.service.identity.version}
+    severity_if:
+      - "no_authentication and version_named -> critical"
+      - "no_authentication -> high"
+    confidence:
+      - "no_authentication and version_named -> 0.95"
+      - "no_authentication -> 0.85"
+    cwe: CWE-306
+    remediation: remediation-catalog/unauthenticated-datastore.yaml
+    narrative: net.unauthenticated-datastore
+    tags: [database, authentication]
+
+  - id: net.exposed-database-port
+    title: "Database service reachable from the scanning position"
+    check_ref: ["m2.db-service-probe", "research:ch02#22"]
+    conditions:
+      unauth_attempted: {title matches "unauthenticated|without authentication"}
+      no_tls: {title matches "without encryption|refused TLS"}
+    severity_if:
+      - "no_tls -> medium"
+      - "not unauth_attempted -> medium"
+    confidence:
+      - "no_tls -> 0.75"
+      - "not unauth_attempted -> 0.7"
+    cwe: CWE-284
+    remediation: remediation-catalog/exposed-database-service.yaml
+    narrative: net.exposed-database-port
+    tags: [database, exposure]
+
+  # ----------------------------------------------------------------- M2 · File & directory services
+  - id: net.smb-legacy-dialect
+    title: "SMBv1 is still supported"
+    check_ref: ["m2.smb-enum", "research:ch02#16"]
+    severity_if:
+      - 'title matches "SMBv1" -> high'
+    confidence:
+      - 'title matches "SMBv1" -> 0.9'
+    cwe: CWE-477
+    remediation: remediation-catalog/smb-legacy-dialect.yaml
+    narrative: net.smb-legacy-dialect
+    tags: [smb, legacy]
+
+  - id: net.smb-signing-not-required
+    title: "SMB signing is not required (NTLM relay exposure)"
+    check_ref: ["m2.smb-enum", "research:ch02#16"]
+    severity_if:
+      - 'title matches "signing is not required" -> medium'
+    confidence:
+      - 'title matches "signing is not required" -> 0.75'
+    cwe: CWE-345
+    remediation: remediation-catalog/smb-signing.yaml
+    narrative: net.smb-signing-not-required
+    tags: [smb, relay]
+
+  - id: net.smb-anonymous-session
+    title: "SMB permits an anonymous session"
+    check_ref: ["m2.smb-enum", "research:ch02#16"]
+    severity_if:
+      - 'title matches "anonymous session" -> high'
+    confidence:
+      - 'title matches "anonymous session" -> 0.9'
+    cwe: CWE-287
+    remediation: remediation-catalog/anonymous-network-access.yaml
+    narrative: net.smb-anonymous-session
+    tags: [smb, authentication]
+
+  - id: net.nfs-export-exposed
+    title: "NFS exports are reachable"
+    check_ref: ["m2.nfs-enum", "research:ch02#17"]
+    conditions:
+      any_host_export: {title matches "any host"}
+    severity_if:
+      - "any_host_export -> high"
+    default_severity: medium
+    confidence:
+      - "any_host_export -> 0.9"
+    default_confidence: 0.7
+    cwe: CWE-284
+    remediation: remediation-catalog/nfs-exports.yaml
+    narrative: net.nfs-export-exposed
+    tags: [nfs, exposure]
+
+  - id: net.ldap-anonymous-bind
+    title: "Directory permits an anonymous bind"
+    check_ref: ["m2.ldap-enum", "research:ch02#18"]
+    severity_if:
+      - 'title matches "anonymous bind" -> high'
+    confidence:
+      - 'title matches "anonymous bind" -> 0.85'
+    cwe: CWE-287
+    remediation: remediation-catalog/anonymous-network-access.yaml
+    narrative: net.ldap-anonymous-bind
+    tags: [ldap, authentication]
+
+  - id: net.kerberos-user-enumeration
+    title: "KDC distinguishes existing from non-existing principals"
+    check_ref: ["m2.kerberos-enum", "research:ch02#19"]
+    severity_if:
+      - "title matches \"enumeration confirmed\" -> medium"
+    confidence:
+      - "title matches \"enumeration confirmed\" -> 0.85"
+    cwe: CWE-200
+    remediation: remediation-catalog/user-enumeration.yaml
+    narrative: net.kerberos-user-enumeration
+    tags: [kerberos, enumeration]
+
+  # ----------------------------------------------------------------- M2 · Network infrastructure
+  - id: net.snmp-default-write-community
+    title: "SNMP write community is the vendor default"
+    check_ref: ["m2.snmp-enum", "research:ch02#15"]
+    conditions:
+      default_write: {title matches "write community is the default|accepted 'private'"}
+    severity_if:
+      - "default_write -> high"
+    confidence:
+      - "default_write -> 0.9"
+    cwe: CWE-1188
+    remediation: remediation-catalog/snmp-communities.yaml
+    narrative: net.snmp-default-write-community
+    tags: [snmp, default-credentials]
+
+  - id: net.snmp-community-readable
+    title: "SNMP agent answers a guessable community string"
+    check_ref: ["m2.snmp-enum", "research:ch02#15"]
+    conditions:
+      community_known: {evidence.note.facts.community}
+    severity_if:
+      - "community_known -> medium"
+    confidence:
+      - "community_known -> 0.8"
+    cwe: CWE-521
+    remediation: remediation-catalog/snmp-communities.yaml
+    narrative: net.snmp-community-readable
+    tags: [snmp]
+
+  - id: net.dns-zone-transfer
+    title: "DNS zone transfer is permitted"
+    check_ref: ["m2.dns-active", "research:ch02#28"]
+    conditions:
+      transfer_succeeded: {title matches "zone transfer succeeded"}
+    severity_if:
+      - "transfer_succeeded -> high"
+    confidence:
+      - "transfer_succeeded -> 0.95"
+    cwe: CWE-200
+    remediation: remediation-catalog/dns-zone-transfer.yaml
+    narrative: net.dns-zone-transfer
+    tags: [dns, disclosure]
+
+  - id: net.ics-device-unauthenticated
+    title: "Industrial control device is reachable and unauthenticated"
+    check_ref: ["m2.ics-probe", "research:ch02#27"]
+    severity_if:
+      - "evidence.note.service.probes >= 1 -> critical"
+    default_severity: high
+    default_confidence: 0.9
+    cwe: CWE-306
+    remediation: remediation-catalog/ics-exposure.yaml
+    narrative: net.ics-device-unauthenticated
+    tags: [ics, ot]
+
+  # ----------------------------------------------------------------- M2 · Remote access
+  - id: net.ssh-deprecated-algorithms
+    title: "SSH offers deprecated key-exchange or cipher algorithms"
+    check_ref: ["m2.ssh-enum", "research:ch02#24"]
+    conditions:
+      weak_algorithms: {evidence.artifact.weak_algorithms}
+    severity_if:
+      - "weak_algorithms -> medium"
+    confidence:
+      - "weak_algorithms -> 0.85"
+    cwe: CWE-327
+    remediation: remediation-catalog/ssh-weak-algorithms.yaml
+    narrative: net.ssh-deprecated-algorithms
+    tags: [ssh, crypto]
+
+  - id: net.smtp-recipient-disclosure
+    title: "SMTP server discloses mailbox existence"
+    check_ref: ["m2.smtp-enum", "research:ch02#20"]
+    conditions:
+      recipients_confirmed: {title matches "confirmed recipient"}
+      verbs_enabled: {title matches "enumeration is enabled"}
+    severity_if:
+      - "recipients_confirmed -> medium"
+      - "verbs_enabled -> low"
+    confidence:
+      - "recipients_confirmed -> 0.8"
+      - "verbs_enabled -> 0.7"
+    cwe: CWE-200
+    remediation: remediation-catalog/smtp-user-enumeration.yaml
+    narrative: net.smtp-recipient-disclosure
+    tags: [smtp, enumeration]
+
+  - id: net.rdp-without-nla
+    title: "RDP does not require network-level authentication"
+    check_ref: ["m2.rdp-vnc-detect", "research:ch02#25"]
+    severity_if:
+      - 'title matches "network-level authentication" -> high'
+    confidence:
+      - 'title matches "network-level authentication" -> 0.85'
+    cwe: CWE-287
+    remediation: remediation-catalog/rdp-nla.yaml
+    narrative: net.rdp-without-nla
+    tags: [rdp, authentication]
+
+  - id: net.vnc-unauthenticated
+    title: "VNC offers unauthenticated access"
+    check_ref: ["m2.rdp-vnc-detect", "research:ch02#25"]
+    severity_if:
+      - 'title matches "unauthenticated access" -> critical'
+    confidence:
+      - 'title matches "unauthenticated access" -> 0.95'
+    cwe: CWE-306
+    remediation: remediation-catalog/vnc-authentication.yaml
+    narrative: net.vnc-unauthenticated
+    tags: [vnc, authentication]
+
+  - id: net.vnc-legacy-password
+    title: "VNC uses the legacy 8-byte DES password scheme"
+    check_ref: ["m2.rdp-vnc-detect", "research:ch02#25"]
+    severity_if:
+      - 'title matches "legacy VNC password" -> medium'
+    confidence:
+      - 'title matches "legacy VNC password" -> 0.6'
+    cwe: CWE-326
+    remediation: remediation-catalog/vnc-authentication.yaml
+    narrative: net.vnc-legacy-password
+    tags: [vnc, crypto]
+
+  # ----------------------------------------------------------------- M2 · TLS
+  - id: net.tls-weak-protocols
+    title: "TLS endpoint negotiates deprecated protocol versions"
+    check_ref: ["m2.tls-deep-scan", "research:ch02#14"]
+    conditions:
+      weak_versions: {evidence.tls_certificate.weak_versions}
+      trust_error: {evidence.tls_certificate.trust_error}
+    severity_if:
+      - "weak_versions -> high"
+      - "trust_error -> medium"
+    default_severity: medium
+    confidence:
+      - "weak_versions -> 0.9"
+    default_confidence: 0.7
+    cwe: CWE-327
+    remediation: remediation-catalog/tls-configuration.yaml
+    narrative: net.tls-weak-protocols
+    tags: [tls, crypto]
+
+  # ----------------------------------------------------------------- M2 · CVE correlation
+  - id: net.vulnerable-component-version
+    title: "Component version falls inside a known vulnerability range"
+    check_ref: ["m2.cve-correlate", "research:ch02#29"]
+    conditions:
+      severe: {evidence.artifact.cvss >= 9.0}
+      high: {evidence.artifact.cvss >= 7.0}
+      epss_notable: {evidence.artifact.epss >= 0.1}
+    severity_if:
+      - "severe -> critical"
+      - "high -> high"
+    default_severity: medium
+    confidence:
+      - "high and epss_notable -> 0.9"
+      - "high -> 0.8"
+    default_confidence: 0.7
+    cwe: CWE-1035
+    remediation: remediation-catalog/patch-management.yaml
+    narrative: net.vulnerable-component-version
+    tags: [cve, patch]
+
+  # ----------------------------------------------------------------- M3 · Web application
+  # One rule per check family (S6), keyed on the machine-readable ``artifact`` payload the
+  # check attaches beside the request/response evidence — so a rule reads an oracle's verdict
+  # as a *fact* (``evidence.artifact.technique == "error-based"``) rather than re-deriving the
+  # comparison from a body. Rules are ranked most-specific-first and the first whose
+  # ``severity_if`` fires decides, which is why two rules may share a ``check_ref`` (the CORS
+  # pair gates on ``reflected`` vs ``wildcard``).
+  #
+  # Severities follow the research's own framing: a confirmed injection whose response
+  # *reproduced* is high; a structural observation with no payload (headers, CSRF token
+  # absence, a hidden endpoint's existence) is low-to-medium because it is one control, not an
+  # exploit.
+  - id: web.injection-confirmed
+    title: "SQL injection confirmed by a differential response"
+    check_ref: ["m3.sqli-oracle", "research:ch03#1"]
+    conditions:
+      error_based: {evidence.artifact.technique == "error-based"}
+      boolean_based: {evidence.artifact.technique == "boolean-based"}
+      time_based: {evidence.artifact.technique == "time-based"}
+      db_family_known: {evidence.artifact.db_family present}
+    severity_if:
+      - "error_based and db_family_known -> high"
+      - "error_based -> high"
+      - "boolean_based -> medium"
+      - "time_based -> medium"
+    confidence:
+      - "error_based -> 0.85"
+      - "time_based -> 0.7"
+      - "boolean_based -> 0.6"
+    cwe: CWE-89
+    remediation: remediation-catalog/injection.yaml
+    narrative: web.injection-confirmed
+    tags: [injection, sqli]
+
+  - id: web.xss-reflected
+    title: "Reflected input reaches unencoded output"
+    check_ref: ["m3.xss-oracle", "research:ch03#3"]
+    conditions:
+      html_context: {evidence.artifact.context == "html"}
+      attribute_context: {evidence.artifact.context == "attribute"}
+      script_context: {evidence.artifact.context == "script"}
+    severity_if:
+      - "html_context -> high"
+      - "attribute_context -> medium"
+      - "script_context -> medium"
+    confidence:
+      - "html_context -> 0.8"
+      - "attribute_context -> 0.6"
+      - "script_context -> 0.5"
+    cwe: CWE-79
+    remediation: remediation-catalog/output-encoding.yaml
+    narrative: web.xss-reflected
+    tags: [xss, injection]
+
+  - id: web.csrf-missing-token
+    title: "State-changing endpoint without an anti-CSRF control"
+    check_ref: ["m3.csrf-audit", "research:ch03#4"]
+    conditions:
+      via_get: {evidence.artifact.reachable_via_get}
+      no_token: {evidence.artifact.csrf_fields missing}
+    severity_if:
+      - "via_get -> medium"
+      - "no_token -> medium"
+    confidence:
+      - "via_get -> 0.6"
+      - "no_token -> 0.65"
+    cwe: CWE-352
+    remediation: remediation-catalog/csrf-tokens.yaml
+    narrative: web.csrf-missing-token
+    tags: [csrf]
+
+  - id: web.upload-accepted
+    title: "Upload validation accepts an executable extension"
+    check_ref: ["m3.upload-audit", "research:ch03#10"]
+    conditions:
+      accepted: {evidence.artifact.verdict == "accepted"}
+      bypassed_validator: {evidence.artifact.control_verdict == "rejected"}
+    severity_if:
+      - "accepted and bypassed_validator -> high"
+      - "accepted -> high"
+    confidence:
+      - "accepted and bypassed_validator -> 0.85"
+      - "accepted -> 0.8"
+    cwe: CWE-434
+    remediation: remediation-catalog/unrestricted-upload.yaml
+    narrative: web.upload-accepted
+    tags: [upload]
+
+  - id: web.traversal-content-marker
+    title: "Path traversal reads outside the web root"
+    check_ref: ["m3.traversal-oracle", "research:ch03#11"]
+    conditions:
+      marker_file_known: {evidence.artifact.marker_file}
+      posix_encoding: {evidence.artifact.encoding == "plain"}
+    severity_if:
+      - "marker_file_known -> high"
+    confidence:
+      - "marker_file_known and posix_encoding -> 0.85"
+      - "marker_file_known -> 0.8"
+    cwe: CWE-22
+    remediation: remediation-catalog/path-traversal.yaml
+    narrative: web.traversal-content-marker
+    tags: [traversal, file]
+
+  - id: web.open-redirect
+    title: "Redirect target reflects an arbitrary host"
+    check_ref: ["m3.open-redirect", "research:ch03#14"]
+    severity_if:
+      - "evidence.artifact.signal == 'open-redirect' -> medium"
+    confidence:
+      - "evidence.artifact.probe_host_reserved -> 0.85"
+    default_confidence: 0.7
+    cwe: CWE-601
+    remediation: remediation-catalog/open-redirect.yaml
+    narrative: web.open-redirect
+    tags: [redirect]
+
+  - id: web.idor-object-access
+    title: "Object reference exposes other records"
+    check_ref: ["m3.idor-oracle", "research:ch03#18"]
+    conditions:
+      cross_account: {evidence.artifact.second_identity}
+      unauthenticated: "evidence.artifact.authenticated == false"
+    severity_if:
+      - "cross_account -> high"
+      - "unauthenticated -> high"
+      - "evidence.artifact.signal == 'idor' -> medium"
+    confidence:
+      - "cross_account -> 0.8"
+      - "unauthenticated -> 0.7"
+    default_confidence: 0.65
+    cwe: CWE-639
+    remediation: remediation-catalog/object-level-authorization.yaml
+    narrative: web.idor-object-access
+    tags: [idor, authorization]
+
+  - id: web.session-cookie-weak
+    title: "Session cookie is missing hardening attributes"
+    check_ref: ["m3.auth-session-audit"]
+    conditions:
+      cookie_signal: {evidence.artifact.signal == "session-cookie-hardening"}
+      plaintext: {evidence.artifact.protocol == "http"}
+    severity_if:
+      - "cookie_signal and plaintext -> medium"
+      - "cookie_signal -> medium"
+    confidence:
+      - "cookie_signal -> 0.8"
+    cwe: CWE-614
+    remediation: remediation-catalog/cookie-flags.yaml
+    narrative: web.cookie-weak-flags
+    tags: [cookies, session]
+
+  - id: web.insecure-login-transport
+    title: "Credentials are submitted over plaintext HTTP"
+    check_ref: ["m3.auth-session-audit"]
+    severity_if:
+      - "evidence.artifact.signal == 'insecure-login-transport' -> high"
+    confidence:
+      - "evidence.artifact.signal == 'insecure-login-transport' -> 0.8"
+    cwe: CWE-319
+    remediation: remediation-catalog/transport-encryption.yaml
+    narrative: web.insecure-login-transport
+    tags: [authentication, transport]
+
+  - id: web.user-enumeration
+    title: "Login response distinguishes a known user name"
+    check_ref: ["m3.auth-session-audit"]
+    severity_if:
+      - "evidence.artifact.signal == 'user-enumeration' -> medium"
+    confidence:
+      - "evidence.artifact.signal == 'user-enumeration' -> 0.65"
+    cwe: CWE-200
+    remediation: remediation-catalog/user-enumeration.yaml
+    narrative: web.user-enumeration
+    tags: [authentication, enumeration]
+
+  - id: web.cors-origin-reflection
+    title: "CORS reflects an arbitrary origin"
+    check_ref: ["m3.cors-audit", "research:ch03#23"]
+    conditions:
+      reflected: {evidence.artifact.reflected}
+      with_credentials: {evidence.artifact.allows_auth}
+      null_origin: {evidence.artifact.null_origin}
+    severity_if:
+      - "reflected and with_credentials -> high"
+      - "reflected -> medium"
+      - "null_origin -> medium"
+    confidence:
+      - "reflected and with_credentials -> 0.85"
+      - "reflected -> 0.7"
+    default_confidence: 0.7
+    cwe: CWE-942
+    remediation: remediation-catalog/cors-policy.yaml
+    narrative: web.cors-wildcard-credentials
+    tags: [cors, headers]
+
+  - id: web.cors-wildcard-credentials
+    title: "CORS wildcard is combined with credentials"
+    check_ref: ["m3.cors-audit"]
+    conditions:
+      wildcard: {evidence.artifact.wildcard}
+      with_credentials: {evidence.artifact.allows_auth}
+    severity_if:
+      - "wildcard and with_credentials -> high"
+      - "wildcard -> medium"
+    confidence:
+      - "wildcard and with_credentials -> 0.85"
+      - "wildcard -> 0.6"
+    cwe: CWE-942
+    remediation: remediation-catalog/cors-policy.yaml
+    narrative: web.cors-wildcard-credentials
+    tags: [cors, headers]
+
+  - id: web.missing-security-headers
+    title: "Security response headers are missing"
+    check_ref: ["m3.security-headers", "m4.security-header-review"]
+    conditions:
+      no_csp: {evidence.artifact.missing contains "content-security-policy"}
+      no_hsts: {evidence.artifact.missing contains "strict-transport-security"}
+      no_frame_options: {evidence.artifact.missing contains "x-frame-options"}
+      no_nosniff: {evidence.artifact.missing contains "x-content-type-options"}
+    severity_if:
+      - "no_hsts and no_csp -> medium"
+      - "no_csp -> medium"
+      - "no_frame_options and no_nosniff -> low"
+    default_severity: low
+    confidence:
+      - "no_hsts and no_csp -> 0.8"
+    default_confidence: 0.7
+    cwe: CWE-693
+    remediation: remediation-catalog/security-headers.yaml
+    narrative: web.missing-security-headers
+    tags: [headers, hardening]
+
+  - id: web.cookie-weak-flags
+    title: "Session cookie lacks security attributes"
+    check_ref: ["m3.security-headers", "m3.auth-session-audit"]
+    conditions:
+      cookie_signal: {evidence.artifact.signal == "weak-cookie-flags"}
+      insecure: {evidence.artifact.insecure_flags}
+    severity_if:
+      - "cookie_signal and insecure -> medium"
+      - "insecure -> medium"
+    confidence:
+      - "insecure -> 0.8"
+    cwe: CWE-614
+    remediation: remediation-catalog/cookie-flags.yaml
+    narrative: web.cookie-weak-flags
+    tags: [cookies, session]
+
+  - id: web.hidden-endpoint
+    title: "Undocumented endpoint is reachable"
+    check_ref: ["m3.api-surface", "research:ch03#31"]
+    conditions:
+      reachable: {evidence.artifact.status == 200}
+      sensitive_path: {evidence.artifact.path matches "admin|debug|internal|console|actuator|phpinfo|swagger|openapi|graphql|metrics|server-status|upload|backup|\.env|\.git"}
+      graphql_or_spec: {evidence.artifact.spec_endpoints}
+    severity_if:
+      - "reachable and sensitive_path -> medium"
+      - "reachable -> low"
+      - "evidence.artifact.status in [401, 403] -> low"
+    default_severity: low
+    confidence:
+      - "reachable and sensitive_path -> 0.75"
+      - "reachable -> 0.6"
+    default_confidence: 0.55
+    cwe: CWE-200
+    remediation: remediation-catalog/api-inventory.yaml
+    narrative: web.hidden-endpoint
+    tags: [api, inventory]
+
+  - id: web.spoofable-rate-limit
+    title: "Rate limiting is keyed on a client-supplied header"
+    check_ref: ["m3.rate-limit-audit"]
+    conditions:
+      spoofable: {evidence.artifact.spoofable}
+      throttle_seen: {evidence.artifact.throttle_observed}
+    severity_if:
+      - "spoofable -> medium"
+    confidence:
+      - "spoofable and throttle_seen -> 0.7"
+    default_confidence: 0.6
+    cwe: CWE-770
+    remediation: remediation-catalog/rate-limiting.yaml
+    narrative: web.rate-limit-missing
+    tags: [rate-limit, anti-automation]
+
+  - id: web.no-rate-limit
+    title: "No anti-automation control observed"
+    check_ref: ["m3.rate-limit-audit", "research:ch03#35"]
+    conditions:
+      no_limit: {evidence.artifact.signal == "no-rate-limit"}
+    severity_if:
+      - "no_limit -> low"
+    default_severity: low
+    confidence:
+      - "no_limit -> 0.5"
+    default_confidence: 0.5
+    cwe: CWE-770
+    remediation: remediation-catalog/rate-limiting.yaml
+    narrative: web.rate-limit-missing
+    tags: [rate-limit, anti-automation]
+
+  # ----------------------------------------------------------------- M4 · Exposure
+  - id: exposure.env-file
+    title: "Sensitive environment file exposed"
+    check_ref: ["m4.env-file-probe", "M4#env-file-probe", "research:ch04#1"]
+    conditions:
+      served: {evidence.artifact.signal == "exposed-env-file"}
+      detectors_fired: {evidence.artifact.detectors}
+      many_keys: {evidence.artifact.assignment_count >= 3}
+    severity_if:
+      - "served and detectors_fired -> high"
+      - "served and many_keys -> high"
+      - "served -> medium"
+    confidence:
+      - "served and detectors_fired -> 0.95"
+      - "served -> 0.85"
+    cwe: CWE-200
+    remediation: remediation-catalog/env-file-exposure.yaml
+    narrative: exposure.env-file
+    tags: [exposure, secrets]
+
+  - id: exposure.git-directory
+    title: "Exposed version-control metadata"
+    check_ref: ["m4.vcs-exposure", "M4#vcs-exposure", "research:ch04#2"]
+    conditions:
+      served: {evidence.artifact.signal == "vcs-exposure"}
+      git_family: {evidence.artifact.family == "git"}
+      has_marker: {evidence.artifact.marker}
+    severity_if:
+      - "served and git_family -> high"
+      - "served and has_marker -> medium"
+      - "served -> medium"
+    confidence:
+      - "served and git_family -> 0.95"
+      - "served -> 0.85"
+    cwe: CWE-538
+    remediation: remediation-catalog/source-disclosure.yaml
+    narrative: exposure.git-directory
+    tags: [exposure, source]
+
+  - id: exposure.backup-file
+    title: "Backup or editor artifact is downloadable"
+    check_ref: ["m4.backup-file-hunt", "M4#backup-file-hunt", "research:ch04#3"]
+    conditions:
+      downloaded: {evidence.artifact.signal == "backup-download"}
+      sql_dump: {evidence.artifact.content_family == "sql"}
+      archive: {evidence.artifact.binary}
+      detectors_fired: {evidence.artifact.detectors}
+    severity_if:
+      - "downloaded and sql_dump -> high"
+      - "downloaded and detectors_fired -> high"
+      - "downloaded and archive -> high"
+      - "downloaded -> medium"
+    confidence:
+      - "downloaded and sql_dump -> 0.92"
+      - "downloaded -> 0.8"
+    cwe: CWE-530
+    remediation: remediation-catalog/backup-exposure.yaml
+    narrative: exposure.backup-file
+    tags: [exposure, backup]
+
+  - id: exposure.sourcemap
+    title: "JavaScript source map is served"
+    check_ref: ["m4.sourcemap-exposure", "M4#sourcemap-exposure", "research:ch04#4"]
+    conditions:
+      served: {evidence.artifact.signal == "sourcemap-exposure"}
+      original_sources: {evidence.artifact.sources_content}
+      detectors_fired: {evidence.artifact.detectors}
+    severity_if:
+      - "served and detectors_fired -> high"
+      - "served and original_sources -> medium"
+      - "served -> low"
+    confidence:
+      - "served and original_sources -> 0.9"
+      - "served -> 0.75"
+    cwe: CWE-540
+    remediation: remediation-catalog/source-disclosure.yaml
+    narrative: exposure.sourcemap
+    tags: [exposure, source]
+
+  - id: exposure.api-doc
+    title: "API documentation is exposed"
+    check_ref: ["m4.api-doc-exposure", "M4#api-doc-exposure", "research:ch04#5"]
+    conditions:
+      served: {evidence.artifact.signal == "api-doc-exposure"}
+      internal_routes: {evidence.artifact.internal_endpoints}
+      wide_surface: {evidence.artifact.endpoint_count >= 10}
+    severity_if:
+      - "served and internal_routes -> medium"
+      - "served and wide_surface -> medium"
+      - "served -> low"
+    confidence:
+      - "served and internal_routes -> 0.85"
+      - "served -> 0.75"
+    cwe: CWE-200
+    remediation: remediation-catalog/api-inventory.yaml
+    narrative: exposure.api-doc
+    tags: [exposure, api]
+
+  - id: exposure.debug-endpoint
+    title: "Debug or diagnostic endpoint is reachable"
+    check_ref: ["m4.debug-endpoints", "M4#debug-endpoints", "research:ch04#7"]
+    conditions:
+      reached: {evidence.artifact.signal == "debug-endpoint"}
+      stack_trace: {evidence.artifact.stack_trace}
+      env_dump: {evidence.artifact.family == "actuator-env"}
+      heap_dump: {evidence.artifact.family == "actuator-heapdump"}
+    severity_if:
+      - "reached and heap_dump -> critical"
+      - "reached and env_dump -> high"
+      - "reached and stack_trace -> high"
+      - "reached -> medium"
+    confidence:
+      - "reached and env_dump -> 0.9"
+      - "reached -> 0.8"
+    cwe: CWE-489
+    remediation: remediation-catalog/debug-endpoint.yaml
+    narrative: exposure.debug-endpoint
+    tags: [exposure, debug]
+
+  - id: exposure.directory-listing
+    title: "Directory listing is enabled"
+    check_ref: ["m4.directory-listing", "M4#directory-listing", "research:ch04#9"]
+    conditions:
+      listed: {evidence.artifact.signal == "directory-listing"}
+      many_entries: {evidence.artifact.entry_count >= 3}
+    severity_if:
+      - "listed and many_entries -> medium"
+      - "listed -> low"
+    confidence:
+      - "listed -> 0.9"
+    cwe: CWE-548
+    remediation: remediation-catalog/directory-listing.yaml
+    narrative: exposure.directory-listing
+    tags: [exposure, listing]
+
+  - id: exposure.dashboard
+    title: "Administrative or monitoring dashboard is reachable"
+    check_ref: ["m4.dashboard-exposure", "M4#dashboard-exposure", "research:ch04#11"]
+    conditions:
+      reached: {evidence.artifact.signal == "dashboard-exposure"}
+      anonymous: {evidence.artifact.anonymous}
+    severity_if:
+      - "reached and anonymous -> high"
+      - "reached -> medium"
+    confidence:
+      - "reached and anonymous -> 0.85"
+      - "reached -> 0.7"
+    cwe: CWE-284
+    remediation: remediation-catalog/admin-surface.yaml
+    narrative: exposure.admin-panel
+    tags: [exposure, admin]
+
+  - id: exposure.bucket-public
+    title: "Object-storage bucket is publicly accessible"
+    check_ref: ["m4.bucket-exposure", "M4#bucket-exposure", "research:ch04#13"]
+    conditions:
+      exposed: {evidence.artifact.signal == "bucket-exposure"}
+      listable: {evidence.artifact.public_listing}
+      public_acl: {evidence.artifact.public_acl}
+    severity_if:
+      - "exposed and listable -> critical"
+      - "exposed and public_acl -> high"
+      - "exposed -> medium"
+    confidence:
+      - "exposed and listable -> 0.95"
+      - "exposed -> 0.85"
+    cwe: CWE-732
+    remediation: remediation-catalog/bucket-exposure.yaml
+    narrative: exposure.bucket-public
+    tags: [exposure, cloud]
+
+  - id: exposure.client-secret
+    title: "Credential material in client-side assets"
+    check_ref: ["m4.client-secrets", "M4#client-secrets", "research:ch04#14"]
+    conditions:
+      found: {evidence.artifact.signal == "client-side-credentials"}
+      in_script: {evidence.artifact.is_script}
+    severity_if:
+      - "found and in_script -> high"
+      - "found -> medium"
+    confidence:
+      - "found -> 0.85"
+    cwe: CWE-798
+    remediation: remediation-catalog/client-side-secret-exposure.yaml
+    narrative: exposure.client-secret
+    tags: [exposure, secrets]
+
+  - id: exposure.private-key
+    title: "Private key material is served"
+    check_ref: ["m4.key-exposure", "M4#key-exposure", "research:ch04#15"]
+    conditions:
+      served: {evidence.artifact.signal == "key-material"}
+      pem_present: {evidence.artifact.pem_present}
+      detectors_fired: {evidence.artifact.detectors}
+    severity_if:
+      - "served and pem_present -> critical"
+      - "served and detectors_fired -> critical"
+      - "served -> high"
+    confidence:
+      - "served -> 0.95"
+    cwe: CWE-321
+    remediation: remediation-catalog/private-key-exposure.yaml
+    narrative: exposure.private-key
+    tags: [exposure, secrets, keys]
+
+  - id: exposure.weak-tls
+    title: "Weak TLS configuration"
+    check_ref: ["m4.tls-config-review", "M4#tls-config-review", "research:ch04#17"]
+    conditions:
+      weak_protocol: {evidence.artifact.weak_versions}
+      untrusted: {evidence.artifact.trust_error}
+      issues: {evidence.artifact.issues}
+    severity_if:
+      - "weak_protocol -> high"
+      - "untrusted -> medium"
+      - "issues -> medium"
+    confidence:
+      - "weak_protocol -> 0.9"
+      - "issues -> 0.8"
+    cwe: CWE-326
+    remediation: remediation-catalog/tls-configuration.yaml
+    narrative: exposure.weak-tls
+    tags: [tls, transport]
+
+  - id: exposure.weak-cookie-flags
+    title: "Session cookie lacks hardening attributes"
+    check_ref: ["m4.cookie-flag-audit", "M4#cookie-flag-audit", "research:ch04#18"]
+    conditions:
+      cookie_signal: {evidence.artifact.signal == "weak-cookie-flags"}
+      plaintext: {evidence.artifact.protocol == "http"}
+    severity_if:
+      - "cookie_signal and plaintext -> medium"
+      - "cookie_signal -> medium"
+    confidence:
+      - "cookie_signal -> 0.8"
+    cwe: CWE-614
+    remediation: remediation-catalog/cookie-flags.yaml
+    narrative: exposure.weak-cookie-flags
+    tags: [cookies, session]
+
+  - id: exposure.cors-permissive
+    title: "CORS policy permits cross-origin reads"
+    check_ref: ["m4.cors-config-review", "M4#cors-config-review", "research:ch04#19"]
+    conditions:
+      reflected: {evidence.artifact.reflected}
+      with_credentials: {evidence.artifact.allows_auth}
+      null_origin: {evidence.artifact.null_origin}
+      wildcard: {evidence.artifact.wildcard}
+    severity_if:
+      - "reflected and with_credentials -> high"
+      - "wildcard and with_credentials -> high"
+      - "reflected -> medium"
+      - "null_origin -> medium"
+    confidence:
+      - "reflected and with_credentials -> 0.85"
+      - "reflected -> 0.7"
+    default_confidence: 0.7
+    cwe: CWE-942
+    remediation: remediation-catalog/cors-policy.yaml
+    narrative: exposure.cors-permissive
+    tags: [cors, headers]
+
+  - id: exposure.email-auth
+    title: "Email authentication is missing or permissive"
+    check_ref: ["m4.email-auth-review", "M4#email-auth-review", "research:ch04#20"]
+    conditions:
+      gaps: {evidence.artifact.issues}
+      no_dmarc: {evidence.artifact.dmarc_present == false}
+      permissive_spf: {evidence.artifact.spf_permissive}
+      dmarc_unenforced: {evidence.artifact.dmarc_enforced == false}
+    severity_if:
+      - "gaps and no_dmarc -> medium"
+      - "gaps and dmarc_unenforced -> medium"
+      - "gaps and permissive_spf -> medium"
+      - "gaps -> low"
+    confidence:
+      - "gaps -> 0.85"
+    cwe: CWE-290
+    remediation: remediation-catalog/email-authentication.yaml
+    narrative: exposure.email-auth
+    tags: [email, spoofing]
+
+  - id: exposure.unsafe-methods
+    title: "Unsafe HTTP methods or WebDAV are enabled"
+    check_ref: ["m4.webdav-verbs", "M4#webdav-verbs", "research:ch04#21"]
+    conditions:
+      unsafe: {evidence.artifact.signal == "unsafe-verbs"}
+      webdav: {evidence.artifact.webdav}
+      trace_echo: {evidence.artifact.trace_echo}
+      write_verbs: {evidence.artifact.write_verbs}
+    severity_if:
+      - "webdav and write_verbs -> high"
+      - "webdav -> medium"
+      - "trace_echo -> low"
+      - "write_verbs -> low"
+    confidence:
+      - "webdav -> 0.85"
+      - "unsafe -> 0.6"
+    cwe: CWE-650
+    remediation: remediation-catalog/unsafe-http-methods.yaml
+    narrative: exposure.unsafe-methods
+    tags: [http, webdav]
+
+  - id: exposure.hidden-endpoint
+    title: "Hidden endpoint or content is reachable"
+    check_ref: ["m4.hidden-endpoint-hunt", "M4#hidden-endpoint-hunt", "research:ch04#24"]
+    conditions:
+      reachable: {evidence.artifact.signal == "hidden-endpoint"}
+      sensitive_path: {evidence.artifact.interesting}
+    severity_if:
+      - "reachable and sensitive_path -> low"
+      - "reachable -> info"
+    default_severity: low
+    confidence:
+      - "reachable and sensitive_path -> 0.7"
+      - "reachable -> 0.55"
+    cwe: CWE-200
+    remediation: remediation-catalog/api-inventory.yaml
+    narrative: exposure.hidden-endpoint
+    tags: [inventory, exposure]
+
+  - id: exposure.staging
+    title: "Staging or development surface is exposed"
+    check_ref: ["m4.staging-exposure", "M4#staging-exposure", "research:ch04#25"]
+    conditions:
+      exposed: {evidence.artifact.signal == "staging-exposure"}
+      labelled_host: {evidence.artifact.signal == "staging-host"}
+    severity_if:
+      - "exposed and labelled_host -> medium"
+      - "exposed -> medium"
+      - "labelled_host -> medium"
+    confidence:
+      - "exposed -> 0.75"
+    cwe: CWE-1188
+    remediation: remediation-catalog/staging-exposure.yaml
+    narrative: exposure.staging
+    tags: [exposure, environment]
+
+  - id: exposure.metadata-ssrf
+    title: "Cloud metadata is reachable through a request sink"
+    check_ref: ["m4.metadata-ssrf", "M4#metadata-ssrf", "research:ch04#26"]
+    conditions:
+      reached: {evidence.artifact.signal == "metadata-ssrf"}
+      v1_served: {evidence.artifact.posture == "imdsv1-served"}
+      v2_enforced: {evidence.artifact.posture == "imdsv2-enforced"}
+    severity_if:
+      - "reached and v1_served -> critical"
+      - "reached and v2_enforced -> low"
+      - "reached -> high"
+    confidence:
+      - "reached and v1_served -> 0.9"
+      - "reached -> 0.6"
+    cwe: CWE-918
+    remediation: remediation-catalog/metadata-ssrf.yaml
+    narrative: exposure.metadata-ssrf
+    tags: [ssrf, cloud]
+
+  - id: exposure.user-enumeration
+    title: "Usernames are enumerable through a login differential"
+    check_ref: ["m4.user-enumeration", "M4#user-enumeration", "research:ch04#28"]
+    conditions:
+      differential: {evidence.artifact.differential}
+      marker: {evidence.artifact.marker}
+    severity_if:
+      - "differential and marker -> medium"
+      - "differential -> low"
+    confidence:
+      - "differential and marker -> 0.85"
+      - "differential -> 0.72"
+    cwe: CWE-204
+    remediation: remediation-catalog/user-enumeration.yaml
+    narrative: exposure.user-enumeration
+    tags: [authentication, enumeration]
+
+  - id: exposure.unauth-api
+    title: "Data-bearing API route answers without authentication"
+    check_ref: ["m4.unauth-api-audit", "M4#unauth-api-audit", "research:ch04#29"]
+    conditions:
+      anonymous: {evidence.artifact.signal == "unauthenticated-api"}
+      internal: {evidence.artifact.endpoint matches "/internal/|/admin/|/private/|/export/"}
+      documented: {evidence.artifact.documented}
+    severity_if:
+      - "anonymous and internal -> high"
+      - "anonymous and documented -> medium"
+      - "anonymous -> medium"
+    confidence:
+      - "anonymous and internal -> 0.9"
+      - "anonymous -> 0.8"
+    cwe: CWE-306
+    remediation: remediation-catalog/unauth-api.yaml
+    narrative: exposure.unauth-api
+    tags: [api, authorization]
+
+  - id: exposure.default-credentials
+    title: "Vendor default credential is accepted"
+    check_ref: ["m4.default-credentials", "M4#default-credentials", "research:ch04#10"]
+    conditions:
+      accepted: {evidence.artifact.signal == "default-credential"}
+    severity_if:
+      - "accepted -> critical"
+    confidence:
+      - "accepted -> 0.9"
+    cwe: CWE-1392
+    remediation: remediation-catalog/default-credentials.yaml
+    narrative: exposure.default-credentials
+    tags: [credentials, authentication]
+
+  # ----------------------------------------------------------------- signature bridge
+  # A rule may key on a *template* match instead of a byte pattern of its own, which is how
+  # the imported nuclei corpus participates in the heuristic decisions (docs/spec/04- §2.2):
+  # the signature engine says "this response is an exposed .env", and the rule says how bad
+  # that is and what to do about it.
+  - id: exposure.matched-signature
+    title: "Known exposure signature matched"
+    check_ref: ["*"]
+    conditions:
+      env_file_signature: {signature.matched contains "exposed-env-file"}
+      git_metadata_signature: {signature.matched contains "exposed-git-config"}
+      debug_page_signature: {signature.matched contains "phpinfo-disclosure"}
+    severity_if:
+      - "env_file_signature or git_metadata_signature -> high"
+      - "debug_page_signature -> medium"
+    confidence:
+      - "env_file_signature -> 0.9"
+      - "git_metadata_signature -> 0.88"
+      - "debug_page_signature -> 0.8"
+    cwe: CWE-200
+    remediation: remediation-catalog/source-disclosure.yaml
+    narrative: exposure.matched-signature
+    tags: [signature, template]
+
+  # ----------------------------------------------------------------- module floors
+  # A module baseline is a floor, not a decision: it fires only when no more specific rule
+  # did, and it decides nothing beyond "this is at least worth reading" (severity_hint and the
+  # score model still raise it — docs/spec/05- "severity_hint").
+  - id: baseline.m1-recon
+    title: "Reconnaissance observation"
+    check_ref: ["M1"]
+    default_severity: info
+    cwe: CWE-200
+    narrative: baseline.generic
+    tags: [baseline]
+
+  - id: baseline.m2-network
+    title: "Network service observation"
+    check_ref: ["M2"]
+    default_severity: low
+    narrative: baseline.generic
+    tags: [baseline]
+
+  - id: baseline.m3-web
+    title: "Web application observation"
+    check_ref: ["M3"]
+    default_severity: medium
+    narrative: baseline.generic
+    tags: [baseline]
+
+  - id: baseline.m4-exposure
+    title: "Exposure observation"
+    check_ref: ["M4"]
+    default_severity: medium
+    narrative: baseline.generic
+    tags: [baseline]
+
+  - id: baseline.m5-cloud
+    title: "Cloud and supply-chain observation"
+    check_ref: ["M5"]
+    default_severity: medium
+    narrative: baseline.generic
+    tags: [baseline]
+
+  - id: baseline.m6-ai-era
+    title: "Post-exploitation or AI-era signal"
+    check_ref: ["M6"]
+    default_severity: medium
+    narrative: baseline.generic
+    tags: [baseline]
+
+  # ================= S10 · M3 extended + M5 cloud/container/supply chain
+  - id: web.ssrf
+    title: "Server-side request forgery confirmed by callback"
+    check_ref: ["m3.ssrf-probe", "M3#ssrf-probe", "research:ch03#5"]
+    conditions:
+      matched: {evidence.artifact.signal == "ssrf"}
+      in_band: {evidence.artifact.in_band}
+    severity_if:
+      - "matched -> high"
+      - "matched and in_band -> high"
+    confidence:
+      - "matched -> 0.85"
+      - "matched and in_band -> 0.9"
+    cwe: CWE-918
+    remediation: remediation-catalog/ssrf.yaml
+    narrative: web.ssrf
+    tags: [ssrf]
+
+  - id: web.ssti
+    title: "Server-side template injection"
+    check_ref: ["m3.ssti-oracle", "M3#ssti-oracle", "research:ch03#6"]
+    conditions:
+      matched: {evidence.artifact.signal == "ssti"}
+      evaluated: {evidence.artifact.reflected}
+    severity_if:
+      - "matched -> high"
+      - "matched and evaluated -> high"
+    confidence:
+      - "matched -> 0.85"
+      - "matched and evaluated -> 0.9"
+    cwe: CWE-1336
+    remediation: remediation-catalog/ssti.yaml
+    narrative: web.ssti
+    tags: [injection]
+
+  - id: web.xxe
+    title: "XML external entity processing enabled"
+    check_ref: ["m3.xxe-oracle", "M3#xxe-oracle", "research:ch03#7"]
+    conditions:
+      matched: {evidence.artifact.signal == "xxe"}
+    severity_if:
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.9"
+    cwe: CWE-611
+    remediation: remediation-catalog/xxe.yaml
+    narrative: web.xxe
+    tags: [injection]
+
+  - id: web.command-injection
+    title: "OS command injection"
+    check_ref: ["m3.cmdi-oracle", "M3#cmdi-oracle", "research:ch03#8"]
+    conditions:
+      matched: {evidence.artifact.signal == "command-injection"}
+      echo_confirmed: {evidence.artifact.confirmed_by == "echo"}
+    severity_if:
+      - "matched -> critical"
+      - "matched and echo_confirmed -> critical"
+    confidence:
+      - "matched -> 0.9"
+      - "matched and echo_confirmed -> 0.95"
+    cwe: CWE-78
+    remediation: remediation-catalog/command-injection.yaml
+    narrative: web.command-injection
+    tags: [injection]
+
+  - id: web.deserialization
+    title: "Insecure deserialization sink"
+    check_ref: ["m3.deser-audit", "M3#deser-audit", "research:ch03#9"]
+    conditions:
+      matched: {evidence.artifact.signal == "deserialization"}
+    severity_if:
+      - "matched -> critical"
+    confidence:
+      - "matched -> 0.75"
+    cwe: CWE-502
+    remediation: remediation-catalog/deserialization.yaml
+    narrative: web.deserialization
+    tags: [injection]
+
+  - id: web.smuggling
+    title: "HTTP request smuggling (framing ambiguity)"
+    check_ref: ["m3.smuggling-oracle", "M3#smuggling-oracle", "research:ch03#16"]
+    conditions:
+      matched: {evidence.artifact.signal == "request-smuggling"}
+    severity_if:
+      - "matched -> medium"
+    confidence:
+      - "matched -> 0.55"
+    cwe: CWE-444
+    remediation: remediation-catalog/smuggling.yaml
+    narrative: web.smuggling
+    tags: [transport]
+
+  - id: web.cache-poisoning
+    title: "Web cache poisoning (unkeyed input reflected)"
+    check_ref: ["m3.cache-poison-audit", "M3#cache-poison-audit", "research:ch03#17"]
+    conditions:
+      matched: {evidence.artifact.signal == "cache-poisoning"}
+      cacheable: {evidence.artifact.cacheable}
+    severity_if:
+      - "matched -> medium"
+      - "matched and cacheable -> high"
+    confidence:
+      - "matched -> 0.65"
+      - "matched and cacheable -> 0.75"
+    cwe: CWE-444
+    remediation: remediation-catalog/cache-poisoning.yaml
+    narrative: web.cache-poisoning
+    tags: [cache]
+
+  - id: web.jwt
+    title: "JWT verification weakness"
+    check_ref: ["m3.jwt-audit", "M3#jwt-audit", "research:ch03#20"]
+    conditions:
+      matched: {evidence.artifact.signal == "jwt"}
+      alg_none: {evidence.artifact.weakness == "alg-none"}
+      weak_secret: {evidence.artifact.weakness == "weak-hmac-secret"}
+    severity_if:
+      - "matched -> high"
+      - "matched and weak_secret -> critical"
+      - "matched and alg_none -> high"
+    confidence:
+      - "matched -> 0.8"
+      - "matched and weak_secret -> 0.9"
+      - "matched and alg_none -> 0.85"
+    cwe: CWE-347
+    remediation: remediation-catalog/jwt.yaml
+    narrative: web.jwt
+    tags: [identity]
+
+  - id: web.oauth
+    title: "OAuth redirect_uri validation bypass"
+    check_ref: ["m3.oauth-flow-audit", "M3#oauth-flow-audit", "research:ch03#21"]
+    conditions:
+      matched: {evidence.artifact.signal == "oauth"}
+    severity_if:
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.8"
+    cwe: CWE-601
+    remediation: remediation-catalog/oauth.yaml
+    narrative: web.oauth
+    tags: [identity]
+
+  - id: web.saml
+    title: "SAML assertion accepted without a valid signature"
+    check_ref: ["m3.saml-audit", "M3#saml-audit", "research:ch03#22"]
+    conditions:
+      matched: {evidence.artifact.signal == "saml"}
+    severity_if:
+      - "matched -> critical"
+    confidence:
+      - "matched -> 0.75"
+    cwe: CWE-347
+    remediation: remediation-catalog/saml.yaml
+    narrative: web.saml
+    tags: [identity]
+
+  - id: web.http-parameter-pollution
+    title: "Ambiguous duplicate-parameter resolution"
+    check_ref: ["m3.hpp-oracle", "M3#hpp-oracle", "research:ch03#25"]
+    conditions:
+      matched: {evidence.artifact.signal == "http-parameter-pollution"}
+    severity_if:
+      - "matched -> medium"
+    confidence:
+      - "matched -> 0.6"
+    cwe: CWE-235
+    remediation: remediation-catalog/hpp.yaml
+    narrative: web.hpp
+    tags: [logic]
+
+  - id: web.mass-assignment
+    title: "Mass assignment (over-posting) accepted"
+    check_ref: ["m3.mass-assign-audit", "M3#mass-assign-audit", "research:ch03#26"]
+    conditions:
+      matched: {evidence.artifact.signal == "mass-assignment"}
+    severity_if:
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.7"
+    cwe: CWE-915
+    remediation: remediation-catalog/mass-assignment.yaml
+    narrative: web.mass-assignment
+    tags: [api]
+
+  - id: web.prototype-pollution
+    title: "Server-side prototype pollution"
+    check_ref: ["m3.proto-pollution", "M3#proto-pollution", "research:ch03#27"]
+    conditions:
+      matched: {evidence.artifact.signal == "prototype-pollution"}
+    severity_if:
+      - "matched -> medium"
+    confidence:
+      - "matched -> 0.7"
+    cwe: CWE-1321
+    remediation: remediation-catalog/prototype-pollution.yaml
+    narrative: web.proto-pollution
+    tags: [logic]
+
+  - id: web.race-condition
+    title: "Race condition (double-apply)"
+    check_ref: ["m3.race-oracle", "M3#race-oracle", "research:ch03#29"]
+    conditions:
+      matched: {evidence.artifact.signal == "race-condition"}
+    severity_if:
+      - "matched -> medium"
+    confidence:
+      - "matched -> 0.65"
+    cwe: CWE-362
+    remediation: remediation-catalog/race-condition.yaml
+    narrative: web.race-condition
+    tags: [logic]
+
+  - id: web.business-logic
+    title: "Business invariant not enforced"
+    check_ref: ["m3.business-logic-audit", "M3#business-logic-audit", "research:ch03#30"]
+    conditions:
+      matched: {evidence.artifact.signal == "business-logic"}
+    severity_if:
+      - "matched -> medium"
+    confidence:
+      - "matched -> 0.55"
+    cwe: CWE-840
+    remediation: remediation-catalog/business-logic.yaml
+    narrative: web.business-logic
+    tags: [logic]
+
+  - id: web.graphql
+    title: "GraphQL introspection / schema disclosure"
+    check_ref: ["m3.graphql-audit", "M3#graphql-audit", "research:ch03#32"]
+    conditions:
+      matched: {evidence.artifact.signal == "graphql"}
+      suggestion: {evidence.artifact.suggestion_leak}
+    severity_if:
+      - "matched -> medium"
+      - "matched and suggestion -> medium"
+    confidence:
+      - "matched -> 0.8"
+      - "matched and suggestion -> 0.85"
+    cwe: CWE-200
+    remediation: remediation-catalog/graphql.yaml
+    narrative: web.graphql
+    tags: [api]
+
+  - id: web.websocket
+    title: "WebSocket handshake does not validate the origin"
+    check_ref: ["m3.websocket-audit", "M3#websocket-audit", "research:ch03#33"]
+    conditions:
+      matched: {evidence.artifact.signal == "websocket"}
+    severity_if:
+      - "matched -> medium"
+    confidence:
+      - "matched -> 0.7"
+    cwe: CWE-1385
+    remediation: remediation-catalog/websocket.yaml
+    narrative: web.websocket
+    tags: [api]
+
+  - id: web.subdomain-takeover
+    title: "Dangling alias points at an unclaimed service"
+    check_ref: ["m3.subdomain-takeover", "M3#subdomain-takeover", "research:ch03#34"]
+    conditions:
+      matched: {evidence.artifact.signal == "subdomain-takeover"}
+      cname: {evidence.artifact.cname_matches_service}
+    severity_if:
+      - "matched -> high"
+      - "matched and cname -> high"
+    confidence:
+      - "matched -> 0.7"
+      - "matched and cname -> 0.85"
+    cwe: CWE-350
+    remediation: remediation-catalog/subdomain-takeover.yaml
+    narrative: web.subdomain-takeover
+    tags: [dns]
+
+  - id: cloud.bucket
+    title: "Public cloud storage bucket"
+    check_ref: ["m5.bucket-enumerator", "M5#bucket-enumerator", "research:ch05#2"]
+    conditions:
+      matched: {evidence.artifact.signal == "bucket-enumeration"}
+      listable: {evidence.artifact.public_listing}
+      acl: {evidence.artifact.public_acl}
+    severity_if:
+      - "matched -> high"
+      - "matched and listable -> critical"
+    confidence:
+      - "matched -> 0.95"
+      - "matched and listable -> 0.95"
+    cwe: CWE-732
+    remediation: remediation-catalog/cloud-bucket.yaml
+    narrative: cloud.bucket
+    tags: [cloud]
+
+  - id: cloud.leaked-keys
+    title: "Leaked cloud credential material"
+    check_ref: ["m5.leaked-cloud-keys", "M5#leaked-cloud-keys", "research:ch05#3"]
+    conditions:
+      matched: {evidence.artifact.signal == "leaked-cloud-credentials"}
+      validated: {evidence.artifact.validated}
+    severity_if:
+      - "matched -> high"
+      - "matched and validated -> critical"
+    confidence:
+      - "matched -> 0.85"
+      - "matched and validated -> 0.95"
+    cwe: CWE-798
+    remediation: remediation-catalog/cloud-credentials.yaml
+    narrative: cloud.leaked-keys
+    tags: [cloud]
+
+  - id: cloud.imds
+    title: "Cloud metadata reachable through an SSRF sink"
+    check_ref: ["m5.imds-ssrf", "M5#imds-ssrf", "research:ch05#4"]
+    conditions:
+      matched: {evidence.artifact.signal == "imds-ssrf"}
+      served: {evidence.artifact.marker}
+    severity_if:
+      - "matched -> critical"
+      - "matched and served -> critical"
+    confidence:
+      - "matched -> 0.9"
+      - "matched and served -> 0.95"
+    cwe: CWE-918
+    remediation: remediation-catalog/imds.yaml
+    narrative: cloud.imds
+    tags: [cloud]
+
+  - id: cloud.azure-mi
+    title: "Azure managed-identity metadata reachable"
+    check_ref: ["m5.azure-mi-audit", "M5#azure-mi-audit", "research:ch05#5"]
+    conditions:
+      matched: {evidence.artifact.signal == "azure-managed-identity"}
+    severity_if:
+      - "matched -> critical"
+    confidence:
+      - "matched -> 0.85"
+    cwe: CWE-918
+    remediation: remediation-catalog/azure-mi.yaml
+    narrative: cloud.azure-mi
+    tags: [cloud]
+
+  - id: cloud.gcp-sa
+    title: "GCP service-account key exposed"
+    check_ref: ["m5.gcp-sa-keys", "M5#gcp-sa-keys", "research:ch05#6"]
+    conditions:
+      matched: {evidence.artifact.signal == "gcp-service-account-key"}
+      private_key: {evidence.artifact.has_private_key}
+    severity_if:
+      - "matched -> high"
+      - "matched and private_key -> critical"
+    confidence:
+      - "matched -> 0.85"
+      - "matched and private_key -> 0.9"
+    cwe: CWE-798
+    remediation: remediation-catalog/cloud-service-account-keys.yaml
+    narrative: cloud.gcp-sa
+    tags: [cloud]
+
+  - id: cloud.firebase
+    title: "Firebase project has open rules"
+    check_ref: ["m5.firebase-rules", "M5#firebase-rules", "research:ch05#7"]
+    conditions:
+      matched: {evidence.artifact.signal == "firebase-open-rules"}
+    severity_if:
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.9"
+    cwe: CWE-284
+    remediation: remediation-catalog/firebase.yaml
+    narrative: cloud.firebase
+    tags: [cloud]
+
+  - id: cloud.supabase
+    title: "Supabase table readable without RLS"
+    check_ref: ["m5.supabase-rls", "M5#supabase-rls", "research:ch05#8"]
+    conditions:
+      matched: {evidence.artifact.signal == "supabase-open-rls"}
+    severity_if:
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.85"
+    cwe: CWE-284
+    remediation: remediation-catalog/supabase.yaml
+    narrative: cloud.supabase
+    tags: [cloud]
+
+  - id: cloud.tfstate
+    title: "Terraform state exposed"
+    check_ref: ["m5.tfstate-exposure", "M5#tfstate-exposure", "research:ch05#11"]
+    conditions:
+      matched: {evidence.artifact.signal == "tfstate-exposure"}
+      secrets: {evidence.artifact.plaintext_secrets}
+    severity_if:
+      - "matched -> high"
+      - "matched and secrets -> critical"
+    confidence:
+      - "matched -> 0.85"
+      - "matched and secrets -> 0.9"
+    cwe: CWE-312
+    remediation: remediation-catalog/tfstate.yaml
+    narrative: cloud.tfstate
+    tags: [cloud]
+
+  - id: cloud.iac
+    title: "IaC misconfiguration"
+    check_ref: ["m5.tfstate-exposure", "M5#tfstate-exposure", "research:ch05#12"]
+    conditions:
+      matched: {evidence.artifact.signal == "iac-misconfiguration"}
+      critical: {evidence.artifact.severity_hint == "high" or evidence.artifact.severity_hint == "critical"}
+    severity_if:
+      - "matched -> high"
+      - "matched and critical -> high"
+    confidence:
+      - "matched -> 0.7"
+      - "matched and critical -> 0.75"
+    cwe: CWE-1116
+    remediation: remediation-catalog/iac.yaml
+    narrative: cloud.iac
+    tags: [cloud]
+
+  - id: cloud.k8s-kubelet
+    title: "Anonymous kubelet API"
+    check_ref: ["m5.k8s-exposure", "M5#k8s-exposure", "research:ch05#14"]
+    conditions:
+      matched: {evidence.artifact.signal == "k8s-kubelet-unauth"}
+      env: {evidence.artifact.env_exposure}
+    severity_if:
+      - "matched -> critical"
+      - "matched and env -> critical"
+    confidence:
+      - "matched -> 0.9"
+      - "matched and env -> 0.95"
+    cwe: CWE-306
+    remediation: remediation-catalog/k8s.yaml
+    narrative: cloud.k8s-kubelet
+    tags: [cloud]
+
+  - id: cloud.k8s-dashboard
+    title: "Kubernetes Dashboard exposed"
+    check_ref: ["m5.k8s-exposure", "M5#k8s-exposure", "research:ch05#13"]
+    conditions:
+      matched: {evidence.artifact.signal == "k8s-dashboard"}
+    severity_if:
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.8"
+    cwe: CWE-284
+    remediation: remediation-catalog/k8s-dashboard.yaml
+    narrative: cloud.k8s-dashboard
+    tags: [cloud]
+
+  - id: cloud.registry
+    title: "Container registry anonymously enumerable"
+    check_ref: ["m5.registry-scan", "M5#registry-scan", "research:ch05#15"]
+    conditions:
+      matched: {evidence.artifact.signal == "registry-catalog"}
+    severity_if:
+      - "matched -> medium"
+    confidence:
+      - "matched -> 0.85"
+    cwe: CWE-1104
+    remediation: remediation-catalog/registry.yaml
+    narrative: cloud.registry
+    tags: [cloud]
+
+  - id: cloud.docker-api
+    title: "Docker daemon API reachable"
+    check_ref: ["m5.docker-socket", "M5#docker-socket", "research:ch05#16"]
+    conditions:
+      matched: {evidence.artifact.signal == "docker-api"}
+      privileged: {evidence.artifact.privileged_container}
+    severity_if:
+      - "matched -> critical"
+      - "matched and privileged -> critical"
+    confidence:
+      - "matched -> 0.9"
+      - "matched and privileged -> 0.95"
+    cwe: CWE-306
+    remediation: remediation-catalog/docker-api.yaml
+    narrative: cloud.docker-api
+    tags: [cloud]
+
+  - id: cloud.docker-socket
+    title: "Docker socket present in artifact"
+    check_ref: ["m5.docker-socket", "M5#docker-socket", "research:ch05#16"]
+    conditions:
+      matched: {evidence.artifact.signal == "docker-socket"}
+    severity_if:
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.6"
+    cwe: CWE-306
+    remediation: remediation-catalog/docker-socket.yaml
+    narrative: cloud.docker-socket
+    tags: [cloud]
+
+  - id: cloud.image-secret
+    title: "Secret in image build artifact"
+    check_ref: ["m5.image-history-secrets", "M5#image-history-secrets", "research:ch05#17"]
+    conditions:
+      matched: {evidence.artifact.signal == "image-secret"}
+    severity_if:
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.7"
+    cwe: CWE-798
+    remediation: remediation-catalog/image-secrets.yaml
+    narrative: cloud.image-secret
+    tags: [cloud]
+
+  - id: cloud.image-root
+    title: "Container runs as root"
+    check_ref: ["m5.image-history-secrets", "M5#image-history-secrets", "research:ch05#17"]
+    conditions:
+      matched: {evidence.artifact.signal == "image-root-user"}
+    severity_if:
+      - "matched -> medium"
+    confidence:
+      - "matched -> 0.6"
+    cwe: CWE-250
+    remediation: remediation-catalog/image-root.yaml
+    narrative: cloud.image-root
+    tags: [cloud]
+
+  - id: cloud.cicd
+    title: "CI/CD pipeline supply-chain risk"
+    check_ref: ["m5.cicd-audit", "M5#cicd-audit", "research:ch05#23"]
+    conditions:
+      matched: {evidence.artifact.signal == "cicd-risk"}
+      critical: {evidence.artifact.severity_hint == "high"}
+    severity_if:
+      - "matched -> high"
+      - "matched and critical -> high"
+    confidence:
+      - "matched -> 0.8"
+      - "matched and critical -> 0.85"
+    cwe: CWE-78
+    remediation: remediation-catalog/cicd.yaml
+    narrative: cloud.cicd
+    tags: [cicd]
+
+  - id: cloud.dep-confusion
+    title: "Dependency-confusion candidate"
+    check_ref: ["m5.dep-confusion", "M5#dep-confusion", "research:ch05#24"]
+    conditions:
+      matched: {evidence.artifact.signal == "dependency-confusion"}
+    severity_if:
+      - "matched -> medium"
+    confidence:
+      - "matched -> 0.65"
+    cwe: CWE-427
+    remediation: remediation-catalog/dep-confusion.yaml
+    narrative: cloud.dep-confusion
+    tags: [supply]
+
+  - id: cloud.sbom
+    title: "Known-vulnerable component in use"
+    check_ref: ["m5.sbom-review", "M5#sbom-review", "research:ch05#25"]
+    conditions:
+      matched: {evidence.artifact.signal == "sbom-vulnerable-component"}
+      critical: {evidence.artifact.severity_hint == "critical"}
+    severity_if:
+      - "matched -> high"
+      - "matched and critical -> critical"
+    confidence:
+      - "matched -> 0.7"
+      - "matched and critical -> 0.8"
+    cwe: CWE-1104
+    remediation: remediation-catalog/sbom.yaml
+    narrative: cloud.sbom
+    tags: [supply]
+
+  - id: cloud.iam
+    title: "IAM over-privilege or escalation path"
+    check_ref: ["m5.iam-review", "M5#iam-review", "research:ch05#1"]
+    conditions:
+      matched: {evidence.artifact.signal == "iam-overprivilege"}
+      wildcard: {evidence.artifact.wildcard}
+    severity_if:
+      - "matched -> high"
+      - "matched and wildcard -> critical"
+    confidence:
+      - "matched -> 0.75"
+      - "matched and wildcard -> 0.85"
+    cwe: CWE-269
+    remediation: remediation-catalog/iam.yaml
+    narrative: cloud.iam
+    tags: [cloud]
+
+  # ----------------------------------------------------------------- M6 · automation, AI-era, post-exploit
+  - id: m6.webshell
+    title: "Webshell in a web root or served content"
+    check_ref: ["m6.webshell-yara", "M6#webshell-yara", "research:ch06#24"]
+    conditions:
+      matched: {evidence.artifact.signal == "webshell"}
+      has_signature: {evidence.artifact.signature_count >= 1}
+      has_behaviour: {evidence.artifact.heuristic_count >= 1}
+      served: {evidence.artifact.served}
+    severity_if:
+      - "matched and has_signature -> critical"
+      - "matched and has_behaviour and served -> high"
+      - "matched and has_behaviour -> medium"
+      - "matched -> medium"
+    confidence:
+      - "matched and has_signature -> 0.92"
+      - "matched and has_behaviour -> 0.65"
+    cwe: CWE-506
+    remediation: remediation-catalog/webshell.yaml
+    narrative: m6.webshell
+    tags: [malware, webshell]
+
+  - id: m6.genai-surface
+    title: "Exposed generative-AI surface"
+    check_ref: ["m6.attack-surface-genai", "M6#attack-surface-genai", "research:ch06#14-15"]
+    conditions:
+      endpoint: {evidence.artifact.signal == "genai-endpoint"}
+      key: {evidence.artifact.signal == "genai-key"}
+      prompt: {evidence.artifact.signal == "genai-prompt-surface"}
+      agent: {evidence.artifact.signal == "genai-agent-config"}
+    severity_if:
+      - "key -> high"
+      - "endpoint -> high"
+      - "agent -> medium"
+      - "prompt -> medium"
+    confidence:
+      - "key -> 0.8"
+      - "endpoint -> 0.6"
+      - "agent -> 0.5"
+      - "prompt -> 0.5"
+    cwe: CWE-1426
+    remediation: remediation-catalog/genai-surface.yaml
+    narrative: m6.genai
+    tags: [genai, ai]
+
+  - id: m6.patch-gap
+    title: "Known-exploited or high-EPSS vulnerability in the estate"
+    check_ref: ["m6.cve-epss-correlation", "M6#cve-epss-correlation", "research:ch06#7"]
+    conditions:
+      matched: {evidence.artifact.signal == "epss-correlated"}
+      kev: {evidence.artifact.kev}
+      likely: {evidence.artifact.epss >= 0.5}
+    severity_if:
+      - "matched and kev -> critical"
+      - "matched and likely -> high"
+      - "matched -> high"
+    confidence:
+      - "matched and kev -> 0.9"
+      - "matched -> 0.75"
+    cwe: CWE-1035
+    remediation: remediation-catalog/patch-gap.yaml
+    narrative: m6.patch-gap
+    tags: [cve, epss]
+
+  - id: m6.lpe
+    title: "Known local privilege-escalation vulnerability"
+    check_ref: ["m6.lpe-discovery", "M6#lpe-discovery", "research:ch06#16"]
+    conditions:
+      matched: {evidence.artifact.signal == "lpe-cve"}
+      likely: {evidence.artifact.epss >= 0.5}
+    severity_if:
+      - "matched and likely -> critical"
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.7"
+    cwe: CWE-269
+    remediation: remediation-catalog/lpe.yaml
+    narrative: m6.lpe
+    tags: [privesc]
+
+  - id: m6.repo-secret
+    title: "Committed credential in a repository or its history"
+    check_ref: ["m6.secret-scan-at-scale", "M6#secret-scan-at-scale", "research:ch06#8"]
+    conditions:
+      matched: {evidence.artifact.signal == "repo-secret"}
+      cloud: 'evidence.artifact.kind in ["aws-access-key-id", "aws-secret-access-key", "gcp-service-account", "private-key", "azure-client-secret"]'
+      history: {evidence.artifact.in_history}
+    severity_if:
+      - "matched and cloud -> critical"
+      - "matched and history -> high"
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.8"
+    cwe: CWE-798
+    remediation: remediation-catalog/repo-secrets.yaml
+    narrative: m6.repo-secret
+    tags: [secrets]
+
+  - id: m6.ci-secret
+    title: "Credential leaked into a CI log or artifact"
+    check_ref: ["m6.ci-secret-leak", "M6#ci-secret-leak", "research:ch06#23"]
+    conditions:
+      matched: {evidence.artifact.signal == "ci-secret-leak"}
+      token: {evidence.artifact.kind != "marker"}
+    severity_if:
+      - "matched and token -> high"
+      - "matched -> medium"
+    confidence:
+      - "matched and token -> 0.75"
+      - "matched -> 0.6"
+    cwe: CWE-532
+    remediation: remediation-catalog/ci-secrets.yaml
+    narrative: m6.ci-secret
+    tags: [secrets, ci]
+
+  - id: m6.sigma-hit
+    title: "Post-exploitation discovery activity in telemetry"
+    check_ref: ["m6.sigma-hunt-rules", "M6#sigma-hunt-rules", "research:ch06#23"]
+    conditions:
+      matched: {evidence.artifact.signal == "sigma-hit"}
+      severe: {evidence.artifact.level == "critical"}
+    severity_if:
+      - "matched and severe -> critical"
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.7"
+    cwe: CWE-778
+    remediation: remediation-catalog/log-hunting.yaml
+    narrative: m6.sigma
+    tags: [hunting, telemetry]
+
+  - id: m6.deception
+    title: "Honeytoken triggered"
+    check_ref: ["m6.deception-listeners", "M6#deception-listeners", "research:ch06#25"]
+    conditions:
+      matched: {evidence.artifact.signal == "honeytoken-trigger"}
+    severity_if:
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.8"
+    cwe: CWE-778
+    remediation: remediation-catalog/deception.yaml
+    narrative: m6.deception
+    tags: [deception]
+
+  - id: m6.ad-path
+    title: "Active Directory escalation path to Domain Admin"
+    check_ref: ["m6.ad-attack-path", "M6#ad-attack-path", "research:ch06#19"]
+    conditions:
+      matched: {evidence.artifact.signal == "ad-path"}
+      short: {evidence.artifact.length <= 2}
+    severity_if:
+      - "matched and short -> critical"
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.65"
+    cwe: CWE-269
+    remediation: remediation-catalog/ad-path.yaml
+    narrative: m6.ad-path
+    tags: [ad, identity]
+

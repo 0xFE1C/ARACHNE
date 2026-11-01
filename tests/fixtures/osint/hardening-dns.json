@@ -1,0 +1,89 @@
+{
+  "description": "Recorded DNS-over-HTTPS TXT answers for the M1 mail-authentication check (m1.dns-txt-mining). Bodies are synthetic, shaped like dns.google's DoH JSON. `ARACHNE_OSINT_FIXTURES` points a real run at a directory of these.",
+  "responses": [
+    {
+      "method": "GET",
+      "url": "https://dns.google/resolve?name=example.com&type=TXT",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"Status\": 0, \"Answer\": [{\"name\": \"example.com\", \"type\": 16, \"TTL\": 300, \"data\": \"\\\"v=spf1 include:_spf.example.com -all\\\"\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://dns.google/resolve?name=_dmarc.example.com&type=TXT",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"Status\": 0, \"Answer\": [{\"name\": \"_dmarc.example.com\", \"type\": 16, \"TTL\": 300, \"data\": \"\\\"v=DMARC1; p=none; rua=mailto:dmarc@example.com\\\"\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://dns.google/resolve?name=default._domainkey.example.com&type=TXT",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"Status\": 0, \"Answer\": [{\"name\": \"default._domainkey.example.com\", \"type\": 16, \"TTL\": 300, \"data\": \"\\\"v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDexample\\\"\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://dns.google/resolve?name=google._domainkey.example.com&type=TXT",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"Status\": 3}"
+    },
+    {
+      "method": "GET",
+      "url": "https://dns.google/resolve?name=selector1._domainkey.example.com&type=TXT",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"Status\": 3}"
+    },
+    {
+      "method": "GET",
+      "url": "https://dns.google/resolve?name=k1._domainkey.example.com&type=TXT",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"Status\": 3}"
+    },
+    {
+      "method": "GET",
+      "url": "https://dns.google/resolve?name=clean.example.com&type=TXT",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"Status\": 0, \"Answer\": [{\"name\": \"clean.example.com\", \"type\": 16, \"TTL\": 300, \"data\": \"\\\"v=spf1 include:_spf.example.com -all\\\"\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://dns.google/resolve?name=_dmarc.clean.example.com&type=TXT",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"Status\": 0, \"Answer\": [{\"name\": \"_dmarc.clean.example.com\", \"type\": 16, \"TTL\": 300, \"data\": \"\\\"v=DMARC1; p=reject; pct=100\\\"\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://dns.google/resolve?name=default._domainkey.clean.example.com&type=TXT",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"Status\": 0, \"Answer\": [{\"name\": \"default._domainkey.clean.example.com\", \"type\": 16, \"TTL\": 300, \"data\": \"\\\"v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDclean\\\"\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://dns.google/resolve?name=google._domainkey.clean.example.com&type=TXT",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"Status\": 3}"
+    },
+    {
+      "method": "GET",
+      "url": "https://dns.google/resolve?name=selector1._domainkey.clean.example.com&type=TXT",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"Status\": 3}"
+    },
+    {
+      "method": "GET",
+      "url": "https://dns.google/resolve?name=k1._domainkey.clean.example.com&type=TXT",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"Status\": 3}"
+    }
+  ]
+}

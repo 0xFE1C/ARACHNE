@@ -1,0 +1,35 @@
+# Hidden path discovery (research ch04#24). Kept short on purpose: M4 is an exposure
+# scanner, not a content-discovery campaign (F-01-07).
+admin
+admin/
+administrator
+backup
+backup/
+backups
+config
+config/
+console
+dashboard
+db
+debug
+deploy
+dev
+dump
+env
+export
+files
+graphql
+internal
+logs
+manage
+management
+metrics
+old
+private
+server-status
+staging
+static
+status
+swagger
+tmp
+uploads

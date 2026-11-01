@@ -1,0 +1,11 @@
+# ARACHNE security.txt — RFC 9116.
+# Machine-readable entry point; see ../SECURITY.md for the full policy.
+# Canonical is the location this file is served from today (the repository). When the
+# project is deployed, copy it to /.well-known/security.txt and set Canonical to that
+# URL.
+Contact: https://github.com/0xFE1C/ARACHNE/security/advisories/new
+Expires: 2027-06-30T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://github.com/0xFE1C/ARACHNE/blob/main/docs/security.txt
+Policy: https://github.com/0xFE1C/ARACHNE/blob/main/SECURITY.md
+Acknowledgments: https://github.com/0xFE1C/ARACHNE/blob/main/docs/security-review.md

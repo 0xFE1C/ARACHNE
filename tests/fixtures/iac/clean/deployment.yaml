@@ -1,0 +1,23 @@
+# The clean Kubernetes manifest: every structured policy rule passes.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-api
+  namespace: prod
+spec:
+  template:
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: api
+          image: registry.internal/payments-api@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"

@@ -1,0 +1,9 @@
+{
+  "type": "service_account",
+  "project_id": "arachne-lab",
+  "private_key_id": "lab-key-id",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASC-lab-fake\n-----END PRIVATE KEY-----\n",
+  "client_email": "lab-runner@arachne-lab.iam.gserviceaccount.com",
+  "client_id": "000000000000000000000",
+  "token_uri": "https://oauth2.googleapis.com/token"
+}

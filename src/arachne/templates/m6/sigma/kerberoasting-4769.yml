@@ -1,0 +1,25 @@
+title: Kerberoasting — RC4 service-ticket requests (4769)
+id: 8f2c1a10-0e11-4a2b-9c33-6b0e5d7a1001
+status: stable
+description: >-
+  Multiple Kerberos service-ticket requests (4769) encrypted with RC4 (0x17) for distinct
+  service names from one source — the discovery step of a Kerberoasting attack
+  (research ch06#18, ATT&CK T1558.003).
+references:
+  - https://attack.mitre.org/techniques/T1558/003/
+tags: [attack.credential_access, attack.t1558.003]
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4769
+    TicketEncryptionType:
+      - '0x17'
+      - '0x18'
+  filter_machine:
+    ServiceName|endswith: '$'
+  condition: selection and not filter_machine
+level: high
+falsepositives:
+  - Legacy applications that still negotiate RC4 service tickets

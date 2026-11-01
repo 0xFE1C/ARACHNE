@@ -1,0 +1,18 @@
+# FP-tuner threshold table (F-05-07, docs/spec/04- §2.6).
+#
+# `default` is the confidence a finding must reach to be reported as a *confirmed* finding
+# rather than a low-confidence observation; it mirrors ARACHNE_MIN_CONFIDENCE.
+# `checks` raises (or lowers) that bar per check, on top of the automatic adjustment the
+# tuner derives from operator `fp` marks (see `arachne fp stats`).
+#
+# A key is either a check id in its dot form (`m4.env-file-probe`) or a whole feedback key
+# (`m4.env-file-probe|url|none`); the dot form is what most deployments want, because it
+# covers every asset kind and signature the check reports.
+#
+# This file ships with an empty `checks` map: a fresh deployment has no operator feedback and
+# no reason to distrust a check. `arachne fp tune --write` suggests values once marks exist.
+version: "1.0"
+
+default: 55
+
+checks: {}

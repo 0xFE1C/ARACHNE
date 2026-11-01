@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Attack paths · scan {{ scan_id }}{% endblock %}
+{% block content %}
+<h1>Attack paths — <a href="/ui/scans/{{ scan_id }}">scan {{ scan_id }}</a></h1>
+<p class="muted small">
+  {{ scan.target }} · {{ ui.status_label(scan.status, scan.running) }} ·
+  {{ paths | length }} composed chain(s)
+</p>
+<p class="muted small">
+  Each chain is the set of findings on one asset read in kill-chain order: a
+  <strong>filled</strong> node is a hop the analyzer verified, a <strong>hollow</strong> node is a
+  candidate with the check that would confirm it named underneath. The thicker ring marks the
+  cheapest breaking remediation — the single hop whose fix removes the most of the chain.
+</p>
+
+{% if paths %}
+<section class="panel">
+  {{ graph | safe }}
+</section>
+
+{% for path in paths %}
+<section class="panel">
+  <h2>{{ path.id }} — <code>{{ path.asset }}</code></h2>
+  <p>
+    {{ ui.sev(path.severity) }}
+    {% if path.fully_verified %}<span class="muted small">fully verified</span>
+    {% else %}<span class="muted small">partially verified — some hops are candidates</span>{% endif %}
+    {% if path.business_severity %}
+    <span class="muted small"> · tier {{ path.criticality }} → business impact {{ path.business_severity }}</span>
+    {% endif %}
+  </p>
+  {% if path.cheapest_break %}
+  <p class="muted small">Cheapest break: {{ path.cheapest_break }}
+    {%- if path.cheapest_finding_id %} ({{ path.cheapest_finding_id }}){% endif %}</p>
+  {% endif %}
+  <table>
+    <thead><tr><th>Hop</th><th>Stage</th><th>Check</th><th>Asset</th><th>Severity</th><th>Verified</th><th>Evidence</th></tr></thead>
+    <tbody>
+    {% for hop in path.hops %}
+      <tr>
+        <td>{{ hop.finding_id or "—" }}</td>
+        <td>{{ hop.stage }}</td>
+        <td><code>{{ hop.check_id }}</code></td>
+        <td><code>{{ hop.asset }}</code></td>
+        <td>{{ ui.sev(hop.severity) }}</td>
+        <td>
+          {% if hop.verified %}yes
+          {% else %}<span class="muted small">candidate — verify with <code>{{ hop.verifying_check or "a fresh scan" }}</code></span>{% endif %}
+        </td>
+        <td class="muted small">{{ hop.evidence_refs | join(", ") or "—" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endfor %}
+{% else %}
+<p class="muted">No multi-step attack path was composed from this scan's verified findings.</p>
+{% endif %}
+{% endblock %}

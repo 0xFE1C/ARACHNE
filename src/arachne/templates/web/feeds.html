@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Feeds · ARACHNE{% endblock %}
+{% block content %}
+<h1>CVE / EPSS feeds</h1>
+
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+<section class="panel">
+  <h2>Correlation status</h2>
+  <p class="muted small">Feeds directory: <code>{{ stats.directory }}</code></p>
+  <table>
+    <thead><tr><th>Kind</th><th>Feeds</th><th>Rows</th><th>Active artefact</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>epss</td>
+        <td>{{ stats.by_kind.epss.feeds }}</td>
+        <td>{{ stats.by_kind.epss.entries }}</td>
+        <td class="mono small">{{ active_epss or "(shipped snapshot)" }}</td>
+      </tr>
+      <tr>
+        <td>kev</td>
+        <td>{{ stats.by_kind.kev.feeds }}</td>
+        <td>{{ stats.by_kind.kev.entries }}</td>
+        <td class="mono small">{{ active_kev or "(shipped snapshot)" }}</td>
+      </tr>
+      <tr>
+        <td>cve</td>
+        <td>{{ stats.by_kind.cve.feeds }}</td>
+        <td>{{ stats.by_kind.cve.entries }}</td>
+        <td class="mono small">—</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="muted small">
+    The newest feed of a kind is used by the next scan automatically; ingestion never
+    contacts the network (F-09-03).
+  </p>
+</section>
+
+<section class="panel">
+  <h2>Import a feed</h2>
+  <form class="stack" method="post" action="/ui/feeds/import"
+        hx-post="/ui/feeds/import" hx-swap="none">
+    <div><label for="kind">Kind</label>
+      <select id="kind" name="kind">
+        <option value="epss">EPSS CSV (cve,epss,percentile)</option>
+        <option value="kev">CISA KEV JSON</option>
+        <option value="cve">CVE JSON/YAML snapshot</option>
+      </select></div>
+    <div><label for="name">Name</label><input id="name" name="name" placeholder="epss-2026-10-29"></div>
+    <div><label for="content">Document</label>
+      <textarea id="content" name="content" rows="10" required
+                placeholder="Paste the feed contents (or use `arachne feeds import <file>`)"></textarea></div>
+    <button class="primary" type="submit">Import</button>
+  </form>
+  <p class="muted small">
+    Large feeds belong on the command line: <code>arachne feeds import &lt;file&gt;</code>
+  </p>
+</section>
+
+<h2>Imported</h2>
+{% if feeds %}
+<table>
+  <thead><tr><th>Id</th><th>Kind</th><th>Name</th><th>Version</th><th>Rows</th><th>Imported by</th><th>Artefact</th><th></th></tr></thead>
+  <tbody>
+  {% for feed in feeds %}
+    <tr>
+      <td>{{ feed.id }}</td>
+      <td>{{ feed.kind }}</td>
+      <td>{{ feed.name }}</td>
+      <td class="muted small">{{ feed.version or "—" }}</td>
+      <td>{{ feed.record_count }}</td>
+      <td class="muted small">{{ feed.imported_by or "—" }}</td>
+      <td class="mono small">{{ feed.path }}</td>
+      <td>
+        <form class="inline" method="post" action="/ui/feeds/{{ feed.id }}/delete"
+              hx-post="/ui/feeds/{{ feed.id }}/delete" hx-swap="none">
+          <button class="danger" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">No feeds imported; scans use the shipped EPSS/KEV snapshot.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,114 @@
+# ARACHNE compliance map — NIST Cybersecurity Framework 2.0 (S22, REQ-TRUST-001).
+#
+# Same contract as cis.yaml: check ids must exist in the shipped planning catalogue
+# (no dangling ids — `tests/unit/test_compliance_map.py` in the suite fails the build
+# otherwise), control ids are unique, and `total_controls` states the framework's
+# own size (106 subcategories in CSF 2.0) so a framework report can name the gap
+# explicitly instead of implying coverage.
+#
+# CSF 2.0 has six Functions (GV, ID, PR, DE, RS, RC). ARACHNE's checks are evidence
+# about the ID (asset/risk identification) and PR (protect) Functions; the Detect,
+# Respond and Recover Functions describe an operator's capabilities, not a scanner's,
+# and are deliberately unmapped — the report shows them as outside the assessed set.
+
+framework: nist-csf
+name: NIST Cybersecurity Framework 2.0
+edition: "2.0"
+kind: subcategory
+total_controls: 106
+map_version: "1.0"
+controls:
+  - id: ID.AM-01
+    title: Inventories of hardware and services are established and maintained
+    checks:
+      - m1.passive-dns
+      - m1.subdomain-passive
+      - m1.webarchive-harvest
+      - m2.host-discovery
+      - m2.service-fingerprint
+      - m2.http-fingerprint
+
+  - id: ID.AM-02
+    title: Inventories of software and platforms are established and maintained
+    checks:
+      - m2.os-fingerprint
+      - m2.service-fingerprint
+      - m3.api-surface
+
+  - id: ID.RA-01
+    title: Vulnerabilities in assets are identified, validated and recorded
+    checks:
+      - m2.cve-correlate
+      - m6.cve-epss-correlation
+      - m6.exploit-match
+
+  - id: PR.AA-01
+    title: Identities and credentials are issued, managed and revoked
+    checks:
+      - m3.auth-session-audit
+      - m3.jwt-audit
+      - m3.oauth-flow-audit
+      - m3.saml-audit
+
+  - id: PR.AA-03
+    title: Users, services and hardware are authenticated
+    checks:
+      - m2.smb-auth
+      - m4.default-credentials
+      - m3.session-logout
+
+  - id: PR.AA-05
+    title: Access permissions incorporate least privilege and separation of duties
+    checks:
+      - m3.idor-oracle
+      - m3.mass-assign-audit
+      - m4.dashboard-exposure
+      - m4.unauth-api-audit
+      - m5.iam-review
+
+  - id: PR.DS-01
+    title: Data-at-rest is protected
+    checks:
+      - m4.datastore-surface
+      - m4.bucket-exposure
+      - m5.managed-datastores
+      - m5.firebase-rules
+      - m5.supabase-rls
+
+  - id: PR.DS-02
+    title: Data-in-transit is protected
+    checks:
+      - m2.tls-deep-scan
+      - m4.tls-config-review
+
+  - id: PR.PS-01
+    title: Configuration management practices are established and applied
+    checks:
+      - m4.security-header-review
+      - m4.cors-config-review
+      - m4.cookie-flag-audit
+      - m5.k8s-exposure
+
+  - id: PR.PS-02
+    title: Software is maintained, replaced or removed commensurate with risk
+    checks:
+      - m2.legacy-services
+      - m5.dep-confusion
+
+  - id: PR.PS-06
+    title: Secure software development practices are applied
+    checks:
+      - m3.sqli-oracle
+      - m3.xss-oracle
+      - m3.cmdi-oracle
+      - m3.ssti-oracle
+      - m3.xxe-oracle
+      - m6.secret-scan-at-scale
+
+  - id: PR.IR-01
+    title: Networks and environments are protected from unauthorized logical access
+    checks:
+      - m3.ssrf-probe
+      - m4.metadata-ssrf
+      - m5.imds-ssrf
+      - m3.cors-audit

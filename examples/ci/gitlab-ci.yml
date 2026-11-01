@@ -1,0 +1,45 @@
+# Copy-paste example: run ARACHNE's IaC gate in GitLab CI (S26, REQ-ECOS-003).
+#
+# The component runs the offline gate and publishes a `codequality` report, which GitLab
+# renders in the merge request widget. A finding at or above `fail_on` fails the job
+# (`allow_failure: false` by default), blocking the merge.
+#
+# Publish the component in a project as `templates/arachne-gate/template.yml`
+# (`src/arachne/templates/ci/gitlab/component.yml` is that file), then include it below.
+# The `component:` path is `<host>/<group>/<project>/arachne-gate@<version>`.
+
+include:
+  - component: gitlab.com/your-org/arachne/arachne-gate@0.1.0
+    inputs:
+      path: "."
+      fail_on: high
+      stage: test
+      # allow_failure: true   # uncomment for an advisory rollout
+
+stages: [test]
+
+# Nothing else is required: the component brings its own job, rules and artifact. A
+# deployment that keeps CI history in an ARACHNE control plane can set ARACHNE_API_URL /
+# ARACHNE_API_KEY as CI/CD variables; the offline gate ignores them.
+
+# -----------------------------------------------------------------------------
+# Minimal inline alternative (no component project needed) — the same job by hand:
+
+# arachne-iac-gate:
+#   stage: test
+#   image: python:3.12-slim
+#   rules:
+#     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+#   variables:
+#     ARACHNE_DATABASE_URL: "sqlite:///${CI_PROJECT_DIR}/.arachne-ci.db"
+#   before_script:
+#     - pip install --quiet "arachne==0.1.0"
+#     - python -m arachne.cli.main db upgrade
+#   script:
+#     - >-
+#       python -m arachne.tools.ci_annotate
+#       --path . --format gitlab --fail-on high --output codequality.json
+#   artifacts:
+#     when: always
+#     reports:
+#       codequality: codequality.json

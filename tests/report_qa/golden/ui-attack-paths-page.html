@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Attack paths · scan 1</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/htmx.min.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <span class="brand">ARACHNE</span>
+  <nav>
+    <a href="/ui/">Dashboard</a>
+    <a href="/ui/scans">Scans</a>
+    <a href="/ui/posture">Posture</a>
+    <a href="/ui/modules">Modules</a>
+    <a href="/ui/feeds">Feeds</a>
+    <a href="/ui/plugins">Plugins</a>
+    <a href="/ui/quality">Quality</a>
+    <a href="/ui/schedules">Schedules</a>
+    <a href="/docs" target="_blank" rel="noopener">API</a>
+  </nav>
+  <span class="spacer"></span>
+  <span class="muted small"><PRINCIPAL></span>
+  <form method="post" action="/ui/logout" class="inline"><button type="submit">Sign out</button></form>
+</header>
+<main>
+<h1>Attack paths — <a href="/ui/scans/1">scan 1</a></h1>
+<p class="muted small">
+  seeded · <span class="status pending">pending</span> ·
+  0 composed chain(s)
+</p>
+<p class="muted small">
+  Each chain is the set of findings on one asset read in kill-chain order: a
+  <strong>filled</strong> node is a hop the analyzer verified, a <strong>hollow</strong> node is a
+  candidate with the check that would confirm it named underneath. The thicker ring marks the
+  cheapest breaking remediation — the single hop whose fix removes the most of the chain.
+</p>
+
+<p class="muted">No multi-step attack path was composed from this scan's verified findings.</p>
+</main>
+</body>
+</html>

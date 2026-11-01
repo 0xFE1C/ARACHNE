@@ -1,0 +1,14 @@
+replicaCount: 1
+
+image:
+  repository: registry.local/api
+  tag: latest
+
+database:
+  host: db.internal.arachne.test
+  # Plaintext credential in a Helm values file.
+  password: helm-db-password-2a8
+  connection_string: postgres://arachne:helm-db-password-2a8@db.internal:5432/app
+
+api:
+  token: helm-api-token-3b7

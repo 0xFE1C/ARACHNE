@@ -1,0 +1,1353 @@
+# Narrative templates (docs/spec/04- §2.5, F-05-05).
+#
+# Every finding gets a narrative generated from these templates, the interpolated facts of the
+# candidate's own evidence, and the rule trace. Placeholders are `{path}` references into the
+# render namespace (facts: check.*, asset.*, finding.*, analysis.*, evidence.<kind>.<path>,
+# signature.*; computed: severity, confidence.band, confidence.value, confidence.basis,
+# score.cvss, score.owasp_risk, remediation.summary, rule.justification). A section whose
+# references cannot be resolved is dropped — or, when `required: true`, the whole template
+# steps aside for the next one — so one corpus entry can cover the strong and the weak case
+# without a sentence that lies about either.
+#
+# `match` keys: check (glob), module, cwe, cve, severity, name_token (substring), signature,
+# and `rule` (only when that rule fired). More match keys = higher specificity, so a precise
+# template always wins. `generic.finding` matches everything and is the last resort before the
+# built-in synthesis, which guarantees a finding is never reported without prose.
+
+version: "1.0"
+
+templates:
+  # --------------------------------------------------------------- M2 · data stores
+  - id: net.unauthenticated-datastore
+    match: {check: ["m2.db-service-probe"], name_token: ["db-service"]}
+    rule: net.unauthenticated-datastore
+    sections:
+      - text: "The datastore at {asset.value} answered without any authentication: {title}."
+      - text: "Service: {evidence.note.service.service} on port {evidence.note.service.port}/{evidence.note.service.protocol}
+          ({evidence.note.service.host})."
+      - when: "evidence.note.service.identity.version"
+        text: "Identified as {evidence.note.service.identity.product} {evidence.note.service.identity.version}."
+      - text: "An unauthenticated datastore is directly exploitable: anyone who can reach this
+          port can read — and usually modify or delete — its entire contents, and several of
+          these engines expose command execution through their own administrative surfaces.
+          Attackers scan for exactly this condition ({research_ref})."
+      - text: "Impact: full data disclosure and, depending on the engine, remote code
+          execution; this is the act of last resort before a breach becomes public."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100) — {confidence.basis}."
+
+  - id: net.exposed-database-port
+    match: {check: ["m2.db-service-probe"]}
+    rule: net.exposed-database-port
+    sections:
+      - text: "A database service is reachable from the scanning position at {asset.value}."
+      - text: "Service: {evidence.note.service.service} on port {evidence.note.service.port}
+          ({evidence.note.service.host})."
+      - text: "The exposure itself is the finding: a database port belongs on an application
+          subnet, behind a security group or firewall rule, never on the network path an
+          external scanner can reach ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100); {rule.justification}."
+
+  # --------------------------------------------------------------- M2 · file services
+  - id: net.smb-legacy-dialect
+    match: {check: ["m2.smb-enum"], name_token: ["smb"]}
+    rule: net.smb-legacy-dialect
+    sections:
+      - text: "The SMB service at {asset.value} still negotiates SMBv1."
+      - text: "SMBv1 is unauthenticated at the protocol level for several request types and is
+          the transport the EternalBlue/WannaCry chain used. Every supported Windows and Samba
+          release disables it by default ({research_ref}), so its presence marks an
+          unpatched or deliberately frozen host."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: net.smb-signing-not-required
+    match: {check: ["m2.smb-enum"]}
+    rule: net.smb-signing-not-required
+    sections:
+      - text: "SMB signing is not required at {asset.value}."
+      - text: "Without required signing, an attacker already on the network can relay an
+          authenticated session (NTLM relay) without ever possessing a credential
+          ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: net.smb-anonymous-session
+    match: {check: ["m2.smb-enum"], name_token: ["smb"]}
+    rule: net.smb-anonymous-session
+    sections:
+      - text: "The SMB service at {asset.value} accepts an anonymous session."
+      - text: "A null session leaks share names, account names and password policy — the
+          reconnaissance an attacker uses to choose a target inside the estate ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: net.nfs-export-exposed
+    match: {check: ["m2.nfs-enum"], name_token: ["nfs"]}
+    rule: net.nfs-export-exposed
+    sections:
+      - text: "NFS exports are reachable at {asset.value}: {title}."
+      - text: "Exported filesystems inherit the permissions of the exporting host rather than
+          the connecting user, so a world-readable export is a direct path to the files inside
+          it — including the configuration and key material next to them ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  # --------------------------------------------------------------- M2 · directory
+  - id: net.ldap-anonymous-bind
+    match: {check: ["m2.ldap-enum"], name_token: ["ldap"]}
+    rule: net.ldap-anonymous-bind
+    sections:
+      - text: "The directory service at {asset.value} answered an anonymous bind."
+      - text: "An anonymous bind lets any client walk the tree for users, groups, computers and
+          the attributes a misconfigured directory leaves readable — the input for password
+          spraying and targeted phishing ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: net.kerberos-user-enumeration
+    match: {check: ["m2.kerberos-enum"], name_token: ["kerberos"]}
+    rule: net.kerberos-user-enumeration
+    sections:
+      - text: "The Key Distribution Center at {asset.value} distinguishes existing from non-existing
+          principals ({title})."
+      - text: "The difference is visible in the pre-authentication error, so an attacker can
+          build a valid username list without triggering a single failed-logon event
+          ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  # --------------------------------------------------------------- M2 · infrastructure
+  - id: net.snmp-default-write-community
+    match: {check: ["m2.snmp-enum"], name_token: ["snmp"]}
+    rule: net.snmp-default-write-community
+    sections:
+      - text: "The SNMP agent at {asset.value} accepts the default read-write community string."
+      - text: "A writable community is remote reconfiguration: an attacker can change interface
+          state, routing and access control on the device, and default communities are the
+          first thing every SNMP scanner tries ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: net.snmp-community-readable
+    match: {check: ["m2.snmp-enum"]}
+    rule: net.snmp-community-readable
+    sections:
+      - text: "The SNMP agent at {asset.value} answered a guessable community string ({title})."
+      - text: "SNMP's system group discloses the device model, firmware, uptime, interfaces and
+          often the routing table and ARP cache — a precise map of the network for whoever asks
+          ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: net.dns-zone-transfer
+    match: {check: ["m2.dns-active"], name_token: ["dns"]}
+    rule: net.dns-zone-transfer
+    sections:
+      - text: "The nameserver at {asset.value} permitted a zone transfer: {title}."
+      - text: "AXFR discloses the complete zone — staging hosts, VPN endpoints, internal names
+          and service records that are never linked from the public site ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: net.ics-device-unauthenticated
+    match: {check: ["m2.ics-probe"], name_token: ["ics"]}
+    rule: net.ics-device-unauthenticated
+    sections:
+      - text: "An industrial control device is reachable at {asset.value}: {title}."
+      - text: "The protocol family here predates authentication entirely, so any client that
+          can reach the port can read — and with the write function codes, change — controller
+          state. This is a safety-of-life exposure as much as a security one ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  # --------------------------------------------------------------- M2 · remote access
+  - id: net.ssh-deprecated-algorithms
+    match: {check: ["m2.ssh-enum"], name_token: ["ssh"]}
+    rule: net.ssh-deprecated-algorithms
+    sections:
+      - text: "The SSH service at {asset.value} advertises deprecated algorithms: {title}."
+      - text: "Advertised KEX and cipher suites are negotiable, so a client can be steered onto
+          an algorithm with known cryptanalytic weaknesses rather than a strong one
+          ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: net.smtp-recipient-disclosure
+    match: {check: ["m2.smtp-enum"], name_token: ["smtp"]}
+    rule: net.smtp-recipient-disclosure
+    sections:
+      - text: "The mail server at {asset.value} discloses mailbox existence: {title}."
+      - text: "Enumerating valid recipients turns a blind phishing campaign into a targeted
+          one and provides the account list for credential attacks ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: net.rdp-without-nla
+    match: {check: ["m2.rdp-vnc-detect"], name_token: ["rdp"]}
+    rule: net.rdp-without-nla
+    sections:
+      - text: "The RDP endpoint at {asset.value} does not require network-level authentication."
+      - text: "Without CredSSP the endpoint presents its pre-authentication surface to any
+          client, which is the posture RDP brute-force campaigns and pre-auth vulnerabilities
+          rely on ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: net.vnc-unauthenticated
+    match: {check: ["m2.rdp-vnc-detect"], name_token: ["vnc"]}
+    rule: net.vnc-unauthenticated
+    sections:
+      - text: "The VNC server at {asset.value} offers unauthenticated access: {title}."
+      - text: "The RFB security-type list includes `None`, so a client connects without any
+          credential and receives the whole desktop — an unauthenticated interactive session on
+          the host ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: net.vnc-legacy-password
+    match: {check: ["m2.rdp-vnc-detect"]}
+    rule: net.vnc-legacy-password
+    sections:
+      - text: "The VNC server at {asset.value} offers only the legacy password scheme."
+      - text: "The original RFB authentication is an 8-byte DES challenge-response with no
+          transport protection, so the password can be recovered offline from a single captured
+          handshake ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  # --------------------------------------------------------------- M2 · TLS and CVE
+  - id: net.tls-weak-protocols
+    match: {check: ["m2.tls-deep-scan"], name_token: ["tls"]}
+    rule: net.tls-weak-protocols
+    sections:
+      - text: "The TLS endpoint at {asset.value} is misconfigured: {title}."
+      - text: "Negotiable protocol versions: {evidence.tls_certificate.weak_versions}."
+      - text: "A client can be downgraded onto a deprecated protocol and then attacked with its
+          known weaknesses — POODLE for SSLv3, BEAST and weak MACs for TLS 1.0/1.1. RFC 8996
+          deprecates all of them ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: net.vulnerable-component-version
+    match: {check: ["m2.cve-correlate"], name_token: ["cve"]}
+    rule: net.vulnerable-component-version
+    sections:
+      - text: "{title}."
+      - text: "Observed on {asset.value}; the version falls inside the affected range recorded for
+          {evidence.artifact.cve}."
+      - text: "The service identifies itself as {evidence.note.service.identity.product}
+          {evidence.note.service.identity.version} on port {evidence.note.service.port}."
+      - text: "Published severity: CVSS {evidence.artifact.cvss}."
+      - when: "evidence.artifact.epss"
+        text: "The EPSS feed puts exploitation likelihood at {evidence.artifact.epss}."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100) — {confidence.basis}."
+
+  # --------------------------------------------------------------- M1 · recon
+  - id: recon.client-side-secret-exposure
+    match: {check: ["m1.js-asset-scan"], name_token: ["js"]}
+    rule: recon.client-side-secret-exposure
+    sections:
+      - text: "Client-side assets served from {asset.value} contain credential-shaped material:
+          {title}."
+      - text: "JavaScript served by {evidence.artifact.page} matched known credential patterns.
+          The values themselves are redacted at capture time (F-08-04); what matters is that a
+          browser receives them."
+      - when: "evidence.artifact.scripts_analysed"
+        text: "Scripts analysed: {evidence.artifact.scripts_analysed}."
+      - text: "Anything served to a browser is public. A key in a bundle is readable by every
+          visitor of the site and by every archive that has ever crawled it ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: recon.indexed-source-secrets
+    match: {check: ["m1.code-secret-mining"], name_token: ["code"]}
+    rule: recon.indexed-source-secrets
+    sections:
+      - text: "Public code search matches credential patterns for {asset.value}: {title}."
+      - text: "An indexed match is not proof of a live credential — it needs review — but these
+          files exist in a public index and are found by exactly this query by anyone else who
+          runs it ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: recon.known-vulnerable-address
+    match: {check: ["m1.internetdb-triage"], name_token: ["internetdb"]}
+    rule: recon.known-vulnerable-address
+    sections:
+      - text: "A third-party index reports known vulnerabilities for {asset.value}: {title}."
+      - text: "The index is a passive, weekly crawl of the public internet, so this is a signal
+          to verify rather than a confirmation — M2's active correlation is what confirms a
+          version ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: recon.exposed-document-in-index
+    match: {check: ["m1.dork-sweep"], name_token: ["dork"]}
+    rule: recon.exposed-document-in-index
+    sections:
+      - text: "A search index exposes material belonging to {asset.value}: {title}."
+      - text: "The dork corpus is the query set attackers run first; a hit means the document is
+          discoverable without any contact with the target ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: recon.archived-sensitive-path
+    match: {check: ["m1.webarchive-harvest"], name_token: ["archive"]}
+    rule: recon.archived-sensitive-path
+    sections:
+      - text: "Archived URLs for {asset.value} match sensitive path patterns: {title}."
+      - text: "An archived copy is historical rather than proof of live exposure, but paths that
+          were removed from the site and left in the archive are worth probing — the file often
+          still exists at the origin ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: recon.email-pattern-inferable
+    match: {check: ["m1.email-harvest"], name_token: ["email"]}
+    rule: recon.email-pattern-inferable
+    sections:
+      - text: "Employee addresses for {asset.value} are publicly harvestable: {title}."
+      - text: "A predictable address pattern turns a blind phishing campaign into a targeted
+          one and provides usernames for credential attacks ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  # --------------------------------------------------------------- M4 · exposure
+  - id: exposure.env-file
+    match: {check: ["m4.env-file-probe"]}
+    rule: exposure.env-file
+    sections:
+      - text: "The file {evidence.artifact.path} on {asset.value} was served without
+          authentication (HTTP {evidence.artifact.status}, {evidence.artifact.bytes} bytes)."
+      - when: "evidence.artifact.detectors"
+        text: "Its contents matched the secret detectors {evidence.artifact.detectors}; the
+            values are redacted here and in the operator's encrypted ledger — the exposure is
+            the finding."
+      - when: "evidence.artifact.assignment_keys"
+        text: "Credential-shaped keys present: {evidence.artifact.assignment_keys}."
+      - text: "This path is probed by every automated scanner and is the highest-yield file on
+          a misconfigured web root, because a configuration file is designed to hold exactly
+          the credentials that matter ({research_ref})."
+      - text: "Impact: direct credential exposure, typically enabling account takeover or
+          lateral movement into whatever the credential authenticates to."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.git-directory
+    match: {check: ["m4.vcs-exposure"]}
+    rule: exposure.git-directory
+    sections:
+      - text: "Version-control metadata is served from {asset.value}: {evidence.artifact.path}
+          answered HTTP {evidence.artifact.status} with {evidence.artifact.family} content."
+      - text: "A readable metadata directory lets anyone reconstruct the repository —
+          including deleted files, credentials committed once and the full history that shows
+          how the application was built ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.backup-file
+    match: {check: ["m4.backup-file-hunt"]}
+    rule: exposure.backup-file
+    sections:
+      - text: "A backup artifact is downloadable from {asset.value}:
+          {evidence.artifact.path} ({evidence.artifact.content_type},
+          {evidence.artifact.bytes} bytes)."
+      - when: "evidence.artifact.content_family"
+        text: "The content identifies itself as {evidence.artifact.content_family}."
+      - text: "Backup files are served as static content and are the most direct route to
+          source code, configuration and the database itself ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.sourcemap
+    match: {check: ["m4.sourcemap-exposure"]}
+    rule: exposure.sourcemap
+    sections:
+      - text: "The source map {evidence.artifact.map_url} is served next to
+          {evidence.artifact.script}."
+      - when: "evidence.artifact.sources_content"
+        text: "It embeds sourcesContent for {evidence.artifact.source_count} original source
+            file(s), so the unminified source can be reconstructed from the browser's own
+            download."
+      - text: "Source maps restore the comments, internal endpoints and hardcoded values that
+          minification removed ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.api-doc
+    match: {check: ["m4.api-doc-exposure"]}
+    rule: exposure.api-doc
+    sections:
+      - text: "An API description document is public at {evidence.artifact.path}
+          ({evidence.artifact.endpoint_count} route(s))."
+      - when: "evidence.artifact.internal_endpoints"
+        text: "It names internal-looking routes: {evidence.artifact.internal_endpoints}."
+      - text: "A public schema is a map of the application: hidden administrative routes,
+          parameters, auth requirements and example payloads ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.debug-endpoint
+    match: {check: ["m4.debug-endpoints"]}
+    rule: exposure.debug-endpoint
+    sections:
+      - text: "A diagnostic surface answers at {evidence.artifact.path}
+          (HTTP {evidence.artifact.status}, {evidence.artifact.family})."
+      - when: "evidence.artifact.stack_trace"
+        text: "The response carries a stack trace, which discloses file paths, framework
+            versions and often SQL text."
+      - when: "evidence.artifact.family"
+        text: "The page family is {evidence.artifact.family}."
+      - text: "Diagnostic pages disclose runtime configuration, environment variables and
+          often credentials; an interactive console is equivalent to remote code execution
+          ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.directory-listing
+    match: {check: ["m4.directory-listing"]}
+    rule: exposure.directory-listing
+    sections:
+      - text: "The directory {evidence.artifact.path} on {asset.value} publishes an
+          auto-generated index ({evidence.artifact.entry_count} entries)."
+      - when: "evidence.artifact.entries"
+        text: "It lists: {evidence.artifact.entries}."
+      - text: "A listing is a free file inventory: it reveals backup folders, uploads, logs and
+          the exact filenames a wordlist would rarely hit, and feeds the rest of the exposure
+          checks ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.admin-panel
+    match: {check: ["m4.dashboard-exposure"]}
+    rule: exposure.dashboard
+    sections:
+      - text: "A {evidence.artifact.product} interface is reachable at
+          {evidence.artifact.path} (HTTP {evidence.artifact.status})."
+      - when: "evidence.artifact.anonymous"
+        text: "It answers without an authentication challenge: build pipelines, credentials
+            and consoles are exposed to anyone who can reach the port."
+      - text: "Management and observability panels belong on an internal network; reachable
+          from the internet they are a recurring initial-access path ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.bucket-public
+    match: {check: ["m4.bucket-exposure"]}
+    rule: exposure.bucket-public
+    sections:
+      - text: "The object-storage bucket {evidence.artifact.bucket} at
+          {evidence.artifact.endpoint} is publicly accessible."
+      - when: "evidence.artifact.public_listing"
+        text: "An anonymous listing succeeded ({evidence.artifact.object_count} object(s)
+            visible: {evidence.artifact.object_keys})."
+      - when: "evidence.artifact.public_acl"
+        text: "The bucket ACL grants public access."
+      - text: "A public bucket is arbitrary file download — backups, database dumps, PII and
+          source code — and sometimes public write ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.client-secret
+    match: {check: ["m4.client-secrets"]}
+    rule: exposure.client-secret
+    sections:
+      - text: "The client-side asset {evidence.artifact.page} matches the secret detectors
+          {evidence.artifact.detectors}."
+      - text: "Anything a server sends to a browser is public. The values are redacted here;
+          the detectors are the evidence that a credential was shipped ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.private-key
+    match: {check: ["m4.key-exposure"]}
+    rule: exposure.private-key
+    sections:
+      - text: "Private key material is served at {evidence.artifact.path}
+          ({evidence.artifact.content_type})."
+      - text: "A published private key allows impersonation of the service and, for an SSH
+          key, direct shell access to every host that trusts it. The key is redacted here and
+          must be treated as compromised ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.weak-tls
+    match: {check: ["m4.tls-config-review"]}
+    rule: exposure.weak-tls
+    sections:
+      - text: "The TLS listener {evidence.artifact.host}:{evidence.artifact.port} supports
+          {evidence.artifact.supported_versions}."
+      - when: "evidence.artifact.weak_versions"
+        text: "Deprecated protocol versions still negotiate: {evidence.artifact.weak_versions}."
+      - when: "evidence.artifact.trust_error"
+        text: "The certificate chain does not validate: {evidence.artifact.trust_error}."
+      - text: "Legacy protocols and untrusted certificates enable downgrade and
+          man-in-the-middle attacks, and train users to click through warnings ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.weak-cookie-flags
+    match: {check: ["m4.cookie-flag-audit"]}
+    rule: exposure.weak-cookie-flags
+    sections:
+      - text: "A session-like cookie at {evidence.artifact.origin} lacks
+          {evidence.artifact.missing}."
+      - text: "Without Secure the cookie travels over plaintext; without HttpOnly any XSS
+          becomes session theft; without SameSite it is attached to cross-site requests
+          ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.cors-permissive
+    match: {check: ["m4.cors-config-review"]}
+    rule: exposure.cors-permissive
+    sections:
+      - text: "The endpoint {evidence.artifact.endpoint} answered Origin:
+          {evidence.artifact.request_origin} with Access-Control-Allow-Origin:
+          {evidence.artifact.acao}."
+      - when: "evidence.artifact.allows_auth"
+        text: "Credentials are allowed, so any website can read the logged-in user's responses
+            from this endpoint."
+      - when: "evidence.artifact.null_origin"
+        text: "The literal 'null' origin is accepted, which a sandboxed iframe or data: URL
+            can produce."
+      - text: "CORS exists to *prevent* cross-origin reads; a reflected or wildcard policy
+          undoes it ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.email-auth
+    match: {check: ["m4.email-auth-review"]}
+    rule: exposure.email-auth
+    sections:
+      - text: "The email authentication records for {evidence.artifact.domain} are incomplete
+          or permissive: {evidence.artifact.issues}."
+      - when: "evidence.artifact.spf_all"
+        text: "The SPF record ends in {evidence.artifact.spf_all}."
+      - when: "evidence.artifact.dmarc_present"
+        text: "DMARC is published with policy {evidence.artifact.dmarc_policy}."
+      - text: "Without enforced SPF/DKIM/DMARC anyone can send mail as this domain, which is
+          the root cause of business email compromise and partner-facing phishing
+          ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.unsafe-methods
+    match: {check: ["m4.webdav-verbs"]}
+    rule: exposure.unsafe-methods
+    sections:
+      - text: "The endpoint {evidence.artifact.endpoint} advertises
+          [{evidence.artifact.allow}]."
+      - when: "evidence.artifact.write_verbs"
+        text: "It advertises write verbs ({evidence.artifact.write_verbs}); none was exercised
+            — the check never uploads, renames or deletes."
+      - when: "evidence.artifact.webdav"
+        text: "PROPFIND succeeded, so WebDAV metadata is reachable."
+      - when: "evidence.artifact.trace_echo"
+        text: "TRACE echoes the request, which enables cross-site tracing against older
+            clients."
+      - text: "Unused verbs should be refused at the server; WebDAV on a public web root is an
+          upload and content-modification surface ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.hidden-endpoint
+    match: {check: ["m4.hidden-endpoint-hunt"]}
+    rule: exposure.hidden-endpoint
+    sections:
+      - text: "The unlinked path {evidence.artifact.path} answers on {asset.value}
+          (HTTP {evidence.artifact.status})."
+      - text: "Hidden is not secure: an unlinked route is protected only by obscurity, and
+          this one answers with a distinct response ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.staging
+    match: {check: ["m4.staging-exposure"]}
+    rule: exposure.staging
+    sections:
+      - text: "A staging or development surface is reachable: {title}."
+      - text: "Staging environments usually run with debug flags, weaker authentication and
+          copies of production data ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.metadata-ssrf
+    match: {check: ["m4.metadata-ssrf"]}
+    rule: exposure.metadata-ssrf
+    sections:
+      - text: "The request parameter '{evidence.artifact.sink}' on
+          {evidence.artifact.endpoint} reached the {evidence.artifact.provider} instance
+          metadata service (HTTP {evidence.artifact.status})."
+      - when: "evidence.artifact.posture"
+        text: "Observed posture: {evidence.artifact.posture}."
+      - text: "A server-side request that reaches the metadata service returns the instance's
+          temporary credentials — the mechanism behind several of the largest cloud breaches
+          ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.user-enumeration
+    match: {check: ["m4.user-enumeration"]}
+    rule: exposure.user-enumeration
+    sections:
+      - text: "The login endpoint {evidence.artifact.endpoint} answers differently for a
+          plausible user name than for a random one."
+      - when: "evidence.artifact.matched_names"
+        text: "Names that produced the distinguishing answer: {evidence.artifact.matched_names}."
+      - text: "A valid user list is the input to password spraying and targeted phishing
+          ({research_ref}). One dummy password per name was tried; no credential was guessed."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.unauth-api
+    match: {check: ["m4.unauth-api-audit"]}
+    rule: exposure.unauth-api
+    sections:
+      - text: "The API route {evidence.artifact.endpoint} answered HTTP {evidence.artifact.status}
+          with {evidence.artifact.records} {evidence.artifact.shape} record(s) and no
+          authentication."
+      - when: "evidence.artifact.documented"
+        text: "The route came from the application's own API description."
+      - text: "Authentication is not authorization: an endpoint that returns data to an
+          anonymous caller is a direct data-disclosure path ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.default-credentials
+    match: {check: ["m4.default-credentials"]}
+    rule: exposure.default-credentials
+    sections:
+      - text: "The {evidence.artifact.product} login at {evidence.artifact.login_path}
+          accepted the vendor default credential."
+      - text: "Exactly one paced attempt was made, and no retry followed. Default credentials
+          are the fastest route from an exposed panel to full control ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  # --------------------------------------------------------------- M3 · web application
+  - id: web.injection-confirmed
+    match: {check: ["m3.sqli-oracle"], cwe: ["CWE-89"]}
+    rule: web.injection-confirmed
+    sections:
+      - text: "A SQL-injection oracle fired at {asset.value}: {title}."
+      - text: "The parameter {evidence.artifact.parameter} changed the response in a way only a
+          database parse explains (oracle: {evidence.artifact.technique}), and the difference was
+          measured against a benign baseline rather than assumed from the payload
+          ({research_ref})."
+      - when: "evidence.artifact.db_family"
+        text: "The error text identifies the back-end as {evidence.artifact.db_family}, which
+          narrows both the impact class and the fix."
+      - text: "Impact: an injectable query is the standard route to reading and modifying the
+          data behind the application — including its own service credentials."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100) — {confidence.basis}."
+
+  - id: web.xss-reflected
+    match: {check: ["m3.xss-oracle"], cwe: ["CWE-79"]}
+    rule: web.xss-reflected
+    sections:
+      - text: "Reflected input reaches unencoded output at {asset.value}: {title}."
+      - text: "The probe sent to parameter {evidence.artifact.parameter} came back as raw markup
+          in {evidence.artifact.context} context, which means the application does not encode this
+          output for where it lands ({research_ref})."
+      - when: "evidence.artifact.context == 'html'"
+        text: "In HTML-body context an unencoded angle bracket is directly script-capable, so the
+          impact is script execution in the browser of any user who follows a prepared link."
+      - when: "evidence.artifact.context == 'attribute'"
+        text: "In attribute context the quote characters were not encoded, so a crafted value can
+          break out of the attribute and add event-handler attributes."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100) — {confidence.basis}."
+
+  - id: web.csrf-missing-token
+    match: {check: ["m3.csrf-audit"], cwe: ["CWE-352"]}
+    rule: web.csrf-missing-token
+    sections:
+      - text: "A state-changing endpoint at {asset.value} carries no anti-CSRF control: {title}."
+      - when: "evidence.artifact.reachable_via_get"
+        text: "The action is reachable by GET ({evidence.artifact.endpoint}), which means a
+          cross-site image tag or a link is enough to trigger it — the strongest form of this
+          class."
+      - when: "evidence.artifact.csrf_fields missing"
+        text: "The form at {evidence.artifact.endpoint} submits a state change with no per-session
+          token, and the session cookie's SameSite policy
+          ({evidence.artifact.samesite}) does not mitigate it ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.upload-accepted
+    match: {check: ["m3.upload-audit"], cwe: ["CWE-434"]}
+    rule: web.upload-accepted
+    sections:
+      - text: "An upload endpoint accepted an executable file extension at {asset.value}:
+          {title}."
+      - text: "The upload to {evidence.artifact.endpoint} used the extension
+          .{evidence.artifact.extension} with a declared content type of
+          {evidence.artifact.declared_content_type}; the file body was an inert ARACHNE marker
+          containing no executable code ({research_ref})."
+      - when: "evidence.artifact.control_verdict == 'rejected'"
+        text: "A benign control upload was refused while this one was accepted, so the check
+          bypassed validation rather than merely finding a permissive endpoint."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.traversal-content-marker
+    match: {check: ["m3.traversal-oracle"], cwe: ["CWE-22"]}
+    rule: web.traversal-content-marker
+    sections:
+      - text: "Path traversal reads outside the web root at {asset.value}: {title}."
+      - text: "Parameter {evidence.artifact.parameter} returned the header line of
+          {evidence.artifact.marker_file} — a world-readable, non-secret file — using the
+          {evidence.artifact.encoding} encoding class. The benign baseline did not contain that
+          marker, so this is a demonstrated read, not a status-code guess ({research_ref})."
+      - text: "Impact: a file-name parameter that escapes its directory usually reaches the
+          application's own configuration and source, which is where its credentials are."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.open-redirect
+    match: {check: ["m3.open-redirect"], cwe: ["CWE-601"]}
+    rule: web.open-redirect
+    sections:
+      - text: "A redirect parameter reflects an arbitrary host at {asset.value}: {title}."
+      - text: "Parameter {evidence.artifact.parameter} produced HTTP {evidence.artifact.status}
+          with a Location pointing at {evidence.artifact.location_host} (payload class
+          {evidence.artifact.payload_class}). The probe host is a reserved, non-resolving name,
+          so nothing was ever contacted ({research_ref})."
+      - text: "Impact: an open redirect launders a phishing link through the organisation's own
+          domain, and in an OAuth or SSO flow can carry a code or token to the attacker."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.idor-object-access
+    match: {check: ["m3.idor-oracle"], cwe: ["CWE-639"]}
+    rule: web.idor-object-access
+    sections:
+      - text: "An object reference exposes records that are not the caller's at {asset.value}:
+          {title}."
+      - text: "Parameter {evidence.artifact.parameter} answered identifiers
+          {evidence.artifact.identifiers} with distinct single-record responses, each carrying a
+          per-record identity such as {evidence.artifact.identity_markers} ({research_ref})."
+      - when: "evidence.artifact.second_identity"
+        text: "The same object read as a second identity returned a different record, which is
+          the cross-account differential that proves object-level authorization is absent."
+      - when: "evidence.artifact.authenticated == false"
+        text: "No session was required at all: the endpoint returned records to an unauthenticated
+          caller."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.insecure-login-transport
+    match: {check: ["m3.auth-session-audit"], cwe: ["CWE-319"]}
+    rule: web.insecure-login-transport
+    sections:
+      - text: "Credentials are submitted over plaintext HTTP at {asset.value}: {title}."
+      - text: "The form at {evidence.artifact.endpoint} posts over http://, so the password
+          crosses the network in the clear and any on-path observer can read it
+          ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.user-enumeration
+    match: {check: ["m3.auth-session-audit"], cwe: ["CWE-200"]}
+    rule: web.user-enumeration
+    sections:
+      - text: "The login response distinguishes a known user name at {asset.value}: {title}."
+      - text: "The endpoint {evidence.artifact.endpoint} answered differently for
+          {evidence.artifact.plausible_names} than for a random name, with one dummy password
+          each ({research_ref}). No real credential was attempted."
+      - text: "Impact: account enumeration turns a blind credential attack into a targeted one
+          and hands an attacker the valid half of every login pair."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.cors-wildcard-credentials
+    match: {check: ["m3.cors-audit", "m4.*cors*"], cwe: ["CWE-942"]}
+    rule: web.cors-wildcard-credentials
+    sections:
+      - text: "The cross-origin policy at {asset.value} is permissive: {title}."
+      - text: "The endpoint answered Origin {evidence.artifact.request_origin} with
+          Access-Control-Allow-Origin {evidence.artifact.acao}. A reflected origin combined with
+          credentials lets any site the victim visits read authenticated responses from this
+          application ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.missing-security-headers
+    match: {check: ["m3.security-headers", "m4.*header*"], cwe: ["CWE-693"]}
+    rule: web.missing-security-headers
+    sections:
+      - text: "Security response headers are missing at {asset.value}: {title}."
+      - text: "The reviewed baseline is missing {evidence.artifact.missing} over
+          {evidence.artifact.protocol} across {evidence.artifact.pages_checked} page(s)
+          ({research_ref}). Each missing header removes one browser-side protection: HSTS closes
+          the downgrade window, CSP constrains injected script, and X-Frame-Options prevents the
+          page being framed for clickjacking."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.cookie-weak-flags
+    match: {check: ["m3.security-headers", "m3.auth-session-audit", "m4.*cookie*"], cwe: ["CWE-614", "CWE-1004"]}
+    rule: web.cookie-weak-flags
+    sections:
+      - text: "A session cookie at {asset.value} is missing a security attribute: {title}."
+      - text: "The cookie(s) {evidence.artifact.names} lack {evidence.artifact.missing}. Without
+          `Secure`, `HttpOnly` and a `SameSite` policy, the session identifier can be sent over
+          plaintext, read by injected script, or attached to cross-site requests
+          ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.hidden-endpoint
+    match: {check: ["m3.api-surface"], cwe: ["CWE-200"]}
+    rule: web.hidden-endpoint
+    sections:
+      - text: "An undocumented endpoint answers at {asset.value}: {title}."
+      - text: "Path {evidence.artifact.path} returned HTTP {evidence.artifact.status} while an
+          unknown path returned HTTP {evidence.artifact.not_found_status}, and the response
+          differs from the application's catch-all page ({research_ref})."
+      - when: "evidence.artifact.allow"
+        text: "The endpoint advertises the verbs {evidence.artifact.allow}."
+      - when: "evidence.artifact.spec_endpoints"
+        text: "An API description document exposed further paths:
+          {evidence.artifact.spec_endpoints}."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.rate-limit-missing
+    match: {check: ["m3.rate-limit-audit"], cwe: ["CWE-770"]}
+    rule: web.rate-limit-missing
+    sections:
+      - text: "The anti-automation posture at {asset.value} is weak: {title}."
+      - when: "evidence.artifact.signal == 'no-rate-limit'"
+        text: "The endpoint {evidence.artifact.endpoint} answered
+          {evidence.artifact.requests_sent} consecutive requests with no 429, lockout or
+          challenge, so nothing throttled the sequence ({research_ref})."
+      - when: "evidence.artifact.spoofable"
+        text: "Throttling appeared for the plain sequence but not when a rotating
+          {evidence.artifact.spoof_header} header was supplied, so the limiter is keyed on a
+          value the client controls ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  # --------------------------------------------------------------- correlation compounds
+  - id: correlation.unhardened-admin-surface
+    match: {check: ["correlation.unhardened-admin-surface"]}
+    category: correlation
+    sections:
+      - text: "An administrative surface at {asset.value} is missing the hardening that would contain
+          a compromise: {signal.titles}."
+      - text: "Correlated signals ({signal.count}): {signal.ids}, from checks {signal.checks}."
+      - text: "Each signal is a hardening gap on its own. Together they describe an interface an
+          attacker can reach from the internet, script against from a victim's authenticated
+          browser session (a permissive cross-origin policy), and use without the browser-side
+          protections that would normally limit the damage ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100) — the compound inherits the
+          strongest contributing signal's confidence."
+
+  - id: correlation.exposed-credentials-and-open-service
+    match: {check: ["correlation.exposed-credentials-and-open-service"]}
+    category: correlation
+    sections:
+      - text: "Credential material and an unauthenticated service were both found on {asset.value}:
+          {signal.titles}."
+      - text: "Correlated signals ({signal.count}): {signal.ids}."
+      - text: "An exposed credential is only a risk until there is somewhere to use it; an
+          unauthenticated service is the place. Together they are the shortest path from a
+          disclosure to access ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: correlation.unpatched-and-unhardened
+    match: {check: ["correlation.unpatched-and-unhardened"]}
+    category: correlation
+    sections:
+      - text: "A known-vulnerable component and a missing hardening baseline were found on the
+          same host, {asset.value}: {signal.titles}."
+      - text: "Correlated signals ({signal.count}): {signal.ids}."
+      - text: "Patch lag alone is a maintenance finding; patch lag plus absent hardening is the
+          combination that turns a known vulnerability into an exploited one, because nothing
+          in front of the service is going to absorb the attack ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: correlation.reconnaissance-composite
+    match: {check: ["correlation.reconnaissance-composite"]}
+    category: correlation
+    sections:
+      - text: "Several independent passive disclosures describe the same asset, {asset.value}:
+          {signal.titles}."
+      - text: "Correlated signals ({signal.count}): {signal.ids}."
+      - text: "No individual item here is an exploit. Together they hand an attacker the map —
+          hosts, names, paths and documents — that would otherwise have to be assembled by hand
+          against a monitored target ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: exposure.matched-signature
+    match: {signature: ["exposed-env-file", "exposed-git-config", "phpinfo-disclosure"]}
+    rule: exposure.matched-signature
+    sections:
+      - text: "A known exposure signature matched at {asset.value}: {title}."
+      - text: "Matched templates: {signature.ids}. The signature engine evaluated the captured
+          response with regex and JSONPath matchers only, so the match is reproducible from the
+          evidence rather than inferred ({research_ref})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  # --------------------------------------------------------------- fallback
+  - id: generic.finding
+    match: {}
+    sections:
+      - text: "{title} — reported against {asset.value} ({check.title}, {research_ref})."
+      - text: "ARACHNE assessed this as {severity} with {confidence.band} confidence
+          ({confidence.value}/100) using {analysis.evidence_count} evidence item(s); the score
+          model rates it CVSS {score.cvss} with an OWASP risk of {score.owasp_risk}."
+      - when: "analysis.verification_count >= 2"
+        text: "The finding reproduced on a second, independent request."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Justification: {rule.justification}. Confidence basis: {confidence.basis}."
+
+  - id: baseline.generic
+    match: {}
+    sections:
+      - text: "{title} on {asset.value}."
+      - text: "{check.title} ({research_ref}) produced this observation; no specific heuristic
+          rule matched it, so its severity comes from the check's declared hint
+          ({severity_hint}) and the score model's derivation (CVSS {score.cvss})."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  # ================= S10 · M3 extended + M5 cloud/container/supply chain
+  - id: web.ssrf
+    match: {check: ["m3.ssrf-probe"]}
+    rule: web.ssrf
+    sections:
+      - text: "The parameter '{evidence.artifact.parameter}' at {asset.value} made the server fetch an attacker-chosen URL: the probe URL pointed at ARACHNE's own callback service and the server {'reflected its body' if False else 'reached out to it'} ({research_ref})."
+      - text: "Confirmation: {evidence.artifact.in_band} (in-band reflection) / {evidence.artifact.out_of_band} (out-of-band callback)."
+      - text: "A server that fetches user-supplied URLs is a proxy into the internal network and, on a cloud instance, into the metadata service — the classic path to credential theft."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.ssti
+    match: {check: ["m3.ssti-oracle"]}
+    rule: web.ssti
+    sections:
+      - text: "{title}: the parameter '{evidence.artifact.parameter}' at {asset.value} evaluated the probe '{evidence.artifact.probe}' ({evidence.artifact.engine}) ({research_ref})."
+      - text: "The raw template syntax was parsed server-side rather than escaped, which is template injection."
+      - text: "Template injection frequently escalates to file read or code execution through the engine's own built-ins."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.xxe
+    match: {check: ["m3.xxe-oracle"]}
+    rule: web.xxe
+    sections:
+      - text: "{title}: an XML document posted to {asset.value} resolved an external entity, proven by the marker '{evidence.artifact.marker}' ({research_ref})."
+      - text: "The parser processed a DTD-declared external entity, which allows local file reads and, with an HTTP entity, blind SSRF into the internal network."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.command-injection
+    match: {check: ["m3.cmdi-oracle"]}
+    rule: web.command-injection
+    sections:
+      - text: "{title}: the parameter '{evidence.artifact.parameter}' at {asset.value} executed an injected command — the sentinel's output was reflected ({research_ref})."
+      - text: "The input reached a shell, so any command runs as the service account."
+      - text: "Impact: full command execution as the web user, typically escalating to host and data compromise."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.deserialization
+    match: {check: ["m3.deser-audit"]}
+    rule: web.deserialization
+    sections:
+      - text: "{title}: {asset.value} accepts a serialized-object stream ({evidence.artifact.format}); a benign well-formed stream and a malformed one produced different parser reactions ({research_ref})."
+      - text: "An endpoint that reconstructs objects from user input is exploitable with a gadget chain for the detected format and its libraries."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.smuggling
+    match: {check: ["m3.smuggling-oracle"]}
+    rule: web.smuggling
+    sections:
+      - text: "{title}: {asset.value} accepted an obfuscated Transfer-Encoding value ({evidence.artifact.tolerated}) instead of rejecting it ({research_ref})."
+      - text: "A front-end/back-end disagreement about request framing is the precondition for CL.TE/TE.CL desync, which can bypass controls and poison caches."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.cache-poisoning
+    match: {check: ["m3.cache-poison-audit"]}
+    rule: web.cache-poisoning
+    sections:
+      - text: "{title}: {asset.value} reflected the unkeyed header '{evidence.artifact.header}' ({evidence.artifact.marker}) into its response ({research_ref})."
+      - text: "An attacker-controllable value that is not part of the cache key can be stored and served to other users."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.jwt
+    match: {check: ["m3.jwt-audit"]}
+    rule: web.jwt
+    sections:
+      - text: "{title}: {asset.value} relies on tokens the verifier mishandles ({evidence.artifact.weakness}, alg={evidence.artifact.alg}) ({research_ref})."
+      - text: "An unsigned, algorithm-confused or weak-secret-signable token lets an attacker forge an arbitrary identity."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.oauth
+    match: {check: ["m3.oauth-flow-audit"]}
+    rule: web.oauth
+    sections:
+      - text: "{title}: the authorization endpoint at {evidence.artifact.endpoint} accepted redirect_uri={evidence.artifact.mutation} and redirected to {evidence.artifact.location} ({research_ref})."
+      - text: "An attacker-controlled redirect target lets an authorization code or token be delivered to the attacker."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.saml
+    match: {check: ["m3.saml-audit"]}
+    rule: web.saml
+    sections:
+      - text: "{title}: the service provider at {evidence.artifact.endpoint} accepted an unsigned SAML assertion (HTTP {evidence.artifact.status}) ({research_ref})."
+      - text: "If the signature is not verified, an attacker can forge an assertion for any user — full authentication bypass."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.hpp
+    match: {check: ["m3.hpp-oracle"]}
+    rule: web.http-parameter-pollution
+    sections:
+      - text: "{title}: for the parameter '{evidence.artifact.parameter}' at {asset.value} the response depends on the order of duplicate values ({research_ref})."
+      - text: "Ambiguous resolution lets an attacker pick which value reaches the application logic, defeating a WAF or a validation layer that read the other one."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.mass-assignment
+    match: {check: ["m3.mass-assign-audit"]}
+    rule: web.mass-assignment
+    sections:
+      - text: "{title}: {evidence.artifact.endpoint} bound extra properties it should not own ({evidence.artifact.bound_fields}) ({research_ref})."
+      - text: "Over-posting lets an attacker set sensitive fields such as role or balance that the UI never offers."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.proto-pollution
+    match: {check: ["m3.proto-pollution"]}
+    rule: web.prototype-pollution
+    sections:
+      - text: "{title}: {asset.value} merged a JSON body carrying the prototype key '{evidence.artifact.key}' and echoed the injected marker ({research_ref})."
+      - text: "A recursive merge that does not filter prototype keys pollutes object prototypes, which can alter application logic and chain to other sinks."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.race-condition
+    match: {check: ["m3.race-oracle"]}
+    rule: web.race-condition
+    sections:
+      - text: "{title}: {evidence.artifact.successes} of {evidence.artifact.concurrency} simultaneous requests to {evidence.artifact.endpoint} reported success ({research_ref})."
+      - text: "A non-atomic check-then-act window lets a single-use or limited operation be applied more than once."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.business-logic
+    match: {check: ["m3.business-logic-audit"]}
+    rule: web.business-logic
+    sections:
+      - text: "{title}: {asset.value} accepted the edge value {evidence.artifact.edge_value} for '{evidence.artifact.parameter}' with a success response ({research_ref})."
+      - text: "A value the flow's own constraints should refuse was accepted, which can be abused for price, quantity or credit manipulation."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.graphql
+    match: {check: ["m3.graphql-audit"]}
+    rule: web.graphql
+    sections:
+      - text: "{title}: the GraphQL endpoint at {asset.value} answered the introspection query with the schema ({research_ref})."
+      - text: "Full schema disclosure maps every type, field and mutation — including sensitive fields hidden from the UI — and often enables batching abuse."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.websocket
+    match: {check: ["m3.websocket-audit"]}
+    rule: web.websocket
+    sections:
+      - text: "{title}: {asset.value} completed the WebSocket upgrade for the attacker origin {evidence.artifact.origin} ({research_ref})."
+      - text: "A handshake that accepts any origin (cross-site WebSocket hijacking) lets a malicious page act as the victim over the victim's session."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: web.subdomain-takeover
+    match: {check: ["m3.subdomain-takeover"]}
+    rule: web.subdomain-takeover
+    sections:
+      - text: "{title}: {evidence.artifact.host} served the {evidence.artifact.service} 'name not configured' fingerprint ({research_ref})."
+      - text: "The DNS alias points at a third-party service that no longer owns the name, so an attacker who claims it serves content on the victim's origin."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.bucket
+    match: {check: ["m5.bucket-enumerator"]}
+    rule: cloud.bucket
+    sections:
+      - text: "{title}: the bucket {evidence.artifact.bucket} ({evidence.artifact.provider}) answered anonymously ({research_ref})."
+      - text: "An anonymous listing exposes every object name; a public ACL grants read (or write) to the objects themselves."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.leaked-keys
+    match: {check: ["m5.leaked-cloud-keys"]}
+    rule: cloud.leaked-keys
+    sections:
+      - text: "{title}: {evidence.artifact.location} contains {evidence.artifact.kind} credential material ({research_ref})."
+      - text: "A credential in a repository, image or artifact must be treated as public; if it is live it grants whatever the identity can do."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.imds
+    match: {check: ["m5.imds-ssrf"]}
+    rule: cloud.imds
+    sections:
+      - text: "{title}: the fetch sink '{evidence.artifact.sink}' at {evidence.artifact.endpoint} returned {evidence.artifact.provider} metadata (posture: {evidence.artifact.posture}) ({research_ref})."
+      - text: "IMDSv1-style metadata returns the instance's temporary credentials; IMDSv2 requires a token that the sink cannot obtain."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.azure-mi
+    match: {check: ["m5.azure-mi-audit"]}
+    rule: cloud.azure-mi
+    sections:
+      - text: "{title}: the fetch sink '{evidence.artifact.sink}' at {evidence.artifact.endpoint} returned the Azure {evidence.artifact.document} document ({research_ref})."
+      - text: "Azure IMDS mints OAuth2 tokens for the managed identity with only a Metadata header, so a reachable sink can obtain tokens for Key Vault, Storage or the management plane."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.gcp-sa
+    match: {check: ["m5.gcp-sa-keys"]}
+    rule: cloud.gcp-sa
+    sections:
+      - text: "{title}: {evidence.artifact.location} contains a GCP service-account key document ({research_ref})."
+      - text: "A downloaded service-account key authenticates as the service account and carries all its IAM roles."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.firebase
+    match: {check: ["m5.firebase-rules"]}
+    rule: cloud.firebase
+    sections:
+      - text: "{title}: the Firebase project {evidence.artifact.project} returned its database contents anonymously ({research_ref})."
+      - text: "Open realtime-database rules (the `.read`/`.write: true` test-mode default) expose every record, often including user data and tokens."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.supabase
+    match: {check: ["m5.supabase-rls"]}
+    rule: cloud.supabase
+    sections:
+      - text: "{title}: the PostgREST table '{evidence.artifact.table}' answered anonymously with {evidence.artifact.rows} row(s) ({research_ref})."
+      - text: "Row-level security is not enabled (or not restrictive) for the anonymous role, so the public anon key can read the table."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.tfstate
+    match: {check: ["m5.tfstate-exposure"]}
+    rule: cloud.tfstate
+    sections:
+      - text: "{title}: a Terraform state document is exposed ({evidence.artifact.location or evidence.artifact.path}) ({research_ref})."
+      - text: "State files store every resource attribute in plaintext, including database passwords, keys and connection strings."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.iac
+    match: {check: ["m5.tfstate-exposure"]}
+    rule: cloud.iac
+    sections:
+      - text: "{title}: the rule '{evidence.artifact.rule}' matched in {evidence.artifact.locations} ({research_ref})."
+      - text: "A static IaC review flags risky constructs before they reach production: open security groups, wildcard IAM, public buckets, unencrypted storage, privileged containers."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.k8s-kubelet
+    match: {check: ["m5.k8s-exposure"]}
+    rule: cloud.k8s-kubelet
+    sections:
+      - text: "{title}: the kubelet endpoint {evidence.artifact.endpoint} returned pod data without authentication ({research_ref})."
+      - text: "The read-only kubelet API leaks pod specs, mounted volumes and often environment variables containing secrets."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.k8s-dashboard
+    match: {check: ["m5.k8s-exposure"]}
+    rule: cloud.k8s-dashboard
+    sections:
+      - text: "{title}: the Kubernetes Dashboard at {evidence.artifact.endpoint} is reachable anonymously ({research_ref})."
+      - text: "A dashboard with skip-login or a default cluster-admin binding grants full cluster control from a browser."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.registry
+    match: {check: ["m5.registry-scan"]}
+    rule: cloud.registry
+    sections:
+      - text: "{title}: the registry at {evidence.artifact.endpoint} listed {evidence.artifact.repository_count} repository(ies) anonymously ({research_ref})."
+      - text: "An open registry catalog reveals internal image names and architecture; its images can then be pulled and mined for secrets and known-vulnerable packages."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.docker-api
+    match: {check: ["m5.docker-socket"]}
+    rule: cloud.docker-api
+    sections:
+      - text: "{title}: the Docker API at {evidence.artifact.endpoint} answered without authentication ({research_ref})."
+      - text: "An unauthenticated Docker API grants host takeover: a container can be created with the host filesystem mounted."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.docker-socket
+    match: {check: ["m5.docker-socket"]}
+    rule: cloud.docker-socket
+    sections:
+      - text: "{title}: {evidence.artifact.location} contains a docker.sock artifact ({research_ref})."
+      - text: "A docker socket mounted or committed into an artifact allows the container to control the host daemon."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.image-secret
+    match: {check: ["m5.image-history-secrets"]}
+    rule: cloud.image-secret
+    sections:
+      - text: "{title}: {evidence.artifact.location} carries a secret-shaped value in a {evidence.artifact.instruction} instruction ({research_ref})."
+      - text: "A secret in an ENV/ARG/LABEL or a manifest is preserved in the image layers or the deployment artifact and can be extracted by anyone who pulls it."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.image-root
+    match: {check: ["m5.image-history-secrets"]}
+    rule: cloud.image-root
+    sections:
+      - text: "{title}: {evidence.artifact.location} sets the container to run as root ({research_ref})."
+      - text: "Running as root inside the container increases the impact of any application compromise and eases container escape."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.cicd
+    match: {check: ["m5.cicd-audit"]}
+    rule: cloud.cicd
+    sections:
+      - text: "{title}: {evidence.artifact.location} matches the '{evidence.artifact.rule}' risk ({research_ref})."
+      - text: "Untrusted triggers, interpolated event data in shell steps, over-broad tokens, self-hosted runners and unpinned actions are the recognized CI/CD supply-chain attacks."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.dep-confusion
+    match: {check: ["m5.dep-confusion"]}
+    rule: cloud.dep-confusion
+    sections:
+      - text: "{title}: {evidence.artifact.location} depends on internal-looking names ({evidence.artifact.candidates}) ({research_ref})."
+      - text: "If the same name resolves on a public registry and the build resolves there first, an attacker's package executes at install time (dependency confusion)."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.sbom
+    match: {check: ["m5.sbom-review"]}
+    rule: cloud.sbom
+    sections:
+      - text: "{title}: {evidence.artifact.location} declares {evidence.artifact.component} {evidence.artifact.version}, below the fixed {evidence.artifact.fixed} ({evidence.artifact.cve}) ({research_ref})."
+      - text: "A dependency with a known-vulnerable version is a pre-filtered exploitation target for an attacker reading public advisories."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: cloud.iam
+    match: {check: ["m5.iam-review"]}
+    rule: cloud.iam
+    sections:
+      - text: "{title}: {evidence.artifact.location} grants wildcard or escalation-relevant IAM permissions ({research_ref})."
+      - text: "Over-privileged identities and known escalation actions (CreatePolicyVersion, PassRole, AttachUserPolicy) let a low-privilege principal reach account control."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  # ----------------------------------------------------------------- M6 · automation, AI-era, post-exploit
+  - id: m6.webshell
+    match: {check: ["m6.webshell-yara"]}
+    rule: m6.webshell
+    sections:
+      - text: "{title}: {evidence.artifact.location} carries a webshell signature or behaviour ({research_ref})."
+      - text: "A webshell gives an attacker command execution as the web-server user; the signature/behaviour list above is the machine-readable reason it was flagged."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: m6.genai
+    match: {check: ["m6.attack-surface-genai"]}
+    rule: m6.genai-surface
+    sections:
+      - text: "{title}: {evidence.artifact.location} exposes a GenAI surface ({evidence.artifact.signal}) ({research_ref})."
+      - text: "Exposed model endpoints, leaked model keys, served system prompts and over-privileged agent configs are the injection and agency risks of the LLM Top 10."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: m6.patch-gap
+    match: {check: ["m6.cve-epss-correlation"]}
+    rule: m6.patch-gap
+    sections:
+      - text: "{title}: {evidence.artifact.cve} affects {evidence.artifact.product} {evidence.artifact.version} (EPSS {evidence.artifact.epss}, KEV {evidence.artifact.kev}) ({research_ref})."
+      - text: "A CVE with high EPSS or KEV status is one attackers reach for first; a host inside the affected range is in the patch gap."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: m6.lpe
+    match: {check: ["m6.lpe-discovery"]}
+    rule: m6.lpe
+    sections:
+      - text: "{title}: {evidence.artifact.cve} affects {evidence.artifact.product} {evidence.artifact.version} ({research_ref})."
+      - text: "A version inside a local-privilege-escalation range turns any low-privilege foothold into root; it is the step between a webshell and full host control."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: m6.repo-secret
+    match: {check: ["m6.secret-scan-at-scale"]}
+    rule: m6.repo-secret
+    sections:
+      - text: "{title}: {evidence.artifact.location} contains {evidence.artifact.kind} credential material (history: {evidence.artifact.in_history}) ({research_ref})."
+      - text: "A credential in a repository or its history must be treated as public; if it is live it grants whatever the identity can do."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: m6.ci-secret
+    match: {check: ["m6.ci-secret-leak"]}
+    rule: m6.ci-secret
+    sections:
+      - text: "{title}: {evidence.artifact.location} leaks {evidence.artifact.kind} material ({research_ref})."
+      - text: "CI logs and artifacts outlive the job and are often readable by more people than the secret itself."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: m6.sigma
+    match: {check: ["m6.sigma-hunt-rules"]}
+    rule: m6.sigma-hit
+    sections:
+      - text: "{title}: rule '{evidence.artifact.rule_title}' matched a telemetry event in {evidence.artifact.location} ({research_ref})."
+      - text: "The matched behaviour is a post-exploitation discovery step (ticket abuse, credential access, lateral movement or persistence), not a vulnerability scan."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: m6.deception
+    match: {check: ["m6.deception-listeners"]}
+    rule: m6.deception
+    sections:
+      - text: "{title}: honeytoken {evidence.artifact.decoy} was triggered ({evidence.artifact.at}) ({research_ref})."
+      - text: "A honeytoken is only touched by an actor, never by legitimate users; a trigger is high-signal evidence of attacker contact."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+
+  - id: m6.ad-path
+    match: {check: ["m6.ad-attack-path"]}
+    rule: m6.ad-path
+    sections:
+      - text: "{title}: {evidence.artifact.start} reaches {evidence.artifact.goal} in {evidence.artifact.length} hop(s) ({research_ref})."
+      - text: "A short escalation path to Domain Admin is the highest-value thing to break in an AD exposure model."
+      - text: "Recommended action: {remediation.summary}"
+      - text: "Confidence: {confidence.band} ({confidence.value}/100)."
+

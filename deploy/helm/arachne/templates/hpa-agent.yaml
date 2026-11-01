@@ -1,0 +1,46 @@
+{{- /* Plain-HorizontalPodAutoscaler fallback for the agent pool (S25, REQ-RESIL-003).
+  KEDA (templates/scaledobject.yaml) is the RECOMMENDED path: a plain HPA cannot
+  scale to zero — Kubernetes requires minReplicas >= 1 — while KEDA can, which is
+  what an idle queue wants for cost. This object is the fallback for clusters that
+  have no KEDA operator but do run an external-metrics adapter.
+
+  The two scalers must never both render (both own the Deployment's replica count),
+  so this guard is exactly the negation of the ScaledObject's: enable `autoscaling`
+  alone, or `autoscaling.keda` alone, never both.
+*/ -}}
+{{- if and .Values.autoscaling.enabled (not .Values.autoscaling.keda.enabled) }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "arachne.fullname" . }}-agent
+  labels:
+    {{- include "arachne.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "arachne.fullname" . }}-agent
+  # Plain HPA cannot scale to zero: minReplicas must be >= 1, so the shared (KEDA)
+  # value is floored here. Use autoscaling.keda.enabled for scale-to-zero.
+  minReplicas: {{ max 1 (int .Values.autoscaling.minReplicas) }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+    # `External` is the plainest Kubernetes metric source for a queue depth that is
+    # not attached to a pod. It is only resolved by an EXTERNAL-METRICS ADAPTER
+    # (e.g. prometheus-adapter) that exposes `arachne_queue_depth` to the metrics
+    # API — the chart does not install one. The selector pins the queued series.
+    - type: External
+      external:
+        metric:
+          name: arachne_queue_depth
+          selector:
+            matchLabels:
+              status: queued
+        target:
+          type: AverageValue
+          averageValue: {{ .Values.autoscaling.queueDepthPerReplica | quote }}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: {{ .Values.autoscaling.scaleDownStabilizationSeconds }}
+{{- end }}

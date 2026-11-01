@@ -1,0 +1,142 @@
+# Fix-plan catalog (S27, area FIX, REQ-FIX-001/003).
+#
+# The remediation catalog (`templates/remediation/remediation-catalog.yaml`) says *what* to
+# do in prose; this catalog says *how to do it as an artifact* for the classes where the
+# change is unambiguous, deterministic and strictly weakening-the-exposure. A plan is data,
+# never code: two regex-shaped edit operations (`replace`, `insert_after`) applied to files
+# the finding's own evidence names, inside a repo the operator explicitly granted.
+#
+# Deliberate omissions, so a reader does not mistake them for gaps:
+#
+# * **Nothing here removes a credential literal.** A plan that deletes a hardcoded secret
+#   would have to reproduce that secret in the diff's removed lines, and "no secrets in
+#   diffs" (REQ-FIX-003) is absolute. Those classes come back from the engine as
+#   `unsupported` guidance carrying the remediation catalog's steps, and the operator
+#   applies them by hand — which is what the loop already verifies.
+# * **Nothing here bumps a dependency.** A version change is not a scoped fix
+#   (REQ-FIX-003) and the diff safety analysis refuses one even if a plan asked for it.
+# * **Nothing here widens access.** Every shipped edit either turns a dangerous boolean
+#   off, narrows an ACL, or turns a protection on. A plan that could plausibly change
+#   behaviour in the permissive direction is not shipped; the operator writes their own
+#   catalog for those (ARACHNE_FIX_PLANS).
+#
+# Every `applies_to.rules` value below is the *artifact* rule id the M5 review puts in the
+# finding's evidence (`artifact.rule`), not a human label — that is what makes selection
+# mechanical. `checks` pins the check that must have produced the finding.
+#
+# The shipped plans deliberately do **not** constrain on `applies_to.remediation`, although
+# the schema allows it: a remediation-catalog entry is coarse (one entry covers several rules
+# and several checks), so constraining on it would make selection depend on which entry a
+# lookup happened to return. Check + artifact rule is what the finding actually reported.
+
+version: "1.0"
+
+plans:
+  # --------------------------------------------------------------- Kubernetes manifests
+  - id: k8s-privileged-container
+    kind: iac
+    summary: "Stop the container running privileged (privileged: true -> false)."
+    applies_to:
+      checks: ["M5/tfstate-exposure"]
+      rules: ["k8s-privileged", "privileged-container"]
+    globs: ["*.yaml", "*.yml", "*.tf", "*.tfvars", "*.tmpl"]
+    edits:
+      - op: replace
+        pattern: '(?m)^(?P<lead>\s*privileged\s*:\s*)true(?P<tail>\s*(?:#.*)?)$'
+        replacement: '\g<lead>false\g<tail>'
+      - op: replace
+        pattern: '(?m)^(?P<lead>\s*privileged\s*=\s*)true(?P<tail>\s*(?:#.*)?)$'
+        replacement: '\g<lead>false\g<tail>'
+        min_matches: 0
+    already_fixed: '(?m)^\s*privileged\s*[:=]\s*false\s*(?:#.*)?$'
+    notes:
+      - "A workload that ran privileged may have relied on a capability: re-run its own tests before merging."
+
+  - id: k8s-host-namespace
+    kind: iac
+    summary: "Stop the pod sharing a host namespace (hostNetwork/hostPID/hostIPC -> false)."
+    applies_to:
+      checks: ["M5/tfstate-exposure"]
+      rules: ["k8s-host-namespace"]
+    globs: ["*.yaml", "*.yml"]
+    edits:
+      - op: replace
+        pattern: '(?m)^(?P<lead>\s*host(Network|PID|IPC)\s*:\s*)true(?P<tail>\s*(?:#.*)?)$'
+        replacement: '\g<lead>false\g<tail>'
+    already_fixed: '(?m)^\s*host(Network|PID|IPC)\s*:\s*false\s*(?:#.*)?$'
+
+  - id: k8s-run-as-root
+    kind: iac
+    summary: "Require a non-root user (runAsNonRoot: false -> true)."
+    applies_to:
+      checks: ["M5/tfstate-exposure"]
+      rules: ["k8s-run-as-root"]
+    globs: ["*.yaml", "*.yml"]
+    edits:
+      - op: replace
+        pattern: '(?m)^(?P<lead>\s*runAsNonRoot\s*:\s*)false(?P<tail>\s*(?:#.*)?)$'
+        replacement: '\g<lead>true\g<tail>'
+    already_fixed: '(?m)^\s*runAsNonRoot\s*:\s*true\s*(?:#.*)?$'
+    notes:
+      - "The image must have a non-root USER. If its tests fail, add one rather than reverting this."
+
+  # ------------------------------------------------------------------ IaC / cloud config
+  - id: iac-public-database
+    kind: iac
+    summary: "Close the database to the internet (publicly_accessible -> false)."
+    applies_to:
+      checks: ["M5/tfstate-exposure"]
+      rules: ["public-database"]
+    globs: ["*.tf", "*.tfvars", "*.tmpl"]
+    edits:
+      - op: replace
+        pattern: '(?m)^(?P<lead>\s*publicly_accessible\s*=\s*)true(?P<tail>\s*(?:#.*)?)$'
+        replacement: '\g<lead>false\g<tail>'
+    already_fixed: '(?m)^\s*publicly_accessible\s*=\s*false\s*(?:#.*)?$'
+
+  - id: iac-unencrypted-storage
+    kind: iac
+    summary: "Turn storage encryption on (encrypted/encryption -> true)."
+    applies_to:
+      checks: ["M5/tfstate-exposure"]
+      rules: ["unencrypted-storage"]
+    globs: ["*.tf", "*.tfvars", "*.tmpl", "*.yaml", "*.yml"]
+    edits:
+      - op: replace
+        pattern: '(?m)^(?P<lead>\s*encrypt(?:ed|ion)\s*=\s*)false(?P<tail>\s*(?:#.*)?)$'
+        replacement: '\g<lead>true\g<tail>'
+      - op: replace
+        pattern: '(?m)^(?P<lead>\s*encrypt(?:ed|ion)\s*:\s*)false(?P<tail>\s*(?:#.*)?)$'
+        replacement: '\g<lead>true\g<tail>'
+        min_matches: 0
+    already_fixed: '(?m)^\s*encrypt(?:ed|ion)\s*[:=]\s*true\s*(?:#.*)?$'
+    notes:
+      - "An existing unencrypted bucket needs a migration, not only a flag: the plan turns the declaration on so a re-apply encrypts."
+
+  - id: iac-public-bucket-acl
+    kind: iac
+    summary: "Make the bucket private (acl = public-read* -> private)."
+    applies_to:
+      checks: ["M5/tfstate-exposure"]
+      rules: ["public-bucket-acl", "bucket-exposure", "cloud-bucket"]
+    globs: ["*.tf", "*.tfvars", "*.tmpl"]
+    edits:
+      - op: replace
+        pattern: '(?m)^(?P<lead>\s*acl\s*=\s*)"public-read(?:-write)?"(?P<tail>\s*(?:#.*)?)$'
+        replacement: '\g<lead>"private"\g<tail>'
+    already_fixed: '(?m)^\s*acl\s*=\s*"private"\s*(?:#.*)?$'
+
+  - id: iac-open-security-group
+    kind: iac
+    summary: "Narrow a world-open ingress rule to the estate's private range."
+    applies_to:
+      checks: ["M5/tfstate-exposure"]
+      rules: ["open-security-group"]
+    globs: ["*.tf", "*.tfvars", "*.tmpl"]
+    edits:
+      - op: replace
+        pattern: '(?m)^(?P<lead>\s*cidr_blocks\s*=\s*\[[^\]]*)"0\.0\.0\.0/0"(?P<tail>[^\]]*\])'
+        replacement: '\g<lead>"10.0.0.0/8"\g<tail>'
+    already_fixed: '(?m)^\s*cidr_blocks\s*=\s*\[[^\]]*"10\.0\.0\.0/8"'
+    notes:
+      - "The estate's real private range is operator knowledge: review the substituted CIDR before merging (this is why a human approves, always)."

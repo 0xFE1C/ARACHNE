@@ -1,0 +1,42 @@
+id: phpinfo-disclosure
+info:
+  name: phpinfo() disclosure page
+  author: arachne
+  severity: medium
+  description: >-
+    A `phpinfo()` page is reachable. It discloses the PHP build, loaded modules, ini paths,
+    environment variables and often credentials from the process environment (research ch. 04,
+    method 8).
+  tags: [exposure, debug, php]
+  reference:
+    - https://cwe.mitre.org/data/definitions/489.html
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/phpinfo.php"
+      - "{{BaseURL}}/info.php"
+      - "{{BaseURL}}/test.php"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        part: body
+        words:
+          - "phpinfo()"
+      - type: dsl
+        dsl:
+          - 'content_length > 200'
+    extractors:
+      - type: regex
+        name: php_version
+        part: body
+        group: 1
+        regex:
+          - 'PHP Version ([0-9.]+)'
+      - type: json
+        name: json_config
+        part: body
+        json:
+          - "$.config"

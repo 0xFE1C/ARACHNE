@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Schedules · ARACHNE{% endblock %}
+{% block content %}
+<h1>Schedules</h1>
+
+<section class="panel">
+  <h2>Register a recurring scan</h2>
+  <form class="stack" method="post" action="/ui/schedules"
+        hx-post="/ui/schedules" hx-swap="none">
+    <div><label for="id">Id (kebab-case)</label><input id="id" name="id" required></div>
+    <div><label for="target">Target fixture path</label><input id="target" name="target" required></div>
+    <div><label for="cron">Cron (minute hour day month weekday)</label>
+      <input id="cron" name="cron" value="0 3 * * *" required></div>
+    <div><label for="engine">Engine</label>
+      <select id="engine" name="engine">
+        <option value="">fixture default</option>
+        <option value="heuristic">heuristic</option>
+        <option value="hybrid">hybrid</option>
+      </select></div>
+    <label><input type="checkbox" name="active_checks"> active checks</label>
+    <button class="primary" type="submit">Add schedule</button>
+  </form>
+  <p class="muted small">
+    Running a schedule executes the real orchestrator; due schedules run from
+    <code>arachne schedule run</code> (or the API).
+  </p>
+</section>
+
+<h2>Registered</h2>
+{% if schedules %}
+<table>
+  <thead><tr><th>Id</th><th>Cron</th><th>Enabled</th><th>Last run</th><th>Next run</th><th>Target</th><th>Controls</th></tr></thead>
+  <tbody>
+  {% for row in schedules %}
+    <tr>
+      <td>{{ row.spec.id }}</td>
+      <td class="mono small">{{ row.spec.cron }}</td>
+      <td>{{ "yes" if row.spec.enabled else "no" }}</td>
+      <td class="muted small">{{ row.state.last_run_at or "—" }}</td>
+      <td class="muted small">{{ row.state.next_run_at or "—" }}</td>
+      <td class="muted small">{{ row.spec.target }}</td>
+      <td>
+        <form class="inline" method="post" action="/ui/schedules/{{ row.spec.id }}/run"
+              hx-post="/ui/schedules/{{ row.spec.id }}/run" hx-swap="none">
+          <button type="submit">Run now</button>
+        </form>
+        <form class="inline" method="post" action="/ui/schedules/{{ row.spec.id }}/remove"
+              hx-post="/ui/schedules/{{ row.spec.id }}/remove" hx-swap="none">
+          <button class="danger" type="submit">Remove</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">No schedules registered.</p>
+{% endif %}
+{% endblock %}

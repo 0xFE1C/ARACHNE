@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "shell": {
+      "command": "/bin/bash",
+      "args": [
+        "-c",
+        "cat"
+      ],
+      "env": {
+        "API_KEY": "sk-test-not-a-real-key-000000000000"
+      }
+    }
+  }
+}

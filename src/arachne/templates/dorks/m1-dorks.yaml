@@ -1,0 +1,92 @@
+# ARACHNE dork corpus — M1 `m1.dork-sweep` (research ch.01 method 1, GHDB-aligned).
+#
+# This file is data, not code (ADR-04, docs/spec/07- §4) and is versioned with the
+# repository: `arachne.spec` F-09-04 asks for dork management as a shareable artefact, and
+# `ARACHNE_OSINT_DORK_CORPUS` points a project at its own copy.
+#
+# Fields
+#   id           kebab-case identifier, unique in the corpus (appears in findings/evidence)
+#   category     grouping label (sensitive-file, admin-panel, document, paste, ...)
+#   query        the search query; `{domain}` is substituted with the target's name
+#   description  what a hit means, in operator language
+#   exposure     true when a hit is "this should not have been indexed" — those dorks raise
+#                a candidate, the others only add URLs to the asset ledger
+#
+# The corpus is deliberately short. A large corpus multiplies requests against a third-party
+# search API (the check is budgeted, see ARACHNE_OSINT_REQUEST_BUDGET) and every extra dork
+# is another chance to produce noise; the analyzer's false-positive budget (G-02) is a
+# scanner-wide property, so this list stays close to the cases that matter to defenders.
+corpus_version: "1.0"
+
+dorks:
+  - id: env-file-indexed
+    category: sensitive-file
+    query: 'site:{domain} filetype:env'
+    description: an environment file
+    exposure: true
+
+  - id: sql-dump-indexed
+    category: sensitive-file
+    query: 'site:{domain} filetype:sql ("INSERT INTO" OR "password")'
+    description: a database dump
+    exposure: true
+
+  - id: backup-indexed
+    category: sensitive-file
+    query: 'site:{domain} (filetype:bak OR filetype:zip OR filetype:old)'
+    description: a backup or archive file
+    exposure: true
+
+  - id: config-file-indexed
+    category: sensitive-file
+    query: 'site:{domain} (filetype:yml OR filetype:yaml) ("password" OR "secret")'
+    description: a configuration file with credentials
+    exposure: true
+
+  - id: admin-panel-indexed
+    category: admin-panel
+    query: 'site:{domain} (inurl:admin OR inurl:login OR inurl:phpmyadmin)'
+    description: an administrative interface
+    exposure: true
+
+  - id: directory-listing-indexed
+    category: admin-panel
+    query: 'site:{domain} intitle:"index of"'
+    description: an auto-indexed directory listing
+    exposure: true
+
+  - id: vcs-metadata-indexed
+    category: sensitive-file
+    query: 'site:{domain} (inurl:.git OR inurl:.svn OR inurl:.hg)'
+    description: version-control metadata
+    exposure: true
+
+  - id: api-doc-indexed
+    category: document
+    query: 'site:{domain} (inurl:swagger OR inurl:openapi OR inurl:api-docs)'
+    description: an API description document
+    exposure: false
+
+  - id: document-indexed
+    category: document
+    query: 'site:{domain} (filetype:pdf OR filetype:xlsx OR filetype:docx)'
+    description: published documents that can carry authorship and internal paths
+    exposure: false
+
+  - id: staging-host-indexed
+    category: infrastructure
+    query: 'site:{domain} (inurl:staging OR inurl:dev OR inurl:test OR inurl:uat)'
+    description: a non-production host
+    exposure: true
+
+  - id: paste-mention
+    category: paste
+    query: 'site:pastebin.com "{domain}"'
+    description: a paste-site mention of the brand
+    exposure: true
+
+  - id: cloud-storage-mention
+    category: infrastructure
+    query: '("{domain}") (site:s3.amazonaws.com OR site:blob.core.windows.net OR site:storage.googleapis.com)'
+    description: an object-storage endpoint naming the brand
+    exposure: true

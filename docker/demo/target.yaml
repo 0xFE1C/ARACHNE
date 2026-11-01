@@ -1,0 +1,45 @@
+# Offline demo target for `docker compose up` (F-07-04, F-01-01). Declared, attested, and
+# entirely inside the documentation ranges, so a live run against it cannot touch anyone's
+# system; the demo replays recorded responses (ARACHNE_OSINT_FIXTURES + ARACHNE_HTTP_FIXTURES)
+# so it needs no network.
+target:
+  name: arachne-demo
+  targets:
+    - kind: domain
+      value: example.com
+      note: apex plus subdomains; the M1 passive checks run against this name
+    - kind: url
+      value: https://example.com/
+      note: the web asset m1.js-asset-scan reads
+    - kind: ip
+      value: 93.184.216.34
+      note: documentation address with indexed services
+    - kind: ip
+      value: 93.184.216.35
+      note: documentation address with no indexed services
+  exclusions:
+    - kind: domain
+      value: admin.example.com
+      note: out of scope by agreement; a discovered host here must be discarded
+  attestation:
+    attested_by: "Jane Operator <jane.operator@example.com>"
+    attested_at: "2026-10-01T00:00:00Z"
+    expires_at: "2035-01-01T00:00:00Z"
+    authorization_ref: "TEST-M1"
+    scope_statement: >-
+      Unit-test authorization covering example.com, its web asset and two documentation-range
+      addresses for passive reconnaissance only. No active checks are authorized.
+    allowed_targets:
+      - example.com
+      - https://example.com/
+      - 93.184.216.34
+      - 93.184.216.35
+    active_checks_authorized: false
+
+options:
+  engine: heuristic
+  active_checks: false
+  modules:
+    enabled: [M1]
+    disabled: []
+  notes: "M1 recon integration fixture (recorded-response replay)."

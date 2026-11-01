@@ -1,0 +1,10 @@
+{
+ "source": "epss",
+ "description": "Recorded FIRST EPSS API response for the same CVEs as the NVD recording.",
+ "url": "https://api.first.org/data/v1/epss?offset=0&limit=5000&since=2026-10-29",
+ "status": 200,
+ "headers": {
+  "content-type": "application/json"
+ },
+ "body": "{\n \"status\": \"OK\",\n \"status-code\": 200,\n \"version\": \"1.0\",\n \"access\": \"public\",\n \"total\": 3,\n \"offset\": 0,\n \"limit\": 5000,\n \"date\": \"2026-10-29\",\n \"data\": [\n  {\n   \"cve\": \"CVE-2024-6387\",\n   \"epss\": \"0.42107\",\n   \"percentile\": \"0.96432\",\n   \"date\": \"2026-10-29\"\n  },\n  {\n   \"cve\": \"CVE-2021-44228\",\n   \"epss\": \"0.97507\",\n   \"percentile\": \"0.99919\",\n   \"date\": \"2026-10-29\"\n  },\n  {\n   \"cve\": \"CVE-2023-25690\",\n   \"epss\": \"0.15\",\n   \"percentile\": \"0.80\",\n   \"date\": \"2026-10-29\"\n  }\n ]\n}"
+}

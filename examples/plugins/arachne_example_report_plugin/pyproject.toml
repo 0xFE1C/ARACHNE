@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "arachne-example-report-plugin"
+version = "0.1.0"
+description = "Worked-example ARACHNE report-format plugin (CSV export)"
+requires-python = ">=3.11"
+# Depend on ARACHNE (or install the plugin into the same environment as ARACHNE).
+dependencies = ["arachne>=0.1"]
+
+[project.entry-points."arachne.report_formats"]
+# The group `arachne.report.formats.ReportFormatRegistry.discover()` reads (F-09-01).
+# The value may resolve to a ReportFormat, a renderer callable, or a sequence of either.
+example-csv = "arachne_example_report_plugin:CSV_FORMAT"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/arachne_example_report_plugin"]

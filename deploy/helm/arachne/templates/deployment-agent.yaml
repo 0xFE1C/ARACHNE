@@ -1,0 +1,96 @@
+{{- /* The agent pool (REQ-OPS-005): distributed-mode workers that lease scans from
+  the queue (S16). Agents authenticate to the control plane with a scanner-role API
+  key (ARACHNE_API_KEY); `internal` mode marks a pool deployed inside the target
+  network (REQ-CREDS-003) — the mode is recorded on registration so the trail says
+  where every node sits.
+*/ -}}
+{{- if gt (int .Values.agent.replicas) 0 }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "arachne.fullname" . }}-agent
+  labels:
+    {{- include "arachne.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent
+spec:
+  replicas: {{ .Values.agent.replicas }}
+  selector:
+    matchLabels:
+      {{- include "arachne.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: agent
+  template:
+    metadata:
+      labels:
+        {{- include "arachne.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: agent
+      {{- with .Values.agent.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "arachne.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: agent
+          image: {{ include "arachne.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["arachne"]
+          args: ["agent"]
+          # Looping mode: register, heartbeat, lease, execute, ack — the container
+          # restarts only on crash (the pool is a Deployment, not a Job).
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.auth.existingSecret | default (printf "%s-postgres" (include "arachne.fullname" .)) }}
+                  key: {{ .Values.postgres.auth.secretKey }}
+            - name: ARACHNE_AGENT_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ARACHNE_API_URL
+              value: "http://{{ include "arachne.fullname" . }}-api:{{ .Values.api.service.port }}"
+            - name: ARACHNE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.agent.auth.existingSecret | default (include "arachne.fullname" .) }}
+                  key: {{ .Values.agent.auth.secretKey }}
+            - name: ARACHNE_DISTRIBUTED
+              value: "true"
+            - name: ARACHNE_AGENT_MODE
+              value: {{ .Values.agent.mode | quote }}
+            - name: ARACHNE_AGENT_CONCURRENCY
+              value: {{ .Values.agent.concurrency | quote }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "arachne.fullname" . }}-config
+          resources:
+            {{- toYaml .Values.agent.resources | nindent 12 }}
+          {{- if .Values.vault.enabled }}
+          volumeMounts:
+            - name: vault-secrets
+              mountPath: /run/secrets
+              readOnly: true
+          {{- end }}
+      {{- if .Values.vault.enabled }}
+      volumes:
+        - name: vault-secrets
+          emptyDir:
+            medium: Memory
+      {{- end }}
+      {{- with .Values.agent.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.agent.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -1,0 +1,60 @@
+# Copy-paste example: run ARACHNE's IaC gate on every pull request (S26, REQ-ECOS-003).
+#
+# The job checks out the tree, installs ARACHNE, and calls the shipped composite action
+# (`src/arachne/templates/ci/github/action.yml`). The action reviews the working tree
+# offline, writes annotations to stdout (GitHub renders them on the diff), and exits with
+# the gate's code so a finding at or above the threshold fails the job.
+#
+# To use the action, either copy `src/arachne/templates/ci/github/action.yml` to
+# `.github/actions/arachne-gate/action.yml` and `uses: ./.github/actions/arachne-gate`, or
+# point `uses:` at the template path as below (a local action is any checked-out directory
+# holding an `action.yml`).
+
+name: security
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+
+# Least privilege: read the tree, write Code Scanning results, comment on PRs. The offline
+# gate needs none of these; only the optional SARIF upload and PR annotations do.
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  arachne-iac-gate:
+    name: ARACHNE IaC gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install ARACHNE
+        run: pip install "arachne==0.1.0"
+
+      - name: ARACHNE IaC gate
+        uses: ./code/src/arachne/templates/ci/github
+        with:
+          path: .
+          fail-on: high
+          # `format: sarif` produces a Code Scanning upload (codeql-action) and is the
+          # recommended path when Code Scanning is enabled. Use `github` for plain
+          # workflow-command annotations without Code Scanning.
+          format: sarif
+          upload-sarif: "true"
+          # api-url: ${{ vars.ARACHNE_API_URL }}
+          # api-key: ${{ secrets.ARACHNE_API_KEY }}
+
+# Minimal alternative without the composite action or Code Scanning — annotations only:
+#
+#       - name: ARACHNE IaC gate (inline)
+#         run: |
+#           python -m arachne.cli.main db upgrade
+#           python -m arachne.tools.ci_annotate --path . --format github --fail-on high

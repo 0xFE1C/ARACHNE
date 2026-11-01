@@ -1,0 +1,27 @@
+name: ci
+
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+  issue_comment:
+    types: [created]
+
+permissions: write-all
+
+jobs:
+  build:
+    # A self-hosted runner labelled on a public repository: an attacker PR executes here.
+    runs-on: [self-hosted, linux]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Echo the PR title
+        # Untrusted event data interpolated directly into a shell step (script injection).
+        run: echo "${{ github.event.pull_request.title }}"
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+      - name: Deploy
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: ./deploy.sh

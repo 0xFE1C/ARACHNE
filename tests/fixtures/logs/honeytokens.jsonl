@@ -1,0 +1,2 @@
+{"ts": "2026-10-20T11:00:00Z", "token": "canary-aws-key-01", "source": "198.51.100.7", "event": "read"}
+{"ts": "2026-10-20T11:05:00Z", "token": "canary-s3-bucket-02", "source": "203.0.113.9", "event": "list"}

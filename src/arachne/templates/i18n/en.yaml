@@ -1,0 +1,94 @@
+# English (en) translation catalogue — ARACHNE's reference locale.
+#
+# This is committed data loaded through importlib.resources (see arachne/i18n/), the same
+# way every other shipped corpus is loaded. The English values are byte-identical to the
+# strings the renderers used to hold inline, so routing them through `translate(key)` leaves
+# an English report unchanged (S14, extended in S26).
+#
+# Keys are dotted and namespaced by the layer that owns them:
+#   report.section.*    the numbered headings of docs/spec/06- §9 (the renderer supplies the
+#                       number and the leading `##`)
+#   report.appendix.*   the lettered sub-headings of the appendix section
+#   report.finding.*    the per-finding bold labels
+#   report.severity.*   the severity ladder as a *label* ("findings — High")
+#   report.label.*      cover and table labels
+#   report.attack_path.* the attack-path table headers and the cheapest-break line
+#
+# A second locale is a sibling file, `templates/i18n/<locale>.yaml`, with the same keys; a
+# missing key falls back to English rather than failing (see `Translator.translate`). A
+# managed-data override may point a deployment at its own file (F-09-04).
+#
+# Scope of translation (stated so it is not mistaken for more): the catalogue covers the
+# report's *structural labels* — headings, severity names, table headers, per-finding
+# labels. Narrative prose (the executive-summary paragraphs, the explanatory sentence under
+# each section) is generated text that ships in English; it is catalogue-able the same way
+# but needs a translation pass, not a renderer change.
+#
+# `tests/unit/test_i18n.py` fails the build when a renderer names a `report.*` key that is
+# not here, and when a locale's key set diverges from English.
+
+version: "1.0"
+locale: en
+
+strings:
+  # ---- numbered sections (docs/spec/06- §9) ------------------------------------------
+  report.section.executive_summary: "Executive summary"
+  report.section.scope: "Scope & methodology"
+  report.section.assets: "Asset inventory"
+  report.section.findings: "Findings"
+  report.section.attack_paths: "Attack paths"
+  report.section.low_confidence: "Low-confidence observations"
+  report.section.patch_gap: "Patch-gap & exposure (M6)"
+  report.section.appendix: "Appendix"
+  # S28: the what-if annex (area SIM, REQ-SIM-004). Its own heading, placed after the
+  # appendix, so a reader cannot mistake a simulated path for a finding.
+  report.section.simulation: "Simulated scenarios (what-if)"
+  report.simulation.disclosure: "Simulated — nothing here was observed on a target"
+  report.simulation.hypotheses: "Hypothetical states injected"
+  report.simulation.refusals: "Hypotheses that could not be applied"
+  report.simulation.paths: "Resulting paths"
+  report.simulation.change: "Proposed change"
+
+  # ---- appendix sub-sections ---------------------------------------------------------
+  report.appendix.evidence: "Evidence payloads (redacted)"
+  report.appendix.audit: "Audit log summary"
+  report.appendix.out_of_scope: "Out-of-scope events"
+  report.appendix.false_positives: "False positives"
+  report.appendix.glossary: "Glossary"
+  report.appendix.state_changes: "State changes on targets"
+  report.appendix.intel: "Threat-intel freshness"
+  report.appendix.compliance: "Compliance framework coverage"
+  report.appendix.validation: "Detection validation (purple team)"
+
+  # ---- per-finding labels ------------------------------------------------------------
+  report.finding.evidence: "Evidence"
+  report.finding.description: "Description"
+  report.finding.remediation: "Remediation"
+  report.finding.verification: "Verification of fix"
+  report.finding.provenance: "Provenance"
+  report.finding.classification: "Classification"
+  report.finding.asset: "Asset"
+
+  # ---- severity ladder (as a label) --------------------------------------------------
+  report.severity.critical: "Critical"
+  report.severity.high: "High"
+  report.severity.medium: "Medium"
+  report.severity.low: "Low"
+  report.severity.info: "Info"
+
+  # ---- cover labels ------------------------------------------------------------------
+  # The executive-summary counts table is deliberately *not* translated: its rows come from
+  # `SeverityCounts.as_rows()`, which is the canonical severity vocabulary the JSON report and
+  # the DTO expose. Translating only its header would make the table disagree with the data.
+  report.label.scan: "Scan"
+  report.label.authorization: "Authorization"
+
+  # ---- attack-path table -------------------------------------------------------------
+  report.attack_path.hop: "Hop"
+  report.attack_path.stage: "Stage"
+  report.attack_path.check: "Check"
+  report.attack_path.asset: "Asset"
+  report.attack_path.severity: "Severity"
+  report.attack_path.verified: "Verified"
+  report.attack_path.evidence: "Evidence"
+  report.attack_path.cheapest: "Cheapest breaking remediation"

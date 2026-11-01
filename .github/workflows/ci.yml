@@ -1,0 +1,148 @@
+# ARACHNE CI — the gates a reviewer cares about, in order: lint, strict types, tests
+# (two interpreters), migrations on a brand-new database. Then the shipped delivery
+# surfaces: the default-credentials gate, the IaC gate, the Helm chart and the compose
+# smoke. The dependency audit runs advisory on a branch and blocking on a version tag.
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  lint:
+    name: lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      - run: ruff check src tests
+
+  types:
+    name: types (mypy --strict)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      - run: mypy src
+
+  tests:
+    name: tests (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      - run: python -m pytest tests -m "not perf" -q
+
+  migrations:
+    name: migrations on a brand-new database
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      - run: arachne db upgrade
+      - run: arachne db current
+
+  credentials:
+    name: no default credentials (REQ-OPS-006)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # The gate is shipped code, so CI runs exactly what an operator would: a plain
+      # interpreter over the checkout, no test harness and no import path setup.
+      - run: python -m arachne.tools.credentials_gate .
+
+  iac-gate:
+    name: IaC gate (REQ-ECOS-003)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      # The offline IaC/CI tree review, emitted as GitHub annotations for the PR.
+      - run: python -m arachne.tools.ci_annotate --path examples --fail-on high --format all --output-dir ci-annotations
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iac-gate-annotations
+          path: ci-annotations
+
+  helm:
+    name: helm lint + render smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      # The chart refuses to render without credentials (REQ-OPS-006), so the smoke
+      # passes throwaway values that are generated here and never committed.
+      - run: helm lint deploy/helm/arachne --set api.auth.apiKeys="ui:viewer:render-only-smoke"
+      - run: helm template arachne deploy/helm/arachne --set api.auth.apiKeys="ui:viewer:render-only-smoke" > /dev/null
+
+  docker:
+    name: compose smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Interpolation-only smoke: validates the compose file and its required
+      # variables without starting a container.
+      - run: docker compose -f docker/docker-compose.yml config -q
+        env:
+          POSTGRES_PASSWORD: render-only-smoke
+          ARACHNE_API_KEYS: "ui:viewer:render-only-smoke"
+
+  dependencies:
+    name: dependency audit (advisory on branches, blocking on tags)
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev,audit]"
+      - run: python -m pip_audit

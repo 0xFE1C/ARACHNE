@@ -1,0 +1,140 @@
+# Derived CVSS v3.1 vectors (docs/spec/04- §2.4, F-05-04).
+#
+# The scoring model derives a base vector for each finding instead of asking a check for one:
+# defaults first, then the module layer, then the CWE layer, then the check layer, each
+# overriding the last (see `arachne/analyzer/scoring.py`). Two properties are then applied
+# from evidence: a network-reachable asset is AV:N, and a finding confirmed by a second
+# request is AC:L.
+#
+# Managed data (F-09-04): point ARACHNE_ANALYSIS_SCORING at another file to tune the model to
+# an organisation's own risk function. Metrics and values are strictly CVSS v3.1
+# (AV:N|A|L|P, AC:L|H, PR:N|L|H, UI:N|R, S:U|C, C/I/A:H|L|N).
+
+version: "1.0"
+
+# Conservative defaults for an unclassified finding: remotely reachable, no authentication,
+# low confidentiality impact, no integrity or availability impact. It is deliberately *not*
+# "high" — an unknown finding is not a severe one, and the severity hint plus the OWASP
+# likelihood term still raise an individual finding (see docs/spec/04- §2.4).
+defaults:
+  AV: "N"
+  AC: "H"
+  PR: "N"
+  UI: "N"
+  S: "U"
+  C: "L"
+  I: "N"
+  A: "N"
+
+by_module:
+  # Reconnaissance is information *about* the target, not an exploitable condition: a lower
+  # complexity and a confidentiality-only impact keep an intelligence finding in the low
+  # bands unless a rule says otherwise.
+  M1: {}
+  # Network services sit behind a socket: no user interaction, and the impact depends on what
+  # the service is (the CWE layer below decides).
+  M2:
+    AV: "N"
+    AC: "L"
+  # Web application findings are driven by user interaction when the check is reflected/stored
+  # input; the CWE layer decides (CWE-79/89 set UI and S).
+  M3:
+    AV: "N"
+    AC: "L"
+  M4:
+    AV: "N"
+    AC: "L"
+  M5:
+    AV: "N"
+    AC: "L"
+  M6:
+    AV: "N"
+    AC: "L"
+
+by_cwe:
+  CWE-79: {S: "C", C: "L", I: "L", UI: "R"}
+  CWE-89: {S: "C", C: "H", I: "H", A: "L"}
+  CWE-94: {S: "C", C: "H", I: "H", A: "H"}
+  CWE-78: {S: "C", C: "H", I: "H", A: "H"}
+  CWE-502: {S: "C", C: "H", I: "H", A: "H"}
+  CWE-200: {C: "H", I: "N", A: "N"}
+  CWE-287: {C: "H", I: "L", A: "N"}
+  CWE-306: {C: "H", I: "H", A: "L"}
+  CWE-284: {C: "H", I: "L", A: "N"}
+  CWE-522: {C: "H", I: "N", A: "N"}
+  CWE-798: {C: "H", I: "H", A: "N"}
+  CWE-540: {C: "H", I: "N", A: "N"}
+  CWE-538: {C: "H", I: "L", A: "N"}
+  CWE-530: {C: "H", I: "N", A: "N"}
+  CWE-489: {C: "L", I: "L", A: "N"}
+  CWE-1188: {C: "H", I: "L", A: "N"}
+  CWE-521: {C: "H", I: "L", A: "N"}
+  CWE-319: {C: "H", I: "L", A: "N"}
+  CWE-327: {C: "H", I: "L", A: "N"}
+  CWE-326: {C: "H", I: "L", A: "N"}
+  CWE-345: {C: "L", I: "H", A: "N"}
+  CWE-477: {C: "H", I: "L", A: "N"}
+  CWE-1035: {C: "H", I: "L", A: "N"}
+  CWE-942: {C: "H", I: "L", A: "N"}
+  CWE-693: {C: "L", I: "L", A: "N"}
+  CWE-614: {C: "H", I: "L", A: "N"}
+  CWE-1004: {C: "H", I: "L", A: "N"}
+  # --- S6/M3 web-application families. A traversal reads files (confidentiality, scope
+  # changed); an accepted executable upload writes code (confidentiality + integrity); an
+  # IDOR is a foreign-record read; an open redirect and a CSRF need the victim's interaction;
+  # a missing rate limit is a low-integrity, low-availability resource concern.
+  CWE-22: {S: "C", C: "H", I: "L", A: "N"}
+  CWE-434: {S: "C", C: "H", I: "H", A: "L"}
+  CWE-639: {C: "H", I: "L", A: "N"}
+  CWE-601: {C: "L", I: "L", A: "N", UI: "R"}
+  CWE-352: {S: "C", C: "L", I: "L", A: "N", UI: "R"}
+  CWE-770: {C: "L", I: "L", A: "L"}
+  # S7 (M4): exposure and misconfiguration classes.
+  CWE-548: {C: "H", I: "N", A: "N"}
+  CWE-732: {C: "H", I: "H", A: "N"}
+  CWE-321: {C: "H", I: "N", A: "N"}
+  CWE-290: {C: "L", I: "H", A: "N"}
+  CWE-650: {C: "L", I: "H", A: "L"}
+  CWE-918: {S: "C", C: "H", I: "L", A: "N"}
+  CWE-204: {C: "L", I: "N", A: "N"}
+  CWE-1392: {C: "H", I: "H", A: "L"}
+  # --- S10 extended M3 families. Template injection, XXE, command injection and
+  # deserialization reach code/file reads (scope changed, high impact); smuggling and cache
+  # poisoning are request-shape issues; JWT/SAML/OAuth are assertion-verification classes.
+  CWE-1336: {S: "C", C: "H", I: "H", A: "L"}
+  CWE-611: {S: "C", C: "H", I: "L", A: "N"}
+  CWE-444: {C: "L", I: "H", A: "L"}
+  CWE-347: {C: "H", I: "H", A: "N"}
+  CWE-235: {C: "L", I: "L", A: "N"}
+  CWE-1321: {C: "L", I: "H", A: "N"}
+  CWE-362: {C: "L", I: "H", A: "L"}
+  CWE-915: {C: "L", I: "H", A: "N"}
+  CWE-840: {C: "L", I: "H", A: "N"}
+  CWE-1385: {C: "H", I: "L", A: "N"}
+  CWE-350: {C: "L", I: "H", A: "N"}
+  # --- S10 M5 cloud/supply-chain families.
+  CWE-312: {C: "H", I: "N", A: "N"}
+  CWE-1104: {C: "H", I: "L", A: "N"}
+  CWE-269: {C: "H", I: "H", A: "N"}
+  CWE-427: {C: "H", I: "H", A: "N"}
+  CWE-1116: {C: "H", I: "L", A: "N"}
+  CWE-250: {S: "C", C: "H", I: "H", A: "H"}
+
+  # --- S11 M6 families. A webshell is code execution as the web user; a GenAI surface is an
+  # injection/data-exposure class whose impact the rule refines; a CI log leak and a logging
+  # gap are confidentiality/integrity issues rather than direct execution.
+  CWE-506: {S: "C", C: "H", I: "H", A: "H"}
+  CWE-1426: {C: "H", I: "L", A: "N"}
+  CWE-532: {C: "H", I: "N", A: "N"}
+  CWE-778: {C: "L", I: "H", A: "N"}
+
+by_check:
+  # A TLS misconfiguration is high impact for confidentiality but does not by itself change
+  # integrity; the rule's severity clause still decides the reported severity.
+  m2.tls-deep-scan: {AC: "L", C: "H", I: "N", A: "N"}
+  # A correlated CVE is exploitation-ready in the sense the score cares about: a known
+  # affected version, so low complexity.
+  m2.cve-correlate: {AC: "L", C: "H", I: "L", A: "N"}
+  # An exposed .env or Git directory is a credential/source disclosure.
+  m4.env-file-probe: {AC: "L", C: "H", I: "N", A: "N"}
+  m4.git-probe: {AC: "L", C: "H", I: "L", A: "N"}

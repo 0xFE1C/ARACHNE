@@ -1,0 +1,23 @@
+id: tls-certificate-untrusted
+info:
+  name: TLS endpoint serving an untrusted or expired certificate
+  author: arachne
+  severity: medium
+  description: >-
+    The certificate presented by the endpoint could not be validated — expired, self-signed or
+    chained to an unknown issuer. Clients that learn to ignore the error are exposed to
+    interception (research ch. 02, method 14).
+  tags: [tls, certificate, trust]
+
+subject: tls_certificate
+field: trust_error
+matchers:
+  - type: word
+    part: body
+    words:
+      - "expired"
+      - "self-signed"
+      - "self signed"
+      - "unable to get local issuer"
+      - "unknown ca"
+      - "hostname mismatch"

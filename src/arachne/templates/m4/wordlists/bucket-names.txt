@@ -1,0 +1,22 @@
+# Bucket name stems, with the two that matter most first (a public one and a
+# denied one, so the check exercises both answers).
+backup
+private
+backups
+data
+prod
+production
+dev
+development
+staging
+assets
+static
+media
+uploads
+archive
+logs
+public
+files
+dump
+releases
+downloads

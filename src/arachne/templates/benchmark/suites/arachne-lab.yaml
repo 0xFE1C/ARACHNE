@@ -1,0 +1,89 @@
+# Generated from tests/lab/web_lab.py by the S21 benchmark harness, then committed.
+# tests/unit/test_benchmark_suite.py fails if this file and the lab disagree.
+name: arachne-lab
+version: '1.0'
+target: in-repo web lab (tests/lab/web_lab.py)
+source: lab
+reproduce: python -m arachne.tools.benchmark --lab --gate
+notes: The S6/S19 core M3 ground truth, minus the two cases that need a deployed credential
+  (they belong to a credentialed benchmark suite). The traps are the lab's documented
+  hardened counterparts, excluding any that are also planted cases.
+cases:
+- check_id: m3.sqli-oracle
+  marker: /product
+  expect: tp
+- check_id: m3.xss-oracle
+  marker: /search
+  expect: tp
+- check_id: m3.xss-oracle
+  marker: /profile
+  expect: tp
+- check_id: m3.traversal-oracle
+  marker: /download
+  expect: tp
+- check_id: m3.upload-audit
+  marker: /upload
+  expect: tp
+- check_id: m3.open-redirect
+  marker: /redirect
+  expect: tp
+- check_id: m3.idor-oracle
+  marker: /api/user?
+  expect: tp
+- check_id: m3.csrf-audit
+  marker: /account/settings
+  expect: tp
+- check_id: m3.csrf-audit
+  marker: /login
+  expect: tp
+- check_id: m3.csrf-audit
+  marker: /upload
+  expect: tp
+- check_id: m3.cors-audit
+  marker: /api/config
+  expect: tp
+- check_id: m3.rate-limit-audit
+  marker: /login
+  expect: tp
+- check_id: m3.auth-session-audit
+  marker: /login
+  expect: tp
+- check_id: m3.auth-session-audit
+  marker: '127.0.0.1:'
+  expect: tp
+- check_id: m3.security-headers
+  marker: '127.0.0.1:'
+  expect: tp
+- check_id: m3.api-surface
+  marker: /admin
+  expect: tp
+- check_id: m3.xss-oracle
+  marker: /safe-search
+  expect: fp
+- check_id: m3.xss-oracle
+  marker: /product
+  expect: fp
+- check_id: m3.traversal-oracle
+  marker: /hardened-download
+  expect: fp
+- check_id: m3.open-redirect
+  marker: /api/safe-redirect
+  expect: fp
+- check_id: m3.cors-audit
+  marker: /api/config-fixed
+  expect: fp
+- check_id: m3.csrf-audit
+  marker: /notes-fixed
+  expect: fp
+- check_id: m3.upload-audit
+  marker: /upload-hardened
+  expect: fp
+- check_id: m3.idor-oracle
+  marker: /api/user-fixed
+  expect: fp
+- check_id: m3.rate-limit-audit
+  marker: /login-fast
+  expect: fp
+- check_id: m3.api-surface
+  marker: /api/v1
+  expect: fp

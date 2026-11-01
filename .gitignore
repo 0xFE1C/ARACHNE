@@ -1,0 +1,65 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ---- virtual environments ----
+.venv/
+venv/
+env/
+
+# ---- tooling caches ----
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# ---- secrets: only ever in the environment (F-08-01) ----
+.env
+.env.*
+!.env.example
+# The M5 leaked-credentials fixture is a deliberate, fake .env committed for the tests.
+!tests/fixtures/repo/.env
+*.pem
+*.key
+
+# ---- runtime artifacts ----
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+audit.jsonl
+reports/
+*.log
+
+# ---- editors / OS ----
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# ---- local tooling state (never part of the project) ----
+.mimosa/
+.zcode/
+
+# ---- Docker secrets: commit only the *.example templates (F-07-04, F-08-01) ----
+docker/secrets/*
+!docker/secrets/*.example
+# Ingested feed artefacts (normalised files; the DB records what they were).
+feeds/
+
+# Offloaded evidence objects (S20, REQ-DATA-002). The default location is a directory beside
+# the database, so a deployment or a test run in the checkout would otherwise litter the tree
+# with content-addressed blobs. Never commit these: they are scan data, not fixtures.
+evidence/
+.arachne/

@@ -1,0 +1,21 @@
+{#- Severity badge macro, shared by the UI templates. -#}
+{% macro sev(severity) -%}
+  {%- set value = (severity or "")|lower -%}
+  <span class="badge sev-{{ value if value in ['critical','high','medium','low','info'] else 'other' }}">
+    {{- value or "unanalysed" -}}</span>
+{%- endmacro %}
+
+{% macro counts(counts, severities) -%}
+  <span class="counts">
+  {%- for severity in severities -%}
+    {%- if counts.get(severity) -%}
+      <span class="badge sev-{{ severity }}">{{ counts.get(severity) }}</span>
+    {%- endif -%}
+  {%- endfor -%}
+  {%- if not counts.values()|sum -%}<span class="muted small">none</span>{%- endif -%}
+  </span>
+{%- endmacro %}
+
+{% macro status_label(status, running) -%}
+  <span class="status {{ 'running' if running else status }}">{{ status }}{{ ' · running' if running }}</span>
+{%- endmacro %}

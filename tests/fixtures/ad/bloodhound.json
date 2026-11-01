@@ -1,0 +1,56 @@
+{
+  "nodes": [
+    {
+      "id": "u1",
+      "label": "User",
+      "properties": {
+        "name": "ALICE@CORP.LOCAL"
+      }
+    },
+    {
+      "id": "g1",
+      "label": "Group",
+      "properties": {
+        "name": "HELPDESK@CORP.LOCAL"
+      }
+    },
+    {
+      "id": "g2",
+      "label": "Group",
+      "properties": {
+        "name": "SERVER ADMINS@CORP.LOCAL"
+      }
+    },
+    {
+      "id": "g3",
+      "label": "Group",
+      "properties": {
+        "name": "Domain Admins"
+      }
+    },
+    {
+      "id": "c1",
+      "label": "Computer",
+      "properties": {
+        "name": "DC01.CORP.LOCAL"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "u1",
+      "target": "g1",
+      "label": "MemberOf"
+    },
+    {
+      "source": "g1",
+      "target": "g2",
+      "label": "GenericAll"
+    },
+    {
+      "source": "g2",
+      "target": "g3",
+      "label": "MemberOf"
+    }
+  ]
+}

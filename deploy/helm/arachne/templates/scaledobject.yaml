@@ -1,0 +1,43 @@
+{{- /* Queue-depth autoscaling for the agent pool (S25, REQ-RESIL-003): the agents are
+  stateless workers, so the queued-scan depth is the whole demand signal and the pool
+  scales to zero when it drains. KEDA supersedes templates/hpa-agent.yaml — exactly one
+  of the two renders, because both would own the Deployment's replica count. The chart
+  ships no CRD or operator; the cluster admin installs KEDA before enabling this.
+*/ -}}
+{{- if .Values.autoscaling.keda.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "arachne.fullname" . }}-agent
+  labels:
+    {{- include "arachne.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "arachne.fullname" . }}-agent
+  minReplicaCount: {{ .Values.autoscaling.minReplicas }}
+  maxReplicaCount: {{ .Values.autoscaling.maxReplicas }}
+  pollingInterval: {{ .Values.autoscaling.keda.pollingInterval }}
+  cooldownPeriod: {{ .Values.autoscaling.keda.cooldownPeriod }}
+  {{- with .Values.autoscaling.keda.namespace }}
+  namespace: {{ . | quote }}
+  {{- end }}
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          # Hysteresis: hold a replica this long, so a queue that empties briefly
+          # does not thrash the pool.
+          stabilizationWindowSeconds: {{ .Values.autoscaling.scaleDownStabilizationSeconds }}
+  triggers:
+    # The API exposes arachne_queue_depth at /metrics; KEDA polls it through the
+    # in-cluster API Service (no extra scraping stack for the queue signal).
+    - type: prometheus
+      metadata:
+        serverAddress: http://{{ include "arachne.fullname" . }}-api:{{ .Values.api.service.port }}
+        metricName: arachne_queue_depth
+        query: sum(arachne_queue_depth{status="queued"})
+        threshold: {{ .Values.autoscaling.queueDepthPerReplica | quote }}
+{{- end }}

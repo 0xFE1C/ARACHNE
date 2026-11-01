@@ -1,0 +1,62 @@
+# ARACHNE example target definition (F-01-01).
+#
+# Try it without touching anything:
+#
+#   arachne scan --target examples/targets/lab-fixture.yaml --dry-run
+#
+# The addresses below are documentation/test ranges (RFC 5737) and the domain is the
+# reserved documentation domain, so nothing here points at a system anyone operates.
+# Everything is declared, and the attestation says who authorized what and when
+# (F-08-05) — a live scan is refused without it.
+#
+# Note on the CIDR: Python's `ipaddress` classifies 192.0.2.0/24 as non-global
+# ("private"), so a *lab* run that actually contacts it needs the explicit opt-in
+# ARACHNE_ALLOW_PRIVATE_IPS=true. Scope and URL-safety policy are separate gates: scope
+# says "declared", the policy says "reachable". Passive-only planning needs neither.
+target:
+  name: lab-fixture
+  targets:
+    - kind: domain
+      value: example.com
+      note: apex plus subdomains
+    - kind: url
+      value: https://example.com/
+    - kind: cidr
+      value: 192.0.2.0/30
+      note: RFC 5737 TEST-NET-1, documentation range
+    - kind: git
+      value: https://github.com/example/arachne-lab.git
+    - kind: cloud
+      value: aws:123456789012
+  exclusions:
+    - kind: domain
+      value: admin.example.com
+      note: out of scope by agreement with the owner
+    - kind: cidr
+      value: 192.0.2.2/32
+  attestation:
+    attested_by: "Jane Operator <jane.operator@example.com>"
+    attested_at: "2026-10-01T00:00:00Z"
+    expires_at: "2027-10-01T00:00:00Z"
+    authorization_ref: "SEC-1234"
+    contact: "security@example.com"
+    scope_statement: >-
+      Written authorization from the owner of example.com (ticket SEC-1234) for
+      non-destructive checks against example.com and its subdomains, the RFC 5737
+      documentation range 192.0.2.0/30, the lab Git repository and the sandbox AWS
+      account, excluding admin.example.com. Active checks are not authorized.
+    allowed_targets:
+      - example.com
+      - 192.0.2.0/30
+      - https://github.com/example/arachne-lab.git
+      - aws:123456789012
+    active_checks_authorized: false
+
+options:
+  engine: heuristic
+  # Active checks stay off: the attestation above does not authorize them (F-01-09).
+  active_checks: false
+  modules:
+    enabled: []      # empty means "every module the catalogue knows"
+    disabled: []
+  notes: "Example fixture for `arachne scan --dry-run`."

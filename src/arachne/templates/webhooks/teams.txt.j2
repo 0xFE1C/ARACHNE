@@ -1,0 +1,14 @@
+{#- Microsoft Teams summary card (MessageCard) body text (F-06-06). -#}
+ARACHNE scan {{ scan_id }} completed for {{ target }} (engine {{ engine }}).
+
+Severity: {{ counts.critical }} critical · {{ counts.high }} high · {{ counts.medium }} medium · {{ counts.low }} low · {{ counts.info }} info — {{ total }} finding(s).
+At or above {{ threshold }}: {{ at_or_above | length }}.
+{% if top %}
+Top findings:
+{% for item in top -%}
+- [{{ item.severity | upper }}] {{ item.title }} — {{ item.asset }}
+{% endfor -%}
+{% else %}
+No confirmed findings.
+{% endif %}
+Full report: {{ report_url }}

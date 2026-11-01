@@ -1,0 +1,284 @@
+# M6 automation/AI-era/post-exploit corpus (S11, docs/spec/05- M6, F-09-04).
+#
+# Everything an M6 check matches is *data* here, so an operator can narrow or extend it
+# without touching code (F-09-04) and a reviewer can read in one place exactly what the
+# module looks at. The M6 safety contract (docs/spec/05- "M6 · Safety") governs every entry:
+#
+#   1. **File-read-only.** Nothing in M6 writes, drops, claims or executes anything. The
+#      webshell scan reads files and served content; it never uploads or evaluates a payload.
+#   2. **Log access is granted, not assumed.** The Sigma and deception checks read local
+#      logs/trigger files only when the deployment set the explicit log-access grant
+#      (``ARACHNE_M6_LOG_ACCESS`` / ``ARACHNE_M6_DECEPTION``); without it they ship the rule
+#      set and ingest nothing.
+#   3. **No post-exploitation action.** "Post-exploit signals" means *detecting the artifacts
+#      and behaviours*, never reproducing them (docs/spec/07- §8).
+#
+# The PHP2SHELL case study (docs/research/06- §Case studies (a)) is the reason the webshell
+# section is signature + behaviour rather than signature only: the first exploitation of an
+# embargoed RCE precedes CVE-specific signatures, so the heuristics (eval density, encoded
+# blocks, anomalous timestamps, oversized single lines) matter as much as the markers.
+
+version: "1.0"
+
+# --------------------------------------------------------------------------- webshell (ch06#24)
+webshell:
+  # File extensions the local-file half treats as web-served script.
+  script_extensions:
+    [".php", ".phtml", ".php3", ".php4", ".php5", ".php7", ".phps", ".inc",
+     ".jsp", ".jspx", ".jspf", ".asp", ".aspx", ".ashx", ".asmx", ".cgi", ".pl", ".py", ".sh"]
+  # Content markers that prove a served document is server-side script even without the
+  # extension (so a `.txt`-named shell is still scanned). Case-insensitive substrings.
+  script_markers:
+    ["<?php", "<?=", "<%@ page", "<% ", "eval(", "System.Web", "Request.Form",
+     "Response.Write", "Page Language"]
+  # Signature rules (research ch06#24: eval() with malformed payloads, c99/r57 markers,
+  # encoded strings). `pattern` is a case-insensitive regular expression; `severity` is a
+  # *hint* (the analyzer still scores — ADR-02).
+  signatures:
+    - id: php-eval-superglobal
+      severity: critical
+      pattern: 'eval\s*\(\s*\$_(?:POST|GET|REQUEST|COOKIE|SERVER|FILES)\b'
+      hint: "eval() applied to a request superglobal — the classic PHP webshell one-liner"
+    - id: php-assert-superglobal
+      severity: critical
+      pattern: 'assert\s*\(\s*\$_(?:POST|GET|REQUEST)\b'
+      hint: "assert() applied to a request superglobal"
+    - id: php-system-exec-superglobal
+      severity: critical
+      pattern: '(?:system|passthru|shell_exec|popen|proc_open|exec)\s*\(\s*\$_(?:POST|GET|REQUEST)'
+      hint: "command execution over a request superglobal"
+    - id: php-encoded-eval
+      severity: critical
+      pattern: 'eval\s*\(\s*(?:base64_decode|gzinflate|gzuncompress|str_rot13|urldecode)\s*\('
+      hint: "eval() over a decoding function — obfuscated payload execution"
+    - id: php-preg-e-modifier
+      severity: high
+      pattern: 'preg_replace\s*\(\s*[^)]*\/[a-z]*e[a-z]*[\s\x27"]'
+      hint: "preg_replace with the /e modifier executes the replacement as PHP"
+    - id: php-create-function
+      severity: high
+      pattern: 'create_function\s*\(\s*[\x27"][^\x27"]*[\x27"]\s*,'
+      hint: "create_function() builds executable PHP at runtime"
+    - id: asp-eval-request
+      severity: critical
+      pattern: 'eval\s*\(\s*Request(?:\.(?:Form|QueryString|Item|ServerVariables))?'
+      hint: "ASP/ASPX eval over a request collection"
+    - id: jsp-runtime-exec
+      severity: critical
+      pattern: 'Runtime\.getRuntime\(\)\s*\.\s*exec\s*\('
+      hint: "JSP Runtime.exec — command execution from a page"
+    - id: php-uploader-shell
+      severity: high
+      pattern: 'move_uploaded_file\s*\(\s*\$_FILES'
+      hint: "file upload handling that writes an attacker-named file"
+
+  # Known shell family markers (research ch06#24: c99/r57 shell markers). Substring, ci.
+  shell_markers:
+    ["c99shell", "c99.php", "r57shell", "r57.php", "b374k", "wso shell", "wso.php",
+     "FilesMan", "IndoXploit", "KaMtiEz", "ALFA TEAM", "ZeonShell", "priv8 shell",
+     "php backdoor", "Symlink Shell", "g00nshell", "Loaderz", "Mini Shell", "P.A.S.",
+     "w4ck1ng", "angel_shell", "Sadrazam", "WebShell by oRb"]
+
+  # Behavioural heuristics (the PHP2SHELL lesson: signature-independent signals). Each is a
+  # named, thresholded check so a finding can cite the exact one that fired.
+  heuristics:
+    # A single line far longer than a readable source line — the shape of a packed payload.
+    max_line_length: 800
+    # Fraction of the file that is longest-line + encoded blocks before "packed" is called.
+    packed_ratio: 0.4
+    # Minimum length of a base64/hex run that counts as an "encoded block".
+    min_encoded_block: 200
+    # Shannon entropy (bits/char) above which a block looks encrypted/compressed.
+    entropy_threshold: 4.5
+    # eval/assert/preg_replace-e call sites above which the file is "eval-heavy".
+    eval_density: 3
+    # mtime newer than the sibling median by more than this many seconds is anomalous.
+    timestamp_skew_s: 604800
+    # mtime further in the future than this is anomalous (clock-independent dropper tell).
+    future_skew_s: 86400
+  # A served path (with a script extension) is also fetched if it appears in the crawl; these
+  # bounded candidates are probed on top when the crawl did not already surface them.
+  served_paths_wordlist: "wordlists/served-shell-paths.txt"
+
+# --------------------------------------------------------------------------- GenAI surface (ch06#14-15)
+genai:
+  # Paths that name a model/LLM API. A served 200 on one of these with a JSON body is the
+  # "exposed LLM endpoint" signal; a URL is *reported*, never called with a payload.
+  endpoint_paths:
+    ["/v1/chat/completions", "/v1/completions", "/v1/embeddings", "/v1/models",
+     "/api/generate", "/api/chat", "/api/tags", "/api/show", "/api/embed",
+     "/generate", "/chat/completions", "/completions", "/v1/messages",
+     "/api/v1/generate", "/invoke", "/predict", "/v1/predict", "/query", "/rag/query"]
+  # Hostnames that identify a hosted model provider (client-side calls to these are expected;
+  # a *server* that proxies them is worth noting).
+  provider_hosts:
+    ["api.openai.com", "api.anthropic.com", "generativelanguage.googleapis.com",
+     "api.mistral.ai", "api.cohere.ai", "api.together.xyz", "api.groq.com",
+     "openrouter.ai", "huggingface.co", "api-inference.huggingface.co"]
+  # Client-side key detectors (masked at capture by the HTTP client's detectors; these are the
+  # *names* a page's secret_kinds already carries, plus server-side patterns found in served
+  # content). Match is a case-sensitive regular expression.
+  key_patterns:
+    - {kind: openai-api-key, pattern: 'sk-[A-Za-z0-9]{20,}'}
+    - {kind: anthropic-api-key, pattern: 'sk-ant-[A-Za-z0-9\-_]{20,}'}
+    - {kind: huggingface-token, pattern: 'hf_[A-Za-z0-9]{20,}'}
+    - {kind: google-api-key, pattern: 'AIza[0-9A-Za-z\-_]{30,}'}
+    - {kind: cohere-api-key, pattern: 'cohere_[A-Za-z0-9]{20,}'}
+  # Client-side markers that a page drives an LLM (so a target with one is a GenAI surface).
+  client_markers:
+    ["openai", "chatgpt", "gpt-4", "gpt-3.5", "claude", "gemini", "llama", "mistral",
+     "ollama", "langchain", "llamaindex", "cohere", "huggingface", "vllm", "text-generation"]
+  # Agent/assistant configuration documents: a repo that ships one is an "agent config"
+  # finding (ch06#15: agent memory/instruction poisoning surface). Globs are matched against
+  # a file's path relative to the repo root and its basename.
+  agent_config_globs:
+    ["mcp.json", ".mcp.json", "claude_desktop_config.json", "AGENTS.md", "CLAUDE.md",
+     ".cursor/mcp.json", "*.agent.yaml", "*.agent.yml", "agent.yaml", "agent.yml",
+     "plugins/*.json", "assistants/*.json", "system-prompt*.txt", "system_prompt*.txt"]
+  # Markers inside an agent config that indicate the agent may call tools / hold secrets.
+  agent_risk_markers:
+    ["command", "args", "env", "apikey", "api_key", "token", "authorization",
+     "allow_origins", "autoApprove", "alwaysAllow", "dangerously", "shell", "fs.write"]
+  # Prompt-injection hygiene markers: an exposed system prompt or a documented injection
+  # surface (a served page that echoes an "instructions" field).
+  prompt_surface_markers:
+    ["system prompt", "system_prompt", "you are a helpful", "ignore previous instructions",
+     "ignore all previous", "instruction:", "### system", "<|system|>"]
+
+# --------------------------------------------------------------------------- secrets (ch06#8)
+secrets:
+  # gitleaks-class detectors: a named credential regex. Match groups are masked before any
+  # evidence is written (the HTTP client does the same for captured bodies).
+  detectors:
+    - {kind: aws-access-key-id, pattern: 'AKIA[0-9A-Z]{16}'}
+    - {kind: aws-secret-access-key, pattern: '(?i)aws[_\- ]?secret[_\- ]?(?:access[_\- ]?)?key[\x27"]?\s*[:=]\s*[\x27"]?([A-Za-z0-9/+=]{40})'}
+    - {kind: github-token, pattern: 'gh[pousr]_[A-Za-z0-9]{36,}'}
+    - {kind: github-pat-fine-grained, pattern: 'github_pat_[A-Za-z0-9_]{22,}'}
+    - {kind: gitlab-token, pattern: 'glpat-[A-Za-z0-9\-_]{20,}'}
+    - {kind: slack-token, pattern: 'xox[baprs]-[A-Za-z0-9\-]{10,}'}
+    - {kind: slack-webhook, pattern: 'hooks\.slack\.com/services/T[A-Za-z0-9_]+/B[A-Za-z0-9_]+/[A-Za-z0-9_]+'}
+    - {kind: stripe-key, pattern: '(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{20,}'}
+    - {kind: twilio-key, pattern: 'SK[0-9a-fA-F]{32}'}
+    - {kind: sendgrid-key, pattern: 'SG\.[A-Za-z0-9\-_]{16,}\.[A-Za-z0-9\-_]{16,}'}
+    - {kind: google-api-key, pattern: 'AIza[0-9A-Za-z\-_]{30,}'}
+    - {kind: gcp-service-account, pattern: '"type"\s*:\s*"service_account"'}
+    - {kind: azure-client-secret, pattern: '(?i)azure[_\- ]?client[_\- ]?secret[\x27"]?\s*[:=]\s*[\x27"]?([A-Za-z0-9~._\-]{20,})'}
+    - {kind: private-key, pattern: '-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----'}
+    - {kind: jwt, pattern: 'eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}'}
+    - {kind: db-connection-string, pattern: '(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqp)://[^\s:@/]+:[^\s:@/]+@'}
+    - {kind: generic-password, pattern: '(?i)(?:password|passwd|pwd)[\x27"]?\s*[:=]\s*[\x27"]([^\x27"\s]{8,})[\x27"]'}
+    - {kind: generic-api-key, pattern: '(?i)(?:api[_\- ]?key|apikey|secret[_\- ]?key)[\x27"]?\s*[:=]\s*[\x27"]([A-Za-z0-9\-_./+=]{16,})[\x27"]'}
+  # Files inside a repository that name history or configuration worth reading even when the
+  # working tree is clean (git keeps reflogs/refs in plain text).
+  history_files:
+    [".git/logs/HEAD", ".git/logs/refs/heads/master", ".git/logs/refs/heads/main",
+     ".git/config", ".git/ORIG_HEAD", ".git/packed-refs", ".git/FETCH_HEAD"]
+  # Working-tree files to skip (vendored/minified noise that must not drown a real secret).
+  skip_globs: ["*.min.js", "*.map", "*.lock", "package-lock.json", "yarn.lock", "*.svg"]
+
+# --------------------------------------------------------------------------- CI logs (ch06#23)
+ci:
+  # Where CI logs/artifacts are read from: paths are relative to a repo/file target and are
+  # matched by glob. `.ci-logs` is an ARACHNE convention for "an exported CI log directory".
+  log_globs:
+    [".ci-logs/*", ".github/logs/*", "ci/logs/*", "**/*build*.log", "**/*ci*.log",
+     "**/job-*.log", "**/*.artifact.txt"]
+  # CI-specific leakage markers: a token dumped by a workflow, an unmasked secret, a debug
+  # echo of an environment variable.
+  markers:
+    ["::add-mask::", "::set-output name=", "GITHUB_TOKEN", "CI_JOB_TOKEN", "ACTIONS_RUNTIME_TOKEN",
+     "npm_config_//registry", "echo $", "env:", "printenv", "set -x", "ACTIONS_STEP_DEBUG",
+     "***", "TOKEN=", "PASSWORD=", "SECRET="]
+
+# --------------------------------------------------------------------------- Sigma hunting (ch06#23)
+sigma:
+  # Directory (relative to the M6 corpus) holding the shipped Sigma rules; each file is one
+  # rule in the standard Sigma YAML shape. The rules are *data* an operator can replace.
+  rules_dir: "sigma"
+  # Extensions of local log files the optional ingest path reads (JSON-lines event records).
+  log_globs: ["*.jsonl", "*.ndjson", "*.json", "*.log"]
+  # Timestamp fields probed, in order, when bucketing events (ISO-8601 or epoch seconds).
+  time_fields: ["@timestamp", "timestamp", "TimeCreated", "time", "ts", "event_time"]
+
+# --------------------------------------------------------------------------- local privesc (ch06#16)
+lpe:
+  # The offline LPE index (linux-exploit-suggester-class). Kept in its own file so refreshing
+  # it is a data update, not a code change (docs/spec/07- §4).
+  index: "lpe-index.yaml"
+  # Product names a service fingerprint may use for the Linux kernel.
+  kernel_products: ["linux-kernel", "linux kernel", "kernel", "linux"]
+
+# --------------------------------------------------------------------------- AD paths (ch06#19)
+ad:
+  # Edge kinds a BloodHound-style export may carry that move an attacker toward Domain Admin.
+  escalation_edges:
+    ["MemberOf", "AdminTo", "HasSession", "ForceChangePassword", "GenericAll",
+     "GenericWrite", "WriteDacl", "WriteOwner", "AddMember", "AllowedToDelegate",
+     "AllowedToAct", "DCSync", "GetChanges", "GetChangesAll", "Owns", "Contains"]
+  # Node labels that identify the goal of a path analysis.
+  domain_admin_labels: ["Domain Admins", "Enterprise Admins", "Administrators", "DomainAdmin"]
+
+# --------------------------------------------------------------------------- deception (ch06#25)
+deception:
+  # Honeytoken trigger records are read from a local trigger log when the deception switch is
+  # on; the check reports each distinct token that fired. Field names it accepts.
+  token_fields: ["token", "honeytoken", "name", "id"]
+  source_fields: ["source", "src", "remote", "actor", "user"]
+  time_fields: ["ts", "time", "timestamp", "@timestamp"]
+
+# --------------------------------------------------------------------------- matcher templates (ch06#3)
+templates:
+  # A strictly-a-matcher corpus (research ch06#3): one path list and body markers per
+  # template. There is no templating engine and no code execution here — a template flags
+  # only when a response carries its markers (`match: all` requires every marker, `match: any`
+  # requires one) and its status matches. Every request is a plain GET.
+  - id: exposed-env-file
+    severity: high
+    path: ["/.env", "/.env.local", "/.env.production"]
+    status: [200]
+    markers: ["db_password", "aws_access_key_id", "app_key="]
+    match: any
+    hint: "A dotenv file is served as static content"
+    reference: "https://cwe.mitre.org/data/definitions/200.html"
+  - id: exposed-git-config
+    severity: high
+    path: ["/.git/config", "/.git/HEAD"]
+    status: [200]
+    markers: ["[core]", "ref: refs/"]
+    match: any
+    hint: "Version-control metadata is served over HTTP"
+    reference: "https://cwe.mitre.org/data/definitions/538.html"
+  - id: phpinfo-disclosure
+    severity: medium
+    path: ["/phpinfo.php", "/info.php", "/test.php"]
+    status: [200]
+    markers: ["phpinfo()"]
+    match: all
+    hint: "A phpinfo() page is reachable"
+    reference: "https://cwe.mitre.org/data/definitions/489.html"
+  - id: exposed-db-backup
+    severity: high
+    path: ["/backup/db.sql", "/index.php.bak", "/db.sql"]
+    status: [200]
+    markers: ["mysql dump", "insert into"]
+    match: any
+    hint: "A database dump or source backup is served"
+    reference: "https://cwe.mitre.org/data/definitions/530.html"
+
+# --------------------------------------------------------------------------- credential surfaces (ch06#17)
+credential_surfaces:
+  # Reachable configuration surfaces a credential hunt reads: the crawled pages/inventory the
+  # step already has, plus this bounded path probe. Detectors live in `secrets.detectors`
+  # above; only the detector *name* and a masked fingerprint ever reach evidence.
+  paths:
+    ["/.env", "/web.config", "/appsettings.json", "/docker-compose.yml",
+     "/application.properties", "/.bashrc", "/.aws/credentials", "/backup/db.sql"]
+  # Markers that confirm a response is a configuration/credential surface worth scanning.
+  markers: ["password=", "secret_key", "api_key", "connectionstring", "private key",
+            "appsettings", "docker-compose", "aws_access_key_id"]
+
+# --------------------------------------------------------------------------- exploit index (ch06#5)
+exploit:
+  # The offline ExploitDB-style N-day index (managed data): product/version ranges mapped to a
+  # public exploit/PoC reference. Matching only — nothing is exploited.
+  index: "exploit-index.yaml"

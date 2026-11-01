@@ -1,0 +1,32 @@
+id: exposed-git-config
+info:
+  name: Exposed Git configuration and HEAD
+  author: arachne
+  severity: high
+  description: >-
+    Version-control metadata is served over HTTP. `/.git/config` confirms the directory is
+    readable and names the repository; `/.git/HEAD` confirms the object store can be walked,
+    which reconstructs the source tree including deleted files (research ch. 04, method 2).
+  tags: [exposure, git, source]
+  reference:
+    - https://cwe.mitre.org/data/definitions/538.html
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.git/config"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        part: body
+        words:
+          - "[core]"
+    extractors:
+      - type: regex
+        name: repository
+        part: body
+        group: 1
+        regex:
+          - 'url\s*=\s*(.+)'

@@ -1,0 +1,19 @@
+{
+  "assets": [
+    {
+      "host": "web01",
+      "product": "nginx",
+      "version": "1.18.0"
+    },
+    {
+      "host": "db01",
+      "product": "policykit",
+      "version": "0.105"
+    },
+    {
+      "host": "app01",
+      "product": "linux-kernel",
+      "version": "5.10.0"
+    }
+  ]
+}

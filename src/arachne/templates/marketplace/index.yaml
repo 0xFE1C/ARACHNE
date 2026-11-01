@@ -1,0 +1,47 @@
+# ARACHNE plugin marketplace index (F-09-01, roadmap Phase 5).
+#
+# This file is the *listing mechanism*: a versioned catalogue an operator can read with
+# `arachne plugin marketplace`, over the API (`GET /api/v1/plugins/marketplace`) and in the
+# web UI. It is data, not a service — a deployment can point ARACHNE_MARKETPLACE at its own
+# index (`arachne plugin marketplace --index <path>`) and air-gap the whole workflow.
+#
+# Schema (one entry per plugin):
+#   name            required, unique, kebab-case
+#   kind            check | report-format | provider | module
+#   description     one line, operator-facing
+#   version         the version the catalogue entry advertises
+#   source          a local path (relative to the project root) or a git URL:
+#                   https://...git | git+https://... | git+ssh://... | git+file://...
+#   entry_point_group  arachne.modules (checks) or arachne.report_formats (formats)
+#   homepage        optional documentation URL
+#   tags            optional list for search
+#   verified        whether the ARACHNE maintainers reviewed this entry
+#
+# Both entries below are real packages in this repository, so `arachne plugin install`
+# against them works offline — which is what makes the marketplace demonstrable without a
+# network. Add your own entries the same way; nothing in the scanner changes.
+version: "1.0"
+updated: "2026-10-29"
+plugins:
+  - name: arachne-example-check-plugin
+    kind: check
+    description: >-
+      Worked example of a third-party check: an M4 debug/version-banner probe. Ships the
+      Module, its ModuleGroup and the arachne.modules entry point.
+    version: "0.1.0"
+    source: examples/plugins/arachne_example_plugin
+    entry_point_group: arachne.modules
+    homepage: https://localhost/arachne/spec
+    tags: [example, checks, m4]
+    verified: true
+  - name: arachne-example-report-plugin
+    kind: report-format
+    description: >-
+      Worked example of a third-party report format: a CSV export of the finding table,
+      registered through the arachne.report_formats entry point.
+    version: "0.1.0"
+    source: examples/plugins/arachne_example_report_plugin
+    entry_point_group: arachne.report_formats
+    homepage: https://localhost/arachne/spec
+    tags: [example, reports, csv]
+    verified: true

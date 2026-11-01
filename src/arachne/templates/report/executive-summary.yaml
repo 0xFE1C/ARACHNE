@@ -1,0 +1,66 @@
+# Executive-summary narrative templates (docs/spec/06- §3 section 2, docs/spec/04- §2.5).
+#
+# The executive summary is written by the configured engine and labelled with its
+# provenance. In heuristic mode that engine is this template corpus: a deterministic
+# synthesis over the report's counts, headline findings and priority order. The AI engine
+# (S9) will render the same section through its prompts; the *shape* — 3-6 paragraphs plus
+# the counts table — stays identical so the report cannot tell which engine wrote it.
+#
+# A paragraph is rendered only when every `{path}` reference resolves; a report with no
+# critical findings therefore reads differently from one with them, without a sentence that
+# lies about the weaker case. Supported paths are documented in
+# `arachne/report/summary.py` (the namespace it builds).
+#
+# Managed data (F-09-04): point ARACHNE_REPORT_SUMMARY at a file to replace it.
+
+version: "1.0"
+
+paragraphs:
+  - id: intro
+    text: >-
+      ARACHNE scanned {asset.count} asset(s) — {host.count} host(s), {url.count} URL(s) —
+      across {modules.list} over {duration.human}. Overall posture: {posture}.
+
+  - id: findings
+    when: has_findings
+    text: >-
+      The scan confirmed {findings.count} finding(s): {counts.summary}. The most serious
+      is {headline.first} (severity {headline.first.severity}, confidence
+      {headline.first.confidence}/100).
+
+  - id: clean
+    when: no_findings
+    text: >-
+      No confirmed findings were recorded. That is a statement about the checks this build
+      ran and the scope it was authorized for, not a guarantee that the target is free of
+      vulnerabilities.
+
+  - id: headline
+    when: has_headlines
+    text: >-
+      Headline findings, in priority order: {headline.list}.
+
+  - id: priority
+    when: has_priority
+    text: >-
+      Recommended priority order: {priority.list} Each finding in section 4 onward carries
+      its own numbered remediation and a verification-of-fix step.
+
+  - id: low-confidence
+    when: has_low_confidence
+    text: >-
+      A further {low_confidence.count} observation(s) fall below the {threshold}
+      confidence threshold and are reported separately in section 9. They are not confirmed
+      findings and should be triaged before they are acted on.
+
+  - id: trend
+    when: has_trend
+    text: >-
+      Compared with scan {trend.compared_scan}: {trend.new} new, {trend.fixed} fixed,
+      {trend.regressed} regressed and {trend.recurring} recurring finding(s).
+
+  - id: method
+    text: >-
+      Analysis was performed by the {engine} engine using template corpus
+      {template.version}; every finding cites the evidence that produced it and the rule
+      (or signature) that decided it.

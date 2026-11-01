@@ -1,0 +1,27 @@
+id: openssh-version-banner
+info:
+  name: OpenSSH version banner
+  author: arachne
+  severity: info
+  description: >-
+    The SSH service identified its exact build in the protocol banner. The version is what the
+    CVE correlation keys on (research ch. 02, methods 9-10, 24).
+  tags: [banner, ssh, fingerprint]
+
+# The native ARACHNE signature format: the same matchers and extractors as a nuclei template,
+# but over a non-HTTP subject — here the banner inside a service-fingerprint evidence payload
+# (docs/spec/04- §2.2 "native ARACHNE signature format for non-HTTP checks").
+subject: note
+field: service.identity.banner
+matchers:
+  - type: regex
+    part: body
+    regex:
+      - "SSH-2\\.0-OpenSSH_"
+extractors:
+  - type: regex
+    name: version
+    part: body
+    group: 1
+    regex:
+      - "OpenSSH_([0-9][0-9a-zA-Z.]*)"

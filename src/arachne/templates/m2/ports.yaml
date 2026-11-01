@@ -1,0 +1,172 @@
+# ARACHNE M2 port catalogue — managed data, not code (docs/spec/07- §4).
+#
+# Two consumers read this file:
+#   * `m2.port-scan` uses `tcp` (frequency order) as its **default top-ports policy** and
+#     `udp` as the curated UDP set it uses when UDP probing is opted in (F-01-09). The
+#     order is the rank: `ARACHNE_NET_MAX_PORTS` truncates the list, so the default scan is
+#     "the N most likely TCP ports", exactly like `nmap --top-ports N`.
+#   * `m2.service-fingerprint` uses `probe` as the *hint* for how to identify a service on
+#     an open port. A hint is only a priority: the fingerprinter falls back to its generic
+#     probe suite when the hinted protocol does not answer, which is what lets it identify
+#     Redis on 56379 or SSH on 2222 as readily as on the canonical port.
+#
+# `service` is a neutral protocol name (used in evidence and in the CVE correlation key);
+# it is deliberately not a product name — products come from banners, not from port numbers.
+catalog_version: "1.0"
+source: >-
+  Nmap-services frequency head (research ch02#7 "top-ports vs full range") plus the
+  protocol-interest ports the M2 checks can identify (datastores, directory services,
+  remote desktop, ICS). Port numbers are hints; the fingerprinter confirms every one.
+tcp:
+  - {port: 80, service: http, probe: http}
+  - {port: 23, service: telnet, probe: telnet}
+  - {port: 443, service: https, probe: tls}
+  - {port: 21, service: ftp, probe: ftp}
+  - {port: 22, service: ssh, probe: ssh}
+  - {port: 25, service: smtp, probe: smtp}
+  - {port: 3389, service: rdp, probe: rdp}
+  - {port: 110, service: pop3, probe: pop3}
+  - {port: 445, service: smb, probe: smb}
+  - {port: 139, service: netbios-ssn, probe: smb}
+  - {port: 143, service: imap, probe: imap}
+  - {port: 53, service: dns, probe: dns}
+  - {port: 135, service: msrpc, probe: unknown}
+  - {port: 3306, service: mysql, probe: mysql}
+  - {port: 8080, service: http-alt, probe: http}
+  - {port: 1723, service: pptp, probe: unknown}
+  - {port: 111, service: rpcbind, probe: rpcbind}
+  - {port: 995, service: pop3s, probe: tls}
+  - {port: 993, service: imaps, probe: tls}
+  - {port: 5900, service: vnc, probe: vnc}
+  - {port: 1025, service: unknown, probe: unknown}
+  - {port: 587, service: submission, probe: smtp}
+  - {port: 8888, service: http-alt, probe: http}
+  - {port: 199, service: snmp-tcp, probe: unknown}
+  - {port: 1720, service: h323q931, probe: unknown}
+  - {port: 465, service: smtps, probe: tls}
+  - {port: 548, service: afp, probe: unknown}
+  - {port: 113, service: ident, probe: unknown}
+  - {port: 81, service: http-alt, probe: http}
+  - {port: 6001, service: unknown, probe: unknown}
+  - {port: 10000, service: webmin, probe: http}
+  - {port: 514, service: shell, probe: unknown}
+  - {port: 5060, service: sip, probe: unknown}
+  - {port: 179, service: bgp, probe: unknown}
+  - {port: 1026, service: unknown, probe: unknown}
+  - {port: 2000, service: cisco-sccp, probe: unknown}
+  - {port: 8443, service: https-alt, probe: tls}
+  - {port: 8000, service: http-alt, probe: http}
+  - {port: 32768, service: unknown, probe: unknown}
+  - {port: 554, service: rtsp, probe: http}
+  - {port: 26, service: smtp, probe: smtp}
+  - {port: 1433, service: mssql, probe: mssql}
+  - {port: 49152, service: unknown, probe: unknown}
+  - {port: 2001, service: unknown, probe: unknown}
+  - {port: 515, service: printer, probe: unknown}
+  - {port: 8008, service: http-alt, probe: http}
+  - {port: 49154, service: unknown, probe: unknown}
+  - {port: 1027, service: unknown, probe: unknown}
+  - {port: 5666, service: nrpe, probe: unknown}
+  - {port: 646, service: ldp, probe: unknown}
+  - {port: 5000, service: upnp, probe: http}
+  - {port: 5631, service: pcanywheredata, probe: unknown}
+  - {port: 631, service: ipp, probe: http}
+  - {port: 49153, service: unknown, probe: unknown}
+  - {port: 8081, service: http-alt, probe: http}
+  - {port: 2049, service: nfs, probe: rpcbind}
+  - {port: 88, service: kerberos, probe: kerberos}
+  - {port: 79, service: finger, probe: unknown}
+  - {port: 5800, service: vnc-http, probe: vnc}
+  - {port: 2222, service: ssh-alt, probe: ssh}
+  - {port: 8082, service: http-alt, probe: http}
+  - {port: 2002, service: unknown, probe: unknown}
+  - {port: 7000, service: afs3-fileserver, probe: unknown}
+  - {port: 8083, service: http-alt, probe: http}
+  - {port: 6969, service: acmsoda, probe: unknown}
+  - {port: 5001, service: commplex-link, probe: unknown}
+  - {port: 9000, service: cslistener, probe: unknown}
+  - {port: 3283, service: net-assistant, probe: unknown}
+  - {port: 5002, service: rfe, probe: unknown}
+  - {port: 1718, service: h225gatedisc, probe: unknown}
+  - {port: 5225, service: hp-server, probe: unknown}
+  - {port: 49155, service: unknown, probe: unknown}
+  - {port: 6000, service: x11, probe: unknown}
+  - {port: 5801, service: vnc-http, probe: vnc}
+  - {port: 8085, service: http-alt, probe: http}
+  - {port: 1721, service: unknown, probe: unknown}
+  - {port: 9100, service: jetdirect, probe: unknown}
+  - {port: 5003, service: filemaker, probe: unknown}
+  - {port: 512, service: exec, probe: unknown}
+  - {port: 4001, service: newoak, probe: unknown}
+  - {port: 5226, service: hp-server, probe: unknown}
+  - {port: 3327, service: unknown, probe: unknown}
+  - {port: 8889, service: ddi-tcp-2, probe: http}
+  - {port: 49156, service: unknown, probe: unknown}
+  - {port: 1110, service: nfsd-status, probe: unknown}
+  - {port: 1900, service: upnp, probe: unknown}
+  - {port: 5004, service: rtsp, probe: unknown}
+  - {port: 5432, service: postgresql, probe: postgres}
+  - {port: 6002, service: x11, probe: unknown}
+  - {port: 6010, service: x11, probe: unknown}
+  - {port: 2003, service: unknown, probe: unknown}
+  - {port: 7001, service: afs3-callback, probe: unknown}
+  - {port: 49157, service: unknown, probe: unknown}
+  - {port: 2755, service: unknown, probe: unknown}
+  - {port: 5802, service: vnc-http, probe: vnc}
+  - {port: 5200, service: targus-getdata, probe: unknown}
+  - {port: 6003, service: x11, probe: unknown}
+  - {port: 1234, service: hotline, probe: unknown}
+  - {port: 2004, service: unknown, probe: unknown}
+  # ---- protocol-interest ports (M2's own service vocabulary, research ch02#15-28)
+  - {port: 2375, service: docker, probe: http}
+  - {port: 2376, service: docker-tls, probe: tls}
+  - {port: 3000, service: http-alt, probe: http}
+  - {port: 3128, service: squid-proxy, probe: http}
+  - {port: 389, service: ldap, probe: ldap}
+  - {port: 636, service: ldaps, probe: tls}
+  - {port: 873, service: rsync, probe: unknown}
+  - {port: 990, service: ftps, probe: tls}
+  - {port: 1099, service: rmi-registry, probe: unknown}
+  - {port: 1521, service: oracle, probe: unknown}
+  - {port: 2381, service: compaq-https, probe: tls}
+  - {port: 3260, service: iscsi, probe: unknown}
+  - {port: 4443, service: https-alt, probe: tls}
+  - {port: 4786, service: smart-install, probe: unknown}
+  - {port: 4840, service: opcua, probe: unknown}
+  - {port: 502, service: modbus, probe: modbus}
+  - {port: 102, service: iso-tsap, probe: s7}
+  - {port: 50051, service: grpc, probe: grpc}
+  - {port: 5555, service: adb, probe: unknown}
+  - {port: 5601, service: kibana, probe: http}
+  - {port: 5901, service: vnc, probe: vnc}
+  - {port: 5902, service: vnc, probe: vnc}
+  - {port: 5903, service: vnc, probe: vnc}
+  - {port: 5984, service: couchdb, probe: http}
+  - {port: 6379, service: redis, probe: redis}
+  - {port: 6443, service: kubernetes-api, probe: tls}
+  - {port: 8009, service: ajp13, probe: unknown}
+  - {port: 8086, service: influxdb, probe: http}
+  - {port: 9090, service: http-alt, probe: http}
+  - {port: 9200, service: elasticsearch, probe: http}
+  - {port: 9300, service: elasticsearch-transport, probe: unknown}
+  - {port: 9443, service: https-alt, probe: tls}
+  - {port: 10250, service: kubelet, probe: tls}
+  - {port: 11211, service: memcached, probe: memcached}
+  - {port: 15672, service: rabbitmq-management, probe: http}
+  - {port: 20000, service: dnp3, probe: dnp3}
+  - {port: 27017, service: mongodb, probe: mongodb}
+  - {port: 27018, service: mongodb, probe: mongodb}
+  - {port: 50070, service: hdfs-namenode, probe: http}
+udp:
+  # Curated high-value UDP set (research ch02#6): probed only when `ARACHNE_NET_ALLOW_UDP`
+  # is set *and* the UDP check itself was opted into (F-01-09).
+  - {port: 53, service: dns, probe: dns}
+  - {port: 123, service: ntp, probe: ntp}
+  - {port: 161, service: snmp, probe: snmp}
+  - {port: 500, service: isakmp, probe: unknown}
+  - {port: 623, service: ipmi, probe: unknown}
+  - {port: 1900, service: ssdp, probe: ssdp}
+  - {port: 5353, service: mdns, probe: ssdp}
+  - {port: 47808, service: bacnet, probe: bacnet}
+  - {port: 137, service: netbios-ns, probe: unknown}
+  - {port: 69, service: tftp, probe: unknown}

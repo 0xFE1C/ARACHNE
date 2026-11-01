@@ -1,0 +1,20 @@
+# The misconfigured Kubernetes manifest: trips the structured policy rules the admission
+# webhook enforces (privileged, hostNetwork, unpinned image, service-account token).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-api
+  namespace: prod
+spec:
+  template:
+    spec:
+      hostNetwork: true
+      automountServiceAccountToken: true
+      containers:
+        - name: api
+          image: registry.internal/payments-api:latest
+          securityContext:
+            privileged: true
+            allowPrivilegeEscalation: true
+            capabilities:
+              add: ["SYS_ADMIN"]

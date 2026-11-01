@@ -1,0 +1,66 @@
+# Production overlay: read credentials from Docker secrets instead of the environment
+# (F-07-04, F-08-01). Use it with the base file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Create the secret files first (they are git-ignored):
+#
+#   mkdir -p secrets
+#   printf '%s' "$(openssl rand -hex 24)" > secrets/postgres_password.txt
+#   printf 'ops-admin:admin:%s\nops-viewer:viewer:%s\n' \
+#     "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > secrets/api_keys.txt
+#
+# The example files in `docker/secrets/` document the formats; copy them, never commit the
+# real ones.
+#
+# Every ARACHNE process gets the password through ARACHNE_DATABASE_PASSWORD_FILE, which the
+# settings layer reads and injects into the URL (never through the environment).
+
+name: arachne
+
+x-prod-db-env: &prod-db-env
+  ARACHNE_DATABASE_URL: postgresql+psycopg://arachne@db:5432/arachne
+  ARACHNE_DATABASE_PASSWORD_FILE: /run/secrets/postgres_password
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password.txt
+  api_keys:
+    file: ./secrets/api_keys.txt
+
+services:
+  db:
+    environment:
+      # `*_FILE` is how the official Postgres image reads a secret value.
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+
+  migrate:
+    environment: *prod-db-env
+    secrets:
+      - postgres_password
+
+  scan:
+    environment: *prod-db-env
+    secrets:
+      - postgres_password
+
+  api:
+    environment:
+      <<: *prod-db-env
+      # The key list comes from the secret file; the inline demo keys are overridden.
+      ARACHNE_API_KEYS: ""
+      ARACHNE_API_KEYS_FILE: /run/secrets/api_keys
+      ARACHNE_API_REQUIRE_TLS: "true"
+      # Terminate TLS in front of the API and bind it behind the proxy, or set
+      # ARACHNE_API_TLS_CERT/_KEY to serve TLS directly.
+      ARACHNE_API_HOST: 127.0.0.1
+    secrets:
+      - api_keys
+      - postgres_password
+
+  worker:
+    environment: *prod-db-env
+    secrets:
+      - postgres_password

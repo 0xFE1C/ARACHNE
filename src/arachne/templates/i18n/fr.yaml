@@ -1,0 +1,77 @@
+# French (fr) translation catalogue — the second report language (S26, REQ-ECOS-005).
+#
+# A sibling of `en.yaml` with the same key set. `tests/unit/test_i18n.py` fails the build
+# when the two diverge, so a key added to one must be added to the other — a missing French
+# key would otherwise fall back to English silently, which reads as a half-translated report
+# rather than a caught defect.
+#
+# Security vocabulary is translated with care: "remédiation" (remediation), "sévérité"
+# (severity), "constat" (finding) and "périmètre" (scope) are the terms a French-speaking
+# security team uses, not literal calques. Identifiers, check ids, CWE/CVE/CVSS values and
+# asset names are never translated — they are data.
+#
+# Select it per report: `arachne report <scan> --locale fr`, `?locale=fr` on the API, or a
+# project default (`arachne project locale <slug> fr`). The deployment default is
+# `ARACHNE_REPORT_LOCALE`.
+
+version: "1.0"
+locale: fr
+
+strings:
+  # ---- numbered sections -------------------------------------------------------------
+  report.section.executive_summary: "Synthèse pour la direction"
+  report.section.scope: "Périmètre & méthodologie"
+  report.section.assets: "Inventaire des actifs"
+  report.section.findings: "Constats"
+  report.section.attack_paths: "Chemins d'attaque"
+  report.section.low_confidence: "Observations à faible confiance"
+  report.section.patch_gap: "Écart de correctifs & exposition (M6)"
+  report.section.appendix: "Annexe"
+  # S28 : l'annexe « et si ? » (zone SIM, REQ-SIM-004).
+  report.section.simulation: "Scénarios simulés (et si ?)"
+  report.simulation.disclosure: "Simulé — rien ici n'a été observé sur une cible"
+  report.simulation.hypotheses: "États hypothétiques injectés"
+  report.simulation.refusals: "Hypothèses non applicables"
+  report.simulation.paths: "Chemins résultants"
+  report.simulation.change: "Changement proposé"
+
+  # ---- appendix sub-sections ---------------------------------------------------------
+  report.appendix.evidence: "Éléments de preuve (expurgés)"
+  report.appendix.audit: "Résumé du journal d'audit"
+  report.appendix.out_of_scope: "Événements hors périmètre"
+  report.appendix.false_positives: "Faux positifs"
+  report.appendix.glossary: "Glossaire"
+  report.appendix.state_changes: "Modifications d'état sur les cibles"
+  report.appendix.intel: "Fraîcheur du renseignement sur les menaces"
+  report.appendix.compliance: "Couverture du référentiel de conformité"
+  report.appendix.validation: "Validation de la détection (équipe pourpre)"
+
+  # ---- per-finding labels ------------------------------------------------------------
+  report.finding.evidence: "Preuve"
+  report.finding.description: "Description"
+  report.finding.remediation: "Remédiation"
+  report.finding.verification: "Vérification de la correction"
+  report.finding.provenance: "Provenance"
+  report.finding.classification: "Classification"
+  report.finding.asset: "Actif"
+
+  # ---- severity ladder ---------------------------------------------------------------
+  report.severity.critical: "Critique"
+  report.severity.high: "Élevée"
+  report.severity.medium: "Moyenne"
+  report.severity.low: "Faible"
+  report.severity.info: "Information"
+
+  # ---- cover labels ------------------------------------------------------------------
+  report.label.scan: "Analyse"
+  report.label.authorization: "Autorisation"
+
+  # ---- attack-path table -------------------------------------------------------------
+  report.attack_path.hop: "Étape"
+  report.attack_path.stage: "Phase"
+  report.attack_path.check: "Contrôle"
+  report.attack_path.asset: "Actif"
+  report.attack_path.severity: "Sévérité"
+  report.attack_path.verified: "Vérifié"
+  report.attack_path.evidence: "Preuve"
+  report.attack_path.cheapest: "Remédiation la moins coûteuse"

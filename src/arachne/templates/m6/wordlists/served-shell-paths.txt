@@ -1,0 +1,20 @@
+# Served webshell-path candidates for m6.webshell-yara (research ch06#24).
+#
+# Bounded and hinted: the check probes at most ARACHNE_M6_WEBSHELL_PROBES of these against
+# the declared origins, GET-only, and only when the crawl did not already surface them. It is
+# a webshell-hunt list, not a content-discovery wordlist; keep it short and specific.
+shell.php
+shell.phtml
+cmd.php
+c99.php
+r57.php
+b374k.php
+wso.php
+upload.php
+uploads/shell.php
+uploads/shell.phtml
+images/shell.php
+tmp/shell.php
+assets/shell.php
+wp-content/uploads/shell.php
+xmlrpc.php

@@ -1,0 +1,73 @@
+# ARACHNE IaC gate — a reusable GitLab CI/CD component (S26, REQ-ECOS-003).
+#
+# Place this file in the component project as
+# `templates/arachne-gate/template.yml`; callers then `include` it (see
+# `code/examples/ci/gitlab-ci.yml`) with their own inputs. The job runs ARACHNE's offline
+# IaC/CI review and publishes the `codequality` report, which GitLab renders in the merge
+# request widget — the GitLab equivalent of the GitHub Action's annotations.
+#
+# The scan is local (`repo:<path>`; no clone, no fetch), so the job needs no network beyond
+# installing ARACHNE, and its verdict is the F-07-05 gate code (0/1/2).
+
+spec:
+  inputs:
+    path:
+      description: Tree to review (Terraform, Kubernetes manifests, CI workflow files).
+      default: "."
+    fail_on:
+      description: Gate threshold the job exit code follows (info|low|medium|high|critical|none).
+      default: high
+    stage:
+      description: Stage the gate runs in.
+      default: test
+    image:
+      description: Image providing a Python interpreter and pip.
+      default: python:3.12-slim
+    install:
+      description: Command that installs ARACHNE in the job.
+      default: pip install --quiet "arachne==0.1.0"
+    allow_failure:
+      description: Whether the gate may fail without blocking the pipeline.
+      type: boolean
+      default: false
+
+"arachne-gate":
+  stage: $[[ inputs.stage ]]
+  image: $[[ inputs.image ]]
+  # A gate blocks a merge request by default; `allow_failure: true` makes it advisory for
+  # a rollout period. The rules run on merge requests and on pipelines for the default
+  # branch, and never on a tag (a tag is a release decision, not a review).
+  allow_failure: $[[ inputs.allow_failure ]]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "web"
+  variables:
+    # The gate runs a real scan, which needs the control-plane schema; a job-local SQLite
+    # database keeps it self-contained. Point ARACHNE_DATABASE_URL somewhere durable to
+    # keep a history.
+    ARACHNE_DATABASE_URL: "sqlite:///${CI_PROJECT_DIR}/.arachne-ci.db"
+    ARACHNE_LOG_LEVEL: "WARNING"
+  before_script:
+    # ARACHNE is not on infinite time: silence noise, keep the schema current.
+    - $[[ inputs.install ]]
+    - python -m arachne.cli.main db upgrade
+  script:
+    # The GitLab Code Quality document is the artefact GitLab renders; the job's exit code
+    # is the gate's, so `allow_failure: false` turns a finding at or above the threshold
+    # into a blocked pipeline.
+    - |
+      python -m arachne.tools.ci_annotate \
+        --path "$[[ inputs.path ]]" \
+        --format gitlab \
+        --fail-on "$[[ inputs.fail_on ]]" \
+        --output codequality.json
+  artifacts:
+    # Publish the report even when the gate blocked the pipeline — a failed review is
+    # exactly when a reviewer needs to see what it found.
+    when: always
+    expire_in: 1 week
+    paths:
+      - codequality.json
+    reports:
+      codequality: codequality.json

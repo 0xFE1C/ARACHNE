@@ -1,0 +1,481 @@
+# ARACHNE M4 probe corpus (docs/spec/05- M4, research ch. 04). Managed data, not code
+# (F-09-04): point ARACHNE_M4_PROBES at another file to replace it.
+#
+# Every entry here is *detection-only*: a GET/HEAD read of a well-known path, a marker a
+# response must contain, or a fingerprint that names a product. Nothing in this file is a
+# payload, a credential to try by default, or a write.
+#
+# Placeholders use angle brackets (`<bucket>`, `<origin>`) and are replaced literally, so a
+# value can never be interpreted as a format string.
+version: "1.0"
+
+# --------------------------------------------------------------- exposed configuration
+env:
+  paths: &env_paths
+    - "/.env"
+    - "/.env.local"
+    - "/.env.production"
+    - "/.env.development"
+    - "/.env.backup"
+    - "/.env.old"
+    - "/api/.env"
+    - "/config/.env"
+    - "/app/.env"
+    - "/backend/.env"
+    - "/env"
+    - "/config.php"
+    - "/wp-config.php"
+    - "/application.properties"
+    - "/config.yml"
+    - "/config/database.yml"
+  # A line whose key names a credential, or the framework keys an .env always carries.
+  assignment_regex: '^[A-Za-z_][A-Za-z0-9_.]{1,63}='
+  markers:
+    - "APP_KEY="
+    - "DB_PASSWORD="
+    - "DB_HOST="
+    - "DATABASE_URL="
+    - "AWS_ACCESS_KEY_ID="
+    - "AWS_SECRET_ACCESS_KEY="
+    - "SECRET_KEY="
+    - "MAIL_PASSWORD="
+    - "STRIPE_SECRET="
+    - "REDIS_URL="
+  # Bodies below this many bytes are too small to be a real configuration file.
+  min_bytes: 40
+
+# --------------------------------------------------------------- version-control metadata
+vcs:
+  probes:
+    - path: "/.git/HEAD"
+      markers: ["ref: refs/"]
+      family: git
+    - path: "/.git/config"
+      markers: ["[core]", "repositoryformatversion"]
+      family: git
+    - path: "/.git/packed-refs"
+      markers: ["refs/heads/", "refs/tags/"]
+      family: git
+    - path: "/.git/COMMIT_EDITMSG"
+      markers: []
+      family: git
+    - path: "/.svn/entries"
+      markers: ["<?xml", "svn", "dir"]
+      family: svn
+    - path: "/.svn/wc.db"
+      markers: []
+      family: svn
+    - path: "/.hg/requires"
+      markers: ["revlog", "store"]
+      family: hg
+  # A binary answer to one of these is itself the finding (a SQLite wc.db or a pack file).
+  binary_exposed: true
+
+# --------------------------------------------------------------- backups and dumps
+backup:
+  # Probed first, in this order: the artifacts an exposed web root actually leaks. The
+  # systematic name x extension x directory expansion follows (see _backup_candidates).
+  priority:
+    - "db.sql"
+    - "backup/db.sql"
+    - "database.sql"
+    - "dump.sql"
+    - "backup/dump.sql"
+    - "db.sql.gz"
+    - "site.zip"
+    - "backup/site.zip"
+    - "backup.zip"
+    - "index.php.bak"
+    - "config.bak"
+    - ".env.bak"
+    - "app.tar.gz"
+    - "www.zip"
+  directories: ["", "backup/", "backups/", "db/", "sql/", "dump/", "old/", "files/"]
+  names_wordlist: "wordlists/backup-names.txt"
+  extensions: [".bak", ".old", ".orig", ".save", ".swp", ".zip", ".tar.gz", ".tgz", ".sql", ".sql.gz", ".dump", ".sqlite", ".db"]
+  signatures:
+    sql: ["CREATE TABLE", "INSERT INTO", "mysqldump", "PostgreSQL database dump"]
+    dotenv: ["APP_KEY=", "DB_PASSWORD=", "AWS_ACCESS_KEY_ID="]
+    source: ["<?php", "def ", "function ", "import "]
+    sqlite: ["SQLite format"]
+  # Extensions whose content is binary by nature: a 200 is a finding even without a body.
+  binary_extensions: [".zip", ".tar.gz", ".tgz", ".sql.gz", ".db", ".sqlite", ".swp"]
+  min_bytes: 32
+
+# --------------------------------------------------------------- source maps
+sourcemap:
+  reference_regex: "sourceMappingURL=([^\\s*\"'<>]+)"
+  # A map is a JSON document with at least one of these keys.
+  document_keys: ["sources", "sourcesContent", "mappings"]
+  # Sources content is where the original code (and its secrets) comes back.
+  disclose_keys: ["sourcesContent"]
+
+# --------------------------------------------------------------- API documentation
+api_doc:
+  paths:
+    - "/swagger-ui.html"
+    - "/swagger-ui/"
+    - "/swagger-ui/index.html"
+    - "/swagger/"
+    - "/swagger.json"
+    - "/swagger-resources"
+    - "/v2/api-docs"
+    - "/v3/api-docs"
+    - "/api-docs"
+    - "/openapi.json"
+    - "/openapi.yaml"
+    - "/redoc"
+  document_keys: ["swagger", "openapi", "paths"]
+  # Endpoints beyond this are recorded but not listed in the artifact.
+  max_endpoints: 20
+
+# --------------------------------------------------------------- debug surfaces
+debug:
+  probes:
+    - path: "/phpinfo.php"
+      family: phpinfo
+      markers: ["phpinfo()", "PHP Version", "PHP Credits"]
+    - path: "/info.php"
+      family: phpinfo
+      markers: ["phpinfo()", "PHP Version"]
+    - path: "/test.php"
+      family: phpinfo
+      markers: ["phpinfo()", "PHP Version"]
+    - path: "/server-status"
+      family: apache-status
+      markers: ["Apache Server Status", "Server uptime", "requests currently being processed"]
+    - path: "/server-info"
+      family: apache-info
+      markers: ["Apache Server Information", "Server Settings"]
+    - path: "/actuator"
+      family: actuator
+      markers: ["_links", "self", "health"]
+    - path: "/actuator/env"
+      family: actuator-env
+      markers: ["propertySources", "activeProfiles", "systemEnvironment"]
+    - path: "/actuator/heapdump"
+      family: actuator-heapdump
+      markers: []
+    - path: "/actuator/mappings"
+      family: actuator-mappings
+      markers: ["dispatcherServlets", "contexts"]
+    - path: "/actuator/beans"
+      family: actuator-beans
+      markers: ["beans", "singletons"]
+    - path: "/env"
+      family: spring-legacy
+      markers: ["propertySources", "systemEnvironment"]
+    - path: "/mappings"
+      family: spring-legacy
+      markers: ["dispatcherServlets"]
+    - path: "/debug"
+      family: debug-console
+      markers: ["debug", "console"]
+    - path: "/_profiler"
+      family: symfony-profiler
+      markers: ["Symfony Profiler", "_profiler"]
+    - path: "/_debug_toolbar"
+      family: django-toolbar
+      markers: ["djdt", "Debug Toolbar"]
+    - path: "/console"
+      family: django-console
+      markers: ["Django", "console"]
+    - path: "/metrics"
+      family: metrics
+      markers: ["# HELP", "# TYPE", "go_gc_duration_seconds"]
+    - path: "/debug/vars"
+      family: go-debug
+      markers: ["cmdline", "memstats"]
+    - path: "/__debug__"
+      family: flask-toolbar
+      markers: ["Flask-DebugToolbar", "__debugger__"]
+  # Response bodies that only a debug page produces.
+  stack_trace_markers:
+    - "Traceback (most recent call last)"
+    - "Whoops! There was an error"
+    - "Server Error in '/' Application"
+    - "at java.base/"
+    - "Werkzeug Debugger"
+
+# --------------------------------------------------------------- directory listing
+directory_listing:
+  paths: &directory_paths
+    - "/"
+    - "/files/"
+    - "/uploads/"
+    - "/images/"
+    - "/static/"
+    - "/backup/"
+    - "/backups/"
+    - "/logs/"
+    - "/tmp/"
+    - "/assets/"
+    - "/data/"
+    - "/docs/"
+  markers:
+    - "<title>Index of"
+    - "Directory listing for"
+    - "[To Parent Directory]"
+    - "Parent Directory</a>"
+  entry_regex: '<a\s+href=["'']([^"''?#][^"'']*)["'']'
+  max_entries: 20
+
+# --------------------------------------------------------------- dashboards
+dashboard:
+  panels:
+    - product: Jenkins
+      paths: ["/jenkins/", "/jenkins", "/script", "/jenkins/script"]
+      markers: ["Dashboard [Jenkins]", "Jenkins", "Welcome to Jenkins"]
+      auth_markers: ["login", "Sign in", "j_acegi_security_check"]
+    - product: Kibana
+      paths: ["/kibana/", "/kibana", "/app/kibana"]
+      markers: ["kbn-name", "Kibana"]
+      auth_markers: ["login", "Sign in"]
+    - product: Grafana
+      paths: ["/grafana/", "/grafana", "/grafana/login", "/login"]
+      markers: ["Grafana", "grafana-app"]
+      auth_markers: ["login", "Sign in", "grafana_login"]
+    - product: Prometheus
+      paths: ["/prometheus/", "/prometheus/graph"]
+      markers: ["Prometheus Time Series Collection", "prometheus"]
+      auth_markers: ["login"]
+    - product: Consul
+      paths: ["/ui/", "/ui", "/v1/agent/self", "/v1/kv/"]
+      markers: ["Consul", "consul"]
+      auth_markers: ["ACL", "token"]
+    - product: phpMyAdmin
+      paths: ["/phpmyadmin/", "/phpMyAdmin/", "/phpmyadmin/index.php"]
+      markers: ["phpMyAdmin", "pma_username"]
+      auth_markers: ["login", "pma_password"]
+    - product: SonarQube
+      paths: ["/sonar/", "/sonarqube/"]
+      markers: ["SonarQube", "sonar"]
+      auth_markers: ["login"]
+    - product: RabbitMQ Management
+      paths: ["/rabbitmq/", "/api/overview"]
+      markers: ["RabbitMQ Management", "rabbitmq_version"]
+      auth_markers: ["login"]
+  # Headers that fingerprint a panel regardless of the body.
+  header_markers:
+    Kibana: ["kbn-name"]
+    Consul: ["x-consul-index", "x-consul-knownleader"]
+    Prometheus: ["x-prometheus-version"]
+
+# --------------------------------------------------------------- object storage
+bucket:
+  names_wordlist: "wordlists/bucket-names.txt"
+  providers:
+    # An S3-compatible endpoint (MinIO, LocalStack, the lab fixture) declared as
+    # `endpoint:<url>`: the check probes <url>?<list_query> and <url>?<acl_query>.
+    endpoint:
+      host_template: ""
+      path_prefix: ""
+      list_query: "?list-type=2"
+      acl_query: "?acl"
+      listing_markers: ["<ListBucketResult", "<EnumerationResults", "\"items\"", "<Key>"]
+      public_acl_markers: ["AllUsers", "allUsers", "container-public-access"]
+      denied_status: [401, 403]
+    s3:
+      host_template: "<bucket>.s3.amazonaws.com"
+      path_prefix: ""
+      list_query: "?list-type=2"
+      acl_query: "?acl"
+      listing_markers: ["<ListBucketResult", "<Key>"]
+      public_acl_markers: ["AllUsers", "AllUsersGroup"]
+      denied_status: [403]
+    gcs:
+      host_template: "storage.googleapis.com"
+      path_prefix: "/<bucket>"
+      list_query: "?max-keys=1"
+      acl_query: "?acl"
+      listing_markers: ["<ListBucketResult", "\"items\"", "<Key>"]
+      public_acl_markers: ["allUsers"]
+      denied_status: [403]
+    azure:
+      host_template: "<account>.blob.core.windows.net"
+      path_prefix: "/<container>"
+      list_query: "?restype=container&comp=list"
+      acl_query: "?restype=container&comp=acl"
+      listing_markers: ["<EnumerationResults", "<Name>"]
+      public_acl_markers: ["container-public-access", "PublicAccess"]
+      denied_status: [403, 404]
+  # A declared cloud/bucket asset whose value is an http(s) URL is treated as an endpoint
+  # base (the lab fixture's shape): the check probes <base>/<name> and <base>/<name>?acl.
+  endpoint_queries:
+    list: "?list-type=2"
+    acl: "?acl"
+  access_denied_status: [401, 403]
+
+# --------------------------------------------------------------- key material
+key_material:
+  paths:
+    - "/.ssh/id_rsa"
+    - "/.ssh/id_dsa"
+    - "/.ssh/id_ecdsa"
+    - "/.ssh/id_ed25519"
+    - "/id_rsa"
+    - "/id_dsa"
+    - "/key.pem"
+    - "/privkey.pem"
+    - "/private.key"
+    - "/server.key"
+    - "/ssl/private/server.key"
+    - "/certs/server.key"
+    - "/keystore.jks"
+    - "/client.p12"
+    - "/client.pfx"
+  pem_marker: "-----BEGIN"
+  secret_kind: "private-key"
+  # Suffixes whose presence in the URL is part of the proof even when the body is redacted.
+  key_extensions: [".pem", ".key", ".p12", ".pfx", ".jks", ".keystore", ".ppk"]
+
+# --------------------------------------------------------------- headers and cookies
+headers:
+  https:
+    - strict-transport-security
+    - content-security-policy
+    - x-frame-options
+    - x-content-type-options
+    - referrer-policy
+    - permissions-policy
+  http:
+    - content-security-policy
+    - x-frame-options
+    - x-content-type-options
+    - referrer-policy
+  weak_csp_markers: ["unsafe-inline", "unsafe-eval", "*"]
+  session_cookie_names:
+    - phpsessid
+    - jsessionid
+    - sessionid
+    - session
+    - connect.sid
+    - laravel_session
+    - csrftoken
+    - auth
+    - jwt
+    - token
+
+# --------------------------------------------------------------- CORS
+cors:
+  origins:
+    - "https://arachne-cors.invalid"
+    - "null"
+    - "https://target.arachne-cors.invalid"
+
+# --------------------------------------------------------------- email authentication
+email_auth:
+  # TXT names queried per declared domain (DNS-over-HTTPS, third party, opt-in).
+  spf_name: ""
+  dmarc_name: "_dmarc"
+  dkim_selectors: ["default", "google", "selector1", "selector2", "mail", "dkim", "k1"]
+  spf_all_markers: ["+all", "?all", "~all", "-all"]
+  permissive_spf: ["+all", "?all"]
+  dmarc_policies: ["none", "quarantine", "reject"]
+
+# --------------------------------------------------------------- unsafe verbs
+webdav:
+  methods: ["OPTIONS", "PROPFIND", "TRACE"]
+  # Probed in order, plus up to two crawled pages. The root is included because a
+  # misconfigured server often advertises the verbs there.
+  paths: ["/", "/dav/", "/webdav/", "/remote.php/dav/"]
+  # Verbs that write or delete. Their presence in ``Allow`` is reported; none is sent.
+  write_verbs: ["PUT", "DELETE", "MOVE", "COPY", "MKCOL", "PROPPATCH"]
+  trace_marker: "TRACE /"
+
+# --------------------------------------------------------------- hidden endpoints
+hidden:
+  wordlist: "wordlists/hidden-paths.txt"
+  interest_regex: "admin|backup|config|internal|debug|private|secret|dump|sql|env|git|test|staging|console|manage|export|actuator|swagger|graphql"
+  extension_mutations: [".bak", ".old", ".json", ".php.bak", ".sql"]
+
+# --------------------------------------------------------------- staging
+staging:
+  labels: ["staging", "stage", "dev", "development", "test", "qa", "uat", "preprod", "beta", "demo", "sandbox", "int"]
+  path_labels: ["/staging/", "/stage/", "/dev/", "/test/", "/qa/", "/uat/", "/preprod/", "/beta/", "/demo/", "/sandbox/"]
+  markers: ["staging", "development", "not for production", "debug", "environment", "sandbox"]
+  # A staging page is usually a copy of the main one with a banner; this is the minimum
+  # difference from the not-found page that counts as "the path exists".
+  min_similarity_delta: 0.05
+
+# --------------------------------------------------------------- cloud metadata (SSRF)
+metadata_ssrf:
+  # Provider metadata roots. Only ever fetched when ARACHNE_M4_METADATA_SSRF is on *and*
+  # the address policy permits link-local traffic; the default configuration refuses both.
+  endpoints:
+    - provider: aws
+      url: "http://169.254.169.254/latest/meta-data/"
+      headers: {}
+      imds_v1_marker: "iam/"
+      imds_v2_status: 401
+    - provider: gcp
+      url: "http://metadata.google.internal/computeMetadata/v1/?recursive=true"
+      headers: {Metadata-Flavor: "Google"}
+      imds_v1_marker: "computeMetadata"
+      imds_v2_status: null
+    - provider: azure
+      url: "http://169.254.169.254/metadata/instance?api-version=2021-02-01"
+      headers: {Metadata: "true"}
+      imds_v1_marker: "compute"
+      imds_v2_status: null
+  # Parameter names whose value an application is likely to fetch *server-side* (an SSRF
+  # sink). Client-side redirect parameters (next/return/redirect) are deliberately absent:
+  # they are the open-redirect family's business, and a 302 is not a server-side fetch.
+  sink_param_hints: ["url", "uri", "target", "dest", "destination", "src", "source", "image", "imageurl", "webhook", "callback", "feed", "proxy", "fetch", "host"]
+
+# --------------------------------------------------------------- user enumeration
+user_enumeration:
+  user_fields: ["username", "user", "email", "login", "account", "name", "uname"]
+  password_fields: ["password", "pass", "pwd", "passwd"]
+  candidate_names: ["admin", "administrator", "root", "test", "user", "guest", "info", "support"]
+  valid_markers:
+    - "incorrect password"
+    - "wrong password"
+    - "invalid password"
+    - "password is incorrect"
+    - "already registered"
+    - "email exists"
+    - "user exists"
+    - "account exists"
+  invalid_markers:
+    - "unknown user"
+    - "no such user"
+    - "no account"
+    - "not found"
+    - "does not exist"
+    - "invalid username"
+    - "unknown username"
+  dummy_password: "arachne-not-a-real-password-9f3a"
+
+# --------------------------------------------------------------- unauthenticated API
+unauth_api:
+  path_hints: ["/api/", "/api/v1/", "/api/v2/", "/v1/", "/v2/", "/internal/", "/admin/api/", "/graphql", "/rest/"]
+  # A 200 with these content types and a JSON collection is data, not a landing page.
+  data_content_types: ["application/json", "application/vnd.api+json"]
+  auth_challenge_status: [401, 403]
+  min_records: 1
+
+# --------------------------------------------------------------- default credentials
+# OFF BY DEFAULT. ``m4.default-credentials`` only reads this section when the operator set
+# ARACHNE_M4_DEFAULT_CREDENTIALS=true, selected the check explicitly, *and* authorized
+# active checks. One vendor-default pair per detected product, paced, never retried.
+default_credentials:
+  products:
+    - product: Jenkins
+      login_path: "/jenkins/j_acegi_security_check"
+      method: POST
+      fields: {j_username: admin, j_password: admin, from: "/"}
+      success_markers: ["Dashboard", "/jenkins/", "log out", "logout"]
+      failure_markers: ["Invalid", "failed", "Try again", "login"]
+    - product: Grafana
+      login_path: "/grafana/login"
+      method: POST
+      fields: {user: admin, password: admin}
+      success_markers: ["redirect", "dashboard"]
+      failure_markers: ["Invalid username or password", "login"]
+    - product: phpMyAdmin
+      login_path: "/phpmyadmin/index.php"
+      method: POST
+      fields: {pma_username: root, pma_password: ""}
+      success_markers: ["Server:", "Database", "phpMyAdmin"]
+      failure_markers: ["Cannot log in to the MySQL server", "login"]

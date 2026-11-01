@@ -1,0 +1,8 @@
+{"@timestamp": "2026-10-20T10:00:00Z", "host": "dc01", "EventID": 4769, "TicketEncryptionType": "0x17", "ServiceName": "MSSQLSvc/db01.corp.local:1433", "TargetUserName": "svc-sql"}
+{"@timestamp": "2026-10-20T10:01:00Z", "host": "dc01", "EventID": 4768, "PreAuthType": 0, "TargetUserName": "svc-legacy"}
+{"@timestamp": "2026-10-20T10:02:00Z", "host": "ws01", "EventID": 10, "TargetImage": "C:\\Windows\\system32\\lsass.exe", "SourceImage": "C:\\Users\\Public\\tool.exe"}
+{"@timestamp": "2026-10-20T10:03:00Z", "host": "www01", "EventID": 1, "ParentImage": "/usr/sbin/php-fpm", "Image": "/bin/sh", "CommandLine": "/bin/sh -c 'id'"}
+{"@timestamp": "2026-10-20T10:04:00Z", "host": "fs01", "EventID": 4624, "LogonType": 3, "ShareName": "\\\\fs01\\ADMIN$", "SubjectUserName": "CORP\\alice"}
+{"@timestamp": "2026-10-20T10:05:00Z", "host": "ws02", "EventID": 4698, "SubjectUserName": "CORP\\alice", "TaskName": "Updater"}
+{"@timestamp": "2026-10-20T10:06:00Z", "host": "dc01", "EventID": 4769, "TicketEncryptionType": "0x12", "ServiceName": "HTTP/web01.corp.local"}
+{"@timestamp": "2026-10-20T10:07:00Z", "host": "ws03", "EventID": 4624, "LogonType": 2}

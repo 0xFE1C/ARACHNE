@@ -1,0 +1,79 @@
+{
+  "source": "lab-siem",
+  "generated_at": "2026-10-31T13:05:00+00:00",
+  "_comment": [
+    "A planted-alert SIEM fixture for the S24 acceptance tests (REQ-VALID-002).",
+    "It models what a defender's pipeline reports after a coordinated purple-team window:",
+    "one alert per detection it *did* raise, quoted with the run nonce the payload carried,",
+    "plus the noise a real SIEM always has.",
+    "",
+    "The planted set is deliberately partial, because a fixture where everything is seen",
+    "would prove nothing:",
+    "  * T1190 linked to the run (initial access seen);",
+    "  * T1059 linked to the run (execution seen);",
+    "  * T1190 again, out of the window (the defender was not watching yet);",
+    "  * T1486 (impact) with no nonce — the SIEM fired, but not for our test;",
+    "  * a defensive-telemetry alert naming no ATT&CK technique at all.",
+    "The unseen technique this fixture is designed to demonstrate is T1565.001",
+    "(m3.state-marker, stored data manipulation): the lab SIEM has no rule for it, so it",
+    "comes back as a coverage gap AND as the deliberate Sigma rule-miss.",
+    "",
+    "Placeholders ({{NONCE}}) are substituted by the test with the run's generated nonce,",
+    "because the nonce is minted per run and must not be a constant in a committed file.",
+    "No credential appears anywhere in this fixture."
+  ],
+  "alerts": [
+    {
+      "alert_id": "SIEM-9001",
+      "timestamp": "2026-10-31T12:06:30+00:00",
+      "title": "SQL injection attempt against web parameter",
+      "technique": "attack.t1190",
+      "attack_tactic": "initial-access",
+      "severity": "high",
+      "rule_name": "web-sqli-attempt",
+      "message": "SQL metacharacter sequence in request parameter (test nonce={{NONCE}})",
+      "host": "lab-web-01"
+    },
+    {
+      "alert_id": "SIEM-9002",
+      "timestamp": "2026-10-31T12:08:10+00:00",
+      "title": "Web worker spawned a shell",
+      "technique": "T1059",
+      "attack_tactic": "execution",
+      "severity": "critical",
+      "signature": "web-worker-shell",
+      "description": "php-fpm spawned /bin/sh; the payload carried nonce={{NONCE}}",
+      "host": "lab-web-01"
+    },
+    {
+      "alert_id": "SIEM-9003",
+      "timestamp": "2026-10-31T11:58:00+00:00",
+      "title": "SQL injection attempt against web parameter",
+      "technique": "T1190",
+      "severity": "high",
+      "rule_name": "web-sqli-attempt",
+      "message": "before the coordinated window opened; test nonce={{NONCE}}",
+      "host": "lab-web-01"
+    },
+    {
+      "alert_id": "SIEM-9004",
+      "timestamp": "2026-10-31T12:20:00+00:00",
+      "title": "Mass file encryption behaviour",
+      "technique": "T1486",
+      "attack_tactic": "impact",
+      "severity": "critical",
+      "rule_name": "ransomware-behaviour",
+      "message": "unrelated estate traffic; no test nonce on this one",
+      "host": "file-server-02"
+    },
+    {
+      "alert_id": "SIEM-9005",
+      "timestamp": "2026-10-31T12:12:00+00:00",
+      "title": "EDR sensor health degraded",
+      "severity": "low",
+      "rule_name": "sensor-health",
+      "message": "no ATT&CK technique is named for a health alert, so it scores nothing",
+      "host": "lab-web-01"
+    }
+  ]
+}

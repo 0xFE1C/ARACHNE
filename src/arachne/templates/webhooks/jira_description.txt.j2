@@ -1,0 +1,17 @@
+{#- Jira issue description, template-driven (F-06-06, docs/spec/06- §8). -#}
+h2. {{ finding.title }}
+
+*Severity:* {{ finding.severity | upper }}{% if finding.cvss %} (CVSS {{ finding.cvss }}){% endif %}
+*Confidence:* {{ finding.confidence }}%
+*Module / check:* {{ finding.module or "unknown" }} / {{ finding.check_id or "unknown" }}
+{% if finding.cwe %}*CWE:* {{ finding.cwe }}
+{% endif %}{% if finding.cve %}*CVE:* {{ finding.cve }}
+{% endif %}*Affected asset:* {{ finding.asset_kind }} {{ finding.asset }}
+*Status:* {{ finding.status }}
+
+h3. Remediation
+{{ finding.remediation or "See the ARACHNE report for remediation guidance." }}
+
+----
+Found by ARACHNE scan {{ scan_id }} against {{ target }} (engine {{ engine }}, {{ arachne_version }}).
+Full report: {{ report_url }}

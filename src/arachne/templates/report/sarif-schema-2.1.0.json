@@ -1,0 +1,122 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://arachne.local/schema/sarif-2.1.0-minimal.json",
+  "title": "ARACHNE SARIF 2.1.0 output (minimal contract)",
+  "description": "The subset of OASIS SARIF 2.1.0 that arachne.report.sarif emits and a code-scanning uploader requires. Deliberately not the full OASIS schema (which is ~1 MB); it pins the fields this emitter depends on so a regression is caught here rather than by a forge upload error.",
+  "type": "object",
+  "required": ["version", "runs"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": "2.1.0" },
+    "runs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["tool", "results"],
+        "properties": {
+          "tool": {
+            "type": "object",
+            "required": ["driver"],
+            "properties": {
+              "driver": {
+                "type": "object",
+                "required": ["name", "rules"],
+                "properties": {
+                  "name": { "type": "string", "minLength": 1 },
+                  "version": { "type": "string" },
+                  "informationUri": { "type": "string" },
+                  "rules": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["id", "shortDescription"],
+                      "properties": {
+                        "id": { "type": "string", "minLength": 1 },
+                        "name": { "type": "string" },
+                        "shortDescription": { "$ref": "#/definitions/message" },
+                        "fullDescription": { "$ref": "#/definitions/message" },
+                        "defaultConfiguration": {
+                          "type": "object",
+                          "properties": {
+                            "level": { "$ref": "#/definitions/level" }
+                          }
+                        },
+                        "properties": { "type": "object" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["ruleId", "level", "message", "locations"],
+              "properties": {
+                "ruleId": { "type": "string", "minLength": 1 },
+                "level": { "$ref": "#/definitions/level" },
+                "message": { "$ref": "#/definitions/message" },
+                "partialFingerprints": {
+                  "type": "object",
+                  "additionalProperties": { "type": "string" }
+                },
+                "properties": { "type": "object" },
+                "locations": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "required": ["physicalLocation"],
+                    "properties": {
+                      "physicalLocation": {
+                        "type": "object",
+                        "required": ["artifactLocation"],
+                        "properties": {
+                          "artifactLocation": {
+                            "type": "object",
+                            "required": ["uri"],
+                            "properties": { "uri": { "type": "string", "minLength": 1 } }
+                          },
+                          "region": {
+                            "type": "object",
+                            "properties": {
+                              "startLine": { "type": "integer", "minimum": 1 },
+                              "startColumn": { "type": "integer", "minimum": 1 }
+                            }
+                          }
+                        }
+                      },
+                      "logicalLocations": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": { "type": "string" },
+                            "kind": { "type": "string" },
+                            "fullyQualifiedName": { "type": "string" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "properties": { "type": "object" }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "level": { "enum": ["none", "note", "warning", "error"] },
+    "message": {
+      "type": "object",
+      "required": ["text"],
+      "properties": { "text": { "type": "string" } }
+    }
+  }
+}

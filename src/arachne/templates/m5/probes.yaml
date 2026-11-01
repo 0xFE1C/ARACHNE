@@ -1,0 +1,321 @@
+# M5 cloud/container/supply-chain corpus (S10, docs/spec/05- M5, F-09-04).
+#
+# Everything an M5 check asks or matches is *data* here, so an operator can narrow or extend
+# it without touching code (F-09-04) and a reviewer can read exactly what leaves the scanner
+# in one place. The M5 safety contract (docs/spec/05- "M5 · Safety") governs every entry:
+#
+#   1. **Read-only.** Cloud checks use documented read-only calls only; bucket/registry/Firebase
+#      probes are GET; the metadata probe (behind its own switch) sends a GET and reports the
+#      *posture*, never the credential the service would have returned.
+#   2. **Local artifacts.** Repo/IaC/image/pipeline analysis runs on a local clone (a ``repo:``
+#      or ``file://`` reference), never by cloning a remote itself.
+#   3. **Detection-only.** Nothing is written, claimed, sprayed or exploited. A subdomain
+#      takeover is confirmed from the dangling-record fingerprint, never by claiming the name.
+#
+# ``params``/``hints`` sections decide *where* a family is tried, so a probe count stays
+# proportional to the surface.
+
+version: "1.0"
+
+# --------------------------------------------------------------------------- buckets (ch05#2)
+bucket:
+  names_wordlist: "wordlists/bucket-names.txt"
+  providers:
+    # An S3-compatible endpoint (MinIO, LocalStack, the cloud lab) declared as endpoint:<url>.
+    endpoint:
+      host_template: ""
+      path_prefix: ""
+      list_query: "?list-type=2"
+      acl_query: "?acl"
+      listing_markers: ["<ListBucketResult", "<Contents>", "ListBucketResult", "<EnumerationResults"]
+      public_acl_markers: ["AllUsers", "AuthenticatedUsers", "allUsers"]
+      denied_status: [401, 403]
+    s3:
+      host_template: "<bucket>.s3.amazonaws.com"
+      path_prefix: ""
+      list_query: "?list-type=2"
+      acl_query: "?acl"
+      listing_markers: ["<ListBucketResult", "<Contents>", "ListBucketResult"]
+      public_acl_markers: ["AllUsers", "AuthenticatedUsers"]
+      denied_status: [401, 403]
+    gcs:
+      host_template: "storage.googleapis.com"
+      path_prefix: "/<bucket>"
+      list_query: "?list-type=2"
+      acl_query: ""
+      listing_markers: ["<ListBucketResult", "<Contents>", "\"items\""]
+      public_acl_markers: ["allUsers", "allAuthenticatedUsers"]
+      denied_status: [401, 403]
+    azure:
+      host_template: "<account>.blob.core.windows.net"
+      path_prefix: "/<container>?restype=container&comp=list"
+      list_query: ""
+      acl_query: ""
+      listing_markers: ["<EnumerationResults", "<Blobs>", "container-public-access"]
+      public_acl_markers: ["container-public-access", "Public Access"]
+      denied_status: [401, 403, 404]
+  endpoint_queries: {list: "?list-type=2", acl: "?acl"}
+  access_denied_status: [401, 403]
+
+# --------------------------------------------------------------------------- Firebase (ch05#7)
+firebase:
+  # Realtime Database: appending ``.json`` dumps the tree when the rules are open.
+  rtdb_host_template: "<project>.firebaseio.com"
+  rtdb_paths: ["/.json?shallow=true", "/.json"]
+  firestore_path_template: "https://firestore.googleapis.com/v1/projects/<project>/databases/(default)/documents"
+  storage_host_template: "firebasestorage.googleapis.com"
+  rtdb_markers: ["{", "\""]
+  project_ref_hints: ["projectId", "project_id", "firebaseio.com", "firebaseapp.com"]
+  max_projects: 4
+
+# --------------------------------------------------------------------------- Supabase (ch05#8)
+supabase:
+  rest_path: "/rest/v1/"
+  schema_path: "/rest/v1/?apikey={key}"
+  host_template: "<ref>.supabase.co"
+  # PostgREST answers the OpenAPI schema at the API root; a table read is ``/rest/v1/<table>``.
+  probe_tables: ["users", "profiles", "accounts", "orders", "customers"]
+  markers: ["{\"swagger\"", "\"definitions\"", "\"paths\""]
+  anon_key_hints: ["anon", "SUPABASE_ANON_KEY", "supabaseAnonKey", "apiKey"]
+
+# --------------------------------------------------------------------------- terraform state (ch05#11-12)
+tfstate:
+  paths: ["/terraform.tfstate", "/.terraform/terraform.tfstate", "/tfstate.json", "/state/terraform.tfstate", "/terraform.tfstate.backup"]
+  # Keys whose values in a state file are secrets (plaintext by design).
+  secret_keys: ["password", "secret", "access_key", "secret_key", "private_key", "token", "connection_string", "client_secret", "api_key", "passphrase"]
+  resource_keys: ["resources", "instances", "attributes", "terraform_version", "serial", "outputs"]
+  local_names: ["terraform.tfstate", "terraform.tfstate.backup", "*.tfstate"]
+  # IaC misconfiguration review (ch05#12): risky constructs in .tf/.yaml/.json manifests.
+  iac_patterns:
+    - {id: open-security-group, severity: high, regex: "0\\.0\\.0\\.0/0", hint: "CIDR open to the world"}
+    - {id: wildcard-iam, severity: high, regex: "\"Action\"\\s*:\\s*\"\\*\"|actions\\s*=\\s*\\[\"\\*\"\\]", hint: "wildcard IAM action"}
+    - {id: public-bucket-acl, severity: high, regex: "acl\\s*=\\s*\"public-read(-write)?\"", hint: "public bucket ACL"}
+    - {id: unencrypted-storage, severity: medium, regex: "encrypted\\s*=\\s*false|encryption\\s*=\\s*false", hint: "storage encryption disabled"}
+    - {id: public-database, severity: high, regex: "publicly_accessible\\s*=\\s*true", hint: "database publicly accessible"}
+    - {id: privileged-container, severity: high, regex: "privileged\\s*:\\s*true|privileged\\s*=\\s*true", hint: "privileged container"}
+  iac_globs: ["*.tf", "*.tfvars", "*.yaml", "*.yml", "*.json", "*.tmpl"]
+
+# --------------------------------------------------------------------------- kubernetes (ch05#13-14)
+k8s:
+  # The unauthenticated read-only kubelet API (10255) and the authenticated one (10250),
+  # plus the dashboard. Probed by path against whatever endpoint the asset names.
+  kubelet_paths: ["/pods", "/runningpods", "/healthz", "/stats/summary", "/metrics"]
+  dashboard_paths: ["/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/", "/#/login", "/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#!/login"]
+  api_paths: ["/api", "/apis", "/version", "/api/v1/namespaces", "/api/v1/secrets"]
+  pod_markers: ["\"kind\":\"PodList\"", "\"items\"", "metadata", "PodList", "\"pods\""]
+  env_markers: ["ENV ", "env:", "\"env\"", "environment", "AWS_", "SECRET", "PASSWORD", "TOKEN"]
+  dashboard_markers: ["kubernetes-dashboard", "Kubernetes Dashboard", "k8s-app"]
+  unauth_status: [200, 201]
+
+# --------------------------------------------------------------------------- registry (ch05#15)
+registry:
+  catalog_path: "/v2/_catalog"
+  tags_template: "/v2/<repo>/tags/list"
+  manifests_template: "/v2/<repo>/manifests/<tag>"
+  markers: ["\"repositories\"", "\"tags\"", "\"name\""]
+  repos_wordlist: "wordlists/image-repos.txt"
+  # Optional external image scanner (Trivy/Syft/Grype class); unset means the built-in
+  # registry-ACL review only (ARACHNE_M5_SBOM_TOOL).
+  scanner: "trivy"
+
+# --------------------------------------------------------------------------- docker (ch05#16)
+docker:
+  socket_path: "/var/run/docker.sock"
+  api_paths: ["/version", "/info", "/containers/json", "/images/json"]
+  markers: ["\"ApiVersion\"", "\"Containers\"", "\"Images\"", "Docker", "\"OSType\""]
+  privileged_markers: ["\"Privileged\":true", "\"Privileged\": true"]
+
+# --------------------------------------------------------------------------- image secrets (ch05#17)
+image:
+  dockerfile_names: ["Dockerfile", "Dockerfile.prod", "Dockerfile.build", "Containerfile"]
+  # Instruction keywords whose values should never be a literal secret.
+  secret_instruction_hints: ["ENV", "ARG", "LABEL"]
+  secret_value_markers: ["password", "passwd", "secret", "token", "api_key", "apikey", "access_key", "private_key", "aws_"]
+  # Helm/Kubernetes manifests that commonly carry plaintext.
+  manifest_globs: ["values.yaml", "values-*.yaml", "secret*.yaml", "*-secret.yaml", "*.env"]
+  root_user_marker: "USER root"
+
+# --------------------------------------------------------------------------- cloud key material (ch05#3/6)
+secrets:
+  # Provider credential patterns for *local artifact* scanning. The HTTP client's detectors
+  # cover web-delivered material; this is the repo/file path (masked before evidence).
+  patterns:
+    aws-access-key: "AKIA[0-9A-Z]{16}"
+    aws-secret-key: "(?i)aws_secret_access_key\\s*[:=]\\s*[\"']?([A-Za-z0-9/+=]{40})"
+    gcp-service-account: "\"type\"\\s*:\\s*\"service_account\""
+    gcp-private-key: "\"private_key\"\\s*:\\s*\"-----BEGIN"
+    azure-client-secret: "(?i)azure[_-]?client[_-]?secret\\s*[:=]\\s*[\"']?([A-Za-z0-9~._-]{20,})"
+    generic-bearer: "(?i)bearer\\s+[A-Za-z0-9._-]{20,}"
+    private-key-pem: "-----BEGIN (RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----"
+  key_file_names: ["*.json", "*.pem", "*.key", "credentials", "*.env", ".env", "*.tfvars"]
+  # Read-only validation (``sts:GetCallerIdentity`` class). The documented permission list:
+  # the single call needs no IAM permission beyond the caller's own identity; nothing else
+  # is enumerated. Only a configured credential (never a key scraped from a scan) is used.
+  validation:
+    aws: "https://sts.amazonaws.com/"
+  max_matches: 40
+
+# --------------------------------------------------------------------------- CI/CD (ch05#23)
+cicd:
+  workflow_globs: [".github/workflows/*.yml", ".github/workflows/*.yaml", ".gitlab-ci.yml", "Jenkinsfile", ".circleci/config.yml"]
+  # Risky constructs a workflow review flags (research ch05#23).
+  patterns:
+    - {id: pull-request-target, severity: high, regex: "pull_request_target", hint: "untrusted PR trigger with secrets in scope"}
+    - {id: workflow-run-untrusted, severity: high, regex: "github\\.event\\.(issue|pull_request|comment|review|discussion)[A-Za-z_.]*", hint: "untrusted context interpolated into a run step"}
+    - {id: write-all-token, severity: high, regex: "permissions\\s*:\\s*write-all", hint: "GITHUB_TOKEN granted write-all"}
+    - {id: contents-write, severity: medium, regex: "contents\\s*:\\s*write", hint: "workflow can push to the repository"}
+    - {id: secrets-echo, severity: high, regex: "(?i)(echo|printenv|env)\\b[^\\n]{0,80}(secrets|secret|token|password|\\$\\{\\{\\s*secrets)", hint: "secret material echoed into logs"}
+    - {id: script-injection, severity: high, regex: "run:.*\\$\\{\\{\\s*github\\.event\\.", hint: "expression interpolation into a shell step (injection)"}
+    - {id: self-hosted-runner, severity: medium, regex: "runs-on\\s*:\\s*(self-hosted|\\[.*self-hosted)", hint: "self-hosted runner on a possibly public repo"}
+    - {id: action-unpinned, severity: medium, regex: "uses\\s*:\\s*[^\\s@]+@(v[0-9]|main|master|latest)\\b", hint: "third-party action pinned to a mutable ref"}
+    - {id: docker-pull-latest, severity: low, regex: "image\\s*:\\s*[^\\s:]+:latest", hint: "unpinned :latest image"}
+  # Workflow fields the review also reads structurally.
+  secret_context: "secrets."
+
+# --------------------------------------------------------------------------- dependency confusion (ch05#24)
+dep_confusion:
+  # Manifests whose declared dependencies are diffed against the public registry namespace.
+  manifests: ["package.json", "requirements.txt", "pyproject.toml", "Pipfile", "pom.xml", "build.gradle", "go.mod", "Gemfile"]
+  ecosystems:
+    npm: {registry: "https://registry.npmjs.org/", private_markers: ["@company", "@internal", "@arachne"], manifest_keys: ["dependencies", "devDependencies"]}
+    pypi: {registry: "https://pypi.org/simple/", private_markers: ["-internal", "-private", "company-"], manifest_keys: ["dependencies"]}
+    maven: {registry: "https://repo1.maven.org/maven2/", private_markers: ["com.company", "internal"], manifest_keys: ["dependencies"]}
+  # A name that looks internal (private scope/marker) is a confusion candidate when it also
+  # resolves publicly.
+  internal_hints: ["internal", "private", "corp", "company", "arachne", "-int", "-priv"]
+
+# --------------------------------------------------------------------------- SBOM / SCA (ch05#25)
+sbom:
+  lockfiles: ["package-lock.json", "yarn.lock", "requirements.txt", "poetry.lock", "Pipfile.lock", "go.sum", "Gemfile.lock", "pom.xml"]
+  # A tiny offline known-vulnerable component index (name -> vulnerable spec + CVE). The
+  # shipped index is deliberately small; ARACHNE_M5_PROBES replaces it with the real feed.
+  vulnerable:
+    - {name: "lodash", ecosystem: npm, below: "4.17.21", cve: "CVE-2021-23337", severity: high}
+    - {name: "log4j-core", ecosystem: maven, below: "2.17.1", cve: "CVE-2021-44228", severity: critical}
+    - {name: "django", ecosystem: pypi, below: "4.2.14", cve: "CVE-2024-38875", severity: medium}
+    - {name: "requests", ecosystem: pypi, below: "2.32.0", cve: "CVE-2024-35195", severity: medium}
+    - {name: "express", ecosystem: npm, below: "4.19.2", cve: "CVE-2024-29041", severity: medium}
+    - {name: "axios", ecosystem: npm, below: "1.6.0", cve: "CVE-2023-45857", severity: medium}
+    - {name: "spring-core", ecosystem: maven, below: "5.3.33", cve: "CVE-2024-22262", severity: medium}
+    - {name: "urllib3", ecosystem: pypi, below: "2.2.2", cve: "CVE-2024-37891", severity: medium}
+
+# --------------------------------------------------------------------------- SSRF → IMDS (ch05#4)
+imds:
+  # Metadata endpoints injected into a server-side fetch sink. Each carries a marker the sink's
+  # answer must contain to confirm it returned metadata (never the credential itself).
+  targets:
+    - {provider: aws, url: "http://169.254.169.254/latest/meta-data/", marker: "ami-id"}
+    - {provider: aws-iam, url: "http://169.254.169.254/latest/meta-data/iam/security-credentials/", marker: "AccessKeyId"}
+    - {provider: gcp, url: "http://metadata.google.internal/computeMetadata/v1/", marker: "Metadata-Flavor"}
+    - {provider: azure, url: "http://169.254.169.254/metadata/instance?api-version=2021-02-01", marker: "azEnvironment"}
+  sink_param_hints: ["url", "uri", "target", "dest", "next", "callback", "webhook", "fetch", "image", "src", "path", "host", "proxy", "feed", "load"]
+  imds_v2_status: 401
+
+# --------------------------------------------------------------------------- Azure managed identity (ch05#5)
+azure:
+  imds_instance: "http://169.254.169.254/metadata/instance?api-version=2021-02-01"
+  imds_token: "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com/"
+  imds_headers: {Metadata: "true"}
+  instance_markers: ["azEnvironment", "subscriptionId", "resourceGroupName"]
+  token_markers: ["access_token", "expires_on", "token_type"]
+
+gcp:
+  metadata_root: "http://metadata.google.internal/computeMetadata/v1/"
+  metadata_paths: ["instance/service-accounts/default/token", "instance/service-accounts/", "project/project-id"]
+  metadata_headers: {"Metadata-Flavor": "Google"}
+  token_markers: ["access_token", "expires_in", "token_type"]
+
+# --------------------------------------------------------------------------- IAM review (ch05#1)
+iam:
+  # The read-only permission list a deployment must grant for the *live* IAM review. With no
+  # credential the check falls back to a static review of any policy document in a local repo.
+  read_only_permissions:
+    - "iam:ListUsers"
+    - "iam:ListRoles"
+    - "iam:ListPolicies"
+    - "iam:GetAccountAuthorizationDetails"
+    - "iam:GetPolicyVersion"
+    - "sts:GetCallerIdentity"
+  # Privilege-escalation-relevant actions (Rhino Security's set, abridged) matched against a
+  # policy document's statements.
+  escalation_actions: ["iam:CreatePolicyVersion", "iam:SetDefaultPolicyVersion", "iam:AttachUserPolicy", "iam:AttachRolePolicy", "iam:PutUserPolicy", "iam:PutRolePolicy", "iam:PassRole", "sts:AssumeRole", "iam:CreateAccessKey", "iam:UpdateAssumeRolePolicy"]
+  wildcard_markers: ["\"Action\": \"*\"", "Action: '*'", "actions = [\"*\"]", "\"Resource\": \"*\""]
+  policy_globs: ["*.json", "*.tf", "*.yaml", "*.yml"]
+  policy_hints: ["policy", "iam", "role", "permission", "trust"]
+
+# --------------------------------------------------------------------------- serverless (ch05#9)
+serverless:
+  # Host suffixes that name a managed function platform directly (a Lambda function URL,
+  # a Cloud Functions host, a Workers subdomain, an Azure Functions app).
+  host_suffixes: [".lambda-url.", ".on.aws", ".cloudfunctions.net", ".workers.dev", ".azurewebsites.net", ".azurefd.net", ".run.app"]
+  # Stage/path spellings API Gateway and frameless function hosts expose at the origin.
+  stage_paths: ["/prod", "/dev", "/stage", "/api", "/api/health", "/function", "/function/health", "/healthz"]
+  # Body markers a function runtime returns; a 200 carrying one (with no auth challenge) is
+  # the unauthenticated-function signal.
+  response_markers: ["\"statuscode\"", "\"isbase64encoded\"", "\"function\":", "function app", "azure-functions", "cloudfunctions", "\"cloudfunction\"", "x-amzn-trace-id"]
+  # 401/403 is the *safe* answer: the platform is there but refuses anonymous invocation.
+  auth_status: [401, 403]
+  auth_markers: ["missing authentication token", "unauthorized", "forbidden", "access denied", "authenticationrequired"]
+  max_candidates: 8
+
+# --------------------------------------------------------------------------- managed datastores (ch05#20)
+managed_datastores:
+  # Common console/admin paths for a managed database (adminer, phpMyAdmin, pgAdmin).
+  console_paths: ["/adminer.php", "/adminer/", "/phpmyadmin/", "/pma/", "/pgadmin/", "/pgadmin4/", "/pgadmin4/login", "/dbadmin/", "/.well-known/cloud-database"]
+  # Markers that identify a database console rather than a generic page.
+  console_markers: ["adminer", "phpmyadmin", "pgadmin", "pma_username", "database console", "sql server", "mysql", "postgresql", "azure database", "cloud database"]
+  # Host suffixes that name a managed database/proxy endpoint worth a bounded probe.
+  db_host_suffixes: [".rds.amazonaws.com", ".docdb.amazonaws.com", ".database.windows.net", ".mongodb.net", ".aivencloud.com", ".neon.tech", ".cloudsql", ".dsql.amazonaws.com"]
+  # Body markers a reachable cloud DB proxy/API returns.
+  db_markers: ["\"cluster\"", "\"dbinstance\"", "mongodb+srv://", "postgres://", "postgresql://", "mysql://", "azure sql", "\"kind\": \"server\""]
+  auth_status: [401, 403]
+  max_candidates: 8
+
+# --------------------------------------------------------------------------- search platforms (ch05#21)
+search_platforms:
+  # Paths that expose Elasticsearch, Kibana or OpenSearch Dashboards without credentials.
+  paths: ["/_cat/indices?format=json", "/_cluster/health", "/app/kibana", "/api/status", "/app/opensearch", "/_opensearch/health"]
+  # Per-product body markers (a 200 carrying one confirms an unauthenticated response).
+  elasticsearch_markers: ["cluster_name", "\"indices\"", "\"docs.count\"", "\"number_of_nodes\"", "\"timed_out\""]
+  kibana_markers: ["kibana", "\"version\":{\"number\"", "kbn-injected-metadata"]
+  opensearch_markers: ["opensearch", "opensearch dashboards", "\"distribution\":\"opensearch\""]
+  auth_status: [401, 403]
+  max_candidates: 8
+
+# --------------------------------------------------------------------------- continuous posture (S23, REQ-POSTURE-001)
+# The continuous cloud-config mode reads a *state snapshot* over one read-only GET per
+# schedule tick — never a sweep, never a write. The canonical input is the normalized
+# export (``{"provider": ..., "resources": [...]}``) a read-only collector endpoint or the
+# lab serves; the AWS/Azure/GCP read-only list responses are parsed directly (see
+# ``arachne.posture.state``). Policies are evaluated over the normalized resource configs:
+# ``key`` may be a dotted path, ``service`` optionally narrows the rule, and a policy fires
+# when the observed value equals ``equals``. Drift is computed against the previous run's
+# committed baseline — findings on *changes*, with before/after in the artifact.
+posture:
+  # Where the check looks for a snapshot on an endpoint asset, in order (shape detection
+  # is content-based, so a provider list response at either path parses directly).
+  snapshot_paths: ["/posture/snapshot", "/_arachne/posture"]
+  policies:
+    - {id: storage-public, severity: high, service: storage, key: public, equals: true, hint: "object storage is publicly readable"}
+    - {id: storage-unencrypted, severity: medium, service: storage, key: encrypted, equals: false, hint: "object storage encryption is disabled"}
+    - {id: database-public, severity: high, key: publicly_accessible, equals: true, hint: "a database is publicly accessible"}
+    - {id: database-unencrypted, severity: medium, service: database, key: encrypted, equals: false, hint: "a database's storage is unencrypted"}
+    - {id: iam-wildcard, severity: high, service: iam, key: wildcard_actions, equals: true, hint: "an IAM policy grants wildcard actions"}
+    - {id: network-open, severity: high, service: network, key: open_to_world, equals: true, hint: "a network ingress allows 0.0.0.0/0"}
+    - {id: key-exposed, severity: high, service: security, key: exposed, equals: true, hint: "a credential or key material is exposed"}
+
+# --------------------------------------------------------------------------- k8s policy (S23, REQ-POSTURE-002/005)
+# The *structured* Kubernetes policy rules the IaC review and the admission webhook share
+# (arachne.posture.iac). Ids are pinned in code — a corpus rule naming an unknown id is
+# refused — but severity and hint are data, so an operator tunes what enforce mode denies
+# without touching code. This section is the shipped mirror of the builtin severities.
+k8s_policy:
+  rules:
+    - {id: k8s-privileged, severity: high, hint: "a container runs with privileged: true"}
+    - {id: k8s-privilege-escalation, severity: medium, hint: "allowPrivilegeEscalation is explicitly true"}
+    - {id: k8s-run-as-root, severity: medium, hint: "runAsNonRoot is explicitly false"}
+    - {id: k8s-host-namespace, severity: high, hint: "hostNetwork/hostPID/hostIPC shares the host namespace"}
+    - {id: k8s-hostpath-volume, severity: high, hint: "a hostPath volume mounts host storage into the pod"}
+    - {id: k8s-latest-image, severity: medium, hint: "a container image has no pinned tag (or :latest)"}
+    - {id: k8s-automount-token, severity: medium, hint: "the pod automounts the default service-account token"}
+    - {id: k8s-dangerous-capability, severity: high, hint: "a container adds a dangerous Linux capability"}

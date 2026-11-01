@@ -1,0 +1,25 @@
+title: LSASS memory access (Sysmon 10)
+id: 8f2c1a10-0e11-4a2b-9c33-6b0e5d7a1003
+status: stable
+description: >-
+  A process opened a handle to lsass.exe with memory-read rights — the credential-dumping
+  access pattern (research ch06#17/#20, ATT&CK T1003.001).
+references:
+  - https://attack.mitre.org/techniques/T1003/001/
+tags: [attack.credential_access, attack.t1003.001]
+logsource:
+  product: windows
+  category: process_access
+detection:
+  selection:
+    EventID: 10
+    TargetImage|endswith: '\lsass.exe'
+  filter_known:
+    SourceImage|endswith:
+      - '\svchost.exe'
+      - '\MsMpEng.exe'
+      - '\csrss.exe'
+  condition: selection and not filter_known
+level: critical
+falsepositives:
+  - EDR and backup agents that legitimately read LSASS memory

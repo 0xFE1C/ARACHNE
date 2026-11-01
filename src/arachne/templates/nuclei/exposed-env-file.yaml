@@ -1,0 +1,44 @@
+id: exposed-env-file
+info:
+  name: Exposed environment file
+  author: arachne
+  severity: high
+  description: >-
+    A dotenv file is served as static content. Environment files hold the credentials the
+    application runs with, so reading one is usually enough to reach the database and any
+    third-party API the application uses (research ch. 04, method 1).
+  tags: [exposure, config, secrets]
+  reference:
+    - https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration
+    - https://cwe.mitre.org/data/definitions/200.html
+
+# A nuclei-compatible subset: requests with method/path, status/word/regex matchers, regex and
+# JSON extractors. Matchers execute in the restricted expression language of
+# `analyzer/conditions.py` (regex + JSONPath only — F-05-02, F-08-06).
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.env"
+      - "{{BaseURL}}/.env.local"
+      - "{{BaseURL}}/.env.production"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        part: body
+        regex:
+          - '(?m)^[A-Z][A-Z0-9_]{2,}=.+$'
+    extractors:
+      - type: regex
+        name: keys
+        part: body
+        group: 0
+        regex:
+          - '(?m)^([A-Z][A-Z0-9_]{2,})='
+      - type: regex
+        name: lines
+        part: body
+        internal: true
+        regex:
+          - '(?m)^[A-Z][A-Z0-9_]{2,}=.+$'

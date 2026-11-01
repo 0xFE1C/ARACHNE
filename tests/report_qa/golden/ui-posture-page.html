@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Posture — Default workspace</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/htmx.min.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <span class="brand">ARACHNE</span>
+  <nav>
+    <a href="/ui/">Dashboard</a>
+    <a href="/ui/scans">Scans</a>
+    <a href="/ui/posture">Posture</a>
+    <a href="/ui/modules">Modules</a>
+    <a href="/ui/feeds">Feeds</a>
+    <a href="/ui/plugins">Plugins</a>
+    <a href="/ui/quality">Quality</a>
+    <a href="/ui/schedules">Schedules</a>
+    <a href="/docs" target="_blank" rel="noopener">API</a>
+  </nav>
+  <span class="spacer"></span>
+  <span class="muted small"><PRINCIPAL></span>
+  <form method="post" action="/ui/logout" class="inline"><button type="submit">Sign out</button></form>
+</header>
+<main>
+<h1>Executive dashboard</h1>
+<p class="muted small">
+  Posture for <strong>Default workspace</strong>, assembled from stored scans only — no scan runs
+  to render this page. Generated <TIMESTAMP>.
+</p>
+
+<div class="grid cols-2">
+  <section class="panel">
+    <h2>Open severity across the newest scans</h2>
+    <p class="counts">
+        <span class="badge sev-critical">0 critical</span>
+        <span class="badge sev-high">0 high</span>
+        <span class="badge sev-medium">0 medium</span>
+        <span class="badge sev-low">0 low</span>
+        <span class="badge sev-info">0 info</span>
+    </p>
+    <p class="muted small">
+      Confirmed findings only; a false-positive or merged row is excluded.
+      0 open in total.
+    </p>
+    <h3>Fix-verification loop</h3>
+    <p class="muted small">
+      0 closed by verification ·
+      0 re-opened as regressions ·
+      0 verified still open
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2>Control coverage</h2>
+      <p class="muted">No compliance framework is configured, or no scan has produced a
+        coverage block yet. Set <code>ARACHNE_REPORT_COMPLIANCE_FRAMEWORKS</code> and run a scan.</p>
+  </section>
+</div>
+
+<section class="panel">
+  <h2>Posture trend (oldest → newest)</h2>
+  <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="posture trend" viewBox="0 0 720 220" width="100%" preserveAspectRatio="xMidYMid meet" font-family="ui-monospace, Menlo, monospace"><rect x="46" y="16" width="662" height="162" fill="none" stroke="#2a3546"/><rect x="358.00" y="176.00" width="38.00" height="2" fill="#8a97a8"/><text x="377.00" y="196" fill="#8a97a8" font-size="10" text-anchor="middle">1</text><text x="38" y="26" fill="#8a97a8" font-size="10" text-anchor="end">1</text><text x="38" y="178" fill="#8a97a8" font-size="10" text-anchor="end">0</text><text x="46" y="212" fill="#8a97a8" font-size="10">scan id (oldest → newest) · tallest bar = 1 finding(s)</text></svg>
+</section>
+
+<section class="panel">
+  <h2>Drift since the previous scan</h2>
+  <p class="muted">Fewer than two scans, so there is no period to compare yet.</p>
+</section>
+
+<div class="grid cols-2">
+  <section class="panel">
+    <h2>Estate inventory</h2>
+      <p class="muted">No cloud baseline has been imported
+        (<code>arachne posture</code> … observe).</p>
+  </section>
+
+  <section class="panel">
+    <h2>Watched scopes</h2>
+      <p class="muted">No scope is being watched for drift yet.</p>
+  </section>
+</div>
+
+<section class="panel">
+  <h2>Scans in this trend</h2>
+  <table>
+    <thead><tr><th>Scan</th><th>Target</th><th>Findings</th><th>Created</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><a href="/ui/scans/1">#1</a></td>
+        <td>seeded</td>
+        <td><span class="counts"><span class="muted small">none</span></span></td>
+        <td class="muted small"><TIMESTAMP></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+</main>
+</body>
+</html>

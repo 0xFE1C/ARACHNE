@@ -1,0 +1,23 @@
+title: Network logon to an administrative share (lateral movement)
+id: 8f2c1a10-0e11-4a2b-9c33-6b0e5d7a1005
+status: stable
+description: >-
+  A type-3 (network) logon reaching an administrative share (C$/ADMIN$/IPC$) — a lateral
+  movement pattern used after credential discovery (research ch06#21, ATT&CK T1021.002).
+references:
+  - https://attack.mitre.org/techniques/T1021/002/
+tags: [attack.lateral_movement, attack.t1021.002]
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4624
+    LogonType: 3
+  share:
+    ShareName|endswith:
+      - '$'
+  condition: selection and share
+level: medium
+falsepositives:
+  - Administrative tooling and backup jobs that mount shares

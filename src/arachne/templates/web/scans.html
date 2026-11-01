@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Scans · ARACHNE{% endblock %}
+{% block content %}
+<h1>Scans</h1>
+
+<section class="panel">
+  <h2>Start a scan</h2>
+  <form class="stack" method="post" action="/ui/scans" hx-post="/ui/scans" hx-swap="none">
+    <div>
+      <label for="target_id">Stored target</label>
+      <select id="target_id" name="target_id">
+        <option value="">— choose a stored target —</option>
+        {% for target in targets %}
+        <option value="{{ target.id }}">#{{ target.id }} · {{ target.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="definition">…or paste a target definition (JSON)</label>
+      <textarea id="definition" name="definition" rows="4"
+        placeholder='{"name": "lab", "targets": [{"kind": "url", "value": "https://example.com/"}], "attestation": {"attested_by": "you", "attested_at": "2026-10-01T00:00:00Z", "allowed_targets": ["example.com"]}}'></textarea>
+    </div>
+    <div>
+      <label for="engine">Engine</label>
+      <select id="engine" name="engine">
+        <option value="">fixture default</option>
+        <option value="heuristic">heuristic</option>
+        <option value="hybrid">hybrid</option>
+        <option value="ai">ai</option>
+      </select>
+    </div>
+    <label><input type="checkbox" name="active_checks"> active checks (attestation must authorize)</label>
+    <button class="primary" type="submit">Start scan</button>
+  </form>
+  <p class="muted small">
+    The scan is admitted, then runs in the background; this page reloads on the new scan.
+    A live scan needs a complete attestation — the same gate the CLI enforces (F-01-09).
+  </p>
+</section>
+
+<h2>History</h2>
+{% if scans %}
+<table>
+  <thead>
+    <tr><th>Scan</th><th>Target</th><th>Status</th><th>Findings</th><th>Created</th><th>Controls</th></tr>
+  </thead>
+  <tbody>
+  {% for scan in scans %}
+    <tr>
+      <td><a href="/ui/scans/{{ scan.id }}">#{{ scan.id }}</a></td>
+      <td>{{ scan.target }}</td>
+      <td>{{ ui.status_label(scan.status, scan.running) }}</td>
+      <td>{{ ui.counts(scan.counts, severities) }}</td>
+      <td class="muted small">{{ scan.created_at }}</td>
+      <td>
+        {% if scan.running %}
+        <form class="inline" method="post" action="/ui/scans/{{ scan.id }}/stop"
+              hx-post="/ui/scans/{{ scan.id }}/stop" hx-swap="none">
+          <button class="danger" type="submit">Stop</button>
+        </form>
+        {% else %}
+        <a href="/ui/scans/{{ scan.id }}/report">report</a>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">No scans yet.</p>
+{% endif %}
+
+<p class="muted small">
+  Recurring scans live under <a href="/ui/schedules">Schedules</a>.
+</p>
+{% endblock %}

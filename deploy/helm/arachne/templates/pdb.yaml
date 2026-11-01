@@ -1,0 +1,18 @@
+{{- /* The API's disruption budget: with `replicas: 2`, one replica may always be
+  down for maintenance without dropping availability (the HA story of REQ-OPS-005).
+*/ -}}
+{{- if ge (int .Values.api.replicas) 2 }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "arachne.fullname" . }}-api
+  labels:
+    {{- include "arachne.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- include "arachne.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+{{- end }}

@@ -1,0 +1,23 @@
+title: Scheduled-task persistence created by a non-system process
+id: 8f2c1a10-0e11-4a2b-9c33-6b0e5d7a1006
+status: stable
+description: >-
+  A scheduled task was registered by a process that is not the task service or a known
+  management agent — a persistence pattern attackers use to survive a reboot (research
+  ch06#22, ATT&CK T1053.005).
+references:
+  - https://attack.mitre.org/techniques/T1053/005/
+tags: [attack.persistence, attack.t1053.005]
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4698
+  filter_known:
+    SubjectUserName|endswith:
+      - '$'
+  condition: selection and not filter_known
+level: medium
+falsepositives:
+  - Software installers and configuration-management agents

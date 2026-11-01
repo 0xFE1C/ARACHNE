@@ -1,0 +1,9 @@
+{
+  "short_description": "[ARACHNE high] Exposed .env file — https://target.example/.env (scan 7)",
+  "description": "ARACHNE found a high issue on https://target.example/.env.\n\nSeverity: high · Confidence: 92\n\nWhat ARACHNE established\n  Remove the file from the deployment and rotate the exposed credentials.\n\nFull report: https://arachne.example/scans/7\n\nThis incident was opened automatically from a scan finding. Assign it for verification and remediation; the ARACHNE report carries the evidence.",
+  "impact": 1,
+  "urgency": 2,
+  "category": "vulnerability",
+  "subcategory": "arachne",
+  "comments": "Opened by ARACHNE scan 7 · check m4.env-file-probe · report: https://arachne.example/scans/7"
+}

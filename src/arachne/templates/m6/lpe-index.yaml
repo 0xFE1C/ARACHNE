@@ -1,0 +1,124 @@
+# ARACHNE M6 offline local-privilege-escalation index — managed data (ch06#16, F-09-04).
+#
+# The offline half of "version-based local privilege-escalation matching" (docs/spec/05- M6):
+# m6.lpe-discovery matches the OS/service versions M6 learned (from the M2 fingerprint
+# inventory, the web crawl's Server banner, or an operator-supplied asset export) against this
+# table, so a scan reports real privesc CVEs with no network access.
+#
+# Same fields as the M2 CVE index (modules/m2/catalog.py CveEntry), so the two snapshots read
+# the same way and refreshing this file is a data update, not a code change:
+#   product     canonical product name (matched case-insensitively against a fingerprint)
+#   aliases     other names a banner/export may use for the same product
+#   affected    version constraints; a version matches when *every* constraint holds
+#               (operators: <, <=, >, >=, ==, or the shorthand `all`)
+#   cve/cvss/epss/cwe/title/impact/remediation/references
+#
+# Snapshot provenance: Linux kernel + common SUID-tool privesc advisories, curated to the
+# products ARACHNE can fingerprint. Refreshing it is a data update.
+index_version: "2026.10"
+generated_at: "2026-10-20T00:00:00Z"
+entries:
+  - product: policykit
+    aliases: ["polkit", "pkexec", "polkitd"]
+    affected: [all]
+    cve: CVE-2021-4034
+    cvss: 7.8
+    epss: 0.89
+    cwe: CWE-787
+    title: "PwnKit — pkexec local privilege escalation"
+    impact: >-
+      pkexec mishandles the argument vector, letting any local user execute code as root
+      through an out-of-bounds write. Present in every polkit version shipped since 2009.
+    remediation: Update polkit to a patched release, or remove the setuid bit from pkexec.
+    references: [https://nvd.nist.gov/vuln/detail/CVE-2021-4034]
+  - product: linux-kernel
+    aliases: ["linux kernel", "kernel", "linux"]
+    affected: [{op: ">=", version: "5.8"}, {op: "<", version: "5.16.11"}]
+    cve: CVE-2022-0847
+    cvss: 7.8
+    epss: 0.51
+    cwe: CWE-665
+    title: "Dirty Pipe — pipe-buffer overwrite of read-only files"
+    impact: >-
+      An unprivileged user can overwrite page-cache data in read-only files, escalating to
+      root by modifying a setuid binary or /etc/passwd.
+    remediation: Upgrade the kernel to 5.16.11 / 5.15.25 / 5.10.102 or later.
+    references: [https://nvd.nist.gov/vuln/detail/CVE-2022-0847]
+  - product: linux-kernel
+    aliases: ["linux kernel", "kernel", "linux"]
+    affected: [{op: "<", version: "5.1.17"}]
+    cve: CVE-2019-13272
+    cvss: 7.8
+    epss: 0.19
+    cwe: CWE-269
+    title: "ptrace PTRACE_TRACEME privilege escalation"
+    impact: >-
+      A flaw in the ptrace handling of PTRACE_TRACEME lets a local user gain root by
+      manipulating a parent process that drops privileges.
+    remediation: Upgrade the kernel to 5.1.17 / 4.19.59 or later.
+    references: [https://nvd.nist.gov/vuln/detail/CVE-2019-13272]
+  - product: sudo
+    aliases: ["sudo"]
+    affected: [{op: ">=", version: "1.8.2"}, {op: "<", version: "1.9.5"}]
+    cve: CVE-2021-3156
+    cvss: 7.8
+    epss: 0.42
+    cwe: CWE-193
+    title: "Baron Samedit — sudo heap-based buffer overflow"
+    impact: >-
+      sudo crashes and can be exploited for root when a command is run with the -s or -i
+      option with a trailing backslash; any local user can trigger it.
+    remediation: Upgrade sudo to 1.9.5p2 or later.
+    references: [https://nvd.nist.gov/vuln/detail/CVE-2021-3156]
+  - product: linux-kernel
+    aliases: ["linux kernel", "kernel", "linux"]
+    affected: [{op: ">=", version: "3.16"}, {op: "<", version: "5.13.4"}]
+    cve: CVE-2021-33909
+    cvss: 7.8
+    epss: 0.22
+    cwe: CWE-787
+    title: "Sequoia — size_t-to-int conversion in seq_file"
+    impact: >-
+      An unprivileged user can create a deeply-nested directory structure to overflow a
+      size_t in seq_file and escalate to root.
+    remediation: Upgrade the kernel to 5.13.4 / 5.10.50 or later.
+    references: [https://nvd.nist.gov/vuln/detail/CVE-2021-33909]
+  - product: linux-kernel
+    aliases: ["linux kernel", "kernel", "linux"]
+    affected: [{op: ">=", version: "2.6.22"}, {op: "<", version: "4.8.3"}]
+    cve: CVE-2016-5195
+    cvss: 7.8
+    epss: 0.35
+    cwe: CWE-362
+    title: "Dirty COW — copy-on-write race condition"
+    impact: >-
+      A race in the copy-on-write handling of private memory mappings lets a local user
+      write to read-only files and escalate to root.
+    remediation: Upgrade the kernel to 4.8.3 / 4.4.26 / 3.16.37 or later.
+    references: [https://nvd.nist.gov/vuln/detail/CVE-2016-5195]
+  - product: linux-kernel
+    aliases: ["linux kernel", "kernel", "linux"]
+    affected: [{op: ">=", version: "5.11"}, {op: "<", version: "6.2"}]
+    cve: CVE-2023-0386
+    cvss: 7.8
+    epss: 0.31
+    cwe: CWE-282
+    title: "OverlayFS improper ownership handling"
+    impact: >-
+      A flaw in the OverlayFS copy-up of setuid files lets a local user escalate to root on
+      systems where unprivileged overlay mounts are permitted.
+    remediation: Upgrade the kernel to 6.2 or later, or disable unprivileged user namespaces.
+    references: [https://nvd.nist.gov/vuln/detail/CVE-2023-0386]
+  - product: glibc
+    aliases: ["gnu libc", "libc6", "libc"]
+    affected: [{op: ">=", version: "2.34"}, {op: "<", version: "2.36"}]
+    cve: CVE-2021-3999
+    cvss: 7.4
+    epss: 0.12
+    cwe: CWE-193
+    title: "glibc getcwd() off-by-one buffer overflow"
+    impact: >-
+      A one-byte overflow in getcwd() can be reached from an application that chdir()s into
+      a long path, potentially leading to a crash or code execution.
+    remediation: Upgrade glibc to 2.36 or a distribution backport.
+    references: [https://nvd.nist.gov/vuln/detail/CVE-2021-3999]

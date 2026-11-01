@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Scan {{ scan.id }} · ARACHNE{% endblock %}
+{% block content %}
+<h1>Scan #{{ scan.id }} — {{ scan.target }}</h1>
+
+<div class="grid cols-2">
+  <section class="panel">
+    <h2>Status</h2>
+    <p>{{ ui.status_label(scan.status, scan.running) }}</p>
+    <p class="muted small">
+      engine {{ scan.engine }} · created {{ scan.created_at }}<br>
+      started {{ scan.started_at }} · finished {{ scan.finished_at }}
+    </p>
+    <p>{{ ui.counts(scan.counts, severities) }}</p>
+    <p>
+      <a href="/ui/scans/{{ scan.id }}/report">markdown report</a>
+      <a href="/ui/scans/{{ scan.id }}/attack-paths">attack paths</a>
+      {% if scan.running and principal.role != "viewer" %}
+      · <form class="inline" method="post" action="/ui/scans/{{ scan.id }}/stop"
+              hx-post="/ui/scans/{{ scan.id }}/stop" hx-swap="none">
+          <button class="danger" type="submit">Stop scan</button>
+        </form>
+      {% endif %}
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2>Pipeline</h2>
+    <table>
+      <thead><tr><th>Step</th><th>Status</th><th>Attempts</th></tr></thead>
+      <tbody>
+      {% for step in steps %}
+        <tr>
+          <td>{{ step.step }}</td>
+          <td>{{ ui.status_label(step.status, false) }}
+            {% if step.error %}<div class="small error">{{ step.error }}</div>{% endif %}</td>
+          <td class="muted small">{{ step.attempts }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="3" class="muted">no steps recorded yet</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<section class="panel">
+  <h2>Assets ({{ assets | length }})</h2>
+  {% if assets %}
+  <p class="small">
+    {% for asset in assets[:60] %}<span class="badge sev-other">{{ asset.kind }}</span> {{ asset.value }}{% if not loop.last %} · {% endif %}{% endfor %}
+    {% if assets | length > 60 %}<span class="muted">… {{ assets | length - 60 }} more</span>{% endif %}
+  </p>
+  {% else %}
+  <p class="muted">No assets recorded.</p>
+  {% endif %}
+</section>
+
+<h2>Findings</h2>
+<form class="filters"
+      hx-get="/ui/scans/{{ scan.id }}/findings"
+      hx-target="#findings" hx-swap="innerHTML" hx-trigger="change, submit">
+  <div><label for="f-module">Module</label>
+    <input id="f-module" name="module" value="{{ filters.module }}" placeholder="m4"></div>
+  <div><label for="f-severity">Severity</label>
+    <select id="f-severity" name="severity">
+      <option value="">any</option>
+      {% for severity in severities %}
+      <option value="{{ severity }}" {{ 'selected' if filters.severity == severity }}>{{ severity }}</option>
+      {% endfor %}
+      <option value="unanalysed" {{ 'selected' if filters.severity == 'unanalysed' }}>unanalysed</option>
+    </select></div>
+  <div><label for="f-cwe">CWE</label>
+    <input id="f-cwe" name="cwe" value="{{ filters.cwe }}" placeholder="CWE-200"></div>
+  <div><label for="f-asset">Asset</label>
+    <input id="f-asset" name="asset" value="{{ filters.asset }}" placeholder="example.com"></div>
+  <div><label for="f-q">Title contains</label>
+    <input id="f-q" name="q" value="{{ filters.q }}"></div>
+  <div><button type="submit">Filter</button></div>
+</form>
+
+<div id="findings">
+  {% include "_findings.html" %}
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+# Damn Vulnerable Web Application (DVWA) — module family set (REQ-QUAL-005).
+#
+# DVWA's vulnerabilities live under `/vulnerabilities/<family>/`, one module per weakness, at
+# four security levels. The suite scores the modules at `low`, where the application is
+# vulnerable; the trap is the same module with the fix applied as DVWA's `impossible` level
+# prescribes (a hardened path served by the lab's hardened configuration).
+name: dvwa
+version: "1.0"
+target: "http://localhost:8080/ (vulnerables/web-dvwa image)"
+source: recorded
+required: false
+reproduce: >-
+  docker run -p 8080:80 vulnerables/web-dvwa && arachne scan --url http://localhost:8080/
+  --credential dvwa --attestation ... && python -m arachne.tools.benchmark --suite dvwa
+  --target http://localhost:8080/ --write-baseline
+notes: >-
+  DVWA needs an authenticated session for most modules, so the reproducing command scans with
+  a credential (REQ-CREDS-001). The suite therefore also guards the credentialed path.
+cases:
+  - {check_id: m3.sqli-oracle, marker: "/vulnerabilities/sqli/", expect: tp}
+  - {check_id: m3.sqli-oracle, marker: "/vulnerabilities/sqli_blind/", expect: tp}
+  - {check_id: m3.xss-oracle, marker: "/vulnerabilities/xss_r/", expect: tp}
+  - {check_id: m3.xss-oracle, marker: "/vulnerabilities/xss_s/", expect: tp}
+  - {check_id: m3.cmdi-oracle, marker: "/vulnerabilities/exec/", expect: tp}
+  - {check_id: m3.upload-audit, marker: "/vulnerabilities/upload/", expect: tp}
+  - {check_id: m3.traversal-oracle, marker: "/vulnerabilities/fi/", expect: tp}
+  - {check_id: m3.csrf-audit, marker: "/vulnerabilities/csrf/", expect: tp}
+  - {check_id: m3.upload-audit, marker: "/vulnerabilities/upload-hardened/", expect: fp}
+  - {check_id: m3.xss-oracle, marker: "/vulnerabilities/xss_r_safe/", expect: fp}

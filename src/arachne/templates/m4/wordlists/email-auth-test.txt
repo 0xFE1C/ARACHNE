@@ -1,0 +1,4 @@
+# Not a probe list: documentation of the record names the email-auth check derives.
+_spf
+_dmarc
+default._domainkey

@@ -1,0 +1,59 @@
+{{- /* The migration Job (REQ-OPS-005): `arachne db upgrade` as a pre-install and
+  pre-upgrade hook, so the schema is current before the API rolls. Idempotent on
+  every run (Alembic's contract); the hook weights order it before anything else.
+*/ -}}
+{{- include "arachne.requireSecrets" . }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "arachne.fullname" . }}-migrate
+  labels:
+    {{- include "arachne.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migration.backoffLimit }}
+  {{- with .Values.migration.ttlSecondsAfterFinished }}
+  ttlSecondsAfterFinished: {{ . }}
+  {{- end }}
+  template:
+    metadata:
+      name: {{ include "arachne.fullname" . }}-migrate
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ include "arachne.serviceAccountName" . }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: migrate
+          image: {{ include "arachne.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["arachne"]
+          args: ["db", "upgrade"]
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.auth.existingSecret | default (printf "%s-postgres" (include "arachne.fullname" .)) }}
+                  key: {{ .Values.postgres.auth.secretKey }}
+            {{- if not .Values.api.auth.existingSecret }}
+            - name: ARACHNE_API_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "arachne.fullname" . }}
+                  key: arachne-api-keys
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "arachne.fullname" . }}-config
+            {{- if not .Values.api.auth.existingSecret }}
+            - secretRef:
+                name: {{ include "arachne.fullname" . }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.migration.resources | nindent 12 }}

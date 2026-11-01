@@ -1,0 +1,1803 @@
+{
+  "$defs": {
+    "Appendix": {
+      "additionalProperties": false,
+      "description": "Section 11 of docs/spec/06- \u00a73: payloads, audit, scope events, FP log, glossary.",
+      "properties": {
+        "audit": {
+          "$ref": "#/$defs/AuditHighlights"
+        },
+        "evidence": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ReportEvidence"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "false_positives": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/FalsePositiveEntry"
+          },
+          "title": "False Positives",
+          "type": "array"
+        },
+        "glossary": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Glossary",
+          "type": "object"
+        }
+      },
+      "title": "Appendix",
+      "type": "object"
+    },
+    "AssetEntry": {
+      "additionalProperties": false,
+      "description": "One discovered asset (docs/spec/06- \u00a73 section 4).",
+      "properties": {
+        "cve_refs": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Cve Refs",
+          "type": "array"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "tags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "value": {
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "value"
+      ],
+      "title": "AssetEntry",
+      "type": "object"
+    },
+    "AssetRef": {
+      "additionalProperties": false,
+      "description": "The affected asset (docs/spec/06- \u00a71 ``asset``).",
+      "properties": {
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "tags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "value": {
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "value"
+      ],
+      "title": "AssetRef",
+      "type": "object"
+    },
+    "AttackPathEntry": {
+      "additionalProperties": false,
+      "description": "A composed path: its hops, what it achieves, and the cheapest way to break it.",
+      "properties": {
+        "asset": {
+          "title": "Asset",
+          "type": "string"
+        },
+        "cheapest_break": {
+          "default": "",
+          "title": "Cheapest Break",
+          "type": "string"
+        },
+        "cheapest_check_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cheapest Check Id"
+        },
+        "cheapest_finding_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cheapest Finding Id"
+        },
+        "fully_verified": {
+          "default": false,
+          "title": "Fully Verified",
+          "type": "boolean"
+        },
+        "hops": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AttackPathHop"
+          },
+          "title": "Hops",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "severity": {
+          "title": "Severity",
+          "type": "string"
+        },
+        "stages": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Stages",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "asset",
+        "severity"
+      ],
+      "title": "AttackPathEntry",
+      "type": "object"
+    },
+    "AttackPathHop": {
+      "additionalProperties": false,
+      "description": "One hop of a chain as the report renders it (REQ-AGENT-003).\n\n``verified`` is the load-bearing field: a hop the analyzer accepted is evidence, and one it\ndid not is a *candidate* that names the check which would verify it. A report that showed\nboth the same way would be claiming a chain it cannot support.",
+      "properties": {
+        "asset": {
+          "default": "",
+          "title": "Asset",
+          "type": "string"
+        },
+        "check_id": {
+          "title": "Check Id",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "finding_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Finding Id"
+        },
+        "marker": {
+          "default": "",
+          "title": "Marker",
+          "type": "string"
+        },
+        "severity": {
+          "title": "Severity",
+          "type": "string"
+        },
+        "stage": {
+          "title": "Stage",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "verified": {
+          "default": false,
+          "title": "Verified",
+          "type": "boolean"
+        },
+        "verifying_check": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Verifying Check"
+        }
+      },
+      "required": [
+        "stage",
+        "check_id",
+        "title",
+        "severity"
+      ],
+      "title": "AttackPathHop",
+      "type": "object"
+    },
+    "AuditHighlights": {
+      "additionalProperties": false,
+      "description": "The audit-log summary and out-of-scope events (docs/spec/06- \u00a73 appendix B/C).",
+      "properties": {
+        "actions": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Actions",
+          "type": "object"
+        },
+        "blocked_events": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Blocked Events",
+          "type": "integer"
+        },
+        "first_event_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "First Event At"
+        },
+        "last_event_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Event At"
+        },
+        "out_of_scope_events": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Out Of Scope Events",
+          "type": "array"
+        },
+        "total_events": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Total Events",
+          "type": "integer"
+        }
+      },
+      "title": "AuditHighlights",
+      "type": "object"
+    },
+    "Branding": {
+      "additionalProperties": false,
+      "description": "White-label presentation for a report (S14, MSSP use case).\n\nThe default is the neutral ARACHNE presentation, so a report rendered with no branding\nis byte-identical to the pre-S14 output (the renderers only add a block when\n:meth:`is_customised`). A project stores its branding as YAML/JSON; every value here is\noperator-supplied, so colours and the logo URL are validated at construction rather\nthan escaped downstream.\n\n``logo_url`` is **HTML/PDF only** and must be ``https``/``http``/``data:image`` \u2014 the\nMarkdown renderer prints ``logo_text`` (initials) instead, because Markdown has no\ndependable way to carry a remote image into a text report. ``classification`` is the\nhandling banner (``CONFIDENTIAL``, ``INTERNAL``); it is printed on every page footer.",
+      "properties": {
+        "accent_color": {
+          "default": "#c00000",
+          "title": "Accent Color",
+          "type": "string"
+        },
+        "classification": {
+          "default": "",
+          "title": "Classification",
+          "type": "string"
+        },
+        "company_name": {
+          "default": "",
+          "title": "Company Name",
+          "type": "string"
+        },
+        "contact": {
+          "default": "",
+          "title": "Contact",
+          "type": "string"
+        },
+        "footer_text": {
+          "default": "",
+          "title": "Footer Text",
+          "type": "string"
+        },
+        "logo_text": {
+          "default": "",
+          "title": "Logo Text",
+          "type": "string"
+        },
+        "logo_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Logo Url"
+        },
+        "primary_color": {
+          "default": "#1f4e79",
+          "title": "Primary Color",
+          "type": "string"
+        },
+        "product_name": {
+          "default": "ARACHNE",
+          "title": "Product Name",
+          "type": "string"
+        },
+        "show_arachne_branding": {
+          "default": true,
+          "title": "Show Arachne Branding",
+          "type": "boolean"
+        },
+        "tagline": {
+          "default": "",
+          "title": "Tagline",
+          "type": "string"
+        }
+      },
+      "title": "Branding",
+      "type": "object"
+    },
+    "CheckRun": {
+      "additionalProperties": false,
+      "description": "One check that ran (or was deliberately not run) \u2014 scope & methodology section.",
+      "properties": {
+        "module": {
+          "title": "Module",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "ran": {
+          "default": true,
+          "title": "Ran",
+          "type": "boolean"
+        },
+        "research_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Research Ref"
+        },
+        "skip_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Skip Reason"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "module",
+        "name",
+        "version",
+        "title"
+      ],
+      "title": "CheckRun",
+      "type": "object"
+    },
+    "Classification": {
+      "additionalProperties": false,
+      "description": "CWE/CVE/CAPEC and the OWASP Top-10 mapping (docs/spec/06- \u00a71 ``classification``).",
+      "properties": {
+        "capec": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Capec",
+          "type": "array"
+        },
+        "cve": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cve"
+        },
+        "cwe": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cwe"
+        },
+        "owasp_2025": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owasp 2025"
+        }
+      },
+      "title": "Classification",
+      "type": "object"
+    },
+    "ExecutiveSummary": {
+      "additionalProperties": false,
+      "description": "Section 2 of docs/spec/06- \u00a73: narrative, counts and priority order.",
+      "properties": {
+        "counts": {
+          "$ref": "#/$defs/SeverityCounts"
+        },
+        "headline_finding_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Headline Finding Ids",
+          "type": "array"
+        },
+        "low_confidence_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Low Confidence Count",
+          "type": "integer"
+        },
+        "paragraphs": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Paragraphs",
+          "type": "array"
+        },
+        "posture": {
+          "default": "unknown",
+          "title": "Posture",
+          "type": "string"
+        },
+        "priority_order": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Priority Order",
+          "type": "array"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "synthesized": {
+          "default": true,
+          "title": "Synthesized",
+          "type": "boolean"
+        }
+      },
+      "title": "ExecutiveSummary",
+      "type": "object"
+    },
+    "FalsePositiveEntry": {
+      "additionalProperties": false,
+      "description": "A finding the analyzer dropped or merged, kept for the appendix (F-05-07).",
+      "properties": {
+        "finding_id": {
+          "title": "Finding Id",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Severity"
+        },
+        "status": {
+          "default": "fp",
+          "title": "Status",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "finding_id",
+        "title"
+      ],
+      "title": "FalsePositiveEntry",
+      "type": "object"
+    },
+    "FeedFreshness": {
+      "additionalProperties": false,
+      "description": "One feed kind's freshness, as the report shows it (REQ-INTEL-001).\n\n``imported_at=None`` means \"this deployment has not ingested this feed\", which is a\ndifferent statement from \"the feed is stale\" and is rendered as such: a report reader\nmust be able to tell \"we looked and found nothing\" from \"we never looked\".",
+      "properties": {
+        "age_hours": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Age Hours"
+        },
+        "digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Digest"
+        },
+        "imported_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Imported At"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "title": "Name",
+          "type": "string"
+        },
+        "record_count": {
+          "default": 0,
+          "title": "Record Count",
+          "type": "integer"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "stale": {
+          "default": false,
+          "title": "Stale",
+          "type": "boolean"
+        },
+        "ttl_hours": {
+          "default": 0.0,
+          "title": "Ttl Hours",
+          "type": "number"
+        },
+        "verification": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Verification"
+        },
+        "verified": {
+          "default": false,
+          "title": "Verified",
+          "type": "boolean"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "FeedFreshness",
+      "type": "object"
+    },
+    "FindingProof": {
+      "additionalProperties": false,
+      "description": "The per-finding proof artifact (S15, REQ-PROOF-013).\n\nCarries what the ladder did to prove this finding \u2014 the level, the method, the\ntoken/nonce when the proof was out-of-band or a command echo, and the cleanup\nstatus in operator-readable form. Rendered as the finding's *Proof* section.",
+      "properties": {
+        "cleanup": {
+          "default": "",
+          "title": "Cleanup",
+          "type": "string"
+        },
+        "detail": {
+          "additionalProperties": true,
+          "title": "Detail",
+          "type": "object"
+        },
+        "level": {
+          "title": "Level",
+          "type": "string"
+        },
+        "method": {
+          "default": "",
+          "title": "Method",
+          "type": "string"
+        },
+        "nonce": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nonce"
+        },
+        "token": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Token"
+        }
+      },
+      "required": [
+        "level"
+      ],
+      "title": "FindingProof",
+      "type": "object"
+    },
+    "IntelFreshness": {
+      "additionalProperties": false,
+      "description": "The threat-intel block: what data this scan's conclusions rest on (S18).\n\n``stale`` means *an ingested feed is older than its configured TTL*; ``missing`` lists the\nkinds nobody ingested. ``providers`` names the third-party indexes the deployment was\nallowed to consult (never a key, never a query) so an absent finding from an opted-out\nprovider is not read as a clean result.",
+      "properties": {
+        "feeds": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/FeedFreshness"
+          },
+          "title": "Feeds",
+          "type": "array"
+        },
+        "generated_at": {
+          "default": "",
+          "title": "Generated At",
+          "type": "string"
+        },
+        "missing": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing",
+          "type": "array"
+        },
+        "opted_in_providers": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Opted In Providers",
+          "type": "array"
+        },
+        "providers": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Providers",
+          "type": "array"
+        },
+        "stale": {
+          "default": false,
+          "title": "Stale",
+          "type": "boolean"
+        }
+      },
+      "title": "IntelFreshness",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "description": "Which engine decided this finding, and on what corpus (F-03-05, docs/spec/06- \u00a71).",
+      "properties": {
+        "analysis_log_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Analysis Log Id"
+        },
+        "engine": {
+          "default": "heuristic",
+          "title": "Engine",
+          "type": "string"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "rule_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Rule Ids",
+          "type": "array"
+        },
+        "signatures": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Signatures",
+          "type": "array"
+        },
+        "template_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Template Version"
+        }
+      },
+      "title": "Provenance",
+      "type": "object"
+    },
+    "RemediationPlan": {
+      "additionalProperties": false,
+      "description": "A resolved catalog entry (docs/spec/06- \u00a76): summary, steps, verification, refs.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "references": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "References",
+          "type": "array"
+        },
+        "source": {
+          "default": "catalog",
+          "title": "Source",
+          "type": "string"
+        },
+        "steps": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Steps",
+          "type": "array"
+        },
+        "summary": {
+          "title": "Summary",
+          "type": "string"
+        },
+        "verification": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Verification",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "summary"
+      ],
+      "title": "RemediationPlan",
+      "type": "object"
+    },
+    "ReportCover": {
+      "additionalProperties": false,
+      "description": "Section 1 of docs/spec/06- \u00a73 (the cover/header).",
+      "properties": {
+        "arachne_version": {
+          "default": "",
+          "title": "Arachne Version",
+          "type": "string"
+        },
+        "authorization": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Authorization"
+        },
+        "engine": {
+          "default": "heuristic",
+          "title": "Engine",
+          "type": "string"
+        },
+        "generated_at": {
+          "format": "date-time",
+          "title": "Generated At",
+          "type": "string"
+        },
+        "module_versions": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Module Versions",
+          "type": "object"
+        },
+        "scan_finished_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scan Finished At"
+        },
+        "scan_id": {
+          "title": "Scan Id",
+          "type": "string"
+        },
+        "scan_started_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scan Started At"
+        },
+        "schema_version": {
+          "default": "1.6",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "target": {
+          "title": "Target",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "target",
+        "scan_id",
+        "generated_at"
+      ],
+      "title": "ReportCover",
+      "type": "object"
+    },
+    "ReportDiff": {
+      "additionalProperties": false,
+      "description": "The scan-to-scan skeleton of F-06-05 / docs/spec/06- \u00a77.\n\nFull trend rendering is S11; this is the data the diff section is written from and the\npayload persisted in ``scans_diff``.",
+      "properties": {
+        "fixed": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Fixed",
+          "type": "array"
+        },
+        "new": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "New",
+          "type": "array"
+        },
+        "recurring": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Recurring",
+          "type": "array"
+        },
+        "regressed": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Regressed",
+          "type": "array"
+        },
+        "scan_a": {
+          "title": "Scan A",
+          "type": "string"
+        },
+        "scan_b": {
+          "title": "Scan B",
+          "type": "string"
+        },
+        "severity_trend": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          "title": "Severity Trend",
+          "type": "object"
+        },
+        "suppressed": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Suppressed",
+          "type": "array"
+        },
+        "suppression_version": {
+          "default": 0,
+          "title": "Suppression Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "scan_a",
+        "scan_b"
+      ],
+      "title": "ReportDiff",
+      "type": "object"
+    },
+    "ReportEvidence": {
+      "additionalProperties": false,
+      "description": "One evidence payload, addressed by its report id (docs/spec/06- \u00a75, appendix A).",
+      "properties": {
+        "captured_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Captured At"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "payload": {
+          "additionalProperties": true,
+          "title": "Payload",
+          "type": "object"
+        },
+        "redacted": {
+          "default": true,
+          "title": "Redacted",
+          "type": "boolean"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        },
+        "summary": {
+          "title": "Summary",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "summary"
+      ],
+      "title": "ReportEvidence",
+      "type": "object"
+    },
+    "ReportFinding": {
+      "additionalProperties": false,
+      "description": "One finding, exactly the docs/spec/06- \u00a71 schema.",
+      "properties": {
+        "asset": {
+          "$ref": "#/$defs/AssetRef"
+        },
+        "check_id": {
+          "title": "Check Id",
+          "type": "string"
+        },
+        "check_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Check Version"
+        },
+        "classification": {
+          "$ref": "#/$defs/Classification"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "low_confidence": {
+          "default": false,
+          "title": "Low Confidence",
+          "type": "boolean"
+        },
+        "module": {
+          "title": "Module",
+          "type": "string"
+        },
+        "proof": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FindingProof"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "remediation": {
+          "$ref": "#/$defs/RemediationPlan"
+        },
+        "research_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Research Ref"
+        },
+        "scan_id": {
+          "title": "Scan Id",
+          "type": "string"
+        },
+        "score": {
+          "$ref": "#/$defs/Score"
+        },
+        "severity": {
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "info"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "status": {
+          "default": "open",
+          "title": "Status",
+          "type": "string"
+        },
+        "timestamps": {
+          "$ref": "#/$defs/Timestamps"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "scan_id",
+        "module",
+        "check_id",
+        "title",
+        "asset",
+        "severity",
+        "score",
+        "remediation"
+      ],
+      "title": "ReportFinding",
+      "type": "object"
+    },
+    "ScopeMethodology": {
+      "additionalProperties": false,
+      "description": "Section 3 of docs/spec/06- \u00a73: what was scanned, how, and under which limits.",
+      "properties": {
+        "authenticated": {
+          "default": false,
+          "title": "Authenticated",
+          "type": "boolean"
+        },
+        "checks": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CheckRun"
+          },
+          "title": "Checks",
+          "type": "array"
+        },
+        "checks_run": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Checks Run",
+          "type": "integer"
+        },
+        "checks_skipped": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Checks Skipped",
+          "type": "integer"
+        },
+        "credentials": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Credentials",
+          "type": "array"
+        },
+        "duration_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duration Seconds"
+        },
+        "engine_mode": {
+          "default": "heuristic",
+          "title": "Engine Mode",
+          "type": "string"
+        },
+        "exclusions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Exclusions",
+          "type": "array"
+        },
+        "finished_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Finished At"
+        },
+        "modules": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Modules",
+          "type": "array"
+        },
+        "rate_limits": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "title": "Rate Limits",
+          "type": "object"
+        },
+        "report_schema_version": {
+          "default": "1.6",
+          "title": "Report Schema Version",
+          "type": "string"
+        },
+        "requested_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Requested By"
+        },
+        "research_corpus_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Research Corpus Version"
+        },
+        "scope": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Scope",
+          "type": "object"
+        },
+        "started_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Started At"
+        },
+        "target_name": {
+          "title": "Target Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target_name"
+      ],
+      "title": "ScopeMethodology",
+      "type": "object"
+    },
+    "Score": {
+      "additionalProperties": false,
+      "description": "The F-05-04 scoring output as the report prints it (docs/spec/06- \u00a71 ``score``).",
+      "properties": {
+        "confidence": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "integer"
+        },
+        "cvss_base": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cvss Base"
+        },
+        "cvss_vector": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cvss Vector"
+        },
+        "epss": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Epss"
+        },
+        "owasp_risk": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owasp Risk"
+        }
+      },
+      "required": [
+        "confidence"
+      ],
+      "title": "Score",
+      "type": "object"
+    },
+    "SeverityCounts": {
+      "additionalProperties": false,
+      "description": "The counts table of docs/spec/06- \u00a73 section 2 (confirmed findings only).",
+      "properties": {
+        "critical": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Critical",
+          "type": "integer"
+        },
+        "high": {
+          "default": 0,
+          "minimum": 0,
+          "title": "High",
+          "type": "integer"
+        },
+        "info": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Info",
+          "type": "integer"
+        },
+        "low": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Low",
+          "type": "integer"
+        },
+        "medium": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Medium",
+          "type": "integer"
+        }
+      },
+      "title": "SeverityCounts",
+      "type": "object"
+    },
+    "StateChangeEntry": {
+      "additionalProperties": false,
+      "description": "One L4 state change, for the report-level *state changes* table (REQ-PROOF-013).\n\n``restored=False`` is not a rendering detail \u2014 it is a repair instruction: the\ntarget is not in its prior state and an operator must act (REQ-PROOF-010).",
+      "properties": {
+        "after": {
+          "default": "",
+          "title": "After",
+          "type": "string"
+        },
+        "before": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Before"
+        },
+        "change_id": {
+          "title": "Change Id",
+          "type": "string"
+        },
+        "check": {
+          "title": "Check",
+          "type": "string"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "restore_verified": {
+          "default": false,
+          "title": "Restore Verified",
+          "type": "boolean"
+        },
+        "restored": {
+          "default": false,
+          "title": "Restored",
+          "type": "boolean"
+        },
+        "where": {
+          "title": "Where",
+          "type": "string"
+        }
+      },
+      "required": [
+        "change_id",
+        "kind",
+        "check",
+        "where"
+      ],
+      "title": "StateChangeEntry",
+      "type": "object"
+    },
+    "Timestamps": {
+      "additionalProperties": false,
+      "description": "When the finding was first/last seen and, if verified, when (docs/spec/06- \u00a71).",
+      "properties": {
+        "first_seen": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "First Seen"
+        },
+        "last_seen": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Seen"
+        },
+        "verified_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Verified At"
+        }
+      },
+      "title": "Timestamps",
+      "type": "object"
+    }
+  },
+  "$id": "https://arachne.local/schema/report-1.6.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The immutable report document (ADR-06). Every renderer consumes exactly this.",
+  "properties": {
+    "appendix": {
+      "$ref": "#/$defs/Appendix"
+    },
+    "assets": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/AssetEntry"
+      },
+      "title": "Assets",
+      "type": "array"
+    },
+    "attack_paths": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/AttackPathEntry"
+      },
+      "title": "Attack Paths",
+      "type": "array"
+    },
+    "branding": {
+      "$ref": "#/$defs/Branding"
+    },
+    "cover": {
+      "$ref": "#/$defs/ReportCover"
+    },
+    "diff": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReportDiff"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "executive_summary": {
+      "$ref": "#/$defs/ExecutiveSummary"
+    },
+    "findings": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ReportFinding"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "intel": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/IntelFreshness"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "low_confidence": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ReportFinding"
+      },
+      "title": "Low Confidence",
+      "type": "array"
+    },
+    "patch_gap": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Patch Gap"
+    },
+    "scan_id": {
+      "title": "Scan Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.6",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "scope": {
+      "$ref": "#/$defs/ScopeMethodology"
+    },
+    "state_changes": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/StateChangeEntry"
+      },
+      "title": "State Changes",
+      "type": "array"
+    },
+    "target_name": {
+      "title": "Target Name",
+      "type": "string"
+    }
+  },
+  "required": [
+    "scan_id",
+    "target_name",
+    "cover",
+    "executive_summary",
+    "scope"
+  ],
+  "title": "ReportData",
+  "type": "object"
+}

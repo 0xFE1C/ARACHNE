@@ -1,0 +1,18 @@
+# ARACHNE Kerberos principal wordlist (research ch02#19).
+#
+# Kerberos enumeration is lockout-sensitive: the check paces these probes and caps how many
+# it sends (ARACHNE_KERBEROS_MAX_NAMES). Keep the list short and high-signal.
+administrator
+admin
+guest
+krbtgt
+svc-sql
+svc-backup
+svc-web
+svc-exchange
+backup
+sqlservice
+webservice
+support
+helpdesk
+honeypot

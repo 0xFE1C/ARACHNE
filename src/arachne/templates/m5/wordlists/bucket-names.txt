@@ -1,0 +1,43 @@
+# Bucket name candidates for m5.bucket-enumerator (one per line, comments ignored).
+# A deployment replaces this via ARACHNE_M5_PROBES. Stems are combined with the target's
+# organisation label as ``<org>-<stem>``.
+backup
+backups
+backup-prod
+db-backup
+database-backups
+data
+logs
+static
+assets
+media
+uploads
+public
+private
+internal
+config
+secrets
+archive
+archives
+files
+storage
+snapshots
+tfstate
+terraform-state
+website
+web
+cdn
+dist
+builds
+artifacts
+releases
+deploy
+production
+staging
+dev
+test
+tmp
+temp
+exports
+reports
+documents

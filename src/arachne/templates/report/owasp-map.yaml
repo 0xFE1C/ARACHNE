@@ -1,0 +1,167 @@
+# CWE → OWASP Top 10 mapping for the report's `classification.owasp_2025` field
+# (docs/spec/06- §1). Managed data (F-09-04): point ARACHNE_REPORT_OWASP_MAP at a file to
+# replace it. The category names carry the edition year because the spec allows either the
+# 2021 or a current-year mapping; this file uses the 2021 edition, which is still current.
+#
+# Only CWEs a shipped check or rule can emit need an entry; an unmapped CWE renders as
+# `null` rather than a guessed category.
+
+version: "1.0"
+
+#: Edition the labels below belong to (printed in the glossary).
+edition: "2021"
+
+categories:
+  A01: "A01:2021-Broken Access Control"
+  A02: "A02:2021-Cryptographic Failures"
+  A03: "A03:2021-Injection"
+  A04: "A04:2021-Insecure Design"
+  A05: "A05:2021-Security Misconfiguration"
+  A06: "A06:2021-Vulnerable and Outdated Components"
+  A07: "A07:2021-Identification and Authentication Failures"
+  A08: "A08:2021-Software and Data Integrity Failures"
+  A09: "A09:2021-Security Logging and Monitoring Failures"
+  A10: "A10:2021-Server-Side Request Forgery"
+
+by_cwe:
+  CWE-22: A01
+  CWE-284: A01
+  CWE-639: A01
+  CWE-601: A01
+  CWE-352: A01
+  CWE-311: A02
+  CWE-319: A02
+  CWE-321: A02
+  CWE-326: A02
+  CWE-327: A02
+  CWE-89: A03
+  CWE-79: A03
+  CWE-434: A03
+  CWE-113: A03
+  CWE-16: A05
+  CWE-200: A05
+  CWE-204: A05
+  CWE-209: A05
+  CWE-290: A05
+  CWE-306: A05
+  CWE-345: A05
+  CWE-489: A05
+  CWE-530: A05
+  CWE-532: A05
+  CWE-497: A05
+  CWE-538: A05
+  CWE-540: A05
+  CWE-548: A05
+  CWE-614: A05
+  CWE-650: A05
+  CWE-693: A05
+  CWE-732: A05
+  CWE-770: A05
+  CWE-942: A05
+  CWE-1004: A05
+  CWE-1021: A05
+  CWE-1188: A05
+  CWE-1035: A06
+  CWE-1104: A06
+  CWE-477: A06
+  CWE-287: A07
+  CWE-521: A07
+  CWE-798: A07
+  CWE-1392: A07
+  CWE-918: A10
+  # --- S10 (M3 extended + M5): the classes the extended checks and rules can emit.
+  CWE-1336: A03
+  CWE-611: A05
+  CWE-78: A03
+  CWE-502: A08
+  CWE-444: A03
+  CWE-347: A08
+  CWE-235: A03
+  CWE-1321: A03
+  CWE-362: A04
+  CWE-915: A01
+  CWE-840: A04
+  CWE-1385: A01
+  CWE-350: A05
+  CWE-312: A02
+  CWE-1116: A05
+  CWE-250: A05
+  CWE-269: A01
+  CWE-427: A08
+  # --- S11 M6 families.
+  CWE-506: A08
+  CWE-1426: A03
+  CWE-778: A09
+  # --- Phase 4 top-120 remediation expansion. Memory-safety classes (CWE-119/121/122/125/
+  # 190/400/416/476/674/787/843) have no published Top-10 category; A04 (Insecure Design)
+  # is the closest class and is used so the report never leaves the field empty for them.
+  CWE-119: A04
+  CWE-121: A04
+  CWE-122: A04
+  CWE-125: A04
+  CWE-190: A04
+  CWE-400: A04
+  CWE-416: A04
+  CWE-476: A04
+  CWE-674: A04
+  CWE-787: A04
+  CWE-843: A04
+  CWE-20: A03
+  CWE-77: A03
+  CWE-94: A03
+  CWE-98: A03
+  CWE-184: A03
+  CWE-470: A03
+  CWE-471: A03
+  CWE-610: A03
+  CWE-643: A03
+  CWE-917: A03
+  CWE-943: A03
+  CWE-1236: A03
+  CWE-913: A01
+  CWE-259: A07
+  CWE-276: A01
+  CWE-281: A01
+  CWE-295: A07
+  CWE-297: A07
+  CWE-346: A07
+  CWE-359: A01
+  CWE-384: A07
+  CWE-522: A04
+  CWE-523: A02
+  CWE-598: A04
+  CWE-613: A07
+  CWE-620: A07
+  CWE-640: A07
+  CWE-1390: A07
+  CWE-1391: A07
+  CWE-328: A02
+  CWE-330: A02
+  CWE-338: A02
+  CWE-759: A02
+  CWE-760: A02
+  CWE-780: A02
+  CWE-425: A01
+  CWE-441: A01
+  CWE-552: A01
+  CWE-566: A01
+  CWE-668: A01
+  CWE-862: A01
+  CWE-863: A01
+  CWE-367: A04
+  CWE-377: A01
+  CWE-451: A04
+  CWE-472: A04
+  CWE-501: A04
+  CWE-602: A04
+  CWE-807: A04
+  CWE-841: A04
+  CWE-1333: A04
+  CWE-315: A05
+  CWE-428: A08
+  CWE-526: A05
+  CWE-776: A05
+  CWE-426: A08
+  CWE-494: A08
+  CWE-829: A08
+

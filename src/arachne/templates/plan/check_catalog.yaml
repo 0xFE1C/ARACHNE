@@ -1,0 +1,1924 @@
+# ARACHNE planning catalogue — the checks a scan *would* run.
+#
+# This file is data, not code (docs/spec/07- §4, ADR-04) and is versioned with the
+# repository. It is the input to the dry-run/plan mode (F-01-10): it lets
+# `arachne scan --dry-run` print a complete, reviewable plan — modules, checks, and an
+# estimated request count — without loading a single detection module or making a single
+# request.
+#
+# Fields
+#   module               M1..M6, per docs/spec/02- §2.2
+#   name                 stable check id (kebab-case); unique per module
+#   version              check version, recorded in scan reports (docs/spec/07- §4)
+#   title / description  operator-facing prose for the plan and the audit trail
+#   research_ref         traceability link into the research corpus (e.g. ch04#1)
+#   cwe                  primary weakness class, where one is known up front
+#   target_kinds         which target definition kinds the check applies to (F-01-01)
+#   estimated_requests   requests the check is expected to make per applicable asset
+#   proof               the check's proof-ladder declaration (L0..L4, S15/PROOF):
+#                        L1 everywhere today; L2+ rows are opt-in and L3/L4 additionally
+#                        require a state-change attestation (REQ-PROOF-001..004)
+#   requires_active_checks
+#                        true when the check performs anything beyond a plain GET —
+#                        a non-GET interaction, fuzzing, or credential verification
+#                        (F-01-09). Active checks are only planned when the scan opts in
+#                        *and* the authorization attestation authorizes them.
+#
+# S3 keeps this file as the planner's input and adds the M1 rows that the module registry
+# actually implements; `tests/unit/test_catalog_parity.py` fails the build when the two
+# disagree, so a plan can never describe a check differently from the code that runs it.
+# S4 adds the M2 rows the registry implements; M3-M6 below are still *planned* only and the
+# plan marks them `implemented: false`.
+catalog_version: "1.10"
+checks:
+  # ---------------------------------------------------------------- M1 recon & attack surface
+  # Implemented in S3 (arachne/modules/m1/). The rows below are generated from the check
+  # metadata so they cannot drift from the code; tests/unit/test_registry.py fails the
+  # build if they ever disagree. References are the canonical method numbers in
+  # docs/research/01-reconnaissance-and-osint.md (see ADR-070.3 for the spec-05 discrepancy).
+  - module: M1
+    name: dork-sweep
+    version: "1.0"
+    title: Search-engine dork sweep
+    description: Runs the versioned dork corpus (GHDB-aligned) against the configured search API and records which queries surface indexed material for the target.
+    research_ref: ch01#1
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [domain, domain_pattern]
+    estimated_requests: 4
+
+  - module: M1
+    name: code-secret-mining
+    version: "1.0"
+    title: Public code-host secret mining
+    description: Queries a code-search API for configuration files and credentials referencing the target domain. Opt-in and token budgeted.
+    research_ref: ch01#2
+    proof: L1
+    cwe: CWE-798
+    target_kinds: [domain, domain_pattern, git]
+    estimated_requests: 3
+
+  - module: M1
+    name: internetdb-triage
+    version: "1.0"
+    title: InternetDB address triage
+    description: Looks up every declared address in Shodan InternetDB (keyless) for open ports, CPE fingerprints and known CVEs, before any active service scan.
+    research_ref: ch01#5
+    proof: L1
+    cwe: CWE-1035
+    target_kinds: [ip, cidr]
+    estimated_requests: 1
+
+  - module: M1
+    name: ct-lookup
+    version: "1.0"
+    title: Certificate Transparency lookup
+    description: Queries crt.sh for every certificate naming the declared domain and records the hostnames its SANs expose.
+    research_ref: ch01#8
+    proof: L1
+    target_kinds: [domain, domain_pattern]
+    estimated_requests: 1
+
+  - module: M1
+    name: passive-dns
+    version: "1.0"
+    title: Passive DNS history
+    description: Queries a passive-DNS database for the addresses, CNAMEs, mail servers and name servers the declared name has ever resolved to.
+    research_ref: ch01#11
+    proof: L1
+    target_kinds: [domain, domain_pattern]
+    estimated_requests: 1
+
+  - module: M1
+    name: subdomain-passive
+    version: "1.0"
+    title: Passive subdomain aggregation
+    description: Merges and de-duplicates subdomains observed by several passive sources (certificate transparency, passive DNS, web archives) into one host set.
+    research_ref: ch01#13
+    proof: L1
+    target_kinds: [domain, domain_pattern]
+    estimated_requests: 3
+
+  - module: M1
+    name: webarchive-harvest
+    version: "1.0"
+    title: Web archive URL harvesting
+    description: Harvests historical URLs for the declared host from the Wayback Machine CDX index and the Common Crawl index, and flags archived paths that match the sensitive-path table.
+    research_ref: ch01#14-16
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [domain, domain_pattern]
+    estimated_requests: 2
+
+  - module: M1
+    name: email-harvest
+    version: "1.0"
+    title: Organization email harvesting
+    description: Searches the configured search API for addresses at the target domain and infers the organization's address-generation pattern.
+    research_ref: ch01#17
+    proof: L1
+    target_kinds: [domain, domain_pattern]
+    estimated_requests: 3
+
+  - module: M1
+    name: js-asset-scan
+    version: "1.0"
+    title: JavaScript asset scan
+    description: Fetches the page and its JavaScript bundles and extracts API endpoints, referenced assets and hardcoded credentials (reported masked).
+    research_ref: ch01#26
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [url]
+    estimated_requests: 3
+
+  # ---------------------------------------------------------------- M2 network & services
+  # Implemented in S4 (arachne/modules/m2/). Generated from the check metadata, so it cannot
+  # drift from the code (tests/unit/test_registry.py enforces this parity for every module).
+  # research_ref values are the canonical method numbers in
+  # docs/research/02-active-scanning-and-enumeration.md (see ADR-080.3 for the spec-05
+  # discrepancy). estimated_requests is per applicable asset: the M2 checks form a pipeline
+  # and the shared inventory gates the work each one actually does.
+  - module: M2
+    name: host-discovery
+    version: "1.0"
+    title: Host discovery
+    description: >-
+      Determines which addresses in the declared ranges are alive, combining an ICMP echo probe with a TCP connect sweep over a few common ports (a host that drops ICMP still answers TCP), and records every live host in the asset inventory.
+    research_ref: ch02#1-4
+    proof: L1
+    target_kinds: [ip, cidr, domain, domain_pattern]
+    estimated_requests: 1
+    requires_active_checks: true
+
+  - module: M2
+    name: port-scan
+    version: "1.0"
+    title: TCP port scan
+    description: >-
+      Probes the top-ports policy (ARACHNE_NET_MAX_PORTS, default 100) on every live host with a TCP connect scan, using python-nmap when it is installed and permitted and the pure-Python connect scanner otherwise.
+    research_ref: ch02#4-7
+    proof: L1
+    target_kinds: [ip, cidr, domain, domain_pattern, url]
+    estimated_requests: 1
+    requires_active_checks: true
+
+  - module: M2
+    name: os-fingerprint
+    version: "1.0"
+    title: OS fingerprinting
+    description: >-
+      Infers an operating-system family for each live host from the ICMP reply TTL and from service banners, each with the observation that produced it. Best-effort by design: no probe battery and no raw-socket spoofing.
+    research_ref: ch02#8
+    proof: L1
+    target_kinds: [ip, cidr, domain, domain_pattern]
+    estimated_requests: 1
+    requires_active_checks: true
+
+  - module: M2
+    name: service-fingerprint
+    version: "1.0"
+    title: Service version detection
+    description: >-
+      Identifies the protocol, product and version behind every open port, using the banner the port already sent and a bounded probe suite (HTTP, TLS, Redis, memcached, MongoDB, SMTP, ...) when it did not. The result is what the CVE correlation consumes.
+    research_ref: ch02#9-10
+    proof: L1
+    target_kinds: [ip, cidr, domain, domain_pattern, url]
+    estimated_requests: 2
+    requires_active_checks: true
+
+  - module: M2
+    name: tls-deep-scan
+    version: "1.0"
+    title: TLS configuration scan
+    description: >-
+      Profiles every TLS endpoint M2 found: which protocol versions it negotiates, which cipher suites it accepts (probed one suite at a time), and whether its certificate is valid, trusted, correctly named and strongly keyed. Weak protocols and suites are reported with the handshake that accepted them.
+    research_ref: ch02#14
+    proof: L1
+    cwe: CWE-327
+    target_kinds: [ip, cidr, domain, domain_pattern, url]
+    estimated_requests: 2
+    requires_active_checks: true
+
+  - module: M2
+    name: snmp-enum
+    version: "1.0"
+    title: SNMP enumeration
+    description: >-
+      Probes 161/udp with a community-string catalogue (public/private plus vendor defaults) and a read-only GET on the system group, reporting readable and writable communities together with the system description, name and contacts they expose. UDP probing requires ARACHNE_NET_ALLOW_UDP in addition to this check's opt-in.
+    research_ref: ch02#15
+    proof: L1
+    cwe: CWE-306
+    target_kinds: [ip, cidr, domain, domain_pattern]
+    estimated_requests: 4
+    requires_active_checks: true
+
+  - module: M2
+    name: smb-enum
+    version: "1.0"
+    title: SMB enumeration
+    description: >-
+      Negotiates SMB2 to learn the supported dialects and whether message signing is required, then attempts an NTLMSSP anonymous session to establish whether the server accepts a session with no credential. Reports SMBv1 support, missing signing requirements and anonymous access; never authenticates with a credential.
+    research_ref: ch02#16
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [ip, cidr, domain, domain_pattern, url]
+    estimated_requests: 2
+    requires_active_checks: true
+
+  - module: M2
+    name: nfs-enum
+    version: "1.0"
+    title: NFS export enumeration
+    description: >-
+      Dumps the portmapper/rpcbind registration table (RPCBPROC_DUMP) and then the NFS export list from mountd (MOUNTPROC_EXPORT), reporting which exports are offered and to whom. No filesystem is mounted and no file is read.
+    research_ref: ch02#17
+    proof: L1
+    cwe: CWE-284
+    target_kinds: [ip, cidr, domain, domain_pattern, url]
+    estimated_requests: 2
+    requires_active_checks: true
+
+  - module: M2
+    name: ldap-enum
+    version: "1.0"
+    title: LDAP anonymous bind
+    description: >-
+      Reads the LDAP rootDSE for the naming contexts and supported versions, then attempts an anonymous simple bind. A directory that answers an anonymous bind can be enumerated by any network client, which is the finding.
+    research_ref: ch02#18
+    proof: L1
+    cwe: CWE-287
+    target_kinds: [ip, cidr, domain, domain_pattern, url]
+    estimated_requests: 2
+    requires_active_checks: true
+
+  - module: M2
+    name: kerberos-enum
+    version: "1.0"
+    title: Kerberos user enumeration
+    description: >-
+      Sends Kerberos AS-REQ probes and reads the KDC's error code to establish which principal names exist (PREAUTH_REQUIRED means the account is real, CLIENT_UNKNOWN means it is not). Paced and capped by design: the check must not produce the lockout event it is meant to warn about.
+    research_ref: ch02#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [ip, cidr, domain, domain_pattern, url]
+    estimated_requests: 4
+    requires_active_checks: true
+
+  - module: M2
+    name: smtp-enum
+    version: "1.0"
+    title: SMTP enumeration
+    description: >-
+      Speaks EHLO to read the mail server's capabilities, then uses VRFY/EXPN (or a paced MAIL FROM/RCPT TO exchange when the verbs are disabled) against a small wordlist to establish which mailboxes exist. Bounded and paced: enumeration of existence, never a delivery or an authentication attempt.
+    research_ref: ch02#20
+    proof: L1
+    target_kinds: [ip, cidr, domain, domain_pattern, url]
+    estimated_requests: 6
+    requires_active_checks: true
+
+  - module: M2
+    name: db-service-probe
+    version: "1.0"
+    title: Database service probing
+    description: >-
+      Fingerprints database wire protocols (MySQL, PostgreSQL, MSSQL) for product and version, and establishes whether Redis, memcached, MongoDB, Elasticsearch or CouchDB answer without authentication by reading their metadata endpoints read-only. No credential is submitted and no data is modified.
+    research_ref: ch02#22-23
+    proof: L1
+    cwe: CWE-284
+    target_kinds: [ip, cidr, domain, domain_pattern, url]
+    estimated_requests: 4
+    requires_active_checks: true
+
+  - module: M2
+    name: rdp-vnc-detect
+    version: "1.0"
+    title: RDP/VNC detection
+    description: >-
+      Negotiates X.224 with RDP services to see whether NLA (CredSSP) is required, and reads the RFB security-type list from VNC services to see whether authentication is required at all. A passwordless VNC server and an RDP service without NLA are reported as findings; no credential is ever submitted.
+    research_ref: ch02#25
+    proof: L1
+    target_kinds: [ip, cidr, domain, domain_pattern, url]
+    estimated_requests: 2
+    requires_active_checks: true
+
+  - module: M2
+    name: ssh-enum
+    version: "1.0"
+    title: SSH enumeration
+    description: >-
+      Reads the SSH banner for the daemon's product and version, then exchanges a KEXINIT to enumerate the key-exchange, host-key, cipher and MAC algorithms the server offers. Reports deprecated algorithms (ssh-rsa/SHA-1, group1-sha1, RC4, 3DES) as findings and feeds the version to the CVE correlation.
+    research_ref: ch02#24
+    proof: L1
+    target_kinds: [ip, cidr, domain, domain_pattern, url]
+    estimated_requests: 2
+    requires_active_checks: true
+
+  - module: M2
+    name: dns-active
+    version: "1.0"
+    title: Active DNS enumeration
+    description: >-
+      Attempts a zone transfer (AXFR) against the zone's nameserver and then resolves a bounded dictionary of candidate subdomains over TCP, recording every name that resolves as a discovered host. A successful transfer is reported as the exposure it is.
+    research_ref: ch02#28
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [domain, domain_pattern]
+    estimated_requests: 3
+    requires_active_checks: true
+
+  - module: M2
+    name: ics-probe
+    version: "1.0"
+    title: ICS/SCADA protocol probing
+    description: >-
+      Reads a Modbus device identification (function 0x2B) over TCP and, when UDP is enabled, sends a BACnet/IP Who-Is, reporting vendor, model and firmware of any controller that answers. Opt-in because OT protocols are unauthenticated by design and their endpoints are the most sensitive in an estate.
+    research_ref: ch02#27
+    proof: L1
+    cwe: CWE-306
+    target_kinds: [ip, cidr, domain, domain_pattern]
+    estimated_requests: 2
+    requires_active_checks: true
+
+  - module: M2
+    name: cve-correlate
+    version: "1.0"
+    title: CVE/EPSS correlation
+    description: >-
+      Matches the product and version M2 fingerprinted against the offline CVE/EPSS index, and reports every known CVE whose version range the observed version falls in. Optional online enrichment through the vulners provider when the deployment has configured a key. Sends nothing to the target.
+    research_ref: ch02#29
+    proof: L1
+    cwe: CWE-1035
+    target_kinds: [ip, cidr, domain, domain_pattern, url]
+    estimated_requests: 0
+    requires_active_checks: false
+
+  # ---------------------------------------------------------------- M3 web application
+  - module: M3
+    name: security-headers
+    version: '1.0'
+    title: Security header and cookie review
+    description: 'Reviews the response hardening of every crawled page (Strict-Transport-Security, Content-Security-Policy with frame-ancestors, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) and the attributes of every cookie the application sets (Secure, HttpOnly, SameSite), reporting the origin''s missing controls. Read-only: it sends no payload and changes nothing.'
+    research_ref: ch03#24
+    proof: L1
+    cwe: CWE-693
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M3
+    name: api-surface
+    version: '1.0'
+    title: API and hidden endpoint surface
+    description: Discovers undocumented endpoints by learning the application's own not-found response, then probing a bounded path wordlist and parsing any OpenAPI/Swagger document it finds; also reads the verbs a discovered endpoint advertises. A path only counts as a finding when its response differs from both the not-found answer and the single-page-application catch-all. GET/OPTIONS only.
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 8
+  - module: M3
+    name: subdomain-takeover
+    version: '1.0'
+    title: Subdomain takeover of a web-facing alias
+    description: 'Matches the can-i-take-over-xyz service fingerprints (GitHub Pages, Heroku, S3, Shopify, Fastly, ...) against the hosts the crawl reached: a page carrying the service''s own ''this name is not configured'' body means the alias points at a service that no longer owns it. When OSINT is enabled the CNAME chain is read too and a CNAME into a fingerprint service raises the confidence. Nothing is claimed or registered.'
+    research_ref: ch03#34
+    proof: L1
+    cwe: CWE-350
+    target_kinds:
+    - url
+    - domain
+    - domain_pattern
+    estimated_requests: 2
+  - module: M3
+    name: csrf-audit
+    version: '1.0'
+    title: CSRF protection audit
+    description: 'Classifies every state-changing form the crawl found by whether it carries a per-session anti-CSRF token and whether the session cookie is SameSite-protected, and reports mutating actions reachable by GET. Read-only: this check sends no payload and submits no form.'
+    research_ref: ch03#4
+    proof: L1
+    cwe: CWE-352
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M3
+    name: deser-audit
+    version: '1.0'
+    title: Insecure deserialization audit
+    description: Fingerprints serialized-object signatures (Java rO0AB, PHP serialize(), .NET BinaryFormatter, pickle) in the crawl's forms, parameters and bodies, then confirms the sink is *processed* by comparing a structurally-valid benign stream against a malformed one (a parser-reaction differential). No gadget chain is sent and nothing is deserialized for effect.
+    research_ref: ch03#9
+    proof: L1
+    cwe: CWE-502
+    target_kinds:
+    - url
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M3
+    name: sqli-oracle
+    version: '1.0'
+    title: SQL injection oracle
+    description: 'Confirms that query-string parameters reach a SQL statement by differential oracles only: a single-character delta whose response carries a database error signature, a true/false predicate pair whose responses diverge, or a blocking-sleep probe whose timing exceeds the baseline. No data is read, extracted or modified.'
+    research_ref: ch03#1
+    proof: L1
+    cwe: CWE-89
+    target_kinds:
+    - url
+    estimated_requests: 24
+    requires_active_checks: true
+  - module: M3
+    name: ssti-oracle
+    version: '1.0'
+    title: Server-side template injection oracle
+    description: 'Sends the arithmetic probes of research ch03#6 ({{7*7}}, ${7*7}, <%= 7*7 %>) into every reflected parameter and confirms when the *evaluated* form (49) appears where the raw probe did not, or when an engine-specific parse error names the template library. Arithmetic only: no built-ins, no file access, no code execution.'
+    research_ref: ch03#6
+    proof: L1
+    cwe: CWE-1336
+    target_kinds:
+    - url
+    estimated_requests: 12
+    requires_active_checks: true
+  - module: M3
+    name: xxe-oracle
+    version: '1.0'
+    title: XML external entity oracle
+    description: 'Posts a minimal external-entity document to every XML-accepting endpoint and confirms the class when the parser resolved the entity: a world-readable, non-secret file''s header line is echoed, or the out-of-band callback fires. The entity never points at a credential file and nothing is exfiltrated.'
+    research_ref: ch03#7
+    proof: L1
+    cwe: CWE-611
+    target_kinds:
+    - url
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M3
+    name: cmdi-oracle
+    version: '1.0'
+    title: OS command injection oracle
+    description: Injects shell separators plus a harmless 'echo <nonce>' sentinel into parameters whose name suggests a command or a lookup, and confirms the class when the sentinel's output is echoed back (research ch03#8). A single blocking-sleep probe is the fallback for a blind sink. Nothing is read, written or exfiltrated.
+    research_ref: ch03#8
+    proof: L1
+    cwe: CWE-78
+    target_kinds:
+    - url
+    estimated_requests: 18
+    requires_active_checks: true
+  - module: M3
+    name: xss-oracle
+    version: '1.0'
+    title: Cross-site scripting reflection oracle
+    description: 'Sends one inert marker (an unknown element plus quote characters, unique per request) into every query-string parameter and classifies how the response reflects it: unencoded HTML, an unencoded quote inside an attribute, or a bare value inside a script block. An encoded reflection is reported as clean. The probe cannot execute in any browser, and DOM-sink verification is out of scope for this stage.'
+    research_ref: ch03#3
+    proof: L1
+    cwe: CWE-79
+    target_kinds:
+    - url
+    estimated_requests: 12
+    requires_active_checks: true
+  - module: M3
+    name: traversal-oracle
+    version: '1.0'
+    title: Path traversal oracle
+    description: 'Confirms path traversal in file-name parameters by content, not status: each encoding class (plain, URL-encoded, double-encoded, overlong, backslash, absolute) is tried against a world-readable, non-secret marker file, and a finding requires the marker''s header line in a response whose benign baseline did not contain it. Read-only: no path is written and nothing sensitive is read.'
+    research_ref: ch03#11
+    proof: L1
+    cwe: CWE-22
+    target_kinds:
+    - url
+    estimated_requests: 16
+    requires_active_checks: true
+  - module: M3
+    name: open-redirect
+    version: '1.0'
+    title: Open redirect oracle
+    description: Feeds redirect-style parameters the URL classes of research ch03#14 (absolute, scheme-relative, backslash confusion, userinfo, encoded, bare host) and reads the Location header. A finding requires the answer to point at the reserved, non-resolving probe host, so it can never redirect a user anywhere real. Redirects are not followed.
+    research_ref: ch03#14
+    proof: L1
+    cwe: CWE-601
+    target_kinds:
+    - url
+    estimated_requests: 12
+    requires_active_checks: true
+  - module: M3
+    name: cors-audit
+    version: '1.0'
+    title: CORS configuration audit
+    description: 'Sends a probe Origin header to the crawled endpoints and reads the Access-Control-Allow-Origin / Allow-Credentials pair: a reflected origin with credentials is a cross-origin read primitive, a reflected origin alone, a null acceptance and a wildcard with credentials each carry their own weight. GET only.'
+    research_ref: ch03#23
+    proof: L1
+    cwe: CWE-942
+    target_kinds:
+    - url
+    estimated_requests: 10
+    requires_active_checks: true
+  - module: M3
+    name: cache-poison-audit
+    version: '1.0'
+    title: Web cache poisoning (unkeyed input) audit
+    description: Injects a reserved marker host (arachne-cache.invalid) through headers a cache may treat as unkeyed (X-Forwarded-Host, X-Original-URL, X-HTTP-Method-Override, ...) and reports the endpoints that reflect it into the response — the unkeyed-input primitive of research ch03#17 — weighting a response that also advertises caching. It never injects live script content into a cache.
+    research_ref: ch03#17
+    proof: L1
+    cwe: CWE-444
+    target_kinds:
+    - url
+    estimated_requests: 12
+    requires_active_checks: true
+  - module: M3
+    name: hpp-oracle
+    version: '1.0'
+    title: HTTP parameter pollution oracle
+    description: 'Sends a security-relevant parameter twice with distinct values and reads the resolution oracle: when the response depends on the *order* of the duplicate values while a single value is stable, the parser resolution is ambiguous (research ch03#25) — the precondition for a WAF/application disagreement. Two bounded requests per parameter; nothing is modified.'
+    research_ref: ch03#25
+    proof: L1
+    cwe: CWE-235
+    target_kinds:
+    - url
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M3
+    name: idor-oracle
+    version: '1.0'
+    title: IDOR / object-level authorization oracle
+    description: 'Enumerates adjacent identifiers on object-id parameters and reports a finding only when several return distinct single-record pages that each carry a per-record identity (an email/username field). When a second session is configured the same identifier is read as both identities, and a foreign-object read is reported. Read-only: only GET requests are sent.'
+    research_ref: ch03#18
+    proof: L1
+    cwe: CWE-639
+    target_kinds:
+    - url
+    estimated_requests: 18
+    requires_active_checks: true
+  - module: M3
+    name: auth-session-audit
+    version: '1.0'
+    title: Authentication and session handling audit
+    description: Reviews the session cookie's hardening attributes, the transport a login form posts over, and whether the login response distinguishes a plausible privileged user name from a random one (user enumeration). The enumeration pass sends a single dummy password per name, is bounded to a few names and never attempts a real credential. Session fixation and logout invalidation are out of scope.
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-287
+    target_kinds:
+    - url
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M3
+    name: jwt-audit
+    version: '1.0'
+    title: JWT verification audit
+    description: 'Finds JWTs the crawl delivered, decodes them, and reads verifier weaknesses without forging an identity: an unsigned (alg=none) token, an HMAC token whose signature an offline weak-secret list reproduces, and — replayed at an endpoint the crawl saw challenge a request — an unsigned token the server still accepts. Verify-only; no live brute-force and no key material is used.'
+    research_ref: ch03#20
+    proof: L1
+    cwe: CWE-347
+    target_kinds:
+    - url
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M3
+    name: oauth-flow-audit
+    version: '1.0'
+    title: OAuth 2.0 flow audit
+    description: 'Probes the authorization endpoint''s redirect_uri validation with the mutation classes of research ch03#21 — an appended path segment, a suffix-matched look-alike host and an userinfo confusion — and reports a mutation the server redirects an authorization to off the registered origin. Read-only: no authorization code is requested, or replayed.'
+    research_ref: ch03#21
+    proof: L1
+    cwe: CWE-601
+    target_kinds:
+    - url
+    estimated_requests: 10
+  - module: M3
+    name: saml-audit
+    version: '1.0'
+    title: SAML assertion signature-handling audit
+    description: 'Posts an unsigned (signature-stripped) SAML assertion to the service provider''s ACS endpoint and reports an acceptance: HTTP 200 without a rejection marker, which means the SP did not verify the signature (research ch03#22). The assertion carries no real identity and no valid signature; nothing is forged.'
+    research_ref: ch03#22
+    proof: L1
+    cwe: CWE-347
+    target_kinds:
+    - url
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M3
+    name: mass-assign-audit
+    version: '1.0'
+    title: Mass assignment (property-level binding) audit
+    description: 'Adds sensitive property names (role, is_admin, balance, verified, ...) to an API body the crawl found binding to an object, and reports the property whose injected value the response reflects back — the object-property over-binding gap of research ch03#26. Detection-only: the property is read from the response, never relied upon, and no durable state is created.'
+    research_ref: ch03#26
+    proof: L1
+    cwe: CWE-915
+    target_kinds:
+    - url
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M3
+    name: proto-pollution
+    version: '1.0'
+    title: Prototype pollution oracle (server-observable)
+    description: Injects a benign prototype key (__proto__ / constructor.prototype) carrying a unique marker through a JSON body the server merges, and reports the marker the server echoed back — the server-observable pollution oracle of research ch03#27. A headless-browser DOM-sink check is out of scope for this stage (ADR-S10-6); the check never attempts to chain the pollution to a sink.
+    research_ref: ch03#27
+    proof: L1
+    cwe: CWE-1321
+    target_kinds:
+    - url
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M3
+    name: graphql-audit
+    version: '1.0'
+    title: GraphQL introspection and schema disclosure
+    description: Runs the introspection query and a wrong-field suggestion probe against the GraphQL endpoints the crawl found, and reports an enabled introspection (full schema disclosure) or a field-suggestion leak (research ch03#32). Read-only queries only; no mutation is sent and no batching amplification is attempted beyond a bounded alias probe.
+    research_ref: ch03#32
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M3
+    name: websocket-audit
+    version: '1.0'
+    title: WebSocket handshake origin validation audit
+    description: 'Attempts the WebSocket upgrade handshake against the endpoints the crawl found, with a reserved attacker Origin, and reports an accepted handshake — the cross-site WebSocket hijacking precondition of research ch03#33. Read-only: the handshake is attempted (a GET with the upgrade headers) and abandoned at once; no frame is sent and no message is injected.'
+    research_ref: ch03#33
+    proof: L1
+    cwe: CWE-1385
+    target_kinds:
+    - url
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M3
+    name: business-logic-audit
+    version: '1.0'
+    title: Business-logic invariant audit
+    description: 'Sends the edge values of research ch03#30 (a negative, zero or huge quantity / a client-supplied price) at the fields that drive a workflow, and reports one the application accepted where its own constraints should have refused it (a success response for a value the flow cannot honour). Detection-only: no order is created and no state is modified.'
+    research_ref: ch03#30
+    proof: L1
+    cwe: CWE-840
+    target_kinds:
+    - url
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M3
+    name: race-oracle
+    version: '1.0'
+    title: Race condition (concurrent-request) oracle
+    description: 'Replays a strictly bounded burst of near-simultaneous identical requests at a single-use action (redeem/coupon/claim/transfer, by path hint) and reports a double-apply: more successful responses than the limit should permit (research ch03#29). The burst size comes from ARACHNE_WEB_RACE_CONCURRENCY; the probe never performs a financial or destructive operation (GET, or a POST the crawl already found).'
+    research_ref: ch03#29
+    proof: L1
+    cwe: CWE-362
+    target_kinds:
+    - url
+    estimated_requests: 16
+    requires_active_checks: true
+  - module: M3
+    name: smuggling-oracle
+    version: '1.0'
+    title: HTTP request smuggling (framing boundary) audit
+    description: 'Reads the HTTP framing boundary of the probed endpoints: a response that carries both a proxy ``Via`` and a distinct origin ``Server`` (or an X-Backend-Server hop) sits behind the two-parser topology a CL.TE/TE.CL desync requires, and is reported as a framing-boundary risk for manual validation (research ch03#16). The check does not emit invalid framing (the shared client refuses it) and never smuggles a hostile request; it confirms surface, not exploitation.'
+    research_ref: ch03#16
+    proof: L1
+    cwe: CWE-444
+    target_kinds:
+    - url
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M3
+    name: rate-limit-audit
+    version: '1.0'
+    title: Rate limiting and anti-automation audit
+    description: 'Issues a small, fixed number of identical requests to the endpoints whose anti-automation posture matters (login, password reset, registration) and reads whether any throttling appears (429, lockout, CAPTCHA), then repeats with a rotating client-supplied forwarded-for header to test whether the control is keyed on a spoofable value. Strictly bounded: it characterizes controls and never mounts a brute-force (ARACHNE_WEB_RATE_PROBES controls the volume).'
+    research_ref: ch03#35
+    proof: L1
+    cwe: CWE-770
+    target_kinds:
+    - url
+    estimated_requests: 12
+    requires_active_checks: true
+  - module: M3
+    name: upload-audit
+    version: '1.0'
+    title: Unrestricted file upload audit
+    description: Walks the upload-validation matrix (executable extension with a mismatched content type, then polyglot-style pairs) against every multipart form the crawl found, using a single inert plain-text marker with no executable content, and reads it back to confirm whether the endpoint stored it. Requires ARACHNE_WEB_UPLOAD_PROBE=true, because storing even an inert marker is a write to the target; with the knob off the check reports itself skipped and sends nothing.
+    research_ref: ch03#10
+    proof: L1
+    cwe: CWE-434
+    target_kinds:
+    - url
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M3
+    name: ssrf-probe
+    version: '1.0'
+    title: Server-side request forgery callback probe
+    description: 'Injects an out-of-band callback URL (ARACHNE_WEB_SSRF_CALLBACK, a service on ARACHNE''s own infrastructure) into every parameter the crawl identified as a server-side fetch sink, and confirms the class when the sink reflected the callback''s nonce (in-band) or the callback service recorded the hit (out-of-band). Off by default: it needs ARACHNE_WEB_SSRF_CALLBACK, ARACHNE_WEB_SSRF_PROBE=true and the active-checks opt-in. No internal address or credential is ever targeted.'
+    research_ref: ch03#5
+    proof: L1
+    cwe: CWE-918
+    target_kinds:
+    - url
+    estimated_requests: 10
+    requires_active_checks: true
+
+  # ---------------------------------------------------------------- M4 misconfiguration & exposure
+  - module: M4
+    name: security-header-review
+    version: "1.0"
+    title: Security response headers missing or weak
+    description: >-
+      Reviews every crawled page's response headers against the hardening baseline (HSTS on HTTPS, CSP with frame-ancestors, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) and flags a CSP that names unsafe-inline/unsafe-eval/a bare wildcard. One finding per origin, because the gap is an origin-wide configuration decision.
+    research_ref: ch04#16
+    proof: L1
+    cwe: CWE-693
+    target_kinds: [url]
+    estimated_requests: 1
+  - module: M4
+    name: cookie-flag-audit
+    version: "1.0"
+    title: Session cookie lacks hardening attributes
+    description: >-
+      Reads the structural Set-Cookie projection the HTTP client captures (name and attributes only — never the value) and reports session-like cookies missing Secure, HttpOnly or SameSite, weighted by whether the name suggests a session and whether the cookie was set over plaintext HTTP.
+    research_ref: ch04#18
+    proof: L1
+    cwe: CWE-614
+    target_kinds: [url]
+    estimated_requests: 1
+  - module: M4
+    name: client-secrets
+    version: "1.0"
+    title: Credential material in client-side assets
+    description: >-
+      Reviews every JavaScript bundle and HTML document the crawl fetched and reports the ones whose raw bytes matched a secret detector (cloud access key, provider API token, JWT, credentialed URL, PEM key). Only the detector names and the asset's provenance are reported; the values were redacted at capture time.
+    research_ref: ch04#14
+    proof: L1
+    cwe: CWE-798
+    target_kinds: [url]
+    estimated_requests: 0
+  - module: M4
+    name: env-file-probe
+    version: "1.0"
+    title: Exposed environment or configuration file
+    description: >-
+      Requests the well-known environment and configuration paths (.env and its variants, wp-config.php, application.properties, config.yml, ...) and reports the ones that return a file instead of a not-found page. A hit is confirmed by credential-bearing key=value lines and by the redactor's detector names; the values themselves are redacted at capture time and never reach the check.
+    research_ref: ch04#1
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [url]
+    estimated_requests: 8
+  - module: M4
+    name: vcs-exposure
+    version: "1.0"
+    title: Exposed version-control metadata
+    description: >-
+      Probes /.git/HEAD, /.git/config, /.svn/entries, /.svn/wc.db and /.hg/requires and confirms the answer by its repository markers (a ref line, a [core] block, an SVN XML/entries body, a SQLite payload). It reports the exposure only; it does not download objects or reconstruct history.
+    research_ref: ch04#2
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 5
+  - module: M4
+    name: backup-file-hunt
+    version: "1.0"
+    title: Downloadable backup or dump file
+    description: >-
+      Combines a bounded name list with backup/dump extensions under the usual backup directories and reports the artifacts that download. A hit is confirmed by the content's own signature (SQL statements, a dotenv body, source code), by an archive/database content type, or by a binary payload where the extension is binary by nature.
+    research_ref: ch04#3
+    proof: L1
+    cwe: CWE-530
+    target_kinds: [url]
+    estimated_requests: 20
+  - module: M4
+    name: key-exposure
+    version: "1.0"
+    title: Private key material exposed
+    description: >-
+      Probes the well-known private-key and keystore paths and reports a reachable one when the response is PEM key material (the redactor's private-key detector fired), carries a PEM header, or is served with a key-file extension and a non-HTML content type. The key's contents never enter evidence.
+    research_ref: ch04#15
+    proof: L1
+    cwe: CWE-321
+    target_kinds: [url]
+    estimated_requests: 8
+  - module: M4
+    name: sourcemap-exposure
+    version: "1.0"
+    title: JavaScript source map exposed
+    description: >-
+      Follows the sourceMappingURL reference of every JavaScript/CSS asset the crawl fetched, requests the map, and reports it when the document carries sources or sourcesContent. Recovered original sources and any secrets the redactor detected are reported by name, never by value.
+    research_ref: ch04#4
+    proof: L1
+    cwe: CWE-540
+    target_kinds: [url]
+    estimated_requests: 6
+  - module: M4
+    name: api-doc-exposure
+    version: "1.0"
+    title: API documentation exposed
+    description: >-
+      Probes the conventional Swagger/OpenAPI/Redoc paths, parses a document it finds (JSON or YAML), and reports the schema plus the routes it publishes. The routes are recorded as assets and added to the shared web inventory under the 'api-doc' source, so m3.api-surface replays them as part of its own endpoint coverage instead of guessing them from a wordlist.
+    research_ref: ch04#5
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [url]
+    estimated_requests: 8
+  - module: M4
+    name: debug-endpoints
+    version: "1.0"
+    title: Debug or diagnostic endpoint reachable
+    description: >-
+      Probes the fixed high-confidence debug surface: phpinfo() pages, Apache server-status/server-info, Spring Boot Actuator (including /actuator/env, /actuator/heapdump and the legacy top-level endpoints), framework debug toolbars/consoles, Prometheus /metrics and Go's /debug/vars. A hit is confirmed by the page's own markers or a stack trace; the heapdump is a hit on a binary download alone.
+    research_ref: ch04#7
+    proof: L1
+    cwe: CWE-489
+    target_kinds: [url]
+    estimated_requests: 20
+  - module: M4
+    name: directory-listing
+    version: "1.0"
+    title: Directory listing enabled
+    description: >-
+      Requests candidate directories with and without the trailing slash and classifies the answer as an auto-generated index (Apache 'Index of', nginx 'Directory listing for', IIS '[To Parent Directory]'). The published entries are extracted as the exposure's evidence, because a listing is a free file inventory.
+    research_ref: ch04#9
+    proof: L1
+    cwe: CWE-548
+    target_kinds: [url]
+    estimated_requests: 10
+  - module: M4
+    name: dashboard-exposure
+    version: "1.0"
+    title: Administrative or monitoring dashboard reachable
+    description: >-
+      Fingerprints the common management and observability UIs (Jenkins, Kibana, Grafana, Prometheus, Consul, phpMyAdmin, SonarQube, RabbitMQ) by path, body marker and response header, and reports each one reachable from the scanning position. It distinguishes an anonymous dashboard from one that presents a login form; the credential attempt itself belongs to m4.default-credentials.
+    research_ref: ch04#11
+    proof: L1
+    cwe: CWE-284
+    target_kinds: [url]
+    estimated_requests: 12
+  - module: M4
+    name: hidden-endpoint-hunt
+    version: "1.0"
+    title: Hidden endpoint or content reachable
+    description: >-
+      Probes a bounded wordlist of unlinked paths (plus a few editor-artifact mutations) and reports the ones that answer differently from the application's not-found page and its single-page catch-all. Only paths that look sensitive by name or that serve a non-HTML file are reported, so the check inventories exposure rather than every route the application owns.
+    research_ref: ch04#24
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [url]
+    estimated_requests: 30
+  - module: M4
+    name: staging-exposure
+    version: "1.0"
+    title: Staging or development surface exposed
+    description: >-
+      Looks for development and staging surfaces in two places: labelled paths on the declared origin (/staging/, /dev/, /test/, ...) and crawled hosts whose name carries a staging label. A path only counts when it is reachable, is not the application's not-found page, and is not the SPA shell; a labelled host is reported from the page the crawl already fetched.
+    research_ref: ch04#25
+    proof: L1
+    cwe: CWE-1188
+    target_kinds: [url]
+    estimated_requests: 10
+  - module: M4
+    name: unauth-api-audit
+    version: "1.0"
+    title: Data-bearing API route answers without authentication
+    description: >-
+      Replays the routes recovered from an exposed API document and the internal-looking routes the crawl found, deliberately without the operator's session, and reports a 200 JSON answer that carries records. A 401/403 is the control working and is not reported. GET only.
+    research_ref: ch04#29
+    proof: L1
+    cwe: CWE-306
+    target_kinds: [url]
+    estimated_requests: 6
+  - module: M4
+    name: bucket-exposure
+    version: "1.0"
+    title: Object-storage bucket is publicly readable
+    description: >-
+      Probes a bucket root for an anonymous listing (<ListBucketResult>, GCS items, Azure EnumerationResults) and for a public ACL (AllUsers / allUsers / container-public-access). Cloud references are translated into the provider's public endpoint; an endpoint: reference (S3-compatible storage, or the lab fixture) is probed directly. Candidate names derived from the target's organisation label are tested with a bounded wordlist. Non-destructive: GET only, no object writes.
+    research_ref: ch04#13
+    proof: L1
+    cwe: CWE-732
+    target_kinds: [cloud, url, domain]
+    estimated_requests: 16
+  - module: M4
+    name: cors-config-review
+    version: "1.0"
+    title: CORS policy allows cross-origin reads
+    description: >-
+      Runs the origin matrix of research ch04#19 — an arbitrary origin, the literal 'null', and a look-alike host — against the crawled JSON/API endpoints and reads Access-Control-Allow-Origin/Allow-Credentials. A reflected origin with credentials is a cross-origin read primitive; a null acceptance and a wildcard with credentials each carry their own weight. GET only.
+    research_ref: ch04#19
+    proof: L1
+    cwe: CWE-942
+    target_kinds: [url]
+    estimated_requests: 9
+    requires_active_checks: true
+  - module: M4
+    name: tls-config-review
+    version: "1.0"
+    title: Weak TLS configuration
+    description: >-
+      Profiles the TLS endpoint behind an https URL asset with the raw-network client: negotiated version and cipher, whether a deprecated protocol (SSLv3, TLS 1.0/1.1) still completes a handshake, and whether the certificate chain validates for the host name. A light review; M2's deep scan is the exhaustive one.
+    research_ref: ch04#17
+    proof: L1
+    cwe: CWE-326
+    target_kinds: [url]
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M4
+    name: email-auth-review
+    version: "1.0"
+    title: Email authentication missing or permissive
+    description: >-
+      Asks a DNS-over-HTTPS resolver for the domain's SPF, DMARC and DKIM TXT records and reports the spoofable configurations: no SPF, an SPF ending in +all/?all, no DMARC, a DMARC policy of none, and no DKIM selector answered. It is a third-party lookup, so it runs only when OSINT is enabled and the 'dns' provider is selected (safe defaults, F-02-09).
+    research_ref: ch04#20
+    proof: L1
+    cwe: CWE-290
+    target_kinds: [url, domain]
+    estimated_requests: 6
+  - module: M4
+    name: webdav-verbs
+    version: "1.0"
+    title: Unsafe HTTP methods or WebDAV enabled
+    description: >-
+      Sends OPTIONS to read the advertised Allow set, PROPFIND to test WebDAV metadata access and TRACE to test cross-site tracing. A write verb (PUT, DELETE, MOVE, COPY, MKCOL) is reported from Allow and never exercised; nothing is uploaded, renamed or deleted.
+    research_ref: ch04#21
+    proof: L1
+    cwe: CWE-650
+    target_kinds: [url]
+    estimated_requests: 9
+    requires_active_checks: true
+  - module: M4
+    name: user-enumeration
+    version: "1.0"
+    title: Username enumeration through a login differential
+    description: >-
+      Submits a single dummy password for a few candidate user names (plus one random name as the invalid baseline) to each credential form the crawl found, and reports a form whose answers differ by status, marker or body length. At most a handful of attempts, one password each: the check confirms that existence is observable, it never guesses a credential.
+    research_ref: ch04#28
+    proof: L1
+    cwe: CWE-204
+    target_kinds: [url]
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M4
+    name: metadata-ssrf
+    version: "1.0"
+    title: Cloud metadata service reachable through a request sink
+    description: >-
+      Injects the provider metadata URLs (AWS 169.254.169.254, GCP computeMetadata, Azure instance) into parameters the crawl identified as likely server-side fetchers and reports the posture from the sink's answer: metadata returned (IMDSv1-style, exploitable) or a 401 challenge (IMDSv2 enforced). Off by default: it needs ARACHNE_M4_METADATA_SSRF=true, an explicit check selection and the active-checks opt-in. It sends GET only and never stores a response body beyond its redacted evidence.
+    research_ref: ch04#26
+    proof: L1
+    cwe: CWE-918
+    target_kinds: [url]
+    estimated_requests: 4
+    requires_active_checks: true
+  - module: M4
+    name: default-credentials
+    version: "1.0"
+    title: Vendor default credentials accepted
+    description: >-
+      Fingerprints a management panel, then makes at most one vendor-default authentication attempt per product, paced and never retried, and reports only a successful login. Off by default: needs ARACHNE_M4_DEFAULT_CREDENTIALS=true, the check named explicitly and the active-checks opt-in. It verifies existence; it never sprays or guesses.
+    research_ref: ch04#10
+    proof: L1
+    cwe: CWE-1392
+    target_kinds: [url]
+    estimated_requests: 10
+    requires_active_checks: true
+
+  # ---------------------------------------------------------------- M5 cloud, container, supply chain
+  - module: M5
+    name: leaked-cloud-keys
+    version: '1.0'
+    title: Leaked cloud credential material in artifacts
+    description: Scans a local repository clone and the crawled web assets for cloud credential patterns (AWS access keys, GCP service-account JSON, Azure client secrets, PEM keys) and reports the credential *kind* and location — the values are masked and never stored. Optional read-only validation (sts:GetCallerIdentity-class) is off by default (ARACHNE_M5_VALIDATE_CLOUD_KEYS) and uses only a configured key.
+    research_ref: ch05#3
+    proof: L1
+    cwe: CWE-798
+    target_kinds:
+    - git
+    - cloud
+    - url
+    estimated_requests: 0
+  - module: M5
+    name: gcp-sa-keys
+    version: '1.0'
+    title: GCP service-account key material exposed
+    description: Scans a local repository clone and crawled assets for GCP service-account key material (a JSON document with type=service_account and a private_key / client_email pair) and reports the location. The key body is masked; the check never attempts token issuance.
+    research_ref: ch05#6
+    proof: L1
+    cwe: CWE-798
+    target_kinds:
+    - git
+    - cloud
+    - url
+    estimated_requests: 0
+  - module: M5
+    name: iam-review
+    version: '1.0'
+    title: IAM over-privilege and escalation paths
+    description: Reviews IAM policy documents in a local repository clone for wildcard actions/resources and privilege-escalation-relevant actions (research ch05#1). The live review (iam:List*/Get*, sts:GetCallerIdentity) requires a read-only credential and is documented in the corpus permission list; with none configured the check performs the static review only.
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-269
+    target_kinds:
+    - git
+    - cloud
+    estimated_requests: 0
+  - module: M5
+    name: cloud-posture
+    version: '1.0'
+    title: Cloud configuration posture and drift
+    description: 'Reads a cloud-config state snapshot with one bounded read-only GET (the normalized export a read-only collector endpoint serves, or an AWS/Azure/GCP list response), evaluates the estate policies over it, and — when the deployment wires the continuous baseline store — diffs it against the last baseline and emits delta findings carrying before/after. On schedules this is the continuous mode: findings on changes, not only point-in-time state. The snapshot endpoint is declared (a URL target or endpoint:<url>); nothing is written anywhere, to the target or the cloud.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-16
+    target_kinds:
+    - cloud
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M5
+    name: cicd-audit
+    version: '1.0'
+    title: CI/CD pipeline supply-chain exposure
+    description: 'Reviews a local clone''s workflow files (GitHub Actions, GitLab CI, Jenkins) for the constructs of research ch05#23: pull_request_target with secrets in scope, an untrusted github.event.* interpolated into a run step (script injection), GITHUB_TOKEN write-all, a self-hosted runner, and a third-party action pinned to a mutable ref. Read-only: it parses files and never runs a workflow.'
+    research_ref: ch05#23
+    proof: L1
+    cwe: CWE-78
+    target_kinds:
+    - git
+    - cloud
+    estimated_requests: 0
+  - module: M5
+    name: dep-confusion
+    version: '1.0'
+    title: Dependency-confusion or typosquatting candidate
+    description: 'Reads a local clone''s manifests (package.json, requirements.txt, pom.xml, ...) and flags dependencies whose name looks internal or private (a scoped or ''…-internal''/''company-'' name), which is the registration-collision candidate of research ch05#24: an attacker who registers the same name publicly gets code execution at install time. Offline by default; nothing is registered.'
+    research_ref: ch05#24
+    proof: L1
+    cwe: CWE-427
+    target_kinds:
+    - git
+    - cloud
+    estimated_requests: 0
+  - module: M5
+    name: sbom-review
+    version: '1.0'
+    title: Known-vulnerable component in use
+    description: Parses a local clone's lockfiles/manifests, matches the declared component versions against the offline known-vulnerable index (research ch05#25), and reports each component below its fixed version with the CVE and the fix version. An external scanner (Trivy/Syft-class) is used when ARACHNE_M5_SBOM_TOOL is configured. Nothing is installed or executed.
+    research_ref: ch05#25
+    proof: L1
+    cwe: CWE-1104
+    target_kinds:
+    - git
+    - cloud
+    estimated_requests: 0
+  - module: M5
+    name: image-history-secrets
+    version: '1.0'
+    title: Secret material in image build or manifest artifacts
+    description: 'Reads a local clone''s Dockerfiles for literal secret material in ENV/ARG/LABEL instructions, its Helm/Kubernetes manifests for plaintext values, and reports a container that runs as root (research ch05#17: image layers and manifests preserve secrets that were ''removed''). Values are masked; nothing is pulled or built.'
+    research_ref: ch05#17
+    proof: L1
+    cwe: CWE-798
+    target_kinds:
+    - git
+    - cloud
+    estimated_requests: 0
+  - module: M5
+    name: tfstate-exposure
+    version: '1.1'
+    title: Terraform state exposed or IaC misconfigured
+    description: 'Fetches the conventional ``.tfstate`` paths (over HTTP) and reads a local clone''s state files, and reports a state document that carries plaintext secrets or a full resource inventory (research ch05#11). The same check runs the IaC misconfiguration review (ch05#12, tfsec/checkov-class) over the clone''s .tf/manifests when it has one: security groups open to 0.0.0.0/0, wildcard IAM, public buckets, unencrypted storage, publicly accessible databases and privileged containers. Since S23 the review also parses YAML manifests and evaluates them with the *structured* Kubernetes policy rules the admission webhook runs, so the pre-deploy gate and the cluster cannot drift apart (REQ-POSTURE-002/005).'
+    research_ref: ch05#11-12
+    proof: L1
+    cwe: CWE-312
+    target_kinds:
+    - cloud
+    - url
+    - git
+    estimated_requests: 6
+  - module: M5
+    name: bucket-enumerator
+    version: '1.0'
+    title: Public cloud storage bucket enumerable
+    description: 'Probes a bucket root for an anonymous listing and a public ACL, and derives name candidates from the target''s organisation label against a bounded wordlist (research ch05#2). Cloud references are translated into the provider''s public endpoint (s3:, gcs:, azure:); an endpoint: reference is probed directly. Non-destructive: GET only, no object writes.'
+    research_ref: ch05#2
+    proof: L1
+    cwe: CWE-732
+    target_kinds:
+    - cloud
+    - url
+    - domain
+    estimated_requests: 16
+    requires_active_checks: true
+  - module: M5
+    name: firebase-rules
+    version: '1.0'
+    title: Firebase project exposes open database rules
+    description: Probes a Firebase Realtime Database / Firestore project for anonymous read access by requesting the ``.json`` tree dump, and reports a project whose rules allow it (research ch05#7). The project reference comes from a ``firebase:<project>`` cloud target or an ``endpoint:<url>``; GET only, never a write.
+    research_ref: ch05#7
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    - url
+    estimated_requests: 4
+    requires_active_checks: true
+  - module: M5
+    name: supabase-rls
+    version: '1.0'
+    title: Supabase / PostgREST table readable without RLS
+    description: Requests the PostgREST API root and a bounded table list anonymously and reports tables that answer with rows, which means row-level security is not enabled for the anonymous role (research ch05#8). GET only; no row is written.
+    research_ref: ch05#8
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    - url
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: k8s-exposure
+    version: '1.0'
+    title: Kubernetes kubelet API or dashboard exposed
+    description: 'Probes the kubelet read-only API paths (/pods, /runningpods, /stats/summary) and the Kubernetes Dashboard for anonymous access, and reports a ``PodList`` or dashboard answer (research ch05#13-14: pod specs and env vars leak, and the dashboard''s default binding grants cluster admin). GET only.'
+    research_ref: ch05#13-14
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - cloud
+    - url
+    - ip
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M5
+    name: registry-scan
+    version: '1.0'
+    title: Container registry anonymously enumerable
+    description: 'Requests the Docker Registry v2 catalog (``/v2/_catalog``) and a bounded repository list and reports a registry that answers without authentication (research ch05#15: a misconfigured Harbor/Docker Registry/ECR reveals every repository and tag). An external image scanner (Trivy/Syft-class) is used when ARACHNE_M5_SBOM_TOOL is configured and ARACHNE_M5_REGISTRY_SCAN is enabled. GET only.'
+    research_ref: ch05#15
+    proof: L1
+    cwe: CWE-1104
+    target_kinds:
+    - cloud
+    - url
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: docker-socket
+    version: '1.0'
+    title: Docker daemon API reachable
+    description: 'Probes a Docker daemon''s HTTP API (``/version``, ``/info``, ``/containers/json``, ``/images/json``) for anonymous reachability and checks whether the local daemon socket is present in a reviewed clone''s filesystem (research ch05#16: an exposed socket or TCP API grants host takeover). Read-only: the API is read for its version and object lists; no container is created and no mount is attempted.'
+    research_ref: ch05#16
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - cloud
+    - url
+    estimated_requests: 5
+    requires_active_checks: true
+  - module: M5
+    name: imds-ssrf
+    version: '1.0'
+    title: Cloud metadata service reachable through a request sink
+    description: 'Injects the cloud metadata URLs (AWS 169.254.169.254, GCP computeMetadata, Azure instance) into parameters the crawl identified as server-side fetchers and reports the posture: metadata returned (IMDSv1-style, exploitable) or a 401 challenge (IMDSv2 enforced). Off by default: needs ARACHNE_M5_IMDS_PROBE=true and the active-checks opt-in. It sends GET only and never stores a body beyond redacted evidence.'
+    research_ref: ch05#4
+    proof: L1
+    cwe: CWE-918
+    target_kinds:
+    - url
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: azure-mi-audit
+    version: '1.0'
+    title: Azure managed-identity metadata reachable
+    description: 'Probes a server-side fetch sink for the Azure Instance Metadata Service instance document and the managed-identity OAuth2 token endpoint, and reports the posture: instance metadata returned (network egress not restricted) or a token minted (managed identity reachable). Off by default (ARACHNE_M5_IMDS_PROBE) and behind the active-checks gate; it reports token *presence*, never the token value.'
+    research_ref: ch05#5
+    proof: L1
+    cwe: CWE-918
+    target_kinds:
+    - url
+    estimated_requests: 4
+    requires_active_checks: true
+
+  # ---------------------------------------------------------------- M6 automation, AI-era, post-exploit (S11: implemented)
+  - module: M6
+    name: secret-scan-at-scale
+    version: '1.0'
+    title: Repository and history secret scan
+    description: Scans a local repository clone for committed credentials — the working tree, the reflog/config, and git history (loose objects are decompressed read-only) — with the corpus detectors (AWS/GCP/Azure keys, GitHub/GitLab/Slack/Stripe tokens, PEM keys, connection strings, generic secrets), reporting the credential kind and location with the value masked (research ch06#8). Read-only; no clone, no network.
+    research_ref: ch06#8
+    proof: L1
+    cwe: CWE-798
+    target_kinds:
+    - git
+    - cloud
+    - url
+    estimated_requests: 0
+  - module: M6
+    name: ci-secret-leak
+    version: '1.0'
+    title: CI log/artifact secret leakage
+    description: 'Reads exported CI logs and build artifacts (from a repository clone or a configured log directory) for leaked credentials: a token a workflow echoed, an unmasked secret, a debug trace of an environment variable (research ch06#23). The same detectors as the repository scan plus CI-specific markers (::add-mask::, GITHUB_TOKEN, printenv, set -x). Values are masked; nothing is fetched.'
+    research_ref: ch06#23
+    proof: L1
+    cwe: CWE-532
+    target_kinds:
+    - git
+    - cloud
+    - url
+    estimated_requests: 0
+  - module: M6
+    name: cve-epss-correlation
+    version: '1.0'
+    title: CVE/EPSS correlation and patch-gap analysis
+    description: 'Correlates the estate''s fingerprinted products and versions with the offline CVE index, then ranks each hit by FIRST EPSS exploit likelihood and CISA KEV status to produce a patch-gap view (research ch06#7). Offline-first: the shipped EPSS snapshot is used unless ARACHNE_M6_EPSS_FEED / ARACHNE_M6_KEV_FEED point at a refreshed feed. Zero requests.'
+    research_ref: ch06#7
+    proof: L1
+    cwe: CWE-1035
+    target_kinds:
+    - url
+    - ip
+    - domain
+    - cidr
+    - cloud
+    estimated_requests: 0
+  - module: M6
+    name: lpe-discovery
+    version: '1.0'
+    title: Local privilege-escalation CVE matching
+    description: 'Matches the estate''s fingerprinted OS/service versions (kernel, sudo, polkit, glibc) against the offline local-privilege-escalation index to surface known unprivileged-to-root paths a defender must patch before an attacker enumerates them (research ch06#16). Offline-first and read-only: it reads fingerprints and the shipped index, and never runs a privesc check on a host.'
+    research_ref: ch06#16
+    proof: L1
+    cwe: CWE-269
+    target_kinds:
+    - url
+    - ip
+    - domain
+    - cidr
+    - cloud
+    estimated_requests: 0
+  - module: M6
+    name: webshell-yara
+    version: '1.0'
+    title: Webshell signature and behaviour scan
+    description: Scans web-visible and locally-hosted script content for webshell classes, using the corpus signature rules (eval() over request superglobals, c99/r57/b374k markers, encoded payload execution) together with behaviour heuristics (oversized single lines, encoded blocks, eval-heavy code, anomalous file timestamps) so a PHP2SHELL-class artifact is caught before a CVE-specific signature exists (research ch06#24). File-read-only; served content is GET-only.
+    research_ref: ch06#24
+    proof: L1
+    cwe: CWE-506
+    target_kinds:
+    - url
+    - domain
+    - git
+    - cloud
+    estimated_requests: 12
+  - module: M6
+    name: attack-surface-genai
+    version: '1.0'
+    title: Generative-AI attack surface
+    description: 'Reviews the crawled surface and a declared repository for the GenAI attack surface: an exposed LLM/agent API endpoint answering 2xx, a hosted-model API key reaching a client or served document, a served system prompt or prompt-injection marker, and an agent/tool configuration that grants secret or command access (research ch06#14-15). Passive: it reads the crawl and local files and never sends a prompt or injection payload.'
+    research_ref: ch06#14-15
+    proof: L1
+    cwe: CWE-1426
+    target_kinds:
+    - url
+    - domain
+    - git
+    - cloud
+    estimated_requests: 0
+  - module: M6
+    name: sigma-hunt-rules
+    version: '1.0'
+    title: Post-exploitation Sigma hunt rules
+    description: Ships a Sigma rule set for post-exploitation discovery activity — Kerberoasting (4769), AS-REP roasting (4768), LSASS access, web-worker-to-shell, lateral movement over admin shares and scheduled-task persistence — so findings stay SIEM-queryable, and, only when an explicit log-access grant is present, runs the rules over exported JSON-lines telemetry (research ch06#23). Without the grant it ingests nothing.
+    research_ref: ch06#18-23
+    proof: L1
+    cwe: CWE-778
+    target_kinds:
+    - url
+    - domain
+    - ip
+    - git
+    - cloud
+    estimated_requests: 0
+  - module: M6
+    name: deception-listeners
+    version: '1.0'
+    title: Deception / honeytoken trigger monitoring
+    description: 'Reports honeytoken or honeypot triggers from a local trigger log — which token fired, from where and when — so an operator learns of attacker contact that no vulnerability scan would otherwise see (research ch06#25). Off by default: it is opt-in and additionally requires ARACHNE_M6_DECEPTION=true.'
+    research_ref: ch06#25
+    proof: L1
+    cwe: CWE-778
+    target_kinds:
+    - url
+    - domain
+    - ip
+    - git
+    - cloud
+    estimated_requests: 0
+  - module: M6
+    name: ad-attack-path
+    version: '1.0'
+    title: Active Directory attack-path analysis
+    description: 'Analyses an exported AD graph (BloodHound-style nodes and escalation edges) for the shortest paths from an ordinary principal to Domain Admin, so a defender can close the highest-value ones first (research ch06#19). Read-only: it parses a local export and computes paths; it never authenticates, binds or queries AD. Off by default (opt-in).'
+    research_ref: ch06#19
+    proof: L1
+    cwe: CWE-269
+    target_kinds:
+    - git
+    - cloud
+    estimated_requests: 0
+  # ---------------------------------------------------------------- S13 hardening additions
+  # Added in S13 to raise research-method coverage (G-01). Rows are generated from the
+  # check metadata; tests/unit/test_registry.py fails the build if they ever disagree.
+  - module: M1
+    name: dns-txt-mining
+    version: "1.0"
+    title: Mail-authentication TXT mining
+    description: Reads the domain's SPF, DKIM and DMARC TXT records through a DNS-over-HTTPS resolver and flags missing or unenforced mail authentication.
+    research_ref: ch01#25
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [domain, domain_pattern]
+    estimated_requests: 6
+
+  - module: M1
+    name: favicon-hash
+    version: "1.0"
+    title: Favicon fingerprint
+    description: Fetches /favicon.ico, computes its SHA-256 (and MurmurHash3-32 when mmh3 is importable) and matches it against a table of known default/vendor favicons.
+    research_ref: ch01#23
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [domain, domain_pattern, url]
+    estimated_requests: 1
+
+  - module: M1
+    name: bucket-hunt
+    version: "1.0"
+    title: Cloud storage bucket hunt
+    description: "Derives candidate bucket names from the domain and probes a bounded set of S3/GCS/Azure HTTPS endpoints for anonymous bucket listings. Active and opt-in: because it queries third-party provider hosts it needs --active-checks and an authorizing attestation, exactly like the cloud module's bucket enumerator (research ch01#30)."
+    research_ref: ch01#30
+    proof: L1
+    cwe: CWE-284
+    target_kinds: [domain, domain_pattern]
+    estimated_requests: 8
+    requires_active_checks: true
+
+  - module: M1
+    name: doc-metadata
+    version: "1.0"
+    title: Document metadata extraction
+    description: Fetches a published document or image and extracts its PDF /Info or image EXIF metadata (author, software, hostnames, GPS) that the publisher left in place.
+    research_ref: ch01#22
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [url]
+    estimated_requests: 4
+
+  # ------------------------------------------------------------------ S18 (area INTEL)
+  # Three checks that consume a third-party index's view of the target. Every one is opt-in
+  # twice: its provider is not in DEFAULT_OSINT_PROVIDERS, so it must be named in
+  # ARACHNE_OSINT_PROVIDERS (and its key set), and the check itself must be selected
+  # (REQ-INTEL-003/004/005). All three are passive — they read somebody else's index and never
+  # touch the target — and all three degrade to a skipped result, never an error, when their
+  # provider is unavailable.
+  - module: M1
+    name: service-exposure-drift
+    version: "1.0"
+    title: Exposed-service drift against Shodan/Censys
+    description: >-
+      Compares the open services a third-party scanner observed on an address with the
+      services this scan found, and reports the difference. When the scan's own inventory is
+      not available (M1 runs before discovery), it reports the one-way signal that is still
+      true: services the provider sees that this scan's port catalogue will never look at.
+      Opt-in: it spends the deployment's Shodan and/or Censys key.
+    research_ref: ch01#3-4
+    proof: L1
+    cwe: CWE-668
+    target_kinds: [ip, cidr]
+    estimated_requests: 16
+  - module: M1
+    name: ct-surprise
+    version: "1.0"
+    title: Certificate-transparency and registration surprises
+    description: >-
+      Reads a second certificate-transparency view (Cert Spotter, falling back to crt.sh),
+      flags certificates issued inside a two-week surprise window, and reports names the
+      scan's scope does not cover. RDAP registration facts (registrar, created, expiry,
+      nameservers) are attached as context. Opt-in: it asks third-party registries about the
+      domain.
+    research_ref: ch01#8-9
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [domain, domain_pattern]
+    estimated_requests: 3
+  - module: M1
+    name: breach-exposure
+    version: "1.0"
+    title: Breach exposure summary (HIBP)
+    description: >-
+      Asks Have I Been Pwned which breaches exposed accounts registered at the target's
+      domain, and summarises the dates, volumes and data classes. Exposure of the domain's
+      users, not a vulnerability in the target. Opt-in: needs an HIBP API key and the provider
+      named in ARACHNE_OSINT_PROVIDERS.
+    research_ref: ch01#18
+    proof: L1
+    cwe: CWE-522
+    target_kinds: [domain, domain_pattern]
+    estimated_requests: 1
+
+  - module: M2
+    name: http-fingerprint
+    version: "1.0"
+    title: HTTP(S) fingerprinting
+    description: Reads one HTTP(S) response and names the server stack from its Server, X-Powered-By, X-AspNet-Version and X-Generator headers, its framework session cookies (JSESSIONID, PHPSESSID, ASP.NET_SessionId, XSRF-TOKEN, csrftoken, _session_id) and the HTML <title>/generator meta. A banner that discloses a product version is raised as a low-confidence candidate for the CVE correlation.
+    research_ref: ch02#12
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [ip, domain, url]
+    estimated_requests: 8
+
+  - module: M2
+    name: favicon-hash
+    version: "1.0"
+    title: Favicon hash identification
+    description: Fetches /favicon.ico, records its SHA-256 (and the MurmurHash3-32 Shodan uses when the optional mmh3 package is importable) as an artifact, and matches it against a small table of well-known default favicons. A default icon is the same-favicon pivot an OSINT correlation is built on.
+    research_ref: ch02#13
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [ip, domain, url]
+    estimated_requests: 1
+
+  - module: M2
+    name: ftp-anonymous
+    version: "1.0"
+    title: FTP anonymous access
+    description: "Reads the FTP banner, then attempts a read-only anonymous login (USER anonymous / PASS anonymous@): a 230 response is anonymous access. Also reports a cleartext FTP banner (vsftpd, ProFTPD, FileZilla, Microsoft FTP). Nothing is uploaded, downloaded or deleted."
+    research_ref: ch02#21
+    proof: L1
+    cwe: CWE-287
+    target_kinds: [ip, cidr]
+    estimated_requests: 4
+    requires_active_checks: true
+
+  - module: M2
+    name: ssdp-discovery
+    version: "1.0"
+    title: SSDP/UPnP discovery
+    description: Sends an SSDP M-SEARCH over UDP 1900 and parses the 200 OK / NOTIFY answers for the UPnP SERVER header and the LOCATION device-description URL. UDP probing requires ARACHNE_NET_ALLOW_UDP in addition to this check's active-check opt-in.
+    research_ref: ch02#26
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [ip, cidr]
+    estimated_requests: 2
+    requires_active_checks: true
+
+  - module: M2
+    name: legacy-services
+    version: "1.0"
+    title: Legacy network services
+    description: "Detects legacy services left enabled with their defaults: a Telnet service (recognised by its IAC negotiation bytes) and the cleartext legacy protocols rlogin (513) and finger (79). When UDP is enabled it also sends a single read-only TFTP RRQ (69) for a small path. Any reachable service is a cleartext-management exposure."
+    research_ref: ch04#22
+    proof: L1
+    cwe: CWE-521
+    target_kinds: [ip, cidr]
+    estimated_requests: 4
+    requires_active_checks: true
+
+  - module: M3
+    name: nosql-oracle
+    version: "1.0"
+    title: NoSQL injection oracle
+    description: "Injects MongoDB-style operator payloads (a bare quote, a JSON predicate such as {\"$ne\": null}, and the [$ne]/[$gt]/[$regex] parameter-name suffixes) into query parameters and confirms the family by a response differential against the benign baseline that is not merely the probe being echoed. Read-only: it only makes a back-end predicate true or false, and never extracts or modifies data."
+    research_ref: ch03#2
+    proof: L1
+    cwe: CWE-943
+    target_kinds: [url]
+    estimated_requests: 10
+    requires_active_checks: true
+
+  - module: M3
+    name: directory-traversal
+    version: "1.0"
+    title: Directory traversal oracle
+    description: "Walks the traversal encoding matrix (plain, URL-encoded, dot-encoded, overlong separators, backslash, and the absolute file:// wrapper) against file-name parameters, and confirms the class by content: a world-readable, non-secret file's header line (root:x:0:0: / [extensions]) appears in the probe response where the benign baseline had none. Read-only: it reads one harmless system file."
+    research_ref: ch03#12
+    proof: L1
+    cwe: CWE-22
+    target_kinds: [url]
+    estimated_requests: 10
+    requires_active_checks: true
+
+  - module: M3
+    name: file-inclusion
+    version: "1.0"
+    title: File inclusion oracle
+    description: "Confirms local file inclusion when a world-readable file's header line, or the base64 of a PHP opening tag from a php://filter read, appears in the probe response. The remote-file-inclusion probe only *references* an unresolvable .invalid host and is reported only on a clear in-response include side effect (a wrapper/allow_url_include diagnostic). The payload is never fetched and no remote code is executed."
+    research_ref: ch03#13
+    proof: L1
+    cwe: CWE-98
+    target_kinds: [url]
+    estimated_requests: 10
+    requires_active_checks: true
+
+  - module: M3
+    name: crlf-injection
+    version: "1.0"
+    title: CRLF / HTTP header injection oracle
+    description: "Injects CR/LF-bearing header fragments into query parameters and flags only what the response *shows*: an echoed X-Injected header, an injected Set-Cookie name, or a Location carrying the injected host (header/response splitting). The check observes the split; it never attempts to exploit it or smuggle a second response."
+    research_ref: ch03#15
+    proof: L1
+    cwe: CWE-113
+    target_kinds: [url]
+    estimated_requests: 8
+    requires_active_checks: true
+
+  - module: M4
+    name: verbose-errors
+    version: "1.0"
+    title: Verbose error page exposes internals
+    description: "Requests malformed and error-triggering paths and inspects the response body for the signature of a leaked error page: a Python traceback, a Java stack trace, a PHP Fatal error/Warning, an ASP.NET 'Server Error in', a Spring/SQLSTATE/Django/Laravel/Whoops error. An answer that is merely the application's own not-found page is rejected by comparison, so a styled 404 is never reported."
+    research_ref: ch04#6
+    proof: L1
+    cwe: CWE-209
+    target_kinds: [url]
+    estimated_requests: 12
+
+  - module: M4
+    name: actuator-exposure
+    version: "1.0"
+    title: Spring Boot Actuator endpoint exposed
+    description: Probes the conventional Actuator paths (/actuator, /env, /health, /beans, /mappings, /configprops, /heapdump, /threaddump, /loggers, /httptrace, /jolokia/list) and flags those that answer with Actuator's own JSON ('_links', activeProfiles/propertySources, a thread dump, or a heapdump binary). A reachable Actuator index is a high-confidence finding; a health probe is not enough on its own unless it exposes status detail.
+    research_ref: ch04#8
+    proof: L1
+    cwe: CWE-497
+    target_kinds: [url]
+    estimated_requests: 12
+
+  - module: M4
+    name: datastore-surface
+    version: "1.0"
+    title: Data-store API reachable over HTTP
+    description: Probes the well-known HTTP APIs of Elasticsearch/OpenSearch (/ _cat/indices, /_cluster/health, /_plugins/_security/...), CouchDB (/_all_dbs), Solr (/solr/admin/cores), Consul (/v1/agent/self) and Redis web UIs. A path is only reported when the body is clearly that product's own API shape (a cluster health document, a database-name array, a Solr response header), never a generic page.
+    research_ref: ch04#12
+    proof: L1
+    cwe: CWE-668
+    target_kinds: [url]
+    estimated_requests: 10
+
+  - module: M4
+    name: robots-sitemap
+    version: "1.0"
+    title: robots.txt or sitemap.xml discloses sensitive paths
+    description: Fetches /robots.txt and /sitemap.xml and reports entries that name a sensitive surface (admin, backup, .git, staging, dev, internal, api/, private, config, secret, db, test, old, tmp, .sql, .bak, .env). The offending Disallow/Allow lines and sitemap URLs are carried as evidence. A file that lists only ordinary paths is information, not a finding.
+    research_ref: ch04#23
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [url]
+    estimated_requests: 3
+
+  - module: M4
+    name: wordpress-surface
+    version: "1.0"
+    title: WordPress surface exposes users or XML-RPC
+    description: "Probes /wp-json/, /wp-json/wp/v2/users, /xmlrpc.php, /?author=1 and /wp-login.php. It reports a REST user list (login-name enumeration), the REST root the API publishes, an author redirect that leaks a login name and an enabled XML-RPC endpoint. It sends GETs only: XML-RPC is detected from its 'accepts POST requests only' answer, never by sending a POST body."
+    research_ref: ch04#27
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [url]
+    estimated_requests: 8
+
+  - module: M4
+    name: alias-traversal
+    version: "1.0"
+    title: Static alias allows path traversal
+    description: "Probes misconfigured static/alias prefixes (/static, /assets, /images, /media, /css, /js, /files, /uploads and a file parameter) with encoded .. traversal to the /etc/passwd canary. A path is reported only when the response body reveals the canary ('root:x:0:0:' or '/bin/bash'), so an ordinary 404 or a blob that merely echoes the name is never a finding. Read-only GETs only."
+    research_ref: ch04#30
+    proof: L1
+    cwe: CWE-22
+    target_kinds: [url]
+    estimated_requests: 12
+
+  - module: M5
+    name: serverless-functions
+    version: "1.0"
+    title: Unauthenticated serverless function endpoint
+    description: "Probes the web origin for a reachable serverless/function endpoint: an AWS Lambda function URL, an API Gateway stage (/prod, /dev, /stage), an Azure Functions app (/api/), a GCP Cloud Functions host or a Cloudflare Workers subdomain (research ch05#9). A 200 carrying a function response and no auth challenge is the finding; a 401/403 challenge is the hardened answer. GET only; nothing is invoked."
+    research_ref: ch05#9
+    proof: L1
+    cwe: CWE-284
+    target_kinds: [url]
+    estimated_requests: 8
+
+  - module: M5
+    name: managed-datastores
+    version: "1.0"
+    title: Reachable managed database console or proxy
+    description: "Probes the web origin for a publicly reachable managed-database surface: an adminer/phpMyAdmin/pgAdmin console at the conventional paths, a /.well-known database indicator, or a cloud DB proxy endpoint (RDS/Aurora, Azure SQL/Postgres, MongoDB Atlas/Compass) answering with its metadata (research ch05#20). GET only."
+    research_ref: ch05#20
+    proof: L1
+    cwe: CWE-668
+    target_kinds: [url]
+    estimated_requests: 8
+
+  - module: M5
+    name: search-platform-exposure
+    version: "1.0"
+    title: Unauthenticated search platform exposed
+    description: "Probes the web origin for an exposed Elasticsearch, Kibana or OpenSearch Dashboards instance: ``/_cat/indices`` and ``/_cluster/health`` (Elasticsearch JSON), ``/app/kibana`` and ``/api/status`` (Kibana), and the OpenSearch Dashboards equivalents (research ch05#21). A 200 carrying the product JSON/HTML is the finding; a 401/403 is the hardened answer. GET only, read-only."
+    research_ref: ch05#21
+    proof: L1
+    cwe: CWE-668
+    target_kinds: [url]
+    estimated_requests: 8
+
+  - module: M6
+    name: template-scan
+    version: "1.0"
+    title: Template-driven exposure match
+    description: "A minimal, offline matcher: loads simple path + body-marker templates from the managed corpus, requests each template's path(s) against the asset origin and flags a response whose status and body markers match (research ch06#3). Strictly a matcher — no templating engine, no code execution, GET only."
+    research_ref: ch06#3
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [url]
+    estimated_requests: 10
+
+  - module: M6
+    name: exploit-match
+    version: "1.0"
+    title: Known N-day exploit matches observed software
+    description: "Matches the estate's observed software banners and CVE ids — from the network and web crawl already in the step context, or a bounded banner fetch — against a compact offline ExploitDB-style N-day index, and reports the mapped exploit/PoC reference as a candidate (research ch06#5). Matching only: no exploitation is performed."
+    research_ref: ch06#5
+    proof: L1
+    cwe: CWE-1104
+    target_kinds: [url, domain, ip]
+    estimated_requests: 2
+
+  - module: M6
+    name: credential-hunt
+    version: "1.0"
+    title: Credentials in reachable configuration surfaces
+    description: "Hunts credentials in reachable configuration surfaces: the crawled pages/inventory the step already has plus a bounded set of .env-style paths (web.config, appsettings.json, docker-compose.yml, application.properties, shell rc files, backups), reusing the shared secret detectors and reporting the detector name and a masked fingerprint — never a raw value (research ch06#17). GET only."
+    research_ref: ch06#17
+    proof: L1
+    cwe: CWE-798
+    target_kinds: [url]
+    estimated_requests: 4
+
+  # ---------------------------------------------------------------- S15 proof ladder (area PROOF)
+  # The L2 out-of-band variants and the attested L3/L4 proofs (S15, area PROOF).
+  # Every row is opt-in: an L2+ declaration can never be enabled by default
+  # (REQ-PROOF-001), and the L3/L4 rows additionally require the state-change
+  # attestation. Title/description are generated from the check metadata so the
+  # drift gate in tests/unit/test_registry.py holds verbatim.
+
+  - module: M3
+    name: cmdi-oob
+    version: "1.0"
+    title: "Blind OS command injection, out-of-band"
+    description: "Injects shell separators plus the allowlisted one-shot echo text ('echo arachne-<nonce>') into parameters whose name suggests a command sink, and confirms the class when an execution monitor reports the echo to this check's callback token (research ch03#8's blind variant). The payload is the ladder's single allowlisted command; nothing else is ever sent. Opt-in (L2)."
+    research_ref: ch03#8
+    proof: L2
+    requires_state_attestation: false
+    requires_active_checks: true
+    cwe: CWE-78
+    target_kinds: [url]
+    estimated_requests: 6
+
+  - module: M3
+    name: rce-echo
+    version: "1.0"
+    title: "One-shot command execution proof"
+    description: "Executes exactly one benign, allowlisted command — 'echo arachne-<nonce>' — through the strongest command sink the crawl identified, and reports the echoed nonce as proof of execution (REQ-PROOF-007). There is no parameter that could carry a different command; the output is captured redacted and the execution is audited. Requires the RCE probe switch, the active-checks opt-in AND an attestation that authorizes state changes (L3)."
+    research_ref: ch03#8
+    proof: L3
+    requires_state_attestation: true
+    requires_active_checks: true
+    cwe: CWE-78
+    target_kinds: [url]
+    estimated_requests: 3
+
+  - module: M3
+    name: sqli-oob
+    version: "1.0"
+    title: "Blind SQL injection, out-of-band"
+    description: "Injects a predicate that carries this check's out-of-band callback token into parameters whose name suggests a SQL sink, and confirms the class when the back-end resolved the predicate and reached the token (research ch03#1's out-of-band oracle). No sleep, no data read or extracted: the single hit is the proof, and it is matched single-use to this finding. Opt-in (L2)."
+    research_ref: ch03#1
+    proof: L2
+    requires_state_attestation: false
+    requires_active_checks: true
+    cwe: CWE-89
+    target_kinds: [url]
+    estimated_requests: 4
+
+  - module: M3
+    name: ssti-oob
+    version: "1.0"
+    title: "Server-side template injection, out-of-band"
+    description: "Injects an arithmetic-only template that also references this check's callback token into parameters on rendering endpoints, and confirms the class when the template engine evaluated the content and reached the token (the SSTI→SSRF primitive, research ch03#6). The template payload is inert arithmetic plus the token reference — no built-ins, no attribute chains. Opt-in (L2)."
+    research_ref: ch03#6
+    proof: L2
+    requires_state_attestation: false
+    requires_active_checks: true
+    cwe: CWE-1336
+    target_kinds: [url]
+    estimated_requests: 4
+
+  - module: M3
+    name: state-marker
+    version: "1.0"
+    title: "State-change proof (marker row)"
+    description: "Proves write access with the ladder's minimal footprint: an INSERT of one calm marker row into arachne_poc (or the obviously-fake record the deployment names), verification that it is visible, an automatic restore, and re-verification that it is gone (REQ-PROOF-008). DELETE/DROP/TRUNCATE/ALTER/GRANT and multi-statement payloads are refused in code; identity stores are refused outright. Requires the state probe switch, the active-checks opt-in AND an attestation that authorizes state changes (L4)."
+    research_ref: ch03#1
+    proof: L4
+    requires_state_attestation: true
+    requires_active_checks: true
+    cwe: CWE-89
+    target_kinds: [url]
+    estimated_requests: 6
+
+  - module: M3
+    name: xxe-oob
+    version: "1.0"
+    title: "XML external entity, out-of-band"
+    description: "Posts a minimal XML document whose single external entity is this check's callback token, and confirms the class when the parser resolved the entity (research ch03#7's out-of-band variant). The entity points at ARACHNE's own callback service — never at a file, a credential, or a third party. Opt-in (L2)."
+    research_ref: ch03#7
+    proof: L2
+    requires_state_attestation: false
+    requires_active_checks: true
+    cwe: CWE-611
+    target_kinds: [url]
+    estimated_requests: 6
+
+  - module: M3
+    name: authenticated-surface
+    version: '1.0'
+    title: Authenticated-only web surface
+    description: 'Compares the anonymous crawl with the crawl made after authenticating with the scan''s configured credential, and reports the pages added by a session: content behind a login wall, and in particular administrative or account areas that an unauthenticated client cannot reach. Runs only when the scan names a credential; it never handles the credential itself.'
+    research_ref: ch03#19
+    proof: L1
+    requires_state_attestation: false
+    requires_active_checks: true
+    cwe: CWE-284
+    target_kinds:
+    - url
+    estimated_requests: 4
+
+  - module: M3
+    name: session-logout
+    version: '1.0'
+    title: Session invalidation on logout
+    description: Logs out and then re-probes the session. A logout that only clears the client's cookie leaves the server-side session usable, so a captured token keeps working and a shared or stolen session cannot be ended by the user; that is reported. Uses the logout endpoint the credential declares, or one the crawl saw the application advertise; never guesses a path.
+    research_ref: ch03#19
+    proof: L1
+    requires_state_attestation: false
+    requires_active_checks: true
+    cwe: CWE-613
+    target_kinds:
+    - url
+    estimated_requests: 4
+
+  - module: M2
+    name: smb-auth
+    version: '1.0'
+    title: SMB credential verification
+    description: 'Authenticates to an SMB service with the credential this scan selected from the vault, using an SMB2 NTLMSSP exchange, and reports whether the peer accepted it. The credential never enters the check: the broker supplies it for one exchange and drops it, so the finding carries the peer''s status and the redacted exchange only. Opt-in, active, and refused when the credential is not scoped to the target.'
+    research_ref: ch02#16
+    proof: L1
+    requires_state_attestation: false
+    requires_active_checks: true
+    cwe: CWE-1392
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 3
+  # ---------------------------------------------------------------- S29 depth expansion
+  # (area DEPTH, REQ-DEPTH-001...006). Generated from the check metadata, like every row
+  # above: tests/unit/test_registry.py fails the build if the two ever disagree. Note the
+  # one row that declares a level *below* L1 — m1.mobile-artifact is L0 because it reads a
+  # local file and contacts nothing at all.
+  - module: M1
+    name: mobile-artifact
+    version: '1.0'
+    title: Offline mobile artifact analysis
+    description: 'Reads a declared APK/IPA locally and reports the credential patterns its code contains (as detector names, values masked) and the endpoints and hosts it references, which are recorded as assets for M1 and M3. Offline: the check makes no network request at all, and nothing is executed, decompiled or unpacked.'
+    research_ref: ch01#26
+    proof: L0
+    cwe: CWE-798
+    target_kinds:
+    - artifact
+    estimated_requests: 0
+    requires_active_checks: false
+  - module: M2
+    name: grpc-plaintext
+    version: '1.0'
+    title: gRPC cleartext HTTP/2 acceptance
+    description: Sends the HTTP/2 connection preface (h2c prior knowledge) and reports a server that answers with a SETTINGS frame, which means it speaks cleartext HTTP/2 and every gRPC call and its metadata travel unencrypted.
+    research_ref: ch02#12
+    proof: L1
+    cwe: CWE-319
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: grpc-reflection
+    version: '1.0'
+    title: gRPC server reflection exposure
+    description: Calls the standard gRPC reflection method over cleartext HTTP/2 and reports a server that answers it, publishing its whole service definition — message shapes, field names and method signatures — to any client that asks.
+    research_ref: ch02#9-10
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: grpc-metadata-leak
+    version: '1.0'
+    title: gRPC request metadata leakage
+    description: 'Attaches a unique inert nonce as authorization and x-arachne-nonce metadata and reports a response that carries the nonce back: a server that echoes request metadata leaks credentials into its responses.'
+    research_ref: ch02#12
+    proof: L1
+    cwe: CWE-522
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: ot-protocol-probe
+    version: '1.0'
+    title: OT/ICS protocol discovery (S7comm, DNP3)
+    description: 'Reaches an S7comm endpoint with an ISO-TSAP connection request and a DNP3 outstation with a link-layer status request, reporting a controller whose engineering protocol answers from the scanned segment. Read-only: no S7 read or write job, no PLC memory access, and no DNP3 link reset. Opt-in.'
+    research_ref: ch02#27
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    estimated_requests: 4
+    requires_active_checks: true
+  - module: M3
+    name: graphql-depth-abuse
+    version: '1.0'
+    title: GraphQL depth and cost limit audit
+    description: 'Sends two bounded amplification probes at the GraphQL endpoints the crawl found: a selection nested to a configured (modest) depth along a real cycle in the introspected type graph, and one operation carrying a configured number of aliases. A server with a depth or cost limit refuses them; a response carrying data means the limit is absent. Every probe selects only the introspection meta-field __typename, so no document content is requested; no mutation is sent.'
+    research_ref: ch03#32
+    proof: L1
+    cwe: CWE-770
+    target_kinds:
+    - url
+    estimated_requests: 9
+    requires_active_checks: true
+  - module: M3
+    name: graphql-resolver-auth
+    version: '1.0'
+    title: GraphQL resolver authorization audit
+    description: Reads the schema and asks each query field whose name suggests an authenticated resource for its __typename with no credential presented, with a query for a field that cannot exist as the control. Data from the first and an error from the second is the anonymous-resolver-access pattern. Only the introspection meta-field is selected, so no document content is requested.
+    research_ref: ch03#32
+    proof: L1
+    cwe: CWE-862
+    target_kinds:
+    - url
+    estimated_requests: 10
+    requires_active_checks: true
+  - module: M3
+    name: websocket-upgrade-auth
+    version: '1.0'
+    title: WebSocket upgrade authentication audit
+    description: Completes the WebSocket upgrade at the endpoints the crawl found while presenting no credential of any kind (no Authorization, Cookie, subprotocol token or demo session), verifying the RFC 6455 accept derivation of the key it sent and using a plain GET of the same path as the upgrade-only control. An upgrade that succeeds without a credential means the connection is never authenticated.
+    research_ref: ch03#33
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M3
+    name: websocket-injection
+    version: '1.0'
+    title: WebSocket message relay probe
+    description: Completes the WebSocket handshake over the scoped network client and sends one inert, self-describing marker text frame plus one control PING. A server that echoes the marker is relaying client input unvalidated, the precondition of message injection; the probe sends no command language, query or target-specific syntax and exactly one message per endpoint. Off unless ARACHNE_WEB_WS_PROBE=true.
+    research_ref: ch03#33
+    proof: L1
+    cwe: CWE-1385
+    target_kinds:
+    - url
+    estimated_requests: 4
+    requires_active_checks: true
+  - module: M3
+    name: client-secret-verify
+    version: '1.0'
+    title: Client-side credential impact verification
+    description: 'Verifies dynamically what a served bundle''s hardcoded credential means: that the API endpoint behind it answers a caller presenting no credential at all, with the ladder''s single-use out-of-band token planted in a URL-valued parameter for confirmation. The credential''s value is never available to a check (redaction at capture, F-08-04) and is never replayed; the check proves impact, not possession. Opt-in (L2).'
+    research_ref: ch03#3
+    proof: L2
+    cwe: CWE-522
+    target_kinds:
+    - url
+    estimated_requests: 6
+    requires_active_checks: true

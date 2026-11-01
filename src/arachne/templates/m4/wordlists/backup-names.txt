@@ -1,0 +1,30 @@
+# Backup / dump / editor-artifact name stems, highest-value first (the check's
+# systematic expansion stops at a bounded request count).
+db
+database
+dump
+backup
+site
+app
+config
+users
+export
+index
+index.php
+www
+web
+application
+configuration
+settings
+data
+sql
+mysql
+postgres
+src
+source
+release
+latest
+old
+tmp
+temp
+test

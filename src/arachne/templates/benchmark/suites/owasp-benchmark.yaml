@@ -1,0 +1,34 @@
+# OWASP Benchmark Project — sampled case set (REQ-QUAL-005).
+#
+# The public Benchmark ships ~2,700 test cases (true and false positives per category) at
+# predictable paths. This suite is a *sampled* set of the categories ARACHNE has checks for:
+# a finding whose evidence names the test-code path is a detection, and a finding on the
+# documented safe case of the same category is a false positive.
+#
+# The target is hosted, so this suite's baseline is `recorded`: run it against the target and
+# commit the result (see `reproduce`) to enable its regression gate.
+name: owasp-benchmark
+version: "1.0"
+target: "https://localhost:8443/benchmark/ (owasp-benchmark-webgoat image)"
+source: recorded
+required: false
+reproduce: >-
+  docker run -p 8443:8443 owasp/benchmark:latest && arachne scan --url https://localhost:8443/benchmark/
+  --attestation ... && python -m arachne.tools.benchmark --suite owasp-benchmark
+  --target https://localhost:8443/benchmark/ --write-baseline
+notes: >-
+  Sampled, not exhaustive: one case per category per outcome. The full corpus is scored by the
+  Benchmark's own tooling; this suite is the regression guard for the categories ARACHNE claims.
+cases:
+  - {check_id: m3.sqli-oracle, marker: "/benchmark/testcode/BenchmarkTest00001", expect: tp}
+  - {check_id: m3.sqli-oracle, marker: "/benchmark/testcode/BenchmarkTest00002", expect: fp}
+  - {check_id: m3.xss-oracle, marker: "/benchmark/testcode/BenchmarkTest00011", expect: tp}
+  - {check_id: m3.xss-oracle, marker: "/benchmark/testcode/BenchmarkTest00012", expect: fp}
+  - {check_id: m3.cmdi-oracle, marker: "/benchmark/testcode/BenchmarkTest00021", expect: tp}
+  - {check_id: m3.cmdi-oracle, marker: "/benchmark/testcode/BenchmarkTest00022", expect: fp}
+  - {check_id: m3.traversal-oracle, marker: "/benchmark/testcode/BenchmarkTest00031", expect: tp}
+  - {check_id: m3.traversal-oracle, marker: "/benchmark/testcode/BenchmarkTest00032", expect: fp}
+  - {check_id: m3.xxe-oracle, marker: "/benchmark/testcode/BenchmarkTest00041", expect: tp}
+  - {check_id: m3.xxe-oracle, marker: "/benchmark/testcode/BenchmarkTest00042", expect: fp}
+  - {check_id: m3.ssti-oracle, marker: "/benchmark/testcode/BenchmarkTest00051", expect: tp}
+  - {check_id: m3.ssti-oracle, marker: "/benchmark/testcode/BenchmarkTest00052", expect: fp}

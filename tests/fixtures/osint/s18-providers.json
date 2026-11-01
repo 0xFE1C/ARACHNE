@@ -1,0 +1,50 @@
+{
+ "description": "Recorded third-party responses for the S18 intel checks (Shodan, Censys, Cert Spotter, Have I Been Pwned, RDAP). Bodies are synthetic and shaped like the real providers' answers. The keyed providers are recorded without credentials: fixture replay matches on host+path, which is what lets a test exercise the authenticated path without a key in the repository.",
+ "responses": [
+  {
+   "method": "GET",
+   "url": "https://api.shodan.io/shodan/host/203.0.113.9",
+   "status": 200,
+   "headers": {
+    "content-type": "application/json"
+   },
+   "body": "{\"ip_str\": \"203.0.113.9\", \"ports\": [22, 80, 31337], \"hostnames\": [\"edge.example.com\"], \"domains\": [\"example.com\"], \"org\": \"Example Corp\", \"isp\": \"Example ISP\", \"os\": \"Linux\", \"country_code\": \"NL\", \"last_update\": \"2026-10-28T10:00:00.000000\", \"tags\": [\"cloud\"], \"cpes\": [\"cpe:2.3:a:openbsd:openssh:9.3:*:*:*:*:*:*\"], \"vulns\": [\"CVE-2024-6387\"]}"
+  },
+  {
+   "method": "GET",
+   "url": "https://search.censys.io/api/v2/hosts/203.0.113.9",
+   "status": 200,
+   "headers": {
+    "content-type": "application/json"
+   },
+   "body": "{\"code\": 200, \"status\": \"OK\", \"result\": {\"ip\": \"203.0.113.9\", \"services\": [{\"port\": 22, \"service_name\": \"SSH\", \"transport_protocol\": \"TCP\", \"software\": [{\"product\": \"OpenSSH\", \"version\": \"9.3p1\"}]}, {\"port\": 443, \"service_name\": \"HTTP\", \"transport_protocol\": \"TCP\", \"software\": [{\"product\": \"nginx\", \"version\": \"1.24.0\"}]}], \"labels\": [\"remote-access\"], \"last_updated_at\": \"2026-10-28T09:00:00Z\"}}"
+  },
+  {
+   "method": "GET",
+   "url": "https://api.certspotter.com/v1/issuances?domain=example.com&include_subdomains=true&expand=dns_names",
+   "status": 200,
+   "headers": {
+    "content-type": "application/json"
+   },
+   "body": "[{\"id\": \"ct-1042\", \"dns_names\": [\"example.com\", \"www.example.com\", \"staging.example.com\"], \"not_before\": \"2026-10-26T08:00:00Z\", \"not_after\": \"2027-01-24T08:00:00Z\", \"tbs_certificate\": {\"issuer\": {\"friendly_name\": \"Example Internal CA\"}, \"dns_names\": [\"example.com\", \"www.example.com\", \"staging.example.com\"], \"not_before\": \"2026-10-26T08:00:00Z\", \"not_after\": \"2027-01-24T08:00:00Z\"}}, {\"id\": \"ct-0811\", \"dns_names\": [\"example.com\"], \"not_before\": \"2025-01-04T00:00:00Z\", \"not_after\": \"2026-01-04T00:00:00Z\", \"tbs_certificate\": {\"issuer\": {\"friendly_name\": \"Example CA\"}, \"dns_names\": [\"example.com\"], \"not_before\": \"2025-01-04T00:00:00Z\", \"not_after\": \"2026-01-04T00:00:00Z\"}}]"
+  },
+  {
+   "method": "GET",
+   "url": "https://haveibeenpwned.com/api/v3/breaches?domain=example.com",
+   "status": 200,
+   "headers": {
+    "content-type": "application/json"
+   },
+   "body": "[{\"Name\": \"ExampleForum\", \"Title\": \"Example Forum\", \"Domain\": \"example.com\", \"BreachDate\": \"2024-03-01\", \"AddedDate\": \"2024-03-05T00:00:00Z\", \"PwnCount\": 125000, \"DataClasses\": [\"Email addresses\", \"Passwords\"], \"IsVerified\": true, \"IsSensitive\": false}]"
+  },
+  {
+   "method": "GET",
+   "url": "https://rdap.org/domain/example.com",
+   "status": 200,
+   "headers": {
+    "content-type": "application/json"
+   },
+   "body": "{\"objectClassName\": \"domain\", \"handle\": \"2336799_DOMAIN_COM-VRSN\", \"ldhName\": \"EXAMPLE.COM\", \"status\": [\"client delete prohibited\", \"client transfer prohibited\"], \"events\": [{\"eventAction\": \"registration\", \"eventDate\": \"1995-08-14T04:00:00Z\"}, {\"eventAction\": \"expiration\", \"eventDate\": \"2027-08-13T04:00:00Z\"}, {\"eventAction\": \"last changed\", \"eventDate\": \"2026-08-14T07:01:34Z\"}], \"nameservers\": [{\"ldhName\": \"A.IANA-SERVERS.NET\"}, {\"ldhName\": \"B.IANA-SERVERS.NET\"}], \"entities\": [{\"roles\": [\"registrar\"], \"vcardArray\": [\"vcard\", [[\"version\", {}, \"text\", \"4.0\"], [\"fn\", {}, \"text\", \"Example Registrar\"]]]}]}"
+  }
+ ]
+}

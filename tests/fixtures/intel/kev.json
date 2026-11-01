@@ -1,0 +1,10 @@
+{
+ "source": "kev",
+ "description": "Recorded CISA KEV catalogue: two entries, one of which (CVE-2024-6387) is also in the NVD recording.",
+ "url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+ "status": 200,
+ "headers": {
+  "content-type": "application/json"
+ },
+ "body": "{\n \"title\": \"CISA Catalog of Known Exploited Vulnerabilities\",\n \"catalogVersion\": \"2026.10.29\",\n \"dateReleased\": \"2026-10-29T14:00:00.000Z\",\n \"count\": 2,\n \"vulnerabilities\": [\n  {\n   \"cveID\": \"CVE-2024-6387\",\n   \"vendorProject\": \"OpenBSD\",\n   \"product\": \"OpenSSH\",\n   \"vulnerabilityName\": \"OpenSSH Signal Handler Race Condition (regreSSHion)\",\n   \"dateAdded\": \"2024-07-02\",\n   \"knownRansomwareCampaignUse\": \"Unknown\",\n   \"shortDescription\": \"A race condition in sshd allows unauthenticated RCE as root.\",\n   \"requiredAction\": \"Apply mitigations per vendor instructions.\",\n   \"dueDate\": \"2024-07-23\"\n  },\n  {\n   \"cveID\": \"CVE-2021-44228\",\n   \"vendorProject\": \"Apache\",\n   \"product\": \"Log4j2\",\n   \"vulnerabilityName\": \"Apache Log4j2 Remote Code Execution Vulnerability\",\n   \"dateAdded\": \"2021-12-10\",\n   \"knownRansomwareCampaignUse\": \"Known\",\n   \"shortDescription\": \"Log4Shell.\",\n   \"requiredAction\": \"Apply updates.\",\n   \"dueDate\": \"2021-12-24\"\n  }\n ]\n}"
+}

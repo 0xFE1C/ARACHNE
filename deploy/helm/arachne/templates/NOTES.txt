@@ -1,0 +1,32 @@
+ARACHNE {{ .Chart.AppVersion }} deployed as {{ .Release.Name }}.
+
+API:        http://{{ include "arachne.fullname" . }}-api:{{ .Values.api.service.port }} ({{ .Values.api.replicas }} replicas, {{ .Values.api.workers }} uvicorn worker(s) each)
+Agent pool: {{ .Values.agent.replicas }} agent(s) in {{ .Values.agent.mode }} mode
+Postgres:   {{- if .Values.postgres.enabled }} {{ include "arachne.fullname" . }}-postgres (StatefulSet, {{ .Values.postgres.persistence.size }}){{- else }} external{{- end }}
+Evidence:   {{ .Values.evidence.backend }} backend
+
+1. The migration Job ran as a pre-install hook (`arachne db upgrade`); check it with
+   kubectl get job {{ include "arachne.fullname" . }}-migrate
+2. Port-forward and open the UI:
+   kubectl port-forward svc/{{ include "arachne.fullname" . }}-api 8080:{{ .Values.api.service.port }}
+3. This chart ships no credentials (REQ-OPS-006): the keys and the database password
+   came from your values or a Secret you manage. Rotate them with
+   `kubectl edit secret` + a rolling restart.
+
+Verify a released image before deploying it (REQ-TRUST-002):
+  cosign verify <image>@<digest> \
+    --certificate-identity-regexp '^https://github.com/<owner>/<repo>/' \
+    --certificate-oidc-issuer https://token.actions.githubusercontent.com
+{{- if or .Values.autoscaling.enabled .Values.autoscaling.keda.enabled }}
+
+Queue-depth autoscaling (S25, REQ-RESIL-003) is ON: {{ .Values.autoscaling.minReplicas }}-{{ .Values.autoscaling.maxReplicas }} agent replicas, {{ .Values.autoscaling.queueDepthPerReplica }} queued scans per replica.
+{{- else }}
+
+Queue-depth autoscaling (S25, REQ-RESIL-003) is OFF. To scale the agent pool on the
+queue, install the KEDA operator first (this chart bundles no CRD or operator):
+  helm install keda kedacore/keda --namespace keda --create-namespace
+then upgrade with --set autoscaling.keda.enabled=true. KEDA is the recommended path
+and the ONLY one that scales the pool to zero when the queue drains; a plain
+HorizontalPodAutoscaler (--set autoscaling.enabled=true) needs an external-metrics
+adapter and cannot go below one replica.
+{{- end }}

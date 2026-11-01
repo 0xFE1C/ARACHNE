@@ -1,0 +1,141 @@
+version: "1.0"
+# The purple-team replay catalogue (S24, area VALID, REQ-VALID-001/004).
+#
+# Each entry says: this proof action exercises *this* ATT&CK technique, and running it
+# produces *this* telemetry. The telemetry block is fed to the same M6 Sigma matcher the
+# hunt library uses, so "rule-hit / rule-miss" in the defender report is an evaluation
+# against the shipped rules rather than an opinion.
+#
+# Hard rule of the whole area: these tests are designed to be SEEN. The payloads ARACHNE
+# emits are the proof ladder's own declared payloads (a calm marker, an OOB token, one
+# allowlisted `echo`), emitted verbatim and carrying the run nonce. Nothing here encodes,
+# obfuscates or fragments anything, and nothing here is an exploitation tool: the action
+# only replays a proof ARACHNE already knows how to make safely, and the point is that a
+# defender sees it.
+#
+# `level` must equal the proof level the module catalogue declares for the check; the
+# planner refuses a map that disagrees with the registry.
+actions:
+  - check: m3.sqli-oracle
+    title: In-band SQL injection oracle
+    level: L1
+    tactic: initial-access
+    techniques: [T1190]
+    severity: high
+    notes: >-
+      The L1 differential oracle: metacharacter and boolean payloads against a
+      SQL-hinted parameter. Emitted in the clear, one request per signal.
+    telemetry:
+      summary: Web access-log line for a request carrying SQL metacharacters
+      logsource: {product: linux, category: webserver}
+      event:
+        EventID: web-access
+        RequestMethod: GET
+        url_query: "id=1'%20OR%20'1'='1"
+        Status: 200
+
+  - check: m3.sqli-oob
+    title: Out-of-band SQL injection (callback)
+    level: L2
+    tactic: initial-access
+    techniques: [T1190]
+    severity: high
+    notes: >-
+      The blind variant: the injected statement carries the run's callback token, so the
+      target's own outbound request is the proof.
+    telemetry:
+      summary: Web access-log line for a request carrying the callback token
+      logsource: {product: linux, category: webserver}
+      event:
+        EventID: web-access
+        RequestMethod: GET
+        url_query: "id=1;SELECT LOAD_FILE('http://127.0.0.1/arachne-TESTTOKEN')"
+        Status: 200
+
+  - check: m3.xxe-oob
+    title: Out-of-band XXE (external entity)
+    level: L2
+    tactic: initial-access
+    techniques: [T1190]
+    severity: high
+    notes: An XML body declaring an external entity that resolves to the callback token.
+    telemetry:
+      summary: Web access-log line for an XML POST declaring an external entity
+      logsource: {product: linux, category: webserver}
+      event:
+        EventID: web-access
+        RequestMethod: POST
+        ContentType: application/xml
+        Status: 200
+
+  - check: m3.cmdi-oob
+    title: Out-of-band command injection
+    level: L2
+    tactic: execution
+    techniques: [T1059]
+    severity: high
+    notes: >-
+      The separator-plus-payload form; the payload is the allowlisted `echo` marker, so a
+      worker process spawning a shell is exactly the telemetry this test wants seen.
+    telemetry:
+      summary: Process-creation event — a web worker spawned a shell
+      logsource: {product: linux, category: process_creation}
+      event:
+        EventID: 1
+        ParentImage: /usr/sbin/php-fpm
+        Image: /bin/sh
+        CommandLine: "sh -c echo arachne-TESTTOKEN"
+
+  - check: m3.ssti-oob
+    title: Out-of-band template injection
+    level: L2
+    tactic: execution
+    techniques: [T1059]
+    severity: high
+    notes: A template expression that resolves on the server and calls back to the token.
+    telemetry:
+      summary: Process-creation event — a web worker spawned a shell from a template render
+      logsource: {product: linux, category: process_creation}
+      event:
+        EventID: 1
+        ParentImage: /usr/sbin/php-fpm
+        Image: /bin/sh
+        CommandLine: "sh -c echo arachne-TESTTOKEN"
+
+  - check: m3.rce-echo
+    title: One-shot command execution proof (L3)
+    level: L3
+    tactic: execution
+    techniques: [T1059]
+    severity: critical
+    notes: >-
+      One allowlisted `echo arachne-<nonce>` through the sink, reflected back. This is the
+      loudest test ARACHNE can run, which is precisely why it runs under the L3
+      attestation and inside a coordinated window.
+    telemetry:
+      summary: Process-creation event — a web worker spawned a shell (one-shot echo)
+      logsource: {product: linux, category: process_creation}
+      event:
+        EventID: 1
+        ParentImage: /usr/sbin/php-fpm
+        Image: /bin/sh
+        CommandLine: "sh -c echo arachne-TESTTOKEN"
+
+  - check: m3.state-marker
+    title: Minimal reversible state change (L4)
+    level: L4
+    tactic: impact
+    techniques: [T1565.001]
+    severity: high
+    notes: >-
+      INSERT-first marker row in a dedicated, non-credential table, verified, restored and
+      re-verified. The shipped hunt library has no rule for this technique, so the report
+      is expected to show it as a rule-miss — a gap in the rule set, stated plainly.
+    telemetry:
+      summary: Database audit event — a marker row was inserted and removed
+      logsource: {product: linux, category: database}
+      event:
+        EventID: db-audit
+        Operation: INSERT
+        Table: arachne_poc
+        Application: arachne

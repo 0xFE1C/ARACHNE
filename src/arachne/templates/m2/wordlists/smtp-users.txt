@@ -1,0 +1,23 @@
+# ARACHNE SMTP recipient wordlist (F-09-04: wordlists are managed data).
+#
+# Bounded on purpose: an SMTP check is capped at SMTP_MAX_RECIPIENTS entries and paced, so
+# this list stays short. Add entries here (or point ARACHNE_WORDLISTS_DIR at your own
+# directory with a smtp-users.txt) to widen the probe.
+postmaster
+abuse
+hostmaster
+webmaster
+admin
+administrator
+info
+sales
+support
+helpdesk
+noc
+security
+it
+hr
+finance
+root
+noreply
+billing

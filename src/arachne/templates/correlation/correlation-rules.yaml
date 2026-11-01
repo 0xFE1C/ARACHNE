@@ -1,0 +1,135 @@
+# Correlation rules (docs/spec/04- §2.3, F-05-03) and the dedupe policy (docs/spec/05-).
+#
+# A correlation rule names weak signals that are individually unremarkable and jointly a
+# story. Findings are grouped (`group_by`: asset, host, asset_kind, module) and when at least
+# `min_weak_signals` distinct signals are present in one group, the engine emits ONE compound
+# finding with the merged evidence, the contributors' ids, a shared remediation and a severity
+# promoted by `upgrade_if` (first matching clause) or by `upgrade_levels`.
+#
+# A signal matches on: check (glob), module, cwe, cve, name_token (substring of the check name
+# or id), severity. `upgrade_if` expressions are read against signal_count, signals,
+# severity_max, severity_rank, contributors, confidence_max, modules, assets, and every signal
+# id as a boolean condition. Managed data (F-09-04): point
+# ARACHNE_ANALYSIS_CORRELATION at another file to replace it.
+
+version: "1.0"
+
+dedupe:
+  enabled: true
+  # Findings sharing a root cause are merged by CWE + asset (docs/spec/05- dedupe rules).
+  # The owner is the most specific module that reported it; the others attach as contributors.
+  key: cwe_asset
+  owner_preference: [M4, M3, M6, M5, M2, M1]
+  min_severity: info
+
+rules:
+  # The spec's own example (docs/spec/04- §2.3): an exposed administrative surface that is also
+  # missing the hardening that would contain a compromise.
+  - id: correlation.unhardened-admin-surface
+    title: "Unhardened administrative surface with permissive cross-origin policy"
+    description: >-
+      An administrative interface reachable without the transport, browser and cross-origin
+      protections that would contain it. Individually each signal is a hardening gap; together
+      they describe an administrative surface an attacker can reach, read and drive from a
+      victim's authenticated browser session.
+    group_by: asset
+    min_weak_signals: 3
+    signals:
+      - id: admin-panel
+        module: [M4]
+        name_token: [admin]
+      - id: cors-wildcard
+        module: [M3]
+        name_token: [cors]
+      - id: missing-csp
+        module: [M4]
+        name_token: [header]
+      - id: no-hsts
+        module: [M2]
+        name_token: [tls]
+      - id: weak-cookies
+        module: [M4]
+        name_token: [cookie]
+    upgrade_if:
+      - "cors-wildcard and admin-panel -> high"
+      - "signal_count >= 4 -> high"
+      - "signal_count >= 3 -> medium"
+    max_severity: critical
+    merge_evidence: true
+    cwe: CWE-693
+    remediation: remediation-catalog/admin-surface.yaml
+    narrative: correlation.unhardened-admin-surface
+    tags: [correlation, hardening]
+
+  # Exposed credentials plus an unauthenticated way in: the compound is worse than either.
+  - id: correlation.exposed-credentials-and-open-service
+    title: "Exposed credentials alongside an unauthenticated service"
+    description: >-
+      Credential material is exposed and a service on the same asset accepts unauthenticated
+      access. Either signal alone is a finding; together they mean the credentials are very
+      likely live and directly usable.
+    group_by: host
+    min_weak_signals: 2
+    signals:
+      - id: secret-exposure
+        cwe: [CWE-200, CWE-798, CWE-540, CWE-522]
+      - id: unauthenticated-service
+        cwe: [CWE-306, CWE-287, CWE-1188]
+    upgrade_if:
+      - "secret-exposure and unauthenticated-service -> critical"
+    max_severity: critical
+    merge_evidence: true
+    cwe: CWE-522
+    remediation: remediation-catalog/unauthenticated-datastore.yaml
+    narrative: correlation.exposed-credentials-and-open-service
+    tags: [correlation, credentials]
+
+  # Missing web hardening on a host that is already known to be patch-lagging.
+  - id: correlation.unpatched-and-unhardened
+    title: "Unpatched component on a host without baseline web hardening"
+    description: >-
+      A known-vulnerable component version and a missing hardening baseline on the same host:
+      the classic combination that turns "an old version" into "an exploited service".
+    group_by: host
+    min_weak_signals: 2
+    signals:
+      - id: vulnerable-version
+        cwe: [CWE-1035]
+      - id: hardening-gap
+        cwe: [CWE-693, CWE-614, CWE-1004, CWE-319, CWE-327]
+    upgrade_if:
+      - "vulnerable-version and hardening-gap -> high"
+    max_severity: critical
+    merge_evidence: true
+    cwe: CWE-1035
+    remediation: remediation-catalog/patch-management.yaml
+    narrative: correlation.unpatched-and-unhardened
+    tags: [correlation, patch]
+
+  # Information disclosure that composes into a complete picture of the estate.
+  - id: correlation.reconnaissance-composite
+    title: "Composite reconnaissance picture of the same asset"
+    description: >-
+      Several independent passive disclosures about one asset. None of them is an exploit; the
+      set is a map of the target that an attacker would otherwise have to build by hand.
+    group_by: host
+    min_weak_signals: 3
+    signals:
+      - id: indexed-exposure
+        module: [M1]
+        cwe: [CWE-200, CWE-540]
+      - id: zone-transfer
+        name_token: [dns]
+      - id: enumeration
+        name_token: [enum]
+      - id: directory-disclosure
+        cwe: [CWE-538, CWE-530]
+    upgrade_if:
+      - "signal_count >= 4 -> medium"
+      - "signal_count >= 3 -> low"
+    max_severity: high
+    merge_evidence: true
+    cwe: CWE-200
+    remediation: remediation-catalog/sensitive-document-exposure.yaml
+    narrative: correlation.reconnaissance-composite
+    tags: [correlation, osint]

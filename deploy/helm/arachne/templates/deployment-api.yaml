@@ -1,0 +1,125 @@
+{{- /* The API: multi-replica HA, uvicorn multi-worker inside each pod (REQ-OPS-005).
+  POSTGRES_PASSWORD is declared *before* ARACHNE_DATABASE_URL so the dependent-env
+  expansion resolves; the password itself is only ever a secretKeyRef.
+*/ -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "arachne.fullname" . }}-api
+  labels:
+    {{- include "arachne.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  replicas: {{ .Values.api.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      {{- include "arachne.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        {{- include "arachne.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: api
+      {{- with .Values.api.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "arachne.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if eq .Values.api.antiAffinity "soft" }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    {{- include "arachne.selectorLabels" . | nindent 20 }}
+                    app.kubernetes.io/component: api
+                topologyKey: kubernetes.io/hostname
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: api
+          image: {{ include "arachne.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # `--insecure` is scoped to the pod network: TLS terminates at the
+          # ingress/mesh, or the operator overrides the command for pod-level TLS.
+          command: ["arachne"]
+          args: ["serve", "--host", "0.0.0.0", "--port", "8080", "--insecure"]
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.auth.existingSecret | default (printf "%s-postgres" (include "arachne.fullname" .)) }}
+                  key: {{ .Values.postgres.auth.secretKey }}
+            {{- if .Values.api.auth.existingSecret }}
+            - name: ARACHNE_API_KEYS_FILE
+              value: /run/secrets/arachne-api-keys
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "arachne.fullname" . }}-config
+            {{- if not .Values.api.auth.existingSecret }}
+            - secretRef:
+                name: {{ include "arachne.fullname" . }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          {{- if and .Values.api.auth.existingSecret (not .Values.vault.enabled) }}
+          volumeMounts:
+            - name: api-keys
+              mountPath: /run/secrets
+              readOnly: true
+          {{- else if .Values.vault.enabled }}
+          volumeMounts:
+            - name: vault-secrets
+              mountPath: /run/secrets
+              readOnly: true
+          {{- end }}
+      {{- if and .Values.api.auth.existingSecret (not .Values.vault.enabled) }}
+      volumes:
+        - name: api-keys
+          secret:
+            secretName: {{ .Values.api.auth.existingSecret }}
+      {{- else if .Values.vault.enabled }}
+      volumes:
+        - name: vault-secrets
+          emptyDir:
+            medium: Memory
+      {{- end }}
+      {{- with .Values.api.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

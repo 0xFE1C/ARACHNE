@@ -1,0 +1,27 @@
+{{- /* Non-secret ARACHNE_* configuration shared by every role. */ -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "arachne.fullname" . }}-config
+  labels:
+    {{- include "arachne.labels" . | nindent 4 }}
+data:
+  ARACHNE_DATABASE_URL: {{ include "arachne.databaseUrl" . | quote }}
+  ARACHNE_API_WORKERS: {{ .Values.api.workers | quote }}
+  ARACHNE_EVIDENCE_BACKEND: {{ .Values.evidence.backend | quote }}
+  {{- if eq .Values.evidence.backend "local" }}
+  ARACHNE_EVIDENCE_DIR: /data/evidence
+  {{- else }}
+  ARACHNE_S3_URL: {{ .Values.evidence.s3.url | quote }}
+  ARACHNE_S3_BUCKET: {{ .Values.evidence.s3.bucket | quote }}
+  {{- end }}
+  ARACHNE_LOG_JSON: "true"
+  {{- if .Values.observability.metricsEnabled }}
+  ARACHNE_METRICS_ENABLED: "true"
+  {{- end }}
+  {{- if .Values.observability.tracingEnabled }}
+  ARACHNE_TRACING_ENABLED: "true"
+  {{- end }}
+  {{- range $key, $value := .Values.api.env }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}

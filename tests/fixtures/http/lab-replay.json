@@ -1,0 +1,19 @@
+{
+  "description": "Recorded responses for the M1 recon demonstration (docs/spec/07- §6). Used by ARACHNE_HTTP_FIXTURES (the target client) and by the M1 integration tests. The bodies are synthetic: they mimic the shape of the real providers without containing anyone's data.",
+  "responses": [
+    {
+      "method": "GET",
+      "url": "https://example.com/",
+      "status": 200,
+      "headers": {"content-type": "text/html; charset=utf-8"},
+      "body": "<!doctype html>\n<html lang=\"en\"><head><title>Example</title>\n<meta name=\"application-config\" content=\"/config/app.json\">\n</head><body><h1>Example Domain</h1>\n<script src=\"/assets/app.js\"></script>\n<script src=\"https://cdn.example.net/vendor.js\"></script>\n</body></html>"
+    },
+    {
+      "method": "GET",
+      "url": "https://example.com/assets/app.js",
+      "status": 200,
+      "headers": {"content-type": "application/javascript"},
+      "body": "const api = { base: '/api/v2', search: '/api/v2/search?q=', legacy: '/api/v1/admin/users' };\nconst cfg = {aws_access_key_id: 'AKIAIOSFODNN7EXAMPLE', region: 'eu-west-1'};\nfetch('/internal/debug/state').then(r => r.json());\nfetch(api.legacy);"
+    }
+  ]
+}

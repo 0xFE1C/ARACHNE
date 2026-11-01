@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Modules · ARACHNE{% endblock %}
+{% block content %}
+<h1>Modules &amp; configuration</h1>
+
+<section class="panel">
+  <h2>Effective configuration</h2>
+  <p class="muted small">
+    Module configuration is environment-driven (F-08-01), so this view is read-only: it shows
+    what this deployment is actually configured to do.
+  </p>
+  <table>
+    <tbody>
+      <tr><th>Database</th><td>{{ config.database }}</td></tr>
+      <tr><th>Engine</th><td>{{ config.engine }}</td></tr>
+      <tr><th>Egress rate</th><td>{{ config.per_host_rate }}/s per host · {{ config.global_rate }}/s global</td></tr>
+      <tr><th>API rate</th><td>{{ config.api_rate }}/min</td></tr>
+      <tr><th>TLS required</th><td>{{ "yes" if config.tls_required else "no" }}</td></tr>
+      <tr><th>Scope hosts</th><td>{{ config.scope_hosts | join(", ") or "—" }}</td></tr>
+      <tr><th>Scope domains</th><td>{{ config.scope_domains | join(", ") or "—" }}</td></tr>
+      <tr><th>Webhooks</th><td>{{ config.webhooks | join(", ") or "none configured" }}</td></tr>
+    </tbody>
+  </table>
+</section>
+
+{% for module in modules %}
+<section class="panel">
+  <h2>{{ module.id }} <span class="muted small">v{{ module.version }} · step {{ module.step }}</span></h2>
+  <table>
+    <thead>
+      <tr><th>Check</th><th>Title</th><th>Research</th><th>CWE</th><th>Flags</th><th>Ran</th></tr>
+    </thead>
+    <tbody>
+    {% for check in module.checks %}
+      <tr>
+        <td class="mono small">{{ check.id }} <span class="muted">v{{ check.version }}</span></td>
+        <td>{{ check.title }}</td>
+        <td class="muted small">{{ check.research_ref or "—" }}</td>
+        <td class="muted small">{{ check.cwe or "—" }}</td>
+        <td>
+          {% if check.active %}<span class="badge sev-high">active</span>{% endif %}
+          {% if check.opt_in %}<span class="badge sev-other">opt-in</span>{% endif %}
+        </td>
+        <td class="muted small">{{ "yes" if check.ran else "no" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endfor %}
+{% endblock %}

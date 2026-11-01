@@ -1,0 +1,21 @@
+{
+  "arachne_version": "0.1.0",
+  "measured_at": "2026-10-30T14:42:41.193508+00:00",
+  "score": {
+    "candidates": 15,
+    "detection": 0.9375,
+    "false_positives": 0,
+    "fp_examples": [],
+    "fp_rate": 0.0,
+    "missed": [
+      "m3.upload-audit:/upload"
+    ],
+    "planted": 16,
+    "true_positives": 15,
+    "unscored": 14
+  },
+  "source": "lab",
+  "suite": "arachne-lab",
+  "suite_version": "1.0",
+  "target": "in-repo web lab (tests/lab/web_lab.py)"
+}

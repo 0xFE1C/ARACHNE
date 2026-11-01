@@ -1,0 +1,92 @@
+# ARACHNE compliance map — PCI DSS v4.0 (S22, REQ-TRUST-001).
+#
+# Same contract as cis.yaml: check ids must exist in the shipped planning catalogue
+# (no dangling ids — `tests/unit/test_compliance_map.py` fails the build otherwise),
+# control ids are unique, and `total_controls` states the framework's own size so a
+# framework report can name the gap explicitly instead of implying coverage.
+#
+# PCI DSS v4.0 has 12 top-level requirements; the controls here are mapped at
+# requirement granularity, with the sub-requirement detail a finding speaks to named
+# in the title. Payment-page script integrity (6.4.3/11.6) and wireless controls
+# (11.2) have no ARACHNE check today and are therefore absent — the report shows
+# them as outside the assessed set, which is the honest statement.
+
+framework: pci-dss
+name: PCI DSS
+edition: v4.0
+kind: requirement
+total_controls: 12
+map_version: "1.0"
+controls:
+  - id: "2.2"
+    title: System components are configured and managed securely (insecure services removed)
+    checks:
+      - m2.legacy-services
+      - m2.ftp-anonymous
+      - m4.tls-config-review
+
+  - id: "4.2"
+    title: Strong cryptography protects cardholder data during transmission (TLS 1.2+)
+    checks:
+      - m2.tls-deep-scan
+      - m4.tls-config-review
+
+  - id: "6.2"
+    title: Software is developed in accordance with PCI DSS secure coding guidance
+    checks:
+      - m3.sqli-oracle
+      - m3.xss-oracle
+      - m3.cmdi-oracle
+      - m3.ssti-oracle
+      - m3.xxe-oracle
+      - m3.nosql-oracle
+      - m3.traversal-oracle
+
+  - id: "6.3"
+    title: Security vulnerabilities are identified and managed; bespoke components inventoried
+    checks:
+      - m2.cve-correlate
+      - m5.dep-confusion
+      - m5.sbom-review
+      - m6.secret-scan-at-scale
+
+  - id: "6.4"
+    title: Public-facing web applications are protected against attacks
+    checks:
+      - m3.security-headers
+      - m3.csrf-audit
+      - m3.cors-audit
+      - m3.upload-audit
+
+  - id: "8.2"
+    title: User accounts and authentication factors are managed
+    checks:
+      - m3.auth-session-audit
+      - m3.jwt-audit
+      - m3.session-logout
+      - m4.user-enumeration
+
+  - id: "8.3"
+    title: Strong authentication is established and implemented
+    checks:
+      - m3.oauth-flow-audit
+      - m3.saml-audit
+      - m3.jwt-audit
+
+  - id: "10.2"
+    title: Auditable events are recorded and audit logs are protected
+    checks:
+      - m3.auth-session-audit
+
+  - id: "11.3"
+    title: Vulnerabilities are identified by internal and external scans
+    checks:
+      - m2.cve-correlate
+      - m6.exploit-match
+      - m6.cve-epss-correlation
+
+  - id: "11.5"
+    title: Intrusions and unexpected changes are detected
+    checks:
+      - m6.webshell-yara
+      - m5.tfstate-exposure

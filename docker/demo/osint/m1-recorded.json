@@ -1,0 +1,185 @@
+{
+  "description": "Recorded third-party OSINT responses for the M1 checks (crt.sh, CIRCL passive DNS, Wayback CDX, Common Crawl index, Shodan InternetDB, and a deployment-configured search API). Bodies are synthetic and shaped like the real providers' answers; tests assert on the parsing and on the findings they drive. `ARACHNE_OSINT_FIXTURES` points a real run at a directory of these.",
+  "responses": [
+    {
+      "method": "GET",
+      "url": "https://crt.sh/?q=%25.example.com&output=json",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "[{\"issuer_ca_id\": 1, \"issuer_name\": \"C=US, O=Example CA\", \"common_name\": \"example.com\", \"name_value\": \"example.com\\nwww.example.com\", \"not_before\": \"2024-01-01T00:00:00\", \"not_after\": \"2025-01-01T00:00:00\", \"entry_timestamp\": \"2024-01-02T00:00:00\"}, {\"issuer_ca_id\": 1, \"issuer_name\": \"C=US, O=Example CA\", \"common_name\": \"*.example.com\", \"name_value\": \"*.example.com\\nstaging.example.com\\njira.example.com\", \"not_before\": \"2024-03-01T00:00:00\", \"not_after\": \"2025-03-01T00:00:00\", \"entry_timestamp\": \"2024-03-02T00:00:00\"}, {\"issuer_ca_id\": 2, \"issuer_name\": \"C=US, O=Other CA\", \"common_name\": \"mail.example.com\", \"name_value\": \"mail.example.com\", \"not_before\": \"2024-05-01T00:00:00\", \"not_after\": \"2025-05-01T00:00:00\", \"entry_timestamp\": \"2024-05-02T00:00:00\"}]"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.circl.lu/pdns/query/example.com",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"rrtype\": \"A\", \"rdata\": \"93.184.216.34\", \"rrname\": \"example.com\", \"time_first\": 1600000000, \"time_last\": 1700000000}\n{\"rrtype\": \"CNAME\", \"rdata\": \"example-net.example-cdn.net\", \"rrname\": \"www.example.com\", \"time_first\": 1600000000, \"time_last\": 1700000000}\n{\"rrtype\": \"MX\", \"rdata\": \"10 mail.example.com\", \"rrname\": \"example.com\", \"time_first\": 1600000000, \"time_last\": 1700000000}\n{\"rrtype\": \"NS\", \"rdata\": \"ns1.example.net\", \"rrname\": \"example.com\", \"time_first\": 1600000000, \"time_last\": 1700000000}\n{\"rrtype\": \"A\", \"rdata\": \"203.0.113.10\", \"rrname\": \"old.example.com\", \"time_first\": 1500000000, \"time_last\": 1550000000}"
+    },
+    {
+      "method": "GET",
+      "url": "https://web.archive.org/cdx/search/cdx?url=example.com/*&output=json&fl=original%2Ctimestamp%2Cstatuscode%2Cmimetype&collapse=urlkey&limit=100",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "[[\"original\",\"timestamp\",\"statuscode\",\"mimetype\"],[\"https://example.com/\",\"20240101000000\",\"200\",\"text/html\"],[\"https://example.com/.env\",\"20230101000000\",\"200\",\"text/plain\"],[\"https://example.com/admin/login\",\"20230101000000\",\"200\",\"text/html\"],[\"https://example.com/assets/app.js\",\"20240101000000\",\"200\",\"application/javascript\"],[\"https://cdn.example.net/vendor.js\",\"20240101000000\",\"200\",\"application/javascript\"],[\"https://legacy.example.com/backup.zip\",\"20220101000000\",\"200\",\"application/zip\"]]"
+    },
+    {
+      "method": "GET",
+      "url": "https://index.commoncrawl.org/CC-MAIN-2024-51-index?url=*.example.com&output=json&limit=100",
+      "status": 200,
+      "headers": {
+        "content-type": "application/x-ndjson"
+      },
+      "body": "{\"urlkey\": \"com,example)/swagger-ui.html\", \"timestamp\": \"20240301000000\", \"url\": \"https://example.com/swagger-ui.html\", \"status\": \"200\", \"mime\": \"text/html\"}\n{\"urlkey\": \"com,example)/api/v2/docs\", \"timestamp\": \"20240401000000\", \"url\": \"https://example.com/api/v2/docs\", \"status\": \"200\", \"mime\": \"text/html\"}"
+    },
+    {
+      "method": "GET",
+      "url": "https://internetdb.shodan.io/93.184.216.34",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"cpes\": [\"cpe:/a:igor_sysoev:nginx:1.18.0\", \"cpe:/a:openbsd:openssh:8.2\"], \"hostnames\": [\"example.com\"], \"ip\": \"93.184.216.34\", \"ports\": [22, 80, 443], \"tags\": [], \"vulns\": [\"CVE-2021-23017\", \"CVE-2016-6210\"]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://internetdb.shodan.io/93.184.216.35",
+      "status": 404,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"detail\": \"No information available\"}"
+    },
+    {
+      "method": "GET",
+      "url": "https://search.example.net/search?q=site%3Aexample.com%20filetype%3Aenv&limit=100&format=json",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"results\": [{\"url\": \"https://example.com/.env\", \"title\": \"Index of /.env\", \"content\": \"APP_ENV=production\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://search.example.net/search?q=site%3Aexample.com%20filetype%3Asql%20%28%22INSERT%20INTO%22%20OR%20%22password%22%29&limit=100&format=json",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"results\": []}"
+    },
+    {
+      "method": "GET",
+      "url": "https://search.example.net/search?q=site%3Aexample.com%20%28filetype%3Abak%20OR%20filetype%3Azip%20OR%20filetype%3Aold%29&limit=100&format=json",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"results\": [{\"url\": \"https://example.com/backup.zip\", \"title\": \"backup.zip\", \"content\": \"\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://search.example.net/search?q=site%3Aexample.com%20%28filetype%3Ayml%20OR%20filetype%3Ayaml%29%20%28%22password%22%20OR%20%22secret%22%29&limit=100&format=json",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"results\": []}"
+    },
+    {
+      "method": "GET",
+      "url": "https://search.example.net/search?q=site%3Aexample.com%20%28inurl%3Aadmin%20OR%20inurl%3Alogin%20OR%20inurl%3Aphpmyadmin%29&limit=100&format=json",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"results\": [{\"url\": \"https://example.com/admin/login\", \"title\": \"Admin login\", \"content\": \"\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://search.example.net/search?q=site%3Aexample.com%20intitle%3A%22index%20of%22&limit=100&format=json",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"results\": []}"
+    },
+    {
+      "method": "GET",
+      "url": "https://search.example.net/search?q=site%3Aexample.com%20%28inurl%3A.git%20OR%20inurl%3A.svn%20OR%20inurl%3A.hg%29&limit=100&format=json",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"results\": []}"
+    },
+    {
+      "method": "GET",
+      "url": "https://search.example.net/search?q=site%3Aexample.com%20%28inurl%3Aswagger%20OR%20inurl%3Aopenapi%20OR%20inurl%3Aapi-docs%29&limit=100&format=json",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"results\": [{\"url\": \"https://example.com/swagger-ui.html\", \"title\": \"Swagger UI\", \"content\": \"\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://search.example.net/search?q=site%3Aexample.com%20%28filetype%3Apdf%20OR%20filetype%3Axlsx%20OR%20filetype%3Adocx%29&limit=100&format=json",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"results\": [{\"url\": \"https://example.com/reports/2024-q1.pdf\", \"title\": \"Q1 report\", \"content\": \"\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://search.example.net/search?q=site%3Aexample.com%20%28inurl%3Astaging%20OR%20inurl%3Adev%20OR%20inurl%3Atest%20OR%20inurl%3Auat%29&limit=100&format=json",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"results\": [{\"url\": \"https://staging.example.com/\", \"title\": \"staging\", \"content\": \"\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://search.example.net/search?q=site%3Apastebin.com%20%22example.com%22&limit=100&format=json",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"results\": []}"
+    },
+    {
+      "method": "GET",
+      "url": "https://search.example.net/search?q=%28%22example.com%22%29%20%28site%3As3.amazonaws.com%20OR%20site%3Ablob.core.windows.net%20OR%20site%3Astorage.googleapis.com%29&limit=100&format=json",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"results\": []}"
+    },
+    {
+      "method": "GET",
+      "url": "https://search.example.net/search?q=%22example.com%22%20email&limit=100&format=json",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"results\": [{\"url\": \"https://example.com/contact\", \"title\": \"Contact us\", \"content\": \"Reach Jane Doe at jane.doe@example.com or sales@example.com.\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://search.example.net/search?q=%22%40example.com%22&limit=100&format=json",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": "{\"results\": [{\"url\": \"https://example.com/team\", \"title\": \"Team\", \"content\": \"john.smith@example.com, jane.doe@example.com, personal.jane@gmail.com\"}]}"
+    }
+  ]
+}

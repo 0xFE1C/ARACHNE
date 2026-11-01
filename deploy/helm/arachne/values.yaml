@@ -1,0 +1,190 @@
+# ARACHNE Helm values (S22, REQ-OPS-005).
+#
+# **This file ships no credentials** (REQ-OPS-006): every secret is either
+# `existingSecret` (a Secret *you* create), an explicit `secretEnv` value (your own
+# release values, never committed), or injected by Vault (see `podAnnotations` and
+# the operator guide §28). `helm install` fails the render until the password is
+# provided — the same fail-fast the compose file applies.
+
+image:
+  repository: ghcr.io/arachne/arachne
+  tag: ""            # defaults to .Chart.appVersion
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+# ---------------------------------------------------------------------- API
+api:
+  # HA by default: 2 replicas. Each replica is a full API serving /health, so a
+  # node loss degrades capacity, not availability. Intra-pod parallelism is the
+  # uvicorn worker count (`--workers`, ARACHNE_API_WORKERS) — scale pods for HA,
+  # workers for per-pod CPU parallelism.
+  replicas: 2
+  workers: 1
+  auth:
+    # API keys, "label:role:secret[:project]" entries separated by ";". REQUIRED:
+    # an API without keys refuses every request (deny by default), so an install
+    # without either `apiKeys` or `existingSecret` is not writable-up.
+    apiKeys: ""
+    existingSecret: ""           # a Secret you manage; its `arachne-api-keys` key wins
+    secretKey: arachne-api-keys
+  # Extra ARACHNE_* environment entries (non-secret), e.g. feature flags.
+  env: {}
+  # Secret key/value pairs rendered into the chart's Secret (or provided via
+  # existingSecret). Never commit real values — use `--set-file` or a sealed chart.
+  secretEnv: {}
+  service:
+    type: ClusterIP
+    port: 8080
+  ingress:
+    enabled: false
+    className: ""
+    host: ""
+    tls: {}
+  resources:
+    requests: {cpu: 250m, memory: 512Mi}
+    limits: {cpu: "2", memory: 2Gi}
+  # TLS termination: the API serves plain HTTP here and the ingress/mesh terminates
+  # TLS; for pod-level TLS set `tlsCertFile`/`tlsKeyFile` to mounted file paths and
+  # drop `--insecure` via command override.
+  tlsCertFile: ""
+  tlsKeyFile: ""
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  # Anti-affinity spreads the replicas across nodes (preferred, so a single-node
+  # cluster still schedules both).
+  antiAffinity: soft
+  priorityClassName: ""
+
+# ------------------------------------------------------------------- Agent pool
+agent:
+  # The distributed-mode workers that lease scans from the queue (S16). Zero
+  # disables the pool (single-node deployments run scans inside the API instead).
+  replicas: 2
+  mode: external        # external (control-plane leases) | internal (in-target, vault=local)
+  name: ""              # agent registration name; defaults to the pod name
+  concurrency: 1        # scans one agent runs at once (lease cap)
+  auth:
+    # The scanner-role key this pool authenticates with (ARACHNE_API_KEY). REQUIRED
+    # when replicas > 0: --set agent.auth.apiKey="agent:scanner:<secret>" or point
+    # existingSecret at a Secret you manage.
+    apiKey: ""
+    existingSecret: ""
+    secretKey: arachne-agent-api-key
+  env: {}
+  secretEnv: {}
+  resources:
+    requests: {cpu: 250m, memory: 512Mi}
+    limits: {cpu: "4", memory: 4Gi}
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+
+# ---------------------------------------------------------------- Autoscaling
+autoscaling:
+  # Queue-depth autoscaling for the agent pool (S25, REQ-RESIL-003). The agents are
+  # stateless — they lease scans from the queue — so the queue is the demand signal
+  # and the pool can shrink to nothing. TWO MUTUALLY EXCLUSIVE PATHS: enable at most
+  # one, or both scalers would fight over the Deployment's replica count.
+  #   * keda.enabled  -> a KEDA ScaledObject (recommended): the only path that can
+  #     scale to ZERO when the queue drains.
+  #   * enabled       -> a plain HorizontalPodAutoscaler on an External metric. It
+  #     needs an external-metrics adapter and cannot go below one replica.
+  # When keda.enabled is true the ScaledObject owns the pool and `agent.replicas`
+  # is ignored (KEDA rewrites the Deployment's replica count).
+  enabled: false
+  minReplicas: 0        # scale-to-zero default (KEDA only; plain HPA floors this at 1)
+  maxReplicas: 8
+  # Queued scans one agent replica is expected to carry: the scaler divides the
+  # live queue depth by this to size the pool (the `threshold` of the KEDA trigger).
+  queueDepthPerReplica: 4
+  # Scale-down hysteresis (seconds): hold a replica before removing it, so a burst
+  # that drains for a moment does not thrash the pool.
+  scaleDownStabilizationSeconds: 300
+  keda:
+    # This chart does NOT bundle the KEDA operator or its CRDs (no chart dependency):
+    # the cluster admin installs them once, e.g.
+    #   helm install keda kedacore/keda --namespace keda --create-namespace
+    # then upgrade with --set autoscaling.keda.enabled=true.
+    enabled: false
+    pollingInterval: 15   # seconds between queue-depth reads
+    cooldownPeriod: 300   # seconds of low demand before scaling back in
+    namespace: ""         # optional: namespace of the agent Deployment (default: the ScaledObject's own)
+
+# -------------------------------------------------------------------- Postgres
+postgres:
+  # The control-plane database (queue, findings, evidence index). Enabled by
+  # default; disable to point ARACHNE_DATABASE_URL at a managed Postgres instead.
+  enabled: true
+  image: postgres:16-alpine
+  auth:
+    username: arachne
+    # REQUIRED (no default): generate one, e.g.
+    #   --set postgres.auth.password="$(openssl rand -hex 24)"
+    password: ""
+    existingSecret: ""   # a Secret you manage; its `postgres-password` key wins
+    secretKey: postgres-password
+    database: arachne
+  persistence:
+    size: 20Gi
+    storageClass: ""
+  resources:
+    requests: {cpu: 250m, memory: 512Mi}
+    limits: {cpu: "2", memory: 2Gi}
+  nodeSelector: {}
+  tolerations: []
+
+# -------------------------------------------------------------------- Storage
+evidence:
+  # Evidence objects above the offload threshold (S20). `local` uses a shared
+  #ReadWriteMany volume; `s3` points at an S3-compatible object store and needs no
+  # RWX volume.
+  backend: local
+  local:
+    size: 50Gi
+    storageClass: ""
+    # A ReadWriteMany-capable class is required when api.replicas > 1.
+    accessModes: [ReadWriteMany]
+  s3:
+    url: ""
+    bucket: ""
+    # Credentials come from `api.secretEnv` (ARACHNE_S3_ACCESS_KEY/SECRET) or Vault.
+
+# ------------------------------------------------------------------ Migration
+migration:
+  # `arachne db upgrade` as a pre-install/pre-upgrade hook: the schema is current
+  # before the API rolls, and the Job is idempotent on every run.
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
+
+# --------------------------------------------------------------- Observability
+observability:
+  metricsEnabled: true
+  # Token for /metrics scraping (optional; set via secretEnv ARACHNE_METRICS_TOKEN).
+  tracingEnabled: false
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# Vault Agent injection (secrets from Vault, REQ-OPS-005): set `enabled` and the
+# annotations the injector expects; the chart mounts nothing and ARACHNE reads the
+# injected files from the paths your templates render to.
+vault:
+  enabled: false
+  # Example:
+  # podAnnotations:
+  #   vault.hashicorp.com/agent-inject: "true"
+  #   vault.hashicorp.com/role: "arachne"
+  #   vault.hashicorp.com/agent-inject-secret-api-keys: "kv/arachne/api-keys"
+  #   vault.hashicorp.com/agent-inject-template-api-keys: |
+  #     {{- with secret "kv/arachne/api-keys" -}}{{ .Data.data.keys }}{{- end }}

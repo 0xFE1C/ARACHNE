@@ -1,0 +1,242 @@
+# ARACHNE compose file (F-07-04): a deployable stack plus the Phase-0 lab fixture.
+#
+# ## Deployment (default profile)
+#
+#   docker compose up --build
+#
+# starts, in order:
+#
+#   db       Postgres 16, evidence store on the `pgdata` volume
+#   migrate  one-shot `arachne db upgrade` (idempotent)
+#   scan     one-shot end-to-end heuristic scan of the bundled offline demo target;
+#            writes a Markdown and an HTML report to the `reports` volume
+#   api      REST API + web UI on http://127.0.0.1:8080 (readiness: GET /health)
+#   worker   `arachne schedule run` in a loop, for recurring scans
+#
+# `scan` is the F-07-04 "end-to-end" proof: no network is required (`ARACHNE_HTTP_FIXTURES`
+# and `ARACHNE_OSINT_FIXTURES` replay recorded responses), so `docker compose up` on a
+# disconnected host still produces findings and a report.
+#
+# ## Secrets
+#
+# **This file ships no credentials** (S20, REQ-OPS-006). The database password and the API
+# keys are *required* variables: with nothing supplied, `docker compose up` stops with the
+# message below rather than starting a stack whose keys are published in the repository. Put
+# them in a local `.env` (git-ignored) or export them:
+#
+#   POSTGRES_PASSWORD=$(openssl rand -hex 24)
+#   ARACHNE_API_KEYS="ops-admin:admin:$(openssl rand -hex 32)"
+#
+# `code/tools/../arachne.tools.credentials_gate` is the CI gate that keeps it that way
+# (`python -m arachne.tools.credentials_gate`).
+#
+# For a real deployment use the overlay, which reads both from Docker secrets instead of the
+# environment:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# (see docker/secrets/*.example and docker/README.md).
+#
+# ## Lab profile (unchanged from Phase 0)
+#
+#   docker compose --profile lab up
+#
+# Every lab service publishes on **127.0.0.1 only**; a vulnerable-by-design container on a
+# routable interface is an incident, not a fixture. A bare `docker compose up` never starts
+# an intentionally broken target.
+
+name: arachne
+
+x-arachne-env: &arachne-env
+  ARACHNE_DATABASE_URL: postgresql+psycopg://arachne:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required - set it in .env, see docker/README.md}@db:5432/arachne
+  ARACHNE_LOG_JSON: "true"
+  ARACHNE_FEEDS_DIR: /app/feeds
+  # Evidence payloads above the offload threshold go here (S20, REQ-DATA-002): a shared volume
+  # so the scan that wrote an object and the API that serves it see the same directory. Each
+  # container sets the local backend explicitly — the default is "beside the database", which
+  # a Postgres URL cannot point at.
+  ARACHNE_EVIDENCE_BACKEND: local
+  ARACHNE_EVIDENCE_DIR: /data/evidence
+
+services:
+  # ------------------------------------------------------------------ evidence store
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: arachne
+      POSTGRES_USER: arachne
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required - set it in .env, see docker/README.md}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arachne -d arachne"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------ schema (one-shot)
+  migrate:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment: *arachne-env
+    command: ["db", "upgrade"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  # ------------------------------------------------------------------ end-to-end demo scan
+  scan:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      <<: *arachne-env
+      # Recorded responses: the demo makes no outbound request (docs/spec/07- §9.1).
+      ARACHNE_HTTP_FIXTURES: /app/demo/http
+      ARACHNE_OSINT_ENABLED: "true"
+      ARACHNE_OSINT_FIXTURES: /app/demo/osint
+      ARACHNE_OSINT_PROVIDERS: crtsh,circl,wayback,commoncrawl,internetdb
+      ARACHNE_OSINT_SEARCH_URL: https://search.example.net/search?q={query}&limit={limit}&format=json
+    volumes:
+      - reports:/reports
+      - feeds:/app/feeds
+      - evidence:/data/evidence
+    # The image entrypoint is `arachne`; this role runs a shell script instead.
+    entrypoint: ["/bin/sh", "/app/demo/run-demo-scan.sh"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  # ------------------------------------------------------------------ API + web UI
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      <<: *arachne-env
+      # Required, never defaulted: a shipped default API key is a shipped credential. The
+      # prod overlay replaces this with ARACHNE_API_KEYS_FILE pointed at a mounted secret.
+      ARACHNE_API_KEYS: ${ARACHNE_API_KEYS:?ARACHNE_API_KEYS is required - set it in .env, see docker/README.md}
+      ARACHNE_API_HOST: 0.0.0.0
+      ARACHNE_API_PORT: "8080"
+      # TLS terminates at the proxy in a production deployment; this demo is plain HTTP on
+      # a published loopback port, made explicit with --insecure (F-08-02).
+      ARACHNE_API_REQUIRE_TLS: "false"
+      ARACHNE_API_BASE_URL: http://127.0.0.1:8080
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - feeds:/app/feeds
+      - evidence:/data/evidence
+    command: ["serve", "--host", "0.0.0.0", "--port", "8080", "--insecure"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3).status == 200 else 1)"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------ worker
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      <<: *arachne-env
+      ARACHNE_SCHEDULER_STATE: /data/scheduler.json
+    volumes:
+      - worker-data:/data
+      - feeds:/app/feeds
+      - evidence:/data/evidence
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - "while true; do arachne schedule run || echo 'scheduler tick failed'; sleep 60; done"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------ lab: web apps
+  # DVWA: the classic PHP/MySQL deliberately-vulnerable app (M3/M4).
+  dvwa:
+    image: vulnerables/web-dvwa:latest
+    profiles: ["lab"]
+    environment:
+      MYSQL_ROOT_PASSWORD: dvwa
+    ports:
+      - "127.0.0.1:8081:80"
+
+  # OWASP Juice Shop: the modern SPA target (also M3/M4).
+  juice-shop:
+    image: bkimminich/juice-shop:latest
+    profiles: ["lab"]
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  # Misconfigured Nginx: directory listing, a served `.env`, `.git` metadata and an API docs
+  # folder (M2 fingerprinting and M4 exposure checks).
+  lab-nginx:
+    image: nginx:1.18.0-alpine
+    profiles: ["lab"]
+    volumes:
+      - ./lab/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./lab/www:/usr/share/nginx/html:ro
+    ports:
+      - "127.0.0.1:8080:80"
+
+  # Weak-TLS endpoint: TLS 1.0/1.1, a CBC-only cipher list and an expired self-signed
+  # certificate — the fixture for `m2.tls-deep-scan`.
+  lab-tls:
+    image: nginx:1.18.0-alpine
+    profiles: ["lab"]
+    volumes:
+      - ./lab/tls.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./lab/tls:/etc/nginx/tls:ro
+      - ./lab/www:/usr/share/nginx/html:ro
+    ports:
+      - "127.0.0.1:8443:443"
+
+  # ------------------------------------------------------------------ lab: services
+  lab-mysql:
+    image: mysql:5.5
+    profiles: ["lab"]
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    ports:
+      - "127.0.0.1:3306:3306"
+
+  lab-redis:
+    image: redis:5.0-alpine
+    profiles: ["lab"]
+    command: ["redis-server", "--protected-mode", "no"]
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  lab-vnc:
+    image: consol/ubuntu-xfce-vnc:latest
+    profiles: ["lab"]
+    environment:
+      VNC_PW: ""
+      VNC_PORT: "5900"
+    ports:
+      - "127.0.0.1:5900:5900"
+
+volumes:
+  pgdata:
+  reports:
+  feeds:
+  worker-data:
+  # Offloaded evidence objects (S20). Named, so `docker compose down` keeps the evidence that
+  # the database still references.
+  evidence:

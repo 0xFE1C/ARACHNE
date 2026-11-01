@@ -1,0 +1,22 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Overprivileged",
+      "Effect": "Allow",
+      "Action": "*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "Escalation",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreatePolicyVersion",
+        "iam:AttachUserPolicy",
+        "iam:PassRole",
+        "sts:AssumeRole"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

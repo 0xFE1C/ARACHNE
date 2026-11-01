@@ -1,0 +1,17 @@
+apiVersion: v2
+name: arachne
+description: >
+  ARACHNE — defensive automated vulnerability-detection and reporting system.
+  Deploys the API (multi-replica), an agent pool for distributed scan execution,
+  Postgres for the control plane, and a pre-upgrade migration Job (S22, REQ-OPS-005).
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.25.0-0"
+keywords:
+  - security
+  - vulnerability-scanner
+  - defensive
+home: https://localhost/arachne/spec
+maintainers:
+  - name: ARACHNE project

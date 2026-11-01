@@ -1,0 +1,30 @@
+{
+  "scan_type": "ARACHNE Scan",
+  "engagement_name": "ARACHNE · target.example",
+  "product_name": "target.example",
+  "scan_date": "2026-10-31",
+  "minimum_severity": "Info",
+  "active": true,
+  "verified": false,
+  "close_old_findings": true,
+  "findings": [
+    {
+      "title": "Sensitive environment file exposed",
+      "severity": "Medium",
+      "description": "The environment file is reachable anonymously and contains credentials.",
+      "mitigation": "Remove the file from the deployment and rotate the exposed credentials.",
+      "date": "2026-10-31",
+      "cwe": 200,
+      "references": [],
+      "active": true,
+      "verified": false,
+      "false_p": false,
+      "unique_id_from_tool": "F-000001",
+      "file_path": "https://target.example/.env",
+      "severity_justification": "REM-042",
+      "component_name": "M4",
+      "vuln_id_from_tool": "m4.env-file-probe",
+      "tags": ["M4", "medium"]
+    }
+  ]
+}

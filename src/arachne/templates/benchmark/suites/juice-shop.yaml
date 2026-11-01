@@ -1,0 +1,29 @@
+# OWASP Juice Shop — documented vulnerability families (REQ-QUAL-005).
+#
+# Juice Shop is deliberately vulnerable at stable REST routes and the SPA's hash routes. The
+# markers are the paths an exploitable finding's evidence must name; the traps are the
+# hardened counterparts the application serves (an error page rather than a listing, a denied
+# admin API).
+name: juice-shop
+version: "1.0"
+target: "http://localhost:3000/ (bkimminich/juice-shop image)"
+source: recorded
+required: false
+reproduce: >-
+  docker run -p 3000:3000 bkimminich/juice-shop && arachne scan --url http://localhost:3000/
+  --attestation ... && python -m arachne.tools.benchmark --suite juice-shop
+  --target http://localhost:3000/ --write-baseline
+notes: >-
+  The routes are Juice Shop's documented challenge surface (SQLi in the login and product
+  search, broken access control on the user and basket APIs, a directory listing on /ftp).
+cases:
+  - {check_id: m3.sqli-oracle, marker: "/rest/user/login", expect: tp}
+  - {check_id: m3.sqli-oracle, marker: "/rest/products/search", expect: tp}
+  - {check_id: m3.xss-oracle, marker: "/#/search", expect: tp}
+  - {check_id: m3.idor-oracle, marker: "/api/Users", expect: tp}
+  - {check_id: m3.idor-oracle, marker: "/rest/basket/", expect: tp}
+  - {check_id: m3.api-surface, marker: "/api/Challenges", expect: tp}
+  - {check_id: m3.traversal-oracle, marker: "/ftp/", expect: tp}
+  - {check_id: m3.api-surface, marker: "/rest/admin/application-configuration", expect: tp}
+  - {check_id: m3.traversal-oracle, marker: "/ftp-hardened", expect: fp}
+  - {check_id: m3.idor-oracle, marker: "/api/Users-fixed", expect: fp}

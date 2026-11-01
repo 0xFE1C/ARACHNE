@@ -1,0 +1,14 @@
+ARACHNE found a {{ finding.severity }} issue on {{ finding.asset }}.
+
+{{ finding.title }}
+Severity: {{ finding.severity }} · Confidence: {{ finding.confidence }}{% if finding.cvss %} · CVSS: {{ finding.cvss }}{% endif %}
+Check: {{ finding.check_id }}{% if finding.cwe %} · {{ finding.cwe }}{% endif %}
+
+What ARACHNE established
+  {{ finding.remediation }}
+
+Scan {{ scan_id }} of {{ target }} ({{ arachne_version }}, engine {{ engine }}).
+Full report: {{ report_url }}
+
+This incident was opened automatically from a scan finding. Assign it for
+verification and remediation; the ARACHNE report carries the evidence.

@@ -1,0 +1,2629 @@
+# Remediation catalog (docs/spec/04- §2.6, docs/spec/06- §6, F-06-04).
+#
+# Looked up in this order: the rule's `remediation:` reference, the entry naming the check that
+# fired, the entry for the finding's CWE, then `default`. Managed data (F-09-04): point
+# ARACHNE_REMEDIATION_CATALOG at a file or a directory of per-entry files to replace it.
+#
+# Stage S8 owns the full catalog and its QA gate (every CWE a shipped rule can emit must
+# resolve); this corpus covers the classes the checks of S3-S7 can report.
+
+version: "1.0"
+
+entries:
+  # ----------------------------------------------------------------- credentials and secrets
+  - id: env-file-exposure
+    cwe: CWE-200
+    checks: [m4.env-file-probe]
+    summary: "Block the environment file at the web-server layer, move the secrets into a
+      managed secret store, and rotate everything the file contained."
+    steps:
+      - "1. Add a deny rule for dot-files and backup extensions (.env, .env.*, *.env, *.bak) in the web server or reverse proxy, ahead of the application handler."
+      - "2. Move every value the file held into the platform's secret manager; reference them at runtime instead of shipping a file."
+      - "3. Rotate all exposed credentials — database passwords, API keys, signing keys — since the file was world-readable for an unknown period."
+      - "4. Review access logs for requests to this path and treat any 200 response to an unexpected client as a credential compromise."
+    verify:
+      - "1. Re-request the path; it must return 404/403, not 200."
+      - "2. Confirm the deny rule sits ahead of the application handler in the web-server config."
+      - "3. Verify the rotated credentials are the ones now referenced at runtime (and the old ones revoked)."
+    references:
+      - "https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration"
+      - "https://cwe.mitre.org/data/definitions/200.html"
+
+  - id: client-side-secret-exposure
+    cwe: CWE-798
+    checks: [m1.js-asset-scan, m4.client-secrets]
+    summary: "Remove credentials from client-side code and rotate any that were shipped."
+    steps:
+      - "1. Rotate every key the bundle contained; a secret delivered to a browser must be treated as public."
+      - "2. Move the call that needed the key behind the application's own API, and authenticate the user there instead."
+      - "3. Add a build-time check (secret scanner) to the pipeline so a credential cannot reach a bundle again."
+    verify:
+      - "1. Grep a freshly built bundle for the detector names the check reported; none may appear."
+      - "2. Confirm the key was revoked at the provider and the replacement is server-side only."
+      - "3. Re-run the scan; the client-secret check must no longer produce a candidate."
+    references:
+      - "https://cwe.mitre.org/data/definitions/798.html"
+
+  - id: source-code-secret-exposure
+    cwe: CWE-540
+    checks: [m1.code-secret-mining]
+    summary: "Rotate the indexed credential and remove it from the repository history."
+    steps:
+      - "1. Confirm whether the indexed value is live; treat it as compromised until proven otherwise."
+      - "2. Rotate the credential and revoke the old value at the provider."
+      - "3. Remove the file from the repository history (filter-repo/BFG) and force-push; the index will follow."
+      - "4. Add a pre-commit secret scanner and a push-protection rule on the forge."
+    verify:
+      - "1. Search the repository history (not just HEAD) for the value; it must be absent."
+      - "2. Confirm the credential is revoked, not merely removed from the current revision."
+      - "3. Re-run the code-secret-mining check and the forge's push-protection check."
+    references:
+      - "https://cwe.mitre.org/data/definitions/540.html"
+
+  # ----------------------------------------------------------------- exposure
+  - id: source-disclosure
+    cwe: CWE-538
+    checks: [m4.vcs-exposure, m4.sourcemap-exposure]
+    summary: "Deny access to version-control metadata at the web-server layer and treat the
+      repository contents as disclosed."
+    steps:
+      - "1. Return 404 (not 403) for /.git, /.svn, /.hg and their descendants in the web server configuration."
+      - "2. Verify the deployment does not copy the repository into the document root."
+      - "3. Rotate any credential that appears anywhere in the repository history, not just in the current revision."
+    verify:
+      - "1. Request /.git/config, /.git/HEAD and the sourcemap path; all must return 404."
+      - "2. Confirm the deploy artefact no longer copies repository metadata into the document root."
+      - "3. Rotate anything the exposed history contained and re-run the check."
+    references:
+      - "https://cwe.mitre.org/data/definitions/538.html"
+
+  - id: backup-exposure
+    cwe: CWE-530
+    checks: [m4.backup-file-hunt]
+    summary: "Remove backup and editor artifacts from the document root and deny their
+      extensions at the web server."
+    steps:
+      - "1. Delete the artifacts from the deployed tree and stop the editor or packer that creates them there."
+      - "2. Deny *.bak, *.old, *.orig, *.swp, *.save, *.zip and *.sql in the web server configuration."
+      - "3. Rotate any credential or connection string the artifact contained."
+    verify:
+      - "1. Request the backup/editor artefacts named in the evidence; all must return 404."
+      - "2. Confirm the artifact generator no longer writes into the deployed tree."
+      - "3. Re-run the backup-file hunt check."
+    references:
+      - "https://cwe.mitre.org/data/definitions/530.html"
+
+  - id: sensitive-document-exposure
+    cwe: CWE-200
+    checks: [m1.dork-sweep]
+    summary: "Remove the document from the public index and stop serving it publicly."
+    steps:
+      - "1. Take the document out of the search index (noindex or removal request) and out of the public path."
+      - "2. Review the document for credentials, internal hostnames and personal data, and treat what it names as disclosed."
+      - "3. Ask the index operator to purge the cached copy."
+    verify:
+      - "1. Re-check the document URL and the cached index entry; both must be gone."
+      - "2. Confirm the document no longer carries credentials or internal hostnames."
+    references:
+      - "https://cwe.mitre.org/data/definitions/200.html"
+
+  - id: sensitive-path-exposure
+    cwe: CWE-200
+    checks: [m1.webarchive-harvest]
+    summary: "Verify whether the archived sensitive paths still exist and remove them."
+    steps:
+      - "1. Probe each archived path directly: archives are historical, but the file is often still served."
+      - "2. Delete or protect whatever still resolves, and rotate any credential it held."
+      - "3. Keep administrative and backup paths out of the document root so they cannot be archived again."
+    verify:
+      - "1. Request each archived path cited in the evidence; it must return 404 or require authentication."
+      - "2. Rotate any credential the still-served content held."
+    references:
+      - "https://cwe.mitre.org/data/definitions/200.html"
+
+  - id: email-pattern-exposure
+    cwe: CWE-200
+    checks: [m1.email-harvest]
+    summary: "Reduce the harvestable address surface and harden the accounts it enables."
+    steps:
+      - "1. Replace role addresses that appear unattended with a monitored alias."
+      - "2. Enforce MFA everywhere: a predictable address pattern makes credential attacks targeted, and MFA is what stops them."
+      - "3. Review whether the directory exposes the address list to unauthenticated callers."
+    verify:
+      - "1. Confirm the harvested addresses are expected public contact points, not internal staff."
+      - "2. Re-run the harvest and confirm the exposure set is understood and accepted."
+    references:
+      - "https://cwe.mitre.org/data/definitions/200.html"
+
+  - id: debug-endpoint
+    cwe: CWE-489
+    checks: [m4.debug-endpoints]
+    summary: "Disable the diagnostic interface in production and remove it from the deployed
+      artefact."
+    steps:
+      - "1. Turn debug mode off in production configuration and assert it at startup."
+      - "2. Remove or restrict the diagnostic route (phpinfo, /debug, actuator, /_profiler) to an authenticated operator path."
+      - "3. Make sure exception handlers return generic errors, never stack traces."
+    verify:
+      - "1. Request the debug/console path; it must be disabled (404) or bound to localhost only."
+      - "2. Confirm the framework's debug flag is off in the deployed configuration."
+      - "3. Re-run the debug-endpoints check."
+    references:
+      - "https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration"
+
+  - id: admin-surface
+    cwe: CWE-284
+    checks: [m4.dashboard-exposure]
+    summary: "Put the administrative surface behind authentication, network restriction and
+      transport protection."
+    steps:
+      - "1. Require authentication and, where the platform supports it, MFA on every administrative path."
+      - "2. Restrict it to a management network or VPN, not the public internet."
+      - "3. Enforce HTTPS and set a restrictive CORS policy on the same origin."
+    verify:
+      - "1. Request the administrative path without credentials; it must redirect to login or return 401/403."
+      - "2. Confirm the path is not advertised in robots.txt, sitemaps or search indexes."
+    references:
+      - "https://cwe.mitre.org/data/definitions/284.html"
+
+  # ----------------------------------------------------------------- network services
+  - id: unauthenticated-datastore
+    cwe: CWE-306
+    checks: [m2.db-service-probe]
+    summary: "Enable authentication and network isolation on the datastore immediately, then
+      review its contents for tampering."
+    steps:
+      - "1. Enable authentication and set a strong credential (or an IAM/token mechanism) on the service."
+      - "2. Bind the service to localhost or an internal interface and restrict the port to the application subnet with a firewall rule."
+      - "3. Review the data and the server's log/keyspace for changes an unauthenticated client could have made."
+      - "4. If the engine supports it, rename or disable dangerous administrative commands."
+    verify:
+      - "1. Connect from an untrusted address; the service must refuse without credentials."
+      - "2. Confirm the service is bound to the internal interface and has authentication enabled."
+      - "3. Re-run the datastore probe."
+    references:
+      - "https://cwe.mitre.org/data/definitions/306.html"
+
+  - id: exposed-database-service
+    cwe: CWE-284
+    checks: [m2.db-service-probe]
+    summary: "Move the database off the reachable network path and require TLS."
+    steps:
+      - "1. Remove the public route to the database port; allow only the application tier."
+      - "2. Require TLS for client connections and verify certificates."
+      - "3. Audit the service for weak or default credentials while it is being moved."
+    verify:
+      - "1. Confirm the database port is not reachable from the internet (firewall/security-group rule)."
+      - "2. Bind the listener to the private interface and re-test from outside the network."
+    references:
+      - "https://cwe.mitre.org/data/definitions/284.html"
+
+  - id: anonymous-network-access
+    cwe: CWE-287
+    checks: [m2.smb-enum, m2.ldap-enum]
+    summary: "Disable anonymous and null sessions on the service."
+    steps:
+      - "1. Require authentication for every session; disable null and anonymous binds."
+      - "2. Apply the platform's hardening baseline for anonymous enumeration (for example 'Do not allow anonymous enumeration of SAM accounts and shares')."
+      - "3. Restrict the service to the internal network and monitor for anonymous bind attempts."
+    verify:
+      - "1. Re-run the anonymous bind/enumeration; it must be refused."
+      - "2. Confirm null sessions and anonymous LDAP binds are disabled."
+    references:
+      - "https://cwe.mitre.org/data/definitions/287.html"
+
+  - id: smb-legacy-dialect
+    cwe: CWE-477
+    checks: [m2.smb-enum]
+    summary: "Disable SMBv1 on the host and on every client that still negotiates it."
+    steps:
+      - "1. Remove the SMB1 feature/protocol on the server and on the clients (Set-SmbServerConfiguration -EnableSMB1Protocol $false)."
+      - "2. Require SMB signing and encryption for the shares that remain."
+      - "3. Find and replace the legacy clients that depended on SMB1 before disabling it estate-wide."
+    verify:
+      - "1. Re-negotiate SMB; the server must require SMB 2.1 or later."
+      - "2. Confirm SMBv1 is removed from the host (not just disabled) and re-run the probe."
+    references:
+      - "https://cwe.mitre.org/data/definitions/477.html"
+
+  - id: smb-signing
+    cwe: CWE-345
+    checks: [m2.smb-enum]
+    summary: "Require SMB signing on the server and on clients that connect to it."
+    steps:
+      - "1. Require signing on the server (RequireSecuritySignature = true)."
+      - "2. Enable the same requirement on clients, so a relayed session is rejected at the client too."
+      - "3. Prefer SMB over QUIC or SMB encryption for sensitive shares."
+    verify:
+      - "1. Re-run the negotiation; signing must be required for all sessions."
+      - "2. Verify the policy on the domain controller so it cannot be renegotiated per host."
+    references:
+      - "https://cwe.mitre.org/data/definitions/345.html"
+
+  - id: nfs-exports
+    cwe: CWE-284
+    checks: [m2.nfs-enum]
+    summary: "Restrict the exports to specific hosts and remap root."
+    steps:
+      - "1. Replace wildcard exports with an explicit client list."
+      - "2. Add root_squash and, where possible, Kerberos-based export security."
+      - "3. Restrict the NFS ports (111/tcp, 2049 and the rpcbind registrations) to the internal network."
+    verify:
+      - "1. Re-run the export listing; no export may be world-readable or wildcard-scoped."
+      - "2. Confirm the export is restricted to named hosts or subnets."
+    references:
+      - "https://cwe.mitre.org/data/definitions/284.html"
+
+  - id: user-enumeration
+    cwe: CWE-200
+    checks: [m2.kerberos-enum, m2.smtp-enum, m4.user-enumeration]
+    summary: "Stop the service from distinguishing valid from invalid accounts."
+    steps:
+      - "1. Return an identical response (and comparable timing) for valid and invalid principals, or require pre-authentication for all of them."
+      - "2. Disable the unauthenticated enumeration verbs (VRFY/EXPN on SMTP, directory anonymous reads)."
+      - "3. Alert on enumeration-shaped request patterns, which is the real detection for this class."
+    verify:
+      - "1. Re-run the enumeration with the same probe set; valid and invalid identities must be indistinguishable."
+      - "2. Confirm uniform error messages and response timings at the identity provider."
+    references:
+      - "https://cwe.mitre.org/data/definitions/200.html"
+
+  - id: snmp-communities
+    cwe: CWE-1188
+    checks: [m2.snmp-enum]
+    summary: "Replace community strings with SNMPv3 authentication and privacy, and disable
+      SNMP where it is not needed."
+    steps:
+      - "1. Change every default community string, then migrate to SNMPv3 with authPriv."
+      - "2. Make the read-write community absent unless a monitoring system genuinely needs write access."
+      - "3. Restrict 161/udp to the management network and disable the service on hosts that do not need it."
+    verify:
+      - "1. Re-run the community probe; the default community must be rejected."
+      - "2. Confirm SNMP is restricted by ACL and, where possible, v3 with authentication."
+    references:
+      - "https://cwe.mitre.org/data/definitions/1188.html"
+
+  - id: dns-zone-transfer
+    cwe: CWE-200
+    checks: [m2.dns-active]
+    summary: "Restrict zone transfers to authorised secondaries."
+    steps:
+      - "1. Replace an open AXFR policy with an explicit allow-transfer list of secondary nameservers (or a TSIG key)."
+      - "2. Remove internal names (staging, VPN, management) from the publicly served zone; split the zone instead."
+      - "3. Review what the transfer disclosed and treat internal hostnames as known to an attacker."
+    verify:
+      - "1. Attempt the AXFR again from an untrusted resolver; it must be refused."
+      - "2. Confirm the zone transfer ACL names only the secondary nameservers."
+    references:
+      - "https://cwe.mitre.org/data/definitions/200.html"
+
+  - id: ics-exposure
+    cwe: CWE-306
+    checks: [m2.ics-probe]
+    summary: "Segment the control network and place a unidirectional gateway in front of the
+      device."
+    steps:
+      - "1. Remove the device from any network path reachable from IT or the internet."
+      - "2. Place a unidirectional gateway or data diode in front of the control network."
+      - "3. Where the protocol supports it, enable the vendor's access control and log every write."
+      - "4. Treat the exposure as a safety issue: review the process for what an unauthorised write could change."
+    verify:
+      - "1. Re-run the protocol probe; the controller must not answer unauthenticated reads."
+      - "2. Confirm the device is segmented behind a firewall from untrusted networks."
+    references:
+      - "https://www.cisa.gov/ics"
+
+  - id: ssh-weak-algorithms
+    cwe: CWE-327
+    checks: [m2.ssh-enum]
+    summary: "Remove the deprecated algorithms from the SSH server configuration."
+    steps:
+      - "1. Set explicit KexAlgorithms, Ciphers and MACs lists containing only modern primitives (curve25519-sha256, chacha20-poly1305, aes-gcm, hmac-sha2)."
+      - "2. Confirm no legacy client depends on the removed algorithms before applying the change estate-wide."
+      - "3. Re-scan to verify the advertised list."
+    verify:
+      - "1. Re-run the SSH algorithm negotiation; weak KEX/ciphers/MACs must not be offered."
+      - "2. Confirm the hardened sshd configuration is the one actually loaded."
+    references:
+      - "https://cwe.mitre.org/data/definitions/327.html"
+
+  - id: smtp-user-enumeration
+    cwe: CWE-200
+    checks: [m2.smtp-enum]
+    summary: "Disable the verification verbs and normalise rejection responses."
+    steps:
+      - "1. Disable VRFY and EXPN, and reject RCPT for unknown recipients after a random delay with SMTP 250."
+      - "2. Rate-limit inbound SMTP commands per source."
+      - "3. Monitor for verification-shaped traffic, which is what enumeration looks like on the wire."
+    verify:
+      - "1. Re-run VRFY/EXPN/RCPT probes; the server must not confirm mailbox existence."
+      - "2. Confirm the MTA disables the verbs or answers uniformly."
+    references:
+      - "https://cwe.mitre.org/data/definitions/200.html"
+
+  - id: rdp-nla
+    cwe: CWE-287
+    checks: [m2.rdp-vnc-detect]
+    summary: "Require network-level authentication on the RDP listener."
+    steps:
+      - "1. Set the 'Require Network Level Authentication' policy on the host (or the equivalent registry value)."
+      - "2. Put RDP behind a VPN or a gateway rather than exposing it directly."
+      - "3. Enable account lockout and MFA for interactive logons."
+    verify:
+      - "1. Re-run the RDP negotiation; NLA must be required."
+      - "2. Confirm the setting is enforced by policy, not per-host defaults."
+    references:
+      - "https://cwe.mitre.org/data/definitions/287.html"
+
+  - id: vnc-authentication
+    cwe: CWE-306
+    checks: [m2.rdp-vnc-detect]
+    summary: "Require authentication on the VNC server and tunnel it over SSH or a VPN."
+    steps:
+      - "1. Remove the `None` security type and set a strong password, or switch to a server that supports real authentication."
+      - "2. Bind VNC to localhost and tunnel it (SSH port forwarding or a VPN) rather than exposing 5900."
+      - "3. Replace the legacy 8-byte DES scheme with a modern server (TLS-wrapped, per-user credentials)."
+    verify:
+      - "1. Re-run the VNC handshake; a password must be required."
+      - "2. Tunnel VNC over SSH/VPN and keep it off untrusted networks."
+    references:
+      - "https://cwe.mitre.org/data/definitions/306.html"
+
+  # ----------------------------------------------------------------- crypto and web
+  - id: tls-configuration
+    cwe: CWE-327
+    checks: [m2.tls-deep-scan, m4.tls-config-review]
+    summary: "Disable the deprecated protocol versions and weak cipher suites, and serve a
+      trusted certificate chain."
+    steps:
+      - "1. Allow TLS 1.2 and 1.3 only; remove SSLv3, TLS 1.0 and TLS 1.1 from the listener."
+      - "2. Remove export, RC4, 3DES, NULL and anonymous suites from the cipher policy."
+      - "3. Fix the certificate chain and rotation so clients do not learn to ignore trust errors."
+      - "4. Add HSTS once the certificate chain is trusted."
+    verify:
+      - "1. Re-run the TLS probe; no deprecated protocol or weak cipher may be offered."
+      - "2. Confirm the certificate chain validates against a public trust store and matches the hostname."
+      - "3. Confirm HSTS is served on the completing response."
+    references:
+      - "https://cwe.mitre.org/data/definitions/327.html"
+      - "https://datatracker.ietf.org/doc/rfc8996/"
+
+  - id: patch-management
+    cwe: CWE-1035
+    checks: [m2.cve-correlate, m1.internetdb-triage]
+    summary: "Patch or mitigate the affected component version."
+    steps:
+      - "1. Confirm the running version actively (banner or authenticated query) before scheduling work."
+      - "2. Apply the vendor's fixed release; if it is not available, apply the vendor's documented mitigation."
+      - "3. Add the component to the inventory's patch tracking, with the scan id as the evidence of the finding."
+      - "4. Prioritise by EPSS and by whether the component is reachable from the internet."
+    verify:
+      - "1. Re-read the affected version; it must be at or above the fixed release."
+      - "2. Confirm the update is deployed to the observed instance, not only to a build pipeline."
+      - "3. Re-run the version/correlation check."
+    references:
+      - "https://cwe.mitre.org/data/definitions/1035.html"
+
+  - id: injection
+    cwe: CWE-89
+    summary: "Remove the injection by parameterising the query and validating the input at the
+      boundary."
+    steps:
+      - "1. Replace string-built queries or markup with parameterised statements and context-aware output encoding."
+      - "2. Validate input against an allowlist of the shapes the endpoint genuinely accepts."
+      - "3. Apply least privilege to the database account the application uses."
+      - "4. Add the payload class to the regression suite so a fix cannot silently regress."
+    verify:
+      - "1. Re-run the oracles with the same probes; the parameter must no longer behave differentially."
+      - "2. Confirm parameterised queries/allowlists are in the code path the request reaches."
+    references:
+      - "https://owasp.org/www-community/attacks/SQL_Injection"
+      - "https://cwe.mitre.org/data/definitions/89.html"
+
+  - id: cors-policy
+    cwe: CWE-942
+    checks: [m3.cors-audit, m4.cors-config-review]
+    summary: "Replace the wildcard cross-origin policy with an explicit allowlist."
+    steps:
+      - "1. Return the specific origin from an allowlist instead of `*` or a reflected Origin."
+      - "2. Never combine a wildcard origin with credentials; a credentialed response must name one trusted origin."
+      - "3. Restrict the allowed methods and headers to what the API actually serves."
+    verify:
+      - "1. Re-request the endpoint with a foreign Origin; it must not be reflected with credentials."
+      - "2. Confirm the allowlist is explicit and does not use a wildcard for credentialed responses."
+    references:
+      - "https://cwe.mitre.org/data/definitions/942.html"
+
+  - id: security-headers
+    cwe: CWE-693
+    checks: [m3.security-headers, m4.security-header-review]
+    summary: "Set the browser security headers at the edge."
+    steps:
+      - "1. Send Strict-Transport-Security with a long max-age (and includeSubDomains once verified) over HTTPS."
+      - "2. Send a Content-Security-Policy that disallows inline script and unexpected sources."
+      - "3. Send X-Frame-Options (or frame-ancestors), X-Content-Type-Options: nosniff and a Referrer-Policy."
+    verify:
+      - "1. Re-request a representative page and confirm CSP, HSTS, frame-ancestors and nosniff are present."
+      - "2. Confirm the headers are set at the edge for every route, including error pages."
+    references:
+      - "https://owasp.org/www-project-secure-headers/"
+
+  - id: cookie-flags
+    cwe: CWE-614
+    checks: [m3.security-headers, m3.auth-session-audit, m4.cookie-flag-audit]
+    summary: "Set Secure, HttpOnly and an explicit SameSite policy on session cookies."
+    steps:
+      - "1. Add `Secure; HttpOnly; SameSite=Lax` (or `Strict` where no cross-site flow needs the cookie)."
+      - "2. Scope the cookie to the narrowest path and use the __Host- prefix where the platform allows it."
+      - "3. Rotate the session on privilege change and on logout."
+    verify:
+      - "1. Re-request the login page; every session cookie must carry Secure, HttpOnly and SameSite."
+      - "2. Confirm the flags are set centrally, not per endpoint."
+    references:
+      - "https://cwe.mitre.org/data/definitions/614.html"
+
+  # ----------------------------------------------------------------- M3 · web application (S6)
+  - id: output-encoding
+    cwe: CWE-79
+    checks: [m3.xss-oracle]
+    summary: "Encode every reflected value for the context it lands in, and add a Content-Security-Policy."
+    steps:
+      - "1. Encode output by context: HTML entities in markup, attribute quoting in attributes, JS/JSON escaping inside scripts, URL encoding in URLs."
+      - "2. Prefer a templating engine's contextual auto-escaping over hand-written escaping; never build markup by string concatenation."
+      - "3. Add a Content-Security-Policy that disallows inline script and unexpected sources as a second layer."
+      - "4. Cover the reflected parameter with a regression test that asserts the encoding is applied."
+    verify:
+      - "1. Re-run the reflection oracle with the inert marker; the output must be encoded, not reflected raw."
+      - "2. Confirm a contextual auto-escaping engine is used in the rendering path."
+    references:
+      - "https://owasp.org/www-community/attacks/xss/"
+      - "https://cwe.mitre.org/data/definitions/79.html"
+
+  - id: csrf-tokens
+    cwe: CWE-352
+    checks: [m3.csrf-audit]
+    summary: "Require a per-session anti-CSRF token on every state-changing request and set SameSite."
+    steps:
+      - "1. Issue an unpredictable, session-bound token with the form and verify it server-side on submit."
+      - "2. Validate the Origin/Referer header for state-changing requests as a second check."
+      - "3. Set `SameSite=Lax` (or `Strict`) on the session cookie, and never accept a state change over GET."
+      - "4. Apply the same control to JSON/API endpoints via a custom header requirement."
+    verify:
+      - "1. Re-submit the state-changing form without the token; it must be rejected."
+      - "2. Confirm the token is per-session, verified server-side, and every state-changing route requires it."
+    references:
+      - "https://owasp.org/www-community/attacks/csrf"
+      - "https://cwe.mitre.org/data/definitions/352.html"
+
+  - id: unrestricted-upload
+    cwe: CWE-434
+    checks: [m3.upload-audit]
+    summary: "Validate uploads by allowlisted extension, content type and magic bytes, and store them outside the web root."
+    steps:
+      - "1. Accept only an allowlist of extensions and verify the file's magic bytes, not the client-supplied content type."
+      - "2. Re-encode or re-generate images; never store a user file under its original name."
+      - "3. Store uploads outside the document root and serve them through a handler that sets Content-Disposition and a non-executable content type."
+      - "4. Disable script execution in any directory that must serve user content."
+    verify:
+      - "1. Re-attempt the inert marker upload; it must be rejected or stored outside the web root."
+      - "2. Confirm content-type and extension validation runs server-side."
+    references:
+      - "https://owasp.org/www-community/vulnerabilities/Unrestricted_File_Upload"
+      - "https://cwe.mitre.org/data/definitions/434.html"
+
+  - id: path-traversal
+    cwe: CWE-22
+    checks: [m3.traversal-oracle]
+    summary: "Resolve a user-supplied file name to an absolute path inside an allowlisted root and reject anything that escapes it."
+    steps:
+      - "1. Canonicalise the resolved path and verify it is inside the intended root directory before opening it."
+      - "2. Reject path separators and traversal sequences in file-name parameters rather than filtering them after decoding."
+      - "3. Map user input to an allowlist of file identifiers instead of using it as a path at all."
+      - "4. Run the service account with least privilege so a traversal reaches nothing interesting."
+    verify:
+      - "1. Re-run the traversal probes; no traversal payload may return file content."
+      - "2. Confirm user-supplied paths are resolved and canonicalised against a fixed root."
+    references:
+      - "https://owasp.org/www-community/attacks/Path_Traversal"
+      - "https://cwe.mitre.org/data/definitions/22.html"
+
+  - id: open-redirect
+    cwe: CWE-601
+    checks: [m3.open-redirect]
+    summary: "Redirect only to relative paths or validated internal destinations."
+    steps:
+      - "1. Map the redirect target to an allowlist of internal routes, or accept only a relative path that starts with a single `/`."
+      - "2. Reject scheme-relative (`//host`), backslash and userinfo (`https://expected@evil`) forms explicitly."
+      - "3. Warn on off-site destinations instead of redirecting silently, and never carry a token or code in the URL."
+    verify:
+      - "1. Re-run the redirect probes; foreign targets must not be reflected in Location."
+      - "2. Confirm relative-path validation or an explicit allowlist is applied."
+    references:
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html"
+      - "https://cwe.mitre.org/data/definitions/601.html"
+
+  - id: object-level-authorization
+    cwe: CWE-639
+    checks: [m3.idor-oracle]
+    summary: "Enforce per-object ownership on every data access path and use unpredictable identifiers."
+    steps:
+      - "1. Check the caller's ownership of the object inside the data-access function, not in the UI or the router."
+      - "2. Prefer unpredictable identifiers (UUIDv4 or a scoped key) so enumeration is not practical."
+      - "3. Log and alert on cross-account access attempts; they are the detect signal for this class."
+      - "4. Add an automated authorization test per object endpoint that asserts a second identity is refused."
+    verify:
+      - "1. Re-run the cross-account differential; the second identity must not see the first account's object."
+      - "2. Confirm the server checks owner/tenant on every object access, not only at the route level."
+    references:
+      - "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/"
+      - "https://cwe.mitre.org/data/definitions/639.html"
+
+  - id: transport-encryption
+    cwe: CWE-319
+    checks: [m3.auth-session-audit]
+    summary: "Serve credentials and session traffic over TLS only, and redirect plaintext to it."
+    steps:
+      - "1. Publish the login and all authenticated endpoints on https only; redirect http with a permanent redirect."
+      - "2. Send HSTS with a long max-age and add the host to the preload list once verified."
+      - "3. Set the session cookie's Secure attribute so it is never sent over plaintext."
+      - "4. Ring-fence internal flows too: 'it is only an internal network' is how credentials leak."
+    verify:
+      - "1. Confirm the site redirects http to https and HSTS is served."
+      - "2. Confirm no authentication flow accepts a plaintext exchange."
+    references:
+      - "https://cwe.mitre.org/data/definitions/319.html"
+
+  - id: api-inventory
+    cwe: CWE-200
+    checks: [m3.api-surface, m4.api-doc-exposure, m4.hidden-endpoint-hunt]
+    summary: "Maintain an endpoint inventory, retire undocumented routes and gate debug/administrative surfaces."
+    steps:
+      - "1. Inventory every route (including legacy versions) and delete or authorise the ones nothing references."
+      - "2. Require authentication on debug, health-detail, metrics and API-description endpoints, or block them at the edge."
+      - "3. Restrict the methods each endpoint accepts and reject the rest explicitly."
+      - "4. Monitor the access logs for requests to paths that exist but are not in the inventory."
+    verify:
+      - "1. Re-run the inventory; every documented endpoint must be intentional and authenticated where needed."
+      - "2. Remove or gate documentation, debug and administrative endpoints that should not be public."
+    references:
+      - "https://owasp.org/API-Security/editions/2023/en/0xa9-improper-inventory-management/"
+      - "https://cwe.mitre.org/data/definitions/200.html"
+
+  - id: rate-limiting
+    cwe: CWE-770
+    checks: [m3.rate-limit-audit]
+    summary: "Rate-limit and lock out sensitive flows on server-side, non-spoofable identifiers."
+    steps:
+      - "1. Limit by the authenticated principal (and by account for login attempts), not solely by client-supplied headers such as X-Forwarded-For."
+      - "2. Apply the limit per operation — login, OTP verification, password reset, bulk reads — with an escalating delay and a temporary lockout."
+      - "3. Add a challenge (CAPTCHA or device signal) only where the legitimate-user cost is acceptable, such as OTP and reset flows."
+      - "4. Alert on threshold crossings; the control's value is the detection as much as the block."
+    verify:
+      - "1. Re-run the bounded burst; the endpoint must throttle before the capped request count."
+      - "2. Confirm the control keys on an identity signal, not only on source IP."
+    references:
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html"
+      - "https://cwe.mitre.org/data/definitions/770.html"
+
+  # ----------------------------------------------------------------- M4 · exposure (S7)
+  - id: directory-listing
+    cwe: CWE-548
+    checks: [m4.directory-listing]
+    summary: "Disable directory indexes and keep a placeholder index file in every served directory."
+    steps:
+      - "1. Turn off autoindex/Indexes/Directory Browsing on the web server or reverse proxy."
+      - "2. Serve uploads and backups from a location that has no index at all, ideally a different origin."
+      - "3. Delete the files a listing exposed; the listing was the inventory, not the vulnerability."
+    verify:
+      - "1. Re-request the directory; it must return 403/404, not an index."
+      - "2. Confirm autoindex is off and the directory holds nothing sensitive."
+    references:
+      - "https://cwe.mitre.org/data/definitions/548.html"
+
+  - id: bucket-exposure
+    cwe: CWE-732
+    checks: [m4.bucket-exposure]
+    summary: "Make the bucket private, block public access at the account level, and review what was exposed."
+    steps:
+      - "1. Enable the provider's account-level Block Public Access and remove public ACLs and policies from the bucket."
+      - "2. Use presigned URLs or an authenticated proxy for anything that must be shared."
+      - "3. Rotate any credential an exposed object contained, and treat every listed object as disclosed."
+      - "4. Enable bucket logging and alert on policy changes and anonymous reads."
+    verify:
+      - "1. Re-request the bucket/object anonymously; it must be denied."
+      - "2. Confirm the bucket policy and ACLs no longer grant public read."
+    references:
+      - "https://cwe.mitre.org/data/definitions/732.html"
+
+  - id: private-key-exposure
+    cwe: CWE-321
+    checks: [m4.key-exposure]
+    summary: "Remove the key from the web root and rotate it; a served private key is compromised."
+    steps:
+      - "1. Delete every key file from the document root and from any directory the web server can read."
+      - "2. Rotate the key material and revoke the old key everywhere it was trusted."
+      - "3. Move TLS keys to the load balancer/secret store and keep client keys out of served trees."
+      - "4. Search the backups and repositories for other copies of the same key."
+    verify:
+      - "1. Re-request the key path; it must return 404."
+      - "2. Confirm the exposed key was revoked and reissued, and audit its use."
+    references:
+      - "https://cwe.mitre.org/data/definitions/321.html"
+
+  - id: email-authentication
+    cwe: CWE-290
+    checks: [m4.email-auth-review]
+    summary: "Publish enforced SPF, DKIM and DMARC records for the domain."
+    steps:
+      - "1. Publish an SPF record that ends in -all (or ~all during rollout) and keeps the sender list short."
+      - "2. Sign outbound mail with DKIM and publish the selector's public key."
+      - "3. Publish a DMARC policy, starting at p=none with reporting, then move to quarantine and reject."
+      - "4. Monitor the aggregate reports and alert on spoofed-domain volume."
+    verify:
+      - "1. Re-query SPF/DKIM/DMARC; all three must exist and DMARC must be enforcing."
+      - "2. Confirm the records match the sending infrastructure actually in use."
+    references:
+      - "https://cwe.mitre.org/data/definitions/290.html"
+      - "https://datatracker.ietf.org/doc/html/rfc7489"
+
+  - id: unsafe-http-methods
+    cwe: CWE-650
+    checks: [m4.webdav-verbs]
+    summary: "Restrict the accepted HTTP methods and remove WebDAV from public servers."
+    steps:
+      - "1. Allow only the methods the application actually serves (usually GET, HEAD, POST) and reject the rest with 405."
+      - "2. Disable the WebDAV modules and TRACE handling on internet-facing servers."
+      - "3. If uploads are needed, require authentication and store them outside the served tree."
+    verify:
+      - "1. Re-run the method audit; PUT/DELETE/TRACE must be disabled or authenticated."
+      - "2. Confirm the web server rejects unsafe methods at the edge."
+    references:
+      - "https://cwe.mitre.org/data/definitions/650.html"
+
+  - id: metadata-ssrf
+    cwe: CWE-918
+    checks: [m4.metadata-ssrf]
+    summary: "Break the SSRF path and enforce IMDSv2-only on the instance."
+    steps:
+      - "1. Require IMDSv2 with a hop limit of 1 on every instance role."
+      - "2. Validate URL-fetching parameters against an allowlist and resolve-then-pin the host, refusing link-local and metadata addresses."
+      - "3. Keep bootstrap secrets out of userdata; use the secret manager instead."
+      - "4. Alert on requests containing the metadata address from application workloads."
+    verify:
+      - "1. Re-run the SSRF probe; the metadata address must not be reachable through the parameter."
+      - "2. Confirm egress filtering blocks link-local and metadata ranges from application hosts."
+    references:
+      - "https://cwe.mitre.org/data/definitions/918.html"
+
+  - id: unauth-api
+    cwe: CWE-306
+    checks: [m4.unauth-api-audit]
+    summary: "Require authentication and authorization on every data-bearing API route."
+    steps:
+      - "1. Enforce authentication at the framework or gateway level, not per handler by convention."
+      - "2. Return 401 for an anonymous caller and 403 for an authenticated one without the role; verify both."
+      - "3. Add a regression test that replays each documented route anonymously and expects a refusal."
+    verify:
+      - "1. Re-request the API route without credentials; it must return 401/403."
+      - "2. Confirm the route is included in the authentication middleware's matcher."
+    references:
+      - "https://cwe.mitre.org/data/definitions/306.html"
+
+  - id: default-credentials
+    cwe: CWE-1392
+    checks: [m4.default-credentials]
+    summary: "Rotate the vendor default and remove default accounts before the panel is reachable."
+    steps:
+      - "1. Change or disable every vendor-default account and credential at deployment time."
+      - "2. Put the management interface behind SSO and a management network, not the internet."
+      - "3. Enforce lockout and rate limiting on the login endpoint regardless."
+      - "4. Inventory appliances and panels for unrotated defaults, because the next one will not be this product."
+    verify:
+      - "1. Re-attempt the vendor-default pair; it must be rejected."
+      - "2. Confirm the credential was changed and the account's activity audited."
+    references:
+      - "https://cwe.mitre.org/data/definitions/1392.html"
+
+  - id: staging-exposure
+    cwe: CWE-1188
+    checks: [m4.staging-exposure]
+    summary: "Put staging environments behind the VPN/SSO and keep production data out of them."
+    steps:
+      - "1. Segregate staging by network or VPC and never route it through the production load balancer."
+      - "2. Require SSO on every non-production environment, including the ones 'nobody knows about'."
+      - "3. Scrub production data before it reaches a test database."
+      - "4. Remove the labelled paths and hostnames from public DNS and search indexes."
+    verify:
+      - "1. Re-request the non-production host; it must be unreachable or behind SSO."
+      - "2. Confirm the staging DNS entry is removed and production data was scrubbed."
+    references:
+      - "https://cwe.mitre.org/data/definitions/1188.html"
+
+  # ------------------------------------------------------- broader exposure classes
+  - id: info-disclosure-responses
+    cwe: CWE-204
+    summary: "Make responses to valid and invalid identities indistinguishable, so the
+      endpoint cannot be used to enumerate accounts or objects."
+    steps:
+      - "1. Return the same status, message and body shape for valid and invalid identities."
+      - "2. Equalise response timing and length where the difference is observable."
+      - "3. Remove 'user exists' and 'already registered' hints from registration and reset flows."
+    verify:
+      - "1. Re-run the enumeration probe; valid and invalid inputs must be indistinguishable."
+      - "2. Compare response bodies and timings side by side and confirm the differential is gone."
+    references:
+      - "https://cwe.mitre.org/data/definitions/204.html"
+
+  - id: weak-password-policy
+    cwe: CWE-521
+    summary: "Enforce a modern password policy with lockout, MFA and no vendor-default credentials."
+    steps:
+      - "1. Reject known-default and breached passwords at authentication and at set time."
+      - "2. Enforce a minimum length (12+) without composition rules that drive reuse."
+      - "3. Add lockout/backoff and offer MFA for privileged accounts."
+    verify:
+      - "1. Re-attempt the default or weak credential; it must be rejected."
+      - "2. Confirm lockout triggers before the configured attempt budget."
+      - "3. Confirm MFA is enforced for the affected account class."
+    references:
+      - "https://cwe.mitre.org/data/definitions/521.html"
+      - "https://pages.nist.gov/800-63-3/sp800-63b.html"
+
+  - id: weak-cryptography
+    cwe: CWE-326
+    summary: "Replace weak key sizes and algorithms with current recommendations."
+    steps:
+      - "1. Raise RSA keys to 2048 bits or more (3072+ for new long-lived keys) and EC keys to P-256+."
+      - "2. Disable deprecated algorithms and cipher suites at the service and the edge."
+      - "3. Reissue certificates that use weak keys or signatures."
+    verify:
+      - "1. Re-run the TLS/crypto probe; no weak key size, cipher or signature may be offered."
+      - "2. Confirm the certificate chain's key sizes meet the policy."
+    references:
+      - "https://cwe.mitre.org/data/definitions/326.html"
+
+  - id: verbose-error-messages
+    cwe: CWE-209
+    summary: "Stop returning stack traces, database errors and internal paths to clients."
+    steps:
+      - "1. Map unhandled exceptions to a generic response with a correlation id."
+      - "2. Log the detail server-side behind the correlation id."
+      - "3. Disable framework debug pages and detailed error modes in production."
+    verify:
+      - "1. Request a failing path and confirm the response carries no stack trace or internal path."
+      - "2. Confirm the correlation id resolves to the detail in the server log."
+    references:
+      - "https://cwe.mitre.org/data/definitions/209.html"
+
+  - id: insecure-configuration
+    cwe: CWE-16
+    summary: "Apply a hardened baseline to the component and verify it on the deployed instance."
+    steps:
+      - "1. Start from the vendor's hardening guide and record the required settings as code."
+      - "2. Remove sample applications, default pages and unused modules."
+      - "3. Enforce the baseline in configuration management so redeploys cannot drift."
+    verify:
+      - "1. Re-run the configuration checks against the deployed instance."
+      - "2. Diff the live configuration against the recorded baseline."
+    references:
+      - "https://cwe.mitre.org/data/definitions/16.html"
+
+  - id: unmaintained-component
+    cwe: CWE-1104
+    summary: "Replace unsupported components and pin an update cadence."
+    steps:
+      - "1. Identify the end-of-life date of every component the finding names."
+      - "2. Plan the upgrade or replacement, prioritising internet-facing instances."
+      - "3. Subscribe to the vendor's security advisories for the replacement."
+    verify:
+      - "1. Re-read the component version; it must be in a supported release line."
+      - "2. Confirm the upgrade is deployed to the observed instance."
+    references:
+      - "https://cwe.mitre.org/data/definitions/1104.html"
+
+  - id: clickjacking-framing
+    cwe: CWE-1021
+    summary: "Deny framing of sensitive pages with frame-ancestors and X-Frame-Options."
+    steps:
+      - "1. Send Content-Security-Policy frame-ancestors 'none' (or an explicit allowlist)."
+      - "2. Send X-Frame-Options DENY as a fallback for older browsers."
+      - "3. Apply both at the edge so error pages are covered too."
+    verify:
+      - "1. Re-request the page and confirm both headers are present."
+      - "2. Render the page in a foreign frame and confirm the browser refuses."
+    references:
+      - "https://cwe.mitre.org/data/definitions/1021.html"
+
+  - id: cookie-without-httponly
+    cwe: CWE-1004
+    summary: "Mark session cookies HttpOnly so script cannot read them."
+    steps:
+      - "1. Add HttpOnly to every session and authentication cookie at the framework level."
+      - "2. Add Secure and SameSite with the same central change."
+      - "3. Remove any client-side code that reads the cookie."
+    verify:
+      - "1. Re-request the login flow and confirm Set-Cookie carries HttpOnly."
+      - "2. Confirm document.cookie no longer exposes the session value."
+    references:
+      - "https://cwe.mitre.org/data/definitions/1004.html"
+
+  - id: cleartext-sensitive-data
+    cwe: CWE-311
+    summary: "Protect sensitive data in transit and at rest rather than sending it in the clear."
+    steps:
+      - "1. Require TLS for every endpoint that carries credentials, tokens or personal data."
+      - "2. Redirect plaintext requests and enable HSTS."
+      - "3. Encrypt sensitive fields at rest and keep keys out of the application tree."
+    verify:
+      - "1. Re-request the endpoint over http; it must redirect to https."
+      - "2. Confirm the stored field is encrypted and the key is managed outside the app."
+    references:
+      - "https://cwe.mitre.org/data/definitions/311.html"
+
+  - id: sensitive-data-in-logs
+    cwe: CWE-532
+    summary: "Keep credentials and personal data out of application and access logs."
+    steps:
+      - "1. Redact authentication headers, tokens and personal fields at the logging layer."
+      - "2. Restrict log access and retention to the operators who need it."
+      - "3. Purge the existing log stores that already contain the data."
+    verify:
+      - "1. Exercise the affected flow and confirm the log line carries a placeholder, not the value."
+      - "2. Confirm historical log stores no longer contain the exposed data."
+    references:
+      - "https://cwe.mitre.org/data/definitions/532.html"
+
+  # ================= S10 · M3 extended + M5 cloud/container/supply chain
+  - id: ssrf
+    cwe: CWE-918
+    checks: [m3.ssrf-probe]
+    summary: "Restrict server-side fetch targets to an allowlist, deny cloud-metadata and internal ranges, and disable redirect following for fetch sinks."
+    steps:
+      - "1. Identify the fetch sink and replace free-form URLs with a validated allowlist of schemes and hosts."
+      - "2. Block egress to link-local (169.254.0.0/16), RFC1918 and loopback ranges from the application tier at the network level."
+      - "3. Disable automatic redirect following in the HTTP client the sink uses, and re-validate each hop against the allowlist."
+      - "4. Enforce IMDSv2 with a hop limit of 1 on cloud instances so a residual SSRF cannot mint credentials."
+    verify:
+      - "1. Re-run the scan and confirm the callback probe is refused or that no callback is recorded."
+      - "2. From the application host, confirm a request to 169.254.169.254 is refused by the network policy."
+    references:
+      - "https://owasp.org/www-community/attacks/Server_Side_Request_Forgery"
+      - "https://cwe.mitre.org/data/definitions/918.html"
+
+  - id: ssti
+    cwe: CWE-1336
+    checks: [m3.ssti-oracle]
+    summary: "Never render user input through a template engine; pass it as data, sandbox the environment and remove dangerous built-ins."
+    steps:
+      - "1. Do not concatenate user input into template source; pass it as a bound variable instead."
+      - "2. Sandbox the template environment (Jinja2 SandboxedEnvironment, Twig sandbox, FreeMarker restricted class resolver)."
+      - "3. Remove or deny access to framework globals and reflection built-ins from templates."
+      - "4. Add a validation step that rejects template delimiters in free-text input where templates are unavoidable."
+    verify:
+      - "1. Re-send the arithmetic probe and confirm it is reflected literally, not evaluated."
+      - "2. Confirm the sandbox is active by testing a known-disallowed built-in and observing an error."
+    references:
+      - "https://portswigger.net/web-security/server-side-template-injection"
+      - "https://cwe.mitre.org/data/definitions/1336.html"
+
+  - id: xxe
+    cwe: CWE-611
+    checks: [m3.xxe-oracle]
+    summary: "Disable DTD and external-entity processing in every XML parser the application uses."
+    steps:
+      - "1. Configure the parser to disallow DOCTYPE declarations and external entities (e.g. disallow-doctype-decl, external-general-entities=false)."
+      - "2. Prefer JSON where the format is under your control."
+      - "3. Reject XML payloads whose DOCTYPE names an external SYSTEM/PUBLIC identifier."
+      - "4. Apply the fix to every XML surface: SOAP, SVG, DOCX/XLSX parsing and API bodies."
+    verify:
+      - "1. Re-post the entity document and confirm the file marker is not echoed."
+      - "2. Confirm the parser raises a disallowed-DOCTYPE error rather than resolving the entity."
+    references:
+      - "https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing"
+      - "https://cwe.mitre.org/data/definitions/611.html"
+
+  - id: command-injection
+    cwe: CWE-78
+    checks: [m3.cmdi-oracle]
+    summary: "Never build shell commands from input; use library APIs with argument arrays and an allowlist."
+    steps:
+      - "1. Replace shell invocations with direct library calls or subprocess argument arrays (no shell=True)."
+      - "2. Validate input against a strict allowlist (e.g. an IP address, an enum) before it reaches the command."
+      - "3. Run the service as an unprivileged account with the minimum filesystem and network access."
+      - "4. Add an egress rule so a blind injection cannot reach internal services."
+    verify:
+      - "1. Re-send the sentinel probe and confirm no output is echoed."
+      - "2. Confirm the code path uses an argument array and no shell interpreter."
+    references:
+      - "https://owasp.org/www-community/attacks/Command_Injection"
+      - "https://cwe.mitre.org/data/definitions/78.html"
+
+  - id: deserialization
+    cwe: CWE-502
+    checks: [m3.deser-audit]
+    summary: "Replace native deserialization with a data format and validate a class allowlist before instantiation."
+    steps:
+      - "1. Replace native serialization (Java ObjectInputStream, PHP unserialize, .NET BinaryFormatter, Python pickle) with JSON."
+      - "2. Where native serialization is unavoidable, enforce a strict class allowlist and reject unknown types."
+      - "3. Sign and encrypt any serialized session payload, and verify before deserializing."
+      - "4. Remove known-vulnerable gadget libraries from the classpath where possible."
+    verify:
+      - "1. Re-send a benign serialized stream and confirm the endpoint rejects it."
+      - "2. Confirm no code path calls the unsafe deserialization API with user input."
+    references:
+      - "https://owasp.org/www-community/vulnerabilities/Deserialization_of_untrusted_data"
+      - "https://cwe.mitre.org/data/definitions/502.html"
+
+  - id: smuggling
+    cwe: CWE-444
+    checks: [m3.smuggling-oracle]
+    summary: "Normalize request framing at a single trusted edge and make every hop use the same HTTP parser."
+    steps:
+      - "1. Strip or normalize Transfer-Encoding and Content-Length at the edge; reject requests carrying both."
+      - "2. Use identical HTTP server software/versions at the front and back end."
+      - "3. Disable back-end connection reuse where a desync is possible, and monitor for abnormal 400/timeout spikes."
+      - "4. For HTTP/2, enforce strict HTTP/2-to-1 conversion at the edge."
+    verify:
+      - "1. Re-send the obfuscated framing probe and confirm a 400/501 rejection."
+      - "2. Confirm the edge rejects a request with both Content-Length and Transfer-Encoding."
+    references:
+      - "https://portswigger.net/web-security/request-smuggling"
+      - "https://cwe.mitre.org/data/definitions/444.html"
+
+  - id: cache-poisoning
+    cwe: CWE-444
+    checks: [m3.cache-poison-audit]
+    summary: "Include every response-shaping input in the cache key and strip unkeyed attacker-controllable headers before caching."
+    steps:
+      - "1. Never honor X-Forwarded-Host/-Scheme/-Port or X-Original-URL for response generation unless they are part of the cache key."
+      - "2. Configure the cache key to method + host + path + canonical query only, and normalize paths before lookup."
+      - "3. Send Vary on any header that legitimately changes the response."
+      - "4. Do not cache responses that reflect request headers."
+    verify:
+      - "1. Re-send the marker-host header and confirm the response no longer reflects it."
+      - "2. Confirm a cache HIT cannot be produced for a response that varies with an unkeyed header."
+    references:
+      - "https://portswigger.net/web-security/web-cache-poisoning"
+      - "https://cwe.mitre.org/data/definitions/444.html"
+
+  - id: jwt
+    cwe: CWE-347
+    checks: [m3.jwt-audit]
+    summary: "Pin the accepted algorithm, reject unsigned tokens, use a strong random secret, and enforce claim validation."
+    steps:
+      - "1. Configure the verifier with an explicit algorithm allowlist and reject 'none' and algorithm substitution."
+      - "2. Replace any weak or guessable HMAC secret with a strong random value (>=256 bits) and rotate it."
+      - "3. Validate kid/jku/jwk against trusted sources and never fetch verification keys from token-supplied URLs."
+      - "4. Enforce exp/nbf/aud/iss and invalidate tokens on logout."
+    verify:
+      - "1. Replay an alg=none and an HMAC-resigned token and confirm both are rejected."
+      - "2. Confirm the verifier is configured with a fixed algorithm list."
+    references:
+      - "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/06-Session_Management_Testing/10-Testing_JSON_Web_Tokens"
+      - "https://cwe.mitre.org/data/definitions/347.html"
+
+  - id: oauth
+    cwe: CWE-601
+    checks: [m3.oauth-flow-audit]
+    summary: "Validate the full redirect_uri against a registered exact-match allowlist and require state and PKCE."
+    steps:
+      - "1. Compare the redirect_uri against the client's registered value with an exact string match on scheme, host and path."
+      - "2. Do not allow wildcard subdomains, path appending or userinfo tricks; reject look-alike hosts."
+      - "3. Require the state parameter and validate it; require PKCE for public clients."
+      - "4. Bind authorization codes to both client_id and redirect_uri."
+    verify:
+      - "1. Re-send the mutation probes and confirm each is rejected."
+      - "2. Confirm the authorization server's allowlist uses exact matches, not prefixes."
+    references:
+      - "https://portswigger.net/web-security/oauth"
+      - "https://cwe.mitre.org/data/definitions/601.html"
+
+  - id: saml
+    cwe: CWE-347
+    checks: [m3.saml-audit]
+    summary: "Require and verify the SAML signature against a pinned trusted certificate, and parse only the verified canonical form."
+    steps:
+      - "1. Reject any assertion whose signature is absent, empty or does not validate against the IdP certificate."
+      - "2. Use a hardened XML library, canonicalize before verification, and defend against XML signature wrapping."
+      - "3. Validate Audience, Recipient and Conditions, and reject assertions outside their validity window."
+      - "4. Read identity attributes only from the verified canonical assertion."
+    verify:
+      - "1. Re-post an unsigned assertion and confirm it is rejected."
+      - "2. Confirm the SP validates the signature on every assertion before extracting identity."
+    references:
+      - "https://cheatsheetseries.owasp.org/cheatsheets/SAML_Security_Cheat_Sheet.html"
+      - "https://cwe.mitre.org/data/definitions/347.html"
+
+  - id: hpp
+    cwe: CWE-235
+    checks: [m3.hpp-oracle]
+    summary: "Adopt a single parameter-resolution policy at every layer and reject duplicate security-relevant parameters."
+    steps:
+      - "1. Reject requests that carry a duplicate security-relevant parameter, at the edge and in the application."
+      - "2. Conform every layer (WAF, proxy, framework) to the same first/last-wins policy."
+      - "3. Validate against the value the logic actually uses, not the first occurrence seen by the filter."
+    verify:
+      - "1. Re-send the duplicate-parameter pair and confirm a rejection or an order-independent answer."
+      - "2. Confirm the edge and the application agree on which occurrence wins."
+    references:
+      - "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/04-Testing_for_HTTP_Parameter_Pollution"
+      - "https://cwe.mitre.org/data/definitions/235.html"
+
+  - id: mass-assignment
+    cwe: CWE-915
+    checks: [m3.mass-assign-audit]
+    summary: "Bind only allowlisted fields through an explicit DTO and verify property-level authorization."
+    steps:
+      - "1. Never bind a request body directly to an internal model; map it to an explicit allowlist of writable fields."
+      - "2. Mark sensitive fields (role, is_admin, balance, ownership) as read-only for the caller."
+      - "3. Verify property-level authorization before applying any update."
+      - "4. Apply the same rule to nested objects and bulk endpoints."
+    verify:
+      - "1. Re-send the over-posting probe and confirm the extra property is ignored or rejected."
+      - "2. Confirm no model field is writable unless it appears in the DTO allowlist."
+    references:
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html"
+      - "https://cwe.mitre.org/data/definitions/915.html"
+
+  - id: prototype-pollution
+    cwe: CWE-1321
+    checks: [m3.proto-pollution]
+    summary: "Filter prototype keys in every merge/clone and prefer immutable, structured updates."
+    steps:
+      - "1. Strip or reject __proto__, constructor and prototype keys in every recursive merge."
+      - "2. Use Object.create(null) for lookup maps and prefer structured updates to deep merges."
+      - "3. Sanitize JSON bodies and query/URL-derived objects before merging."
+    verify:
+      - "1. Re-send the prototype-key body and confirm the marker is not echoed."
+      - "2. Confirm the merge utility filters prototype keys."
+    references:
+      - "https://portswigger.net/web-security/prototype-pollution"
+      - "https://cwe.mitre.org/data/definitions/1321.html"
+
+  - id: race-condition
+    cwe: CWE-362
+    checks: [m3.race-oracle]
+    summary: "Make limit enforcement atomic with a transaction, a unique constraint or a server-side lock."
+    steps:
+      - "1. Enforce single-use and quantity limits inside a database transaction with a unique constraint or SELECT ... FOR UPDATE."
+      - "2. Reject concurrent mutations of the same resource and add idempotency keys to retried operations."
+      - "3. Never enforce a limit in application code between two separate reads/writes."
+    verify:
+      - "1. Re-run the concurrent burst and confirm at most one success."
+      - "2. Confirm the limit is enforced by a database-level constraint."
+    references:
+      - "https://portswigger.net/web-security/race-conditions"
+      - "https://cwe.mitre.org/data/definitions/362.html"
+
+  - id: business-logic
+    cwe: CWE-840
+    checks: [m3.business-logic-audit]
+    summary: "Never trust client-supplied totals or quantities; enforce the flow's invariant server-side."
+    steps:
+      - "1. Recompute prices, totals and quantities server-side from authoritative data."
+      - "2. Validate every field against its domain (positive quantity, non-negative total, allowed state transitions)."
+      - "3. Model the workflow as a server-side state machine and reject out-of-order steps."
+      - "4. Add anomaly monitoring on flow completion rates."
+    verify:
+      - "1. Re-send the edge values and confirm they are rejected."
+      - "2. Confirm totals are computed server-side and not read from the request."
+    references:
+      - "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/10-Business_Logic_Testing/"
+      - "https://cwe.mitre.org/data/definitions/840.html"
+
+  - id: graphql
+    cwe: CWE-200
+    checks: [m3.graphql-audit]
+    summary: "Disable introspection in production and enforce per-operation complexity and rate limits."
+    steps:
+      - "1. Disable introspection and field suggestions in production builds."
+      - "2. Rate-limit and cap complexity per operation rather than per HTTP request."
+      - "3. Disable alias/query batching or cap batch size and depth, and redact error details."
+    verify:
+      - "1. Re-send the introspection query and confirm it is rejected."
+      - "2. Confirm a bounded number of aliases/operations is enforced."
+    references:
+      - "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/12-API_Testing/01-Testing_GraphQL"
+      - "https://cwe.mitre.org/data/definitions/200.html"
+
+  - id: websocket
+    cwe: CWE-1385
+    checks: [m3.websocket-audit]
+    summary: "Validate the Origin on the handshake and authorize every message against the session."
+    steps:
+      - "1. Check the Origin header against an allowlist during the upgrade and reject others."
+      - "2. Authorize each message per the authenticated session; never trust a client-supplied identity in a frame."
+      - "3. Bind the socket to the authenticated session and require re-auth on privilege change."
+    verify:
+      - "1. Attempt the handshake with a foreign Origin and confirm rejection."
+      - "2. Confirm per-message authorization is enforced for a foreign identity."
+    references:
+      - "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/11-Client-side_Testing/10-Testing_WebSockets"
+      - "https://cwe.mitre.org/data/definitions/1385.html"
+
+  - id: subdomain-takeover
+    cwe: CWE-350
+    checks: [m3.subdomain-takeover]
+    summary: "Remove or re-point dangling DNS records and monitor every external record against the takeover fingerprint table."
+    steps:
+      - "1. Identify the dangling CNAME and either remove it or re-point it to a service you control."
+      - "2. Re-claim the third-party resource if it is still needed, before an attacker does."
+      - "3. Add periodic dangling-record monitoring against the can-i-take-over-xyz fingerprint set."
+    verify:
+      - "1. Confirm the host no longer serves the unclaimed-service fingerprint."
+      - "2. Confirm the DNS record is removed or points at a claimed resource."
+    references:
+      - "https://github.com/EdOverflow/can-i-take-over-xyz"
+      - "https://cwe.mitre.org/data/definitions/350.html"
+
+  - id: cloud-bucket
+    cwe: CWE-732
+    checks: [m5.bucket-enumerator]
+    summary: "Enable Block Public Access, keep ACLs private, and audit object-level exposure."
+    steps:
+      - "1. Enable S3 Block Public Access (or the GCS/Azure equivalent) and set bucket-owner-enforced ownership."
+      - "2. Remove AllUsers/allAuthenticatedUsers grants and any public access policy."
+      - "3. Rotate every credential or secret that was stored in the bucket."
+      - "4. Monitor with the provider's access analyzer and enable access logging."
+    verify:
+      - "1. Re-probe the bucket root and confirm an anonymous listing/ACL is refused."
+      - "2. Confirm the public-access block is enabled at the account and bucket level."
+    references:
+      - "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html"
+      - "https://cwe.mitre.org/data/definitions/732.html"
+
+  - id: cloud-credentials
+    cwe: CWE-798
+    checks: [m5.leaked-cloud-keys]
+    summary: "Rotate the credential immediately and remove it from history; move to short-lived credentials."
+    steps:
+      - "1. Revoke/rotate the exposed credential at the provider now; assume it is already compromised."
+      - "2. Purge it from git history and artifacts, and invalidate any cached copies."
+      - "3. Move to short-lived, scoped credentials (workload identity / STS) instead of long-lived keys."
+      - "4. Enable secret scanning with push protection in the repositories."
+    verify:
+      - "1. Confirm the old credential is revoked (a validation call fails)."
+      - "2. Confirm secret scanning blocks a re-introduction of the pattern."
+    references:
+      - "https://docs.github.com/en/code-security/secret-scanning"
+      - "https://cwe.mitre.org/data/definitions/798.html"
+
+  - id: imds
+    cwe: CWE-918
+    checks: [m5.imds-ssrf]
+    summary: "Enforce IMDSv2 with a hop limit of 1 and block egress to the metadata range."
+    steps:
+      - "1. Set the instance metadata service to require IMDSv2 and set the hop limit to 1."
+      - "2. Block egress to 169.254.0.0/16 (and fd00:ec2::254) from the application tier."
+      - "3. Fix the SSRF sink itself (see the SSRF remediation) so it cannot fetch arbitrary URLs."
+      - "4. Alert on any request to the metadata service from non-bootstrap processes."
+    verify:
+      - "1. Re-run the probe and confirm the sink no longer returns metadata (or returns only a 401)."
+      - "2. Confirm IMDSv2 is required on every instance."
+    references:
+      - "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html"
+      - "https://cwe.mitre.org/data/definitions/918.html"
+
+  - id: azure-mi
+    cwe: CWE-918
+    checks: [m5.azure-mi-audit]
+    summary: "Block metadata egress and reduce the managed identity's role scope."
+    steps:
+      - "1. Block egress to 169.254.169.254 from application subnets with an NSG."
+      - "2. Scope the managed identity to the minimum roles and resources it needs."
+      - "3. Fix the SSRF sink so it cannot fetch arbitrary URLs."
+      - "4. Monitor AAD sign-in and Key Vault logs for token use from unexpected callers."
+    verify:
+      - "1. Re-run the probe and confirm the metadata document is not returned."
+      - "2. Review the identity's role assignments for least privilege."
+    references:
+      - "https://learn.microsoft.com/en-us/azure/virtual-machines/instance-metadata-service"
+      - "https://cwe.mitre.org/data/definitions/918.html"
+
+  - id: cloud-service-account-keys
+    cwe: CWE-798
+    checks: [m5.gcp-sa-keys]
+    summary: "Disable and delete the key, then move to Workload Identity Federation."
+    steps:
+      - "1. Disable the leaked key in GCP and delete it; review its activity logs."
+      - "2. Migrate the workload to Workload Identity Federation or short-lived tokens."
+      - "3. Remove the key file from the repository and purge it from history and artifacts."
+    verify:
+      - "1. Confirm the key is disabled and cannot issue a token."
+      - "2. Confirm the workload authenticates via federation, not a static key."
+    references:
+      - "https://cloud.google.com/iam/docs/best-practices-service-accounts"
+      - "https://cwe.mitre.org/data/definitions/798.html"
+
+  - id: firebase
+    cwe: CWE-284
+    checks: [m5.firebase-rules]
+    summary: "Require authentication and per-document authorization in the database rules, and enable App Check."
+    steps:
+      - "1. Replace open rules with checks on request.auth and per-path conditions."
+      - "2. Enable App Check so only your apps can query the project."
+      - "3. Review the data that was exposed and rotate any secret it contained."
+    verify:
+      - "1. Re-request the `.json` endpoint anonymously and confirm it is refused."
+      - "2. Confirm the deployed rules require authentication."
+    references:
+      - "https://firebase.google.com/docs/rules/insecure-rules"
+      - "https://cwe.mitre.org/data/definitions/284.html"
+
+  - id: supabase
+    cwe: CWE-284
+    checks: [m5.supabase-rls]
+    summary: "Enable RLS on every table and grant least-privilege policies to the anon role."
+    steps:
+      - "1. Enable RLS on every table in the exposed schema."
+      - "2. Write policies that scope rows to the authenticated user; grant the anon role nothing by default."
+      - "3. Rotate the anon key only if a secret was mistakenly placed behind it, and audit the exposed rows."
+    verify:
+      - "1. Re-query the table anonymously and confirm it returns no rows."
+      - "2. Confirm RLS is enabled and a policy exists for every table."
+    references:
+      - "https://supabase.com/docs/guides/database/postgres/row-level-security"
+      - "https://cwe.mitre.org/data/definitions/284.html"
+
+  - id: tfstate
+    cwe: CWE-312
+    checks: [m5.tfstate-exposure]
+    summary: "Move state to a private, encrypted, locked backend and rotate everything it contained."
+    steps:
+      - "1. Store state in a private backend with encryption, versioning and MFA-delete; never commit it."
+      - "2. Rotate every secret that appeared in the state file."
+      - "3. Remove the state file from the repository and purge it from history and artifacts."
+      - "4. Use ephemeral resources/values (Terraform 1.10+) where possible to avoid writing secrets at all."
+    verify:
+      - "1. Confirm the state file is no longer reachable and is absent from history."
+      - "2. Confirm the backend is private and encrypted."
+    references:
+      - "https://developer.hashicorp.com/terraform/language/state/sensitive-data"
+      - "https://cwe.mitre.org/data/definitions/312.html"
+
+  - id: iac
+    cwe: CWE-1116
+    checks: [m5.tfstate-exposure]
+    summary: "Fix the flagged construct and add the same rule as a CI gate."
+    steps:
+      - "1. Correct the flagged construct (narrow the CIDR, scope the IAM action, make the bucket private, enable encryption, drop privileges)."
+      - "2. Add tfsec/checkov (or equivalent) to the pipeline as a blocking gate."
+      - "3. Review whether the misconfiguration was ever deployed and remediate the live resource too."
+    verify:
+      - "1. Confirm the static scanner reports no finding for the file."
+      - "2. Confirm the live resource matches the corrected definition."
+    references:
+      - "https://aquasecurity.github.io/tfsec/"
+      - "https://cwe.mitre.org/data/definitions/1116.html"
+
+  - id: k8s
+    cwe: CWE-306
+    checks: [m5.k8s-exposure]
+    summary: "Disable the insecure read-only kubelet port and require authorization on 10250."
+    steps:
+      - "1. Set --read-only-port=0 on every kubelet and remove the 10255 exposure."
+      - "2. Enable and enforce kubelet authentication/authorization (webhook) on 10250."
+      - "3. Restrict network access to kubelet ports to the control plane."
+      - "4. Rotate any secret observed in pod environment variables."
+    verify:
+      - "1. Re-probe /pods and confirm it is refused."
+      - "2. Confirm the read-only port is disabled cluster-wide."
+    references:
+      - "https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/"
+      - "https://cwe.mitre.org/data/definitions/306.html"
+
+  - id: k8s-dashboard
+    cwe: CWE-284
+    checks: [m5.k8s-exposure]
+    summary: "Remove anonymous dashboard access and the default cluster-admin binding."
+    steps:
+      - "1. Disable the dashboard's skip-login and require authentication."
+      - "2. Remove the default cluster-admin role binding and scope access with RBAC."
+      - "3. Keep the dashboard behind an authenticated proxy/VPN, not on a public address."
+    verify:
+      - "1. Re-request the dashboard path anonymously and confirm a login challenge."
+      - "2. Confirm no broad cluster-admin binding exists for the dashboard service account."
+    references:
+      - "https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/"
+      - "https://cwe.mitre.org/data/definitions/284.html"
+
+  - id: registry
+    cwe: CWE-1104
+    checks: [m5.registry-scan]
+    summary: "Require authentication on the registry and scan images for vulnerabilities and secrets."
+    steps:
+      - "1. Require authentication for the /v2 API and the catalog endpoint."
+      - "2. Scan images in CI (Trivy/Grype-class) and gate on critical findings."
+      - "3. Remove secrets from image layers and use build-time secrets instead."
+    verify:
+      - "1. Re-request /v2/_catalog and confirm it requires authentication."
+      - "2. Confirm the image scan runs as part of the pipeline."
+    references:
+      - "https://distribution.github.io/distribution/about/deploying/"
+      - "https://cwe.mitre.org/data/definitions/1104.html"
+
+  - id: docker-api
+    cwe: CWE-306
+    checks: [m5.docker-socket]
+    summary: "Never expose the Docker socket or TCP API; bind it to a protected socket with TLS if remote access is required."
+    steps:
+      - "1. Do not mount /var/run/docker.sock into containers and do not bind the daemon to a TCP port without mutual TLS."
+      - "2. Use rootless Docker and drop capabilities/seccomp restrictions."
+      - "3. Restrict network access to any Docker API and monitor for API calls on 2375/2376."
+    verify:
+      - "1. Re-probe the API paths and confirm they are refused."
+      - "2. Confirm the socket is not mounted into application containers."
+    references:
+      - "https://docs.docker.com/engine/security/protect-access/"
+      - "https://cwe.mitre.org/data/definitions/306.html"
+
+  - id: docker-socket
+    cwe: CWE-306
+    checks: [m5.docker-socket]
+    summary: "Remove the docker socket from the image/artifact and from container mounts."
+    steps:
+      - "1. Do not COPY or mount /var/run/docker.sock in an image or container."
+      - "2. Use a Docker API proxy with an allowlist if a container must interact with the daemon."
+      - "3. Rebuild the image without the socket and verify the mount list."
+    verify:
+      - "1. Confirm the artifact no longer contains docker.sock."
+      - "2. Confirm no container mounts the daemon socket."
+    references:
+      - "https://docs.docker.com/engine/security/protect-access/"
+      - "https://cwe.mitre.org/data/definitions/306.html"
+
+  - id: image-secrets
+    cwe: CWE-798
+    checks: [m5.image-history-secrets]
+    summary: "Use build-time secrets and external secret stores instead of ENV/ARG/manifest values."
+    steps:
+      - "1. Replace ENV/ARG secrets with BuildKit secrets (RUN --mount=type=secret) or a runtime secret store."
+      - "2. Move plaintext manifest secrets into Sealed Secrets/SOPS/External Secrets."
+      - "3. Add .dockerignore and a secret scan to the image build, and rotate the exposed credential."
+    verify:
+      - "1. Inspect the rebuilt image history and confirm no secret is present."
+      - "2. Confirm the secret is injected at runtime from a secret store."
+    references:
+      - "https://docs.docker.com/build/building/secrets/"
+      - "https://cwe.mitre.org/data/definitions/798.html"
+
+  - id: image-root
+    cwe: CWE-250
+    checks: [m5.image-history-secrets]
+    summary: "Create an unprivileged user and set USER to it in the image."
+    steps:
+      - "1. Create a dedicated unprivileged user in the Dockerfile and set USER to it."
+      - "2. Drop unnecessary Linux capabilities and enable a read-only root filesystem where possible."
+      - "3. Use rootless containers and a Pod Security standard that forbids root."
+    verify:
+      - "1. Confirm the image runs as a non-root user (`id` in the container)."
+      - "2. Confirm the deployment enforces a non-root policy."
+    references:
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html"
+      - "https://cwe.mitre.org/data/definitions/250.html"
+
+  - id: cicd
+    cwe: CWE-78
+    checks: [m5.cicd-audit]
+    summary: "Pin actions to commit SHAs, minimize token permissions and never run untrusted code with secrets."
+    steps:
+      - "1. Pin every third-party action to a full commit SHA, not a tag or branch."
+      - "2. Set GITHUB_TOKEN permissions to read-only by default and grant per-job minima."
+      - "3. Never interpolate github.event.* directly into a run: step; pass untrusted data through an env var or a validated input."
+      - "4. Run untrusted PR code only on ephemeral hosted runners, never self-hosted with secrets."
+    verify:
+      - "1. Confirm every `uses:` is pinned to a SHA and permissions are least-privilege."
+      - "2. Confirm no run step interpolates untrusted event data."
+    references:
+      - "https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions"
+      - "https://cwe.mitre.org/data/definitions/78.html"
+
+  - id: dep-confusion
+    cwe: CWE-427
+    checks: [m5.dep-confusion]
+    summary: "Namespace private packages, configure the private registry first, and pin dependencies with provenance."
+    steps:
+      - "1. Scope/namespace internal packages and configure the private registry ahead of the public one."
+      - "2. Pin dependencies with lockfiles and verify hashes/provenance (SLSA)."
+      - "3. Monitor public registries for registrations of your internal names."
+    verify:
+      - "1. Confirm internal names resolve to the private registry only."
+      - "2. Confirm lockfiles pin versions and hashes."
+    references:
+      - "https://medium.com/@alex.birsan/dependency-confusion-4a5d60fec610"
+      - "https://cwe.mitre.org/data/definitions/427.html"
+
+  - id: sbom
+    cwe: CWE-1104
+    checks: [m5.sbom-review]
+    summary: "Upgrade the component to its fixed version and gate releases on a dependency scan."
+    steps:
+      - "1. Upgrade the component to the fixed version (or later) and regenerate the lockfile."
+      - "2. Run an SBOM/SCA scan (Trivy/Grype/OSV-Scanner) in CI and gate on critical/high findings."
+      - "3. Track an SBOM per build and monitor advisories for the components in use."
+    verify:
+      - "1. Confirm the lockfile now pins a version at or above the fix."
+      - "2. Confirm the SCA scan reports no critical finding for the project."
+    references:
+      - "https://owasp.org/www-project-dependency-check/"
+      - "https://cwe.mitre.org/data/definitions/1104.html"
+
+  - id: iam
+    cwe: CWE-269
+    checks: [m5.iam-review]
+    summary: "Apply least privilege with permission boundaries and review escalation paths."
+    steps:
+      - "1. Replace wildcard actions/resources with the explicit set the identity needs."
+      - "2. Add permission boundaries and SCPs that deny the escalation actions by default."
+      - "3. Use IAM Access Analyzer to find and review over-permissive and externally-assumable roles, and log sts:AssumeRole / iam:* to CloudTrail."
+    verify:
+      - "1. Confirm `simulate-principal-policy` shows no escalation action is allowed."
+      - "2. Confirm a permission boundary applies to the identity."
+    references:
+      - "https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html"
+      - "https://cwe.mitre.org/data/definitions/269.html"
+
+
+  # ----------------------------------------------------------------- M6 · automation, AI-era, post-exploit
+  - id: webshell
+    cwe: CWE-506
+    checks: [m6.webshell-yara]
+    summary: "Remove the shell, rotate every credential the web user could reach, and find how it was planted."
+    steps:
+      - "1. Preserve the file for forensics, then remove it from the web root and take the affected host out of rotation."
+      - "2. Rotate every credential, session and key the web-server user could read, and review access logs for the requests the shell served."
+      - "3. Identify the write path (an upload, a vulnerable plugin, an RCE such as the PHP2SHELL class) and patch it."
+      - "4. Make the web root read-only to the application user and alert on new script files in upload directories."
+    verify:
+      - "1. Re-scan the web root and the served origin; the webshell must no longer be reported."
+      - "2. Confirm the upload/write path that delivered the shell now rejects script content."
+    references:
+      - "https://owasp.org/www-community/vulnerabilities/Unrestricted_File_Upload"
+      - "https://cwe.mitre.org/data/definitions/506.html"
+
+  - id: genai-surface
+    cwe: CWE-1426
+    checks: [m6.attack-surface-genai]
+    summary: "Authenticate and gate model endpoints, remove prompts and keys from the client, and least-privilege agent tooling."
+    steps:
+      - "1. Require authentication and rate limiting on every model/agent API endpoint, and treat model output as untrusted data."
+      - "2. Move model API keys server-side and rotate any key that reached a client bundle or served document."
+      - "3. Keep system prompts out of served content, and add instruction/data separation plus output validation against prompt injection."
+      - "4. Scope agent MCP/tool configurations to the least privilege they need; review command and environment grants."
+    verify:
+      - "1. Re-request the endpoint without credentials and confirm it now returns 401/403."
+      - "2. Confirm no provider key or system prompt is present in the served surface, and the agent config grants least privilege."
+    references:
+      - "https://genai.owasp.org/llm-top-10/"
+      - "https://cwe.mitre.org/data/definitions/1426.html"
+
+  - id: patch-gap
+    cwe: CWE-1035
+    checks: [m6.cve-epss-correlation]
+    summary: "Patch or virtually-patch high-EPSS/KEV vulnerabilities on internet-facing systems within hours, not weeks."
+    steps:
+      - "1. Prioritise KEV-listed and high-EPSS CVEs first; treat an internet-facing host with a KEV CVE as an incident, not a ticket."
+      - "2. Apply the vendor fix, or put a WAF/reverse-proxy virtual patch in front of the affected service as a stopgap."
+      - "3. Verify the running version against the fixed version the advisory names; an upgrade that did not take is not a fix."
+      - "4. Track patch-to-detection time as a metric: the PHP2SHELL window was four days before disclosure."
+    verify:
+      - "1. Re-run the correlation and confirm the version is no longer inside the affected range."
+      - "2. Confirm the virtual patch (if used) blocks the documented exploit shape."
+    references:
+      - "https://www.first.org/epss/"
+      - "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+
+  - id: lpe
+    cwe: CWE-269
+    checks: [m6.lpe-discovery]
+    summary: "Patch the kernel and SUID tooling on affected hosts before an attacker converts a foothold into root."
+    steps:
+      - "1. Patch the affected kernel, sudo, polkit or glibc package to a version outside the vulnerable range."
+      - "2. Remove unnecessary SUID binaries and capabilities; restrict unprivileged user namespaces where the workload allows."
+      - "3. Add the hosts to the privileged-access review so a local root path is treated as a critical exposure."
+      - "4. Alert on privilege-escalation enumeration bursts (PEAS-class process patterns)."
+    verify:
+      - "1. Confirm the installed package/kernel version is outside the affected range."
+      - "2. Re-run `m6.lpe-discovery` and confirm the host no longer matches an index entry."
+    references:
+      - "https://cwe.mitre.org/data/definitions/269.html"
+      - "https://github.com/peass-ng/PEASS-ng"
+
+  - id: repo-secrets
+    cwe: CWE-798
+    checks: [m6.secret-scan-at-scale]
+    summary: "Rotate the leaked credential, purge it from history, and block re-introduction with push protection."
+    steps:
+      - "1. Revoke and rotate the credential now; assume it is already compromised, including copies in forks and caches."
+      - "2. Purge the value from git history and artifacts (git filter-repo/BFG) and force-push the cleaned history."
+      - "3. Enable secret scanning with push protection, and add a pre-commit hook so the pattern cannot be committed again."
+      - "4. Move to short-lived, scoped credentials (workload identity/STS) instead of long-lived keys."
+    verify:
+      - "1. Confirm the old credential is revoked (a validation call fails)."
+      - "2. Re-scan the working tree and history; the value must no longer be found."
+    references:
+      - "https://docs.github.com/en/code-security/secret-scanning"
+      - "https://cwe.mitre.org/data/definitions/798.html"
+
+  - id: ci-secrets
+    cwe: CWE-532
+    checks: [m6.ci-secret-leak]
+    summary: "Mask secrets in CI, rotate what leaked, and shorten log retention for job output."
+    steps:
+      - "1. Rotate every credential that appeared in a log or artifact; a log is a durable copy of the secret."
+      - "2. Add `::add-mask::`/masking for every secret and stop echoing environment variables or running `set -x`/`printenv` in steps that hold secrets."
+      - "3. Redact or purge the affected log/artifact and shorten job-log retention."
+      - "4. Scope `GITHUB_TOKEN`/CI job tokens to read-only by default and grant write only to the steps that need it."
+    verify:
+      - "1. Re-run the pipeline and confirm the secret no longer appears in the logs (the value is masked)."
+      - "2. Confirm the leaked credential is revoked and the token permissions are least-privilege."
+    references:
+      - "https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions"
+      - "https://cwe.mitre.org/data/definitions/532.html"
+
+  - id: log-hunting
+    cwe: CWE-778
+    checks: [m6.sigma-hunt-rules]
+    summary: "Treat the Sigma hit as an incident lead, contain the principal, and validate detection coverage."
+    steps:
+      - "1. Investigate the matched event in context (source host, account, adjacent events) before acting; a rule hit is a lead, not a verdict."
+      - "2. Contain the implicated account or host and preserve the telemetry."
+      - "3. Deploy the shipped Sigma rules to the SIEM and tune them to the environment's baseline."
+      - "4. Map the rule coverage to ATT&CK and close the gaps the discovery techniques reveal."
+    verify:
+      - "1. Confirm the rule is deployed and firing (or tuned) in the SIEM."
+      - "2. Confirm the investigated activity is explained or contained, and that adjacent discovery steps are covered."
+    references:
+      - "https://github.com/SigmaHQ/sigma"
+      - "https://cwe.mitre.org/data/definitions/778.html"
+
+  - id: deception
+    cwe: CWE-778
+    checks: [m6.deception-listeners]
+    summary: "Treat a honeytoken trigger as high-signal attacker contact and start an incident response."
+    steps:
+      - "1. Confirm nothing legitimate uses the token, then open an incident: a honeytoken is touched only by an actor."
+      - "2. Correlate the trigger's source with authentication, network and endpoint telemetry to find the intrusion path."
+      - "3. Rotate any credential the token resembles and search for its use elsewhere."
+      - "4. Review whether the token's placement gave the attacker a credible decoy and add more coverage."
+    verify:
+      - "1. Confirm the trigger was investigated and the actor's access path is understood or contained."
+      - "2. Confirm the deception coverage is expanded where the actor moved next."
+    references:
+      - "https://cwe.mitre.org/data/definitions/778.html"
+      - "https://attack.mitre.org/techniques/T1078/"
+
+  - id: ad-path
+    cwe: CWE-269
+    checks: [m6.ad-attack-path]
+    summary: "Break the shortest escalation paths to Domain Admin and tier the privileged accounts."
+    steps:
+      - "1. Remove the unnecessary control edges on the shortest path (GenericAll/WriteDacl/ForceChangePassword on privileged groups)."
+      - "2. Tier domain administration so a helpdesk principal cannot control a server-admin group."
+      - "3. Rotate credentials for the principals on the path and enable Protected Users / credential guard for privileged accounts."
+      - "4. Re-run the path analysis after each change and track the number of short paths as a metric."
+    verify:
+      - "1. Re-run the analysis and confirm the short path no longer exists."
+      - "2. Confirm the tiered groups and the removed ACLs are in place."
+    references:
+      - "https://attack.mitre.org/techniques/T1078/002/"
+      - "https://cwe.mitre.org/data/definitions/269.html"
+
+  # ============================================================ Phase 4 · top-120 expansion
+  # ----------------------------------------------------------------- memory safety
+  - id: buffer-overflow
+    cwe: CWE-119
+    summary: "Bound every copy and index against the destination buffer's size, and use the platform's checked memory and string APIs instead of the unbounded C library functions."
+    steps:
+      - "1. Replace strcpy/strcat/sprintf/gets/memcpy call sites with length-aware equivalents (strlcpy, snprintf, memcpy_s) that receive the destination size."
+      - "2. Validate every length and index derived from input against the allocation before the access."
+      - "3. Build with -fstack-protector-strong and -D_FORTIFY_SOURCE=2, and run the tests under AddressSanitizer."
+      - "4. Fuzz the parsing entry points that consume untrusted data and treat sanitizer findings as build failures."
+    verify:
+      - "1. Re-run the sanitizer and fuzzer corpus; no out-of-bounds access may be reported."
+      - "2. Confirm the affected call sites no longer use unbounded copy functions."
+    references:
+      - "https://cwe.mitre.org/data/definitions/119.html"
+      - "https://owasp.org/www-community/vulnerabilities/Buffer_Overflow"
+
+  - id: stack-buffer-overflow
+    cwe: CWE-121
+    summary: "Size stack buffers from validated bounds, use bounded copy routines, and enable stack protection and AddressSanitizer in the build."
+    steps:
+      - "1. Replace fixed stack arrays that receive variable-length input with heap allocations sized to the validated length, or reject input above the fixed capacity."
+      - "2. Use snprintf/strlcpy with sizeof(destination) rather than strcpy/sprintf."
+      - "3. Compile with -fstack-protector-strong and run the test suite under AddressSanitizer."
+    verify:
+      - "1. Re-run the overflow reproducer under ASan; it must exit cleanly."
+      - "2. Confirm every copy site passes the destination size."
+    references:
+      - "https://cwe.mitre.org/data/definitions/121.html"
+      - "https://owasp.org/www-community/vulnerabilities/Buffer_Overflow"
+
+  - id: heap-buffer-overflow
+    cwe: CWE-122
+    summary: "Allocate from the validated length and check every offset before reading or writing a heap buffer."
+    steps:
+      - "1. Compute allocation sizes with overflow-checked arithmetic (calloc, reallocarray, checked size_t helpers)."
+      - "2. Validate offset and length against the allocation before each access; reject the record rather than truncating silently."
+      - "3. Run the parser under ASan/Valgrind and add the reproducer to the regression corpus."
+    verify:
+      - "1. Re-run the reproducer under ASan; no heap-buffer-overflow may be reported."
+      - "2. Confirm allocation sizes derive from validated input with overflow checks."
+    references:
+      - "https://cwe.mitre.org/data/definitions/122.html"
+      - "https://owasp.org/www-community/vulnerabilities/Buffer_Overflow"
+
+  - id: out-of-bounds-read
+    cwe: CWE-125
+    summary: "Validate every index and length before a read and return an error instead of reading past the end of the buffer."
+    steps:
+      - "1. Check offset plus length against the buffer size with overflow-safe arithmetic before the read."
+      - "2. Treat a short or malformed record as an error; never read a fixed header length without confirming the bytes are present."
+      - "3. Run the parser under ASan/MSan and fuzz the framing code."
+    verify:
+      - "1. Re-run the malformed-input corpus; no out-of-bounds read may be reported."
+      - "2. Confirm bounds checks precede every buffer read."
+    references:
+      - "https://cwe.mitre.org/data/definitions/125.html"
+      - "https://owasp.org/www-community/vulnerabilities/Buffer_Overflow"
+
+  - id: integer-overflow
+    cwe: CWE-190
+    summary: "Use checked arithmetic for sizes, offsets and counters derived from input, and reject values that cannot be represented."
+    steps:
+      - "1. Replace raw multiplication and addition on sizes with checked helpers (__builtin_mul_overflow, checked_add, BigInteger) that fail closed."
+      - "2. Validate numeric input against the destination type's range before conversion."
+      - "3. Enable the undefined-behaviour sanitizer's integer checks in CI."
+    verify:
+      - "1. Re-run the boundary-value tests; overflow must be rejected, not wrapped."
+      - "2. Confirm size computations use checked arithmetic."
+    references:
+      - "https://cwe.mitre.org/data/definitions/190.html"
+      - "https://owasp.org/www-community/vulnerabilities/Integer_overflow"
+
+  - id: uncontrolled-resource-consumption
+    cwe: CWE-400
+    summary: "Bound the work a single request can trigger and enforce timeouts, quotas and size limits at every layer."
+    steps:
+      - "1. Cap request body size, page size, upload size, decompression ratio and query complexity before doing the work."
+      - "2. Apply server, proxy and database timeouts, and abort work that exceeds its budget."
+      - "3. Rate-limit per principal and alert on resource spikes."
+    verify:
+      - "1. Re-send the oversized or complex request; it must be rejected before allocation."
+      - "2. Confirm the limits are enforced at the edge and in the application."
+    references:
+      - "https://cwe.mitre.org/data/definitions/400.html"
+      - "https://owasp.org/www-community/attacks/Denial_of_Service"
+
+  - id: use-after-free
+    cwe: CWE-416
+    summary: "Tie object lifetime to a single owner and clear or invalidate pointers when the object is freed."
+    steps:
+      - "1. Replace manual free and reference patterns with smart pointers or an explicit ownership model, and null pointers after release."
+      - "2. Audit the free path for callbacks, cached pointers and error branches that keep using the object."
+      - "3. Run the test suite under AddressSanitizer and exercise allocation-failure paths with fault injection."
+    verify:
+      - "1. Re-run the reproducer under ASan; no use-after-free may be reported."
+      - "2. Confirm every pointer to a freed object is invalidated."
+    references:
+      - "https://cwe.mitre.org/data/definitions/416.html"
+      - "https://owasp.org/www-community/vulnerabilities/Use_after_free"
+
+  - id: null-pointer-dereference
+    cwe: CWE-476
+    summary: "Check every pointer that can legitimately be null before dereferencing it and fail with a defined error."
+    steps:
+      - "1. Check allocation, lookup and parse results for null and return an error rather than continuing."
+      - "2. Make nullable returns explicit in the API and annotate them for the static analyzer."
+      - "3. Enable the sanitizer null checks and treat the warnings as defects."
+    verify:
+      - "1. Re-run the failure-injection tests; the null path must return an error, not crash."
+      - "2. Confirm the static analyzer reports no unchecked nullable dereference."
+    references:
+      - "https://cwe.mitre.org/data/definitions/476.html"
+      - "https://owasp.org/www-community/vulnerabilities/Null_Dereference"
+
+  - id: uncontrolled-recursion
+    cwe: CWE-674
+    summary: "Bound recursion depth and convert unbounded recursive descent into an explicit stack with a limit."
+    steps:
+      - "1. Add a depth counter to recursive parsers and reject input beyond a documented maximum."
+      - "2. Prefer an iterative algorithm with an explicit stack and size cap for deeply nested formats."
+      - "3. Test with adversarial nesting (deep JSON/XML) and confirm a clean error."
+    verify:
+      - "1. Re-send the deeply nested document; it must be rejected without exhausting the stack."
+      - "2. Confirm the depth limit is enforced in every recursive entry point."
+    references:
+      - "https://cwe.mitre.org/data/definitions/674.html"
+      - "https://owasp.org/www-community/attacks/Denial_of_Service"
+
+  - id: out-of-bounds-write
+    cwe: CWE-787
+    summary: "Check the destination capacity before every write and use bounded copy APIs sized from the allocation."
+    steps:
+      - "1. Validate offset plus length against the destination allocation before writing."
+      - "2. Replace pointer-arithmetic loops with bounded copies that take the destination size."
+      - "3. Compile with _FORTIFY_SOURCE and run the fuzzer under AddressSanitizer."
+    verify:
+      - "1. Re-run the reproducer under ASan; no out-of-bounds write may be reported."
+      - "2. Confirm every write path has a capacity check."
+    references:
+      - "https://cwe.mitre.org/data/definitions/787.html"
+      - "https://owasp.org/www-community/vulnerabilities/Buffer_Overflow"
+
+  - id: type-confusion
+    cwe: CWE-843
+    summary: "Make the type check and the use operate on the same object, and never cast untrusted data to a concrete type without a check."
+    steps:
+      - "1. Replace unchecked downcasts with checked casts (dynamic_cast, instanceof, tagged unions) and reject mismatches."
+      - "2. Do not deserialize attacker-controlled type tags into arbitrary classes; use a closed allowlist."
+      - "3. Enable the runtime's control-flow-integrity or vptr sanitizer where available."
+    verify:
+      - "1. Re-run the crafted-object probe; the mismatch must be rejected."
+      - "2. Confirm every cast site has a preceding type check."
+    references:
+      - "https://cwe.mitre.org/data/definitions/843.html"
+      - "https://owasp.org/www-community/vulnerabilities/Type_Confusion"
+
+  # ----------------------------------------------------------------- broader injection classes
+  - id: improper-input-validation
+    cwe: CWE-20
+    summary: "Validate every input against a positive allowlist at the boundary and reject anything the endpoint does not explicitly accept."
+    steps:
+      - "1. Define the expected type, length, format and range for each field and enforce it server-side before use."
+      - "2. Prefer allowlists over denylists, and canonicalise (Unicode, URL decoding) before validating."
+      - "3. Return a generic 400 on failure and log the rejection for detection."
+    verify:
+      - "1. Re-send the malformed and boundary inputs; each must be rejected."
+      - "2. Confirm validation runs server-side, not only in the client."
+    references:
+      - "https://cwe.mitre.org/data/definitions/20.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
+
+  - id: command-special-elements
+    cwe: CWE-77
+    summary: "Never pass input into a command string; use argument arrays or library APIs and allowlist the accepted values."
+    steps:
+      - "1. Replace string-concatenated commands with exec-style argument arrays (no shell) or direct library calls."
+      - "2. Allowlist the accepted values (addresses, enums, identifiers) before they reach the command."
+      - "3. Run the service unprivileged and block outbound access from it."
+    verify:
+      - "1. Re-send the separator and metacharacter payload; it must be treated as data."
+      - "2. Confirm no shell interpreter is involved in the call path."
+    references:
+      - "https://cwe.mitre.org/data/definitions/77.html"
+      - "https://owasp.org/www-community/attacks/Command_Injection"
+
+  - id: code-injection
+    cwe: CWE-94
+    summary: "Never evaluate input as code; map input to a fixed set of operations and keep dynamic evaluation out of request paths."
+    steps:
+      - "1. Remove eval/exec/include of user-controlled strings and replace them with a lookup table of permitted operations."
+      - "2. Sandbox any remaining interpreter with no filesystem, network or process access."
+      - "3. Validate and canonicalise input before it reaches the interpreter."
+    verify:
+      - "1. Re-send the code payload; it must not execute."
+      - "2. Confirm no request path reaches eval/exec with user data."
+    references:
+      - "https://cwe.mitre.org/data/definitions/94.html"
+      - "https://owasp.org/www-community/attacks/Code_Injection"
+
+  - id: php-file-inclusion
+    cwe: CWE-98
+    summary: "Do not build include or require paths from request data; map input to a fixed allowlist of files."
+    steps:
+      - "1. Replace dynamic include/require paths with a hardcoded map from a validated key to a file."
+      - "2. Disable allow_url_include and allow_url_fopen where they are not required."
+      - "3. Keep included files outside the upload directory and validate the resolved path against a base directory."
+    verify:
+      - "1. Re-send the traversal and remote-include payloads; both must be rejected."
+      - "2. Confirm include paths are constants or allowlisted values."
+    references:
+      - "https://cwe.mitre.org/data/definitions/98.html"
+      - "https://owasp.org/www-community/vulnerabilities/File_Inclusion"
+
+  - id: incomplete-denylist
+    cwe: CWE-184
+    summary: "Replace denylist filtering with an allowlist of accepted values, because a denylist will always miss a representation."
+    steps:
+      - "1. Identify the denylist and enumerate the accepted inputs instead; reject everything else."
+      - "2. Canonicalise and decode input before matching so encoded variants cannot bypass the filter."
+      - "3. Add regression cases for the bypasses the finding demonstrated."
+    verify:
+      - "1. Re-send the bypass variants; each must be rejected."
+      - "2. Confirm the check is an allowlist, not a list of forbidden strings."
+    references:
+      - "https://cwe.mitre.org/data/definitions/184.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
+
+  - id: unsafe-reflection
+    cwe: CWE-470
+    summary: "Never reflect user-controlled names into classes or methods; resolve through a fixed allowlist of permitted targets."
+    steps:
+      - "1. Map the request value to a fixed set of permitted classes and methods and reject unknown values."
+      - "2. Validate the resolved member against the allowlist before invocation and check argument types."
+      - "3. Restrict the permissions of the code that performs reflection."
+    verify:
+      - "1. Re-send a class or method name outside the allowlist; it must be rejected."
+      - "2. Confirm no reflection path uses the raw request value."
+    references:
+      - "https://cwe.mitre.org/data/definitions/470.html"
+      - "https://owasp.org/www-community/attacks/Code_Injection"
+
+  - id: assumed-immutable-data
+    cwe: CWE-471
+    summary: "Re-validate assumed-immutable data (hidden fields, headers, cached values) on every use instead of trusting the client copy."
+    steps:
+      - "1. Treat hidden form fields, cookies and headers as untrusted and re-check them server-side against authoritative state."
+      - "2. Recompute derived values (prices, roles, identifiers) rather than accepting a submitted copy."
+      - "3. Add integrity protection (signature or HMAC) where a value must round-trip through the client."
+    verify:
+      - "1. Re-send a modified assumed-immutable value; it must be rejected or ignored."
+      - "2. Confirm the server never uses a client-supplied copy as authoritative."
+    references:
+      - "https://cwe.mitre.org/data/definitions/471.html"
+      - "https://owasp.org/www-community/vulnerabilities/Web_Parameter_Tampering"
+
+  - id: externally-controlled-resource-reference
+    cwe: CWE-610
+    summary: "Resolve external references through an allowlist and never let a request name an arbitrary file, URL or resource."
+    steps:
+      - "1. Map the request parameter to a server-side resource identifier rather than using it as a path, URL or name."
+      - "2. Canonicalise and validate against the permitted scheme, host or directory before resolving."
+      - "3. Run the service with least privilege so a resolved reference reaches nothing sensitive."
+    verify:
+      - "1. Re-send references to internal or foreign resources; they must be refused."
+      - "2. Confirm resolution uses an allowlist, not the raw input."
+    references:
+      - "https://cwe.mitre.org/data/definitions/610.html"
+      - "https://owasp.org/www-community/attacks/Path_Traversal"
+
+  - id: xpath-injection
+    cwe: CWE-643
+    summary: "Parameterise XPath queries or escape values with the library's API, and never concatenate input into the expression."
+    steps:
+      - "1. Use XPath variables or precompiled expressions with bound values instead of string concatenation."
+      - "2. If the library has no binding support, escape both quote characters and validate against a strict allowlist."
+      - "3. Restrict the query account to read-only access on the required document."
+    verify:
+      - "1. Re-send the quote and boolean payload; it must be treated as a literal value."
+      - "2. Confirm the query path uses variables or escaping."
+    references:
+      - "https://cwe.mitre.org/data/definitions/643.html"
+      - "https://owasp.org/www-community/attacks/XPATH_Injection"
+
+  - id: expression-language-injection
+    cwe: CWE-917
+    summary: "Do not evaluate user input as an expression; bind it as data and disable dangerous expression features."
+    steps:
+      - "1. Pass user input as a variable into the expression engine rather than concatenating it into the expression."
+      - "2. Restrict the engine's class resolver and function set to the minimum the feature needs."
+      - "3. Reject expression delimiters and type-coercion attempts in free-text fields."
+    verify:
+      - "1. Re-send the arithmetic or bean payload; it must be reflected literally."
+      - "2. Confirm the engine runs with a restricted resolver."
+    references:
+      - "https://cwe.mitre.org/data/definitions/917.html"
+      - "https://portswigger.net/web-security/server-side-template-injection"
+
+  - id: data-query-logic-injection
+    cwe: CWE-943
+    summary: "Build queries with parameterised APIs for every data store, including NoSQL and ORM query languages, and reject operator objects from clients."
+    steps:
+      - "1. Replace string-built filters with the data store's parameterised query API."
+      - "2. Reject request bodies whose values are objects where a scalar is expected (for example $ne or $gt operators)."
+      - "3. Apply least privilege to the query account and validate field names against an allowlist."
+    verify:
+      - "1. Re-send the operator-injection body; it must be rejected or treated as a literal."
+      - "2. Confirm no query is assembled from string concatenation."
+    references:
+      - "https://cwe.mitre.org/data/definitions/943.html"
+      - "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/05-Testing_for_SQL_Injection"
+
+  - id: csv-formula-injection
+    cwe: CWE-1236
+    summary: "Neutralise formula-leading characters in exported cells and quote every field in generated spreadsheets."
+    steps:
+      - "1. Prefix cells beginning with equals, plus, minus, at-sign, tab or carriage return with a single quote or a space."
+      - "2. Quote all fields and use a library that emits RFC 4180 output rather than string concatenation."
+      - "3. Warn users before opening exports from untrusted sources."
+    verify:
+      - "1. Export a record whose field starts with an equals sign; the generated cell must be inert text."
+      - "2. Confirm the export library quotes and escapes every field."
+    references:
+      - "https://cwe.mitre.org/data/definitions/1236.html"
+      - "https://owasp.org/www-community/attacks/CSV_Injection"
+
+  - id: dynamically-managed-code-resources
+    cwe: CWE-913
+    summary: "Remove runtime code generation from request paths and allowlist the classes, templates and modules that may be loaded."
+    steps:
+      - "1. Replace dynamic class loading or template compilation driven by input with a fixed registry of permitted implementations."
+      - "2. Validate any remaining dynamic identifier against the allowlist before loading."
+      - "3. Sandbox the runtime that hosts dynamic code and log every load."
+    verify:
+      - "1. Re-send a name outside the registry; it must be refused."
+      - "2. Confirm no request-controlled string reaches a class loader or eval."
+    references:
+      - "https://cwe.mitre.org/data/definitions/913.html"
+      - "https://owasp.org/www-community/attacks/Code_Injection"
+
+  # ----------------------------------------------------------------- authentication and session
+  - id: hardcoded-password
+    cwe: CWE-259
+    summary: "Remove the hardcoded password from code and configuration, rotate it, and load the replacement from a secret store."
+    steps:
+      - "1. Rotate the password everywhere it is used and revoke the old value."
+      - "2. Replace the literal with a runtime secret reference injected from a secret manager, never committed."
+      - "3. Purge the value from the repository history and add a secret scanner to the pipeline."
+    verify:
+      - "1. Search the tree and history for the value; it must be absent."
+      - "2. Confirm the application reads the credential from the secret store at runtime."
+    references:
+      - "https://cwe.mitre.org/data/definitions/259.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
+
+  - id: incorrect-default-permissions
+    cwe: CWE-276
+    summary: "Create files and resources with the minimum permissions they need and never rely on a permissive default."
+    steps:
+      - "1. Set an explicit restrictive mode or ACL at creation time (0600 for files, 0700 for directories, private bucket ACL)."
+      - "2. Change the process umask or platform default so new objects inherit the restrictive policy."
+      - "3. Audit existing objects and correct their permissions."
+    verify:
+      - "1. Re-create the resource and confirm the resulting mode and ACL are restrictive."
+      - "2. Confirm the default policy is enforced in configuration management."
+    references:
+      - "https://cwe.mitre.org/data/definitions/276.html"
+      - "https://owasp.org/Top10/A01_2021-Broken_Access_Control/"
+
+  - id: permission-preservation
+    cwe: CWE-281
+    summary: "Preserve or deliberately reset permissions when copying, moving or replacing resources instead of letting them fall back to a default."
+    steps:
+      - "1. Copy the source ACL and mode explicitly, or set a documented target policy on the new resource."
+      - "2. Re-apply permissions after atomic replace or rename operations."
+      - "3. Test the copy and move paths and assert the resulting permissions."
+    verify:
+      - "1. Perform the operation and confirm the destination permissions match the intended policy."
+      - "2. Confirm the code path sets permissions explicitly."
+    references:
+      - "https://cwe.mitre.org/data/definitions/281.html"
+      - "https://owasp.org/Top10/A01_2021-Broken_Access_Control/"
+
+  - id: certificate-validation
+    cwe: CWE-295
+    summary: "Enable certificate and hostname verification in every TLS client and pin the trust store rather than disabling checks."
+    steps:
+      - "1. Remove verify=False, trust-all and allow-all-hostname flags from every client."
+      - "2. Load a managed trust store and validate the full chain and hostname."
+      - "3. Add a test that a self-signed or wrong-host certificate is rejected."
+    verify:
+      - "1. Point the client at a self-signed endpoint; the connection must fail."
+      - "2. Confirm no code path disables verification."
+    references:
+      - "https://cwe.mitre.org/data/definitions/295.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html"
+
+  - id: certificate-hostname-validation
+    cwe: CWE-297
+    summary: "Validate the certificate's subject against the host being connected to and reject wildcard or SAN mismatches."
+    steps:
+      - "1. Ensure the TLS library's hostname check is enabled and receives the intended hostname, not an IP or an empty value."
+      - "2. Reject certificates whose SAN does not cover the host; do not accept CN-only fallbacks."
+      - "3. Test with a valid certificate issued for a different host."
+    verify:
+      - "1. Connect to a host with a mismatched certificate; it must be refused."
+      - "2. Confirm the client passes the correct hostname to the verifier."
+    references:
+      - "https://cwe.mitre.org/data/definitions/297.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html"
+
+  - id: origin-validation
+    cwe: CWE-346
+    summary: "Validate the origin of cross-origin messages and postMessage senders against an explicit allowlist."
+    steps:
+      - "1. Check event.origin against an exact allowlist before processing a message."
+      - "2. Specify the target origin in postMessage instead of a wildcard."
+      - "3. Do not trust document.referrer or client-supplied origin headers for security decisions."
+    verify:
+      - "1. Send a message from a foreign origin; it must be ignored."
+      - "2. Confirm postMessage calls name a specific origin."
+    references:
+      - "https://cwe.mitre.org/data/definitions/346.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html"
+
+  - id: personal-information-exposure
+    cwe: CWE-359
+    summary: "Minimise the personal data returned and stored, and redact or mask it wherever the full value is not required."
+    steps:
+      - "1. Remove unnecessary personal fields from API responses, logs and exports."
+      - "2. Mask or tokenise identifiers (email, phone, national ID) when the full value is not needed."
+      - "3. Apply retention limits and access controls to the data store."
+    verify:
+      - "1. Re-request the response and confirm the sensitive fields are absent or masked."
+      - "2. Confirm access to the remaining fields is authorised and logged."
+    references:
+      - "https://cwe.mitre.org/data/definitions/359.html"
+      - "https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure"
+
+  - id: session-fixation
+    cwe: CWE-384
+    summary: "Issue a new session identifier at authentication and never accept a session ID supplied before login."
+    steps:
+      - "1. Regenerate the session ID on successful login and on privilege change."
+      - "2. Reject or ignore client-supplied session IDs; only accept IDs the server issued after authentication."
+      - "3. Invalidate the old session and set the cookie with Secure, HttpOnly and SameSite."
+    verify:
+      - "1. Log in with a pre-set session ID and confirm a new ID is issued."
+      - "2. Confirm the pre-authentication ID is no longer valid."
+    references:
+      - "https://cwe.mitre.org/data/definitions/384.html"
+      - "https://owasp.org/www-community/attacks/Session_fixation"
+
+  - id: insufficiently-protected-credentials
+    cwe: CWE-522
+    summary: "Store credentials only as salted, slow hashes and protect any credential material in transit and at rest."
+    steps:
+      - "1. Hash passwords with Argon2id, bcrypt or scrypt and a per-user salt; never store reversible or fast hashes."
+      - "2. Encrypt credential material at rest and restrict access to the secret store."
+      - "3. Require TLS for every authentication exchange."
+    verify:
+      - "1. Inspect the store and confirm passwords are slow-hashed with unique salts."
+      - "2. Confirm the credential store is encrypted and access-controlled."
+    references:
+      - "https://cwe.mitre.org/data/definitions/522.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
+
+  - id: unprotected-credential-transport
+    cwe: CWE-523
+    summary: "Send credentials only over TLS and never in URLs, query strings or plaintext headers."
+    steps:
+      - "1. Require HTTPS on every authentication and token endpoint, and redirect plaintext requests."
+      - "2. Move credentials out of query strings into the request body or headers."
+      - "3. Enable HSTS and set Secure on session cookies."
+    verify:
+      - "1. Attempt the credential exchange over HTTP; it must redirect or fail."
+      - "2. Confirm no credential appears in a URL or access log."
+    references:
+      - "https://cwe.mitre.org/data/definitions/523.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html"
+
+  - id: sensitive-data-in-query-string
+    cwe: CWE-598
+    summary: "Move sensitive parameters out of GET query strings into the request body or headers so they do not land in logs and history."
+    steps:
+      - "1. Change the endpoint to POST, or use a header, for tokens, passwords and personal data."
+      - "2. Redact query strings in access logs and disable caching for authenticated responses."
+      - "3. Keep session and reset tokens out of URLs; use a short-lived server-side exchange."
+    verify:
+      - "1. Confirm the sensitive value no longer appears in the request line or logs."
+      - "2. Confirm the endpoint rejects the sensitive parameter in the query string."
+    references:
+      - "https://cwe.mitre.org/data/definitions/598.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"
+
+  - id: insufficient-session-expiration
+    cwe: CWE-613
+    summary: "Expire idle and absolute sessions, and invalidate server-side state on logout and password change."
+    steps:
+      - "1. Set an idle timeout and an absolute lifetime appropriate to the application's risk."
+      - "2. Invalidate the server-side session on logout, password change and privilege change."
+      - "3. Rotate the session cookie and clear it client-side on logout."
+    verify:
+      - "1. Wait past the idle timeout and confirm the session is rejected."
+      - "2. Confirm logout invalidates the session server-side, not only the cookie."
+    references:
+      - "https://cwe.mitre.org/data/definitions/613.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"
+
+  - id: unverified-password-change
+    cwe: CWE-620
+    summary: "Require the current password or a fresh re-authentication before allowing a password or email change."
+    steps:
+      - "1. Prompt for the current password and verify it server-side before applying the change."
+      - "2. Invalidate other sessions and notify the account owner after the change."
+      - "3. Apply the same rule to MFA and recovery-factor changes."
+    verify:
+      - "1. Attempt the change without the current password; it must be rejected."
+      - "2. Confirm other sessions are invalidated and the owner is notified."
+    references:
+      - "https://cwe.mitre.org/data/definitions/620.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html"
+
+  - id: weak-password-recovery
+    cwe: CWE-640
+    summary: "Use a single-use, high-entropy, time-limited reset token delivered out of band and never reveal account existence."
+    steps:
+      - "1. Generate a random token, store only its hash, and expire it after a short window or one use."
+      - "2. Deliver it to the verified address or device; do not include the password or account details in the message."
+      - "3. Return an identical response whether or not the account exists, and rate-limit reset requests."
+    verify:
+      - "1. Reuse a reset token; it must be refused."
+      - "2. Confirm the reset response does not disclose account existence."
+    references:
+      - "https://cwe.mitre.org/data/definitions/640.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html"
+
+  - id: weak-authentication
+    cwe: CWE-1390
+    summary: "Require strong, phishing-resistant authentication for privileged accounts and verify it on every entry point."
+    steps:
+      - "1. Enforce MFA, preferring WebAuthn or passkeys, for administrative and remote access."
+      - "2. Centralise authentication in one gateway or identity provider so every route uses the same policy."
+      - "3. Remove alternate paths (legacy protocols, local accounts, static API keys) that bypass the policy."
+    verify:
+      - "1. Attempt the protected access without the second factor; it must be refused."
+      - "2. Confirm every entry point delegates to the same authentication policy."
+    references:
+      - "https://cwe.mitre.org/data/definitions/1390.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html"
+
+  - id: weak-credentials
+    cwe: CWE-1391
+    summary: "Reject weak, default and breached credentials at set time and at authentication."
+    steps:
+      - "1. Check new passwords against a breached-password list and a minimum length of 12 or more, without composition rules."
+      - "2. Disable or rotate vendor-default accounts and credentials."
+      - "3. Add lockout and backoff, and offer MFA for the accounts that remain."
+    verify:
+      - "1. Attempt to set a known-breached or default password; it must be rejected."
+      - "2. Confirm default accounts are removed or rotated."
+    references:
+      - "https://cwe.mitre.org/data/definitions/1391.html"
+      - "https://pages.nist.gov/800-63-3/sp800-63b.html"
+
+  # ----------------------------------------------------------------- cryptography
+  - id: weak-hash
+    cwe: CWE-328
+    summary: "Replace MD5 and SHA-1 with SHA-256 or stronger for integrity, and with Argon2id, bcrypt or scrypt for passwords."
+    steps:
+      - "1. Inventory every use of MD5/SHA-1 and classify it (password, integrity, signature)."
+      - "2. Migrate password storage to a slow salted KDF and integrity uses to SHA-256 or stronger."
+      - "3. Reissue signatures and certificates that used the weak hash."
+    verify:
+      - "1. Re-scan the codebase and confirm no security-relevant MD5/SHA-1 use remains."
+      - "2. Confirm stored password hashes use a modern KDF."
+    references:
+      - "https://cwe.mitre.org/data/definitions/328.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html"
+
+  - id: insufficient-randomness
+    cwe: CWE-330
+    summary: "Use a cryptographically secure random source for tokens, keys and identifiers, seeded by the operating system."
+    steps:
+      - "1. Replace rand, Math.random and java.util.Random with secrets, os.urandom, SecureRandom or crypto.randomBytes."
+      - "2. Generate tokens with at least 128 bits of entropy and encode them safely."
+      - "3. Never seed a PRNG with time or another predictable value."
+    verify:
+      - "1. Confirm every security token comes from the CSPRNG API."
+      - "2. Confirm the token length provides at least 128 bits of entropy."
+    references:
+      - "https://cwe.mitre.org/data/definitions/330.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html"
+
+  - id: weak-prng
+    cwe: CWE-338
+    summary: "Replace non-cryptographic PRNGs in security contexts with a cryptographically secure generator."
+    steps:
+      - "1. Locate PRNG use in session IDs, tokens, salts and keys."
+      - "2. Swap to the platform CSPRNG and remove custom seeding."
+      - "3. Add a lint rule that bans the weak API in security-sensitive modules."
+    verify:
+      - "1. Confirm no weak PRNG call remains on a security path."
+      - "2. Confirm generated values meet the expected entropy and length."
+    references:
+      - "https://cwe.mitre.org/data/definitions/338.html"
+      - "https://owasp.org/www-community/vulnerabilities/Insufficient_Entropy"
+
+  - id: unsalted-hash
+    cwe: CWE-759
+    summary: "Add a unique per-user salt to every password hash and migrate existing unsalted hashes on next login."
+    steps:
+      - "1. Generate a random salt per password and store it alongside the hash."
+      - "2. Rehash on successful login for accounts still on the legacy scheme."
+      - "3. Use a slow KDF (Argon2id or bcrypt) rather than a bare hash."
+    verify:
+      - "1. Confirm two identical passwords produce different stored hashes."
+      - "2. Confirm no stored hash lacks a salt."
+    references:
+      - "https://cwe.mitre.org/data/definitions/759.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
+
+  - id: predictable-salt
+    cwe: CWE-760
+    summary: "Generate salts from a CSPRNG per user instead of constants, usernames or other predictable values."
+    steps:
+      - "1. Replace constant or derived salts with random 16-byte or longer salts from the CSPRNG."
+      - "2. Store the salt with the hash and rehash accounts that use the old scheme."
+      - "3. Record the KDF parameters so hashes remain verifiable."
+    verify:
+      - "1. Confirm salts are unique and random across accounts."
+      - "2. Confirm the legacy salt scheme is no longer produced."
+    references:
+      - "https://cwe.mitre.org/data/definitions/760.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
+
+  - id: rsa-without-oaep
+    cwe: CWE-780
+    summary: "Use RSA-OAEP, or a modern hybrid scheme, instead of PKCS#1 v1.5 encryption."
+    steps:
+      - "1. Replace RSA/ECB/PKCS1Padding with RSA-OAEP using SHA-256 in every encryption call."
+      - "2. Prefer hybrid encryption (RSA-OAEP wrapping an AES-GCM key) for payloads."
+      - "3. Re-encrypt or rotate data protected with the old scheme."
+    verify:
+      - "1. Confirm the cipher transformation names OAEP."
+      - "2. Confirm legacy PKCS#1 v1.5 decryption paths are removed."
+    references:
+      - "https://cwe.mitre.org/data/definitions/780.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html"
+
+  # ----------------------------------------------------------------- access control
+  - id: forced-browsing
+    cwe: CWE-425
+    summary: "Authorise every request server-side; do not rely on hidden links, client routing or unlinked URLs for protection."
+    steps:
+      - "1. Enforce authentication and authorization in middleware that covers every route, including static and administrative paths."
+      - "2. Remove or gate resources that are only hidden (backup files, admin pages, debug routes)."
+      - "3. Add a test that requests each sensitive path anonymously and expects a refusal."
+    verify:
+      - "1. Request the unlinked path without credentials; it must return 401, 403 or 404."
+      - "2. Confirm the route is covered by the authorization middleware."
+    references:
+      - "https://cwe.mitre.org/data/definitions/425.html"
+      - "https://owasp.org/Top10/A01_2021-Broken_Access_Control/"
+
+  - id: unintended-proxy
+    cwe: CWE-441
+    summary: "Do not let a request choose the upstream target; resolve destinations from server-side configuration and allowlist egress."
+    steps:
+      - "1. Replace user-supplied proxy or host parameters with server-side identifiers."
+      - "2. Validate and pin the resolved destination against an allowlist before connecting."
+      - "3. Block egress to internal ranges and metadata addresses."
+    verify:
+      - "1. Re-send a request naming an internal or foreign host; it must be refused."
+      - "2. Confirm the destination comes from configuration, not the request."
+    references:
+      - "https://cwe.mitre.org/data/definitions/441.html"
+      - "https://owasp.org/www-community/attacks/Server_Side_Request_Forgery"
+
+  - id: files-accessible-externally
+    cwe: CWE-552
+    summary: "Keep sensitive files outside the served tree and deny access at the web server for anything that must remain."
+    steps:
+      - "1. Move configuration, backups, version-control metadata and uploads outside the document root."
+      - "2. Add deny rules for dot-files and non-public extensions at the edge."
+      - "3. Review the exposed files and rotate any credential they contained."
+    verify:
+      - "1. Request the sensitive paths; they must return 404 or 403."
+      - "2. Confirm the deployed tree contains only public assets."
+    references:
+      - "https://cwe.mitre.org/data/definitions/552.html"
+      - "https://owasp.org/Top10/A01_2021-Broken_Access_Control/"
+
+  - id: authorization-bypass-user-controlled-key
+    cwe: CWE-566
+    summary: "Do not use a user-supplied key to select a database record; bind the record to the authenticated identity."
+    steps:
+      - "1. Derive the record key from the authenticated session, not from the request parameter."
+      - "2. If a client key is unavoidable, verify ownership before the query and use an unguessable identifier."
+      - "3. Add an authorization test that a second user cannot read or modify the record."
+    verify:
+      - "1. Re-send another user's key; it must be refused."
+      - "2. Confirm the query includes the owner or tenant predicate."
+    references:
+      - "https://cwe.mitre.org/data/definitions/566.html"
+      - "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/"
+
+  - id: resource-exposure-wrong-sphere
+    cwe: CWE-668
+    summary: "Keep resources in the sphere that owns them and expose only the operations and data a caller needs."
+    steps:
+      - "1. Separate trust zones (public, application, management) by network and identity boundary."
+      - "2. Expose resources through an API that enforces authorization rather than direct access."
+      - "3. Audit cross-zone access and remove unnecessary routes."
+    verify:
+      - "1. Confirm the resource is unreachable from outside its intended sphere."
+      - "2. Confirm the exposed API enforces authorization."
+    references:
+      - "https://cwe.mitre.org/data/definitions/668.html"
+      - "https://owasp.org/Top10/A01_2021-Broken_Access_Control/"
+
+  - id: missing-authorization
+    cwe: CWE-862
+    summary: "Enforce authorization on every request after authentication; authentication alone is not access control."
+    steps:
+      - "1. Add a server-side authorization check to every route and data-access function, defaulting to deny."
+      - "2. Centralise the policy so new routes cannot be added without a check."
+      - "3. Add automated tests that call each route as a lower-privileged identity."
+    verify:
+      - "1. Re-request the function as an unprivileged identity; it must be refused."
+      - "2. Confirm the authorization middleware covers the route."
+    references:
+      - "https://cwe.mitre.org/data/definitions/862.html"
+      - "https://owasp.org/Top10/A01_2021-Broken_Access_Control/"
+
+  - id: incorrect-authorization
+    cwe: CWE-863
+    summary: "Check the specific permission the operation requires, on the specific object, for the authenticated principal."
+    steps:
+      - "1. Replace role-name-only checks with permission checks for the operation and object."
+      - "2. Enforce ownership and tenant scoping in the data layer."
+      - "3. Deny by default and log authorization failures."
+    verify:
+      - "1. Re-run the cross-role and cross-tenant probes; each must be refused."
+      - "2. Confirm the check names the required permission and object scope."
+    references:
+      - "https://cwe.mitre.org/data/definitions/863.html"
+      - "https://owasp.org/Top10/A01_2021-Broken_Access_Control/"
+
+  # ----------------------------------------------------------------- design and concurrency
+  - id: time-of-check-time-of-use
+    cwe: CWE-367
+    summary: "Make the check and the use atomic with a lock, a transaction or an operating-system-level exclusive operation."
+    steps:
+      - "1. Replace check-then-act sequences on shared resources with an atomic operation (O_EXCL, atomic rename, transaction or lock)."
+      - "2. Re-verify the resource after acquiring the lock rather than before it."
+      - "3. Use unique constraints so a concurrent second write fails."
+    verify:
+      - "1. Re-run the concurrent probe; only one operation may succeed."
+      - "2. Confirm the check and use share the same lock or transaction."
+    references:
+      - "https://cwe.mitre.org/data/definitions/367.html"
+      - "https://owasp.org/www-community/vulnerabilities/Time_of_check_to_time_of_use"
+
+  - id: insecure-temporary-file
+    cwe: CWE-377
+    summary: "Create temporary files with an exclusive, unpredictable name in a private directory and delete them promptly."
+    steps:
+      - "1. Use the platform's secure temp-file API (mkstemp, NamedTemporaryFile, Files.createTempFile) in a private directory."
+      - "2. Never use a predictable name or a shared temporary path without an exclusive-create flag."
+      - "3. Delete the file in a finally or RAII block."
+    verify:
+      - "1. Confirm temp files are created with restrictive permissions and random names."
+      - "2. Confirm no predictable temporary path remains in the code."
+    references:
+      - "https://cwe.mitre.org/data/definitions/377.html"
+      - "https://owasp.org/www-community/vulnerabilities/Insecure_Temporary_File"
+
+  - id: ui-misrepresentation
+    cwe: CWE-451
+    summary: "Keep security-relevant UI state truthful and resist framing, overlay and spoofing tricks."
+    steps:
+      - "1. Do not render security indicators (lock, verified, address) in application-controlled chrome."
+      - "2. Send frame-ancestors and X-Frame-Options, and avoid overlays on security dialogs."
+      - "3. Validate the origin of embedded content and warn on look-alike domains."
+    verify:
+      - "1. Confirm the sensitive page cannot be framed or overlaid."
+      - "2. Confirm no security-relevant indicator is application-controlled."
+    references:
+      - "https://cwe.mitre.org/data/definitions/451.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Clickjacking_Defense_Cheat_Sheet.html"
+
+  - id: assumed-immutable-web-parameter
+    cwe: CWE-472
+    summary: "Re-derive security-relevant values server-side instead of trusting hidden fields, cookies or headers."
+    steps:
+      - "1. Replace hidden-field state with server-side session state."
+      - "2. Recompute prices, roles and flags from authoritative data."
+      - "3. Sign values that must round-trip and verify the signature."
+    verify:
+      - "1. Tamper with the hidden field or header; the operation must be rejected."
+      - "2. Confirm the server does not read the value as authoritative."
+    references:
+      - "https://cwe.mitre.org/data/definitions/472.html"
+      - "https://owasp.org/www-community/vulnerabilities/Web_Parameter_Tampering"
+
+  - id: trust-boundary-violation
+    cwe: CWE-501
+    summary: "Keep trusted and untrusted data in separate stores and never copy request data into a trusted structure without validation."
+    steps:
+      - "1. Separate session and trusted state from request-provided data in code and storage."
+      - "2. Validate and canonicalise before promoting a value across the boundary."
+      - "3. Use typed objects that mark untrusted input explicitly."
+    verify:
+      - "1. Send tainted data and confirm it cannot enter the trusted store unvalidated."
+      - "2. Confirm the boundary is explicit in the data model."
+    references:
+      - "https://cwe.mitre.org/data/definitions/501.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
+
+  - id: client-side-security-enforcement
+    cwe: CWE-602
+    summary: "Enforce every security decision on the server; the client may only improve the experience."
+    steps:
+      - "1. Mirror each client-side check (price, role, limit, validation) with an authoritative server-side check."
+      - "2. Remove secrets and authorization logic from client code."
+      - "3. Test by calling the API directly, bypassing the UI."
+    verify:
+      - "1. Replay the operation directly against the API with tampered values; it must be refused."
+      - "2. Confirm the server enforces the rule independently."
+    references:
+      - "https://cwe.mitre.org/data/definitions/602.html"
+      - "https://owasp.org/Top10/A04_2021-Insecure_Design/"
+
+  - id: untrusted-input-security-decision
+    cwe: CWE-807
+    summary: "Base security decisions on server-controlled state, not on client headers, cookies or hidden fields."
+    steps:
+      - "1. Identify every decision that reads client-controlled data (X-Forwarded-For, role cookie, host header)."
+      - "2. Replace it with authenticated server-side state or a verified token."
+      - "3. Configure the proxy to strip or overwrite the header if it must be used."
+    verify:
+      - "1. Re-send a forged value; the decision must not change."
+      - "2. Confirm the decision reads server-controlled state."
+    references:
+      - "https://cwe.mitre.org/data/definitions/807.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
+
+  - id: workflow-enforcement
+    cwe: CWE-841
+    summary: "Model the workflow as a server-side state machine and reject steps that arrive out of order or too often."
+    steps:
+      - "1. Encode the allowed states and transitions server-side."
+      - "2. Reject requests whose current state does not permit the transition."
+      - "3. Add idempotency keys and per-step rate limits."
+    verify:
+      - "1. Skip or replay a step; it must be rejected."
+      - "2. Confirm the state machine is the only path that advances the flow."
+    references:
+      - "https://cwe.mitre.org/data/definitions/841.html"
+      - "https://owasp.org/www-community/vulnerabilities/Business_logic_vulnerability"
+
+  - id: regex-complexity
+    cwe: CWE-1333
+    summary: "Replace catastrophic-backtracking regular expressions with linear-time patterns or a bounded parser."
+    steps:
+      - "1. Rewrite nested quantifiers and overlapping alternations to be unambiguous, or use a linear-time engine such as RE2."
+      - "2. Bound the input length before matching and add a match timeout."
+      - "3. Add ReDoS test strings to the regression suite."
+    verify:
+      - "1. Run the adversarial input against the pattern; it must complete within the budget."
+      - "2. Confirm the pattern no longer contains nested unbounded quantifiers."
+    references:
+      - "https://cwe.mitre.org/data/definitions/1333.html"
+      - "https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS"
+
+  # ----------------------------------------------------------------- configuration
+  - id: cleartext-sensitive-cookie
+    cwe: CWE-315
+    summary: "Never store sensitive data in a cleartext cookie; keep it server-side or encrypt and sign it."
+    steps:
+      - "1. Move sensitive values out of cookies into server-side session state."
+      - "2. If a cookie must carry data, encrypt it with an AEAD construction and set Secure, HttpOnly and SameSite."
+      - "3. Expire the cookie and rotate the encryption key."
+    verify:
+      - "1. Inspect Set-Cookie; no sensitive value may be readable in cleartext."
+      - "2. Confirm the cookie is encrypted and flagged."
+    references:
+      - "https://cwe.mitre.org/data/definitions/315.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"
+
+  - id: unquoted-search-path
+    cwe: CWE-428
+    summary: "Quote every service path and use fully qualified executable paths so an attacker cannot plant a binary earlier in the search order."
+    steps:
+      - "1. Quote the binary path in service definitions and use absolute paths."
+      - "2. Remove world-writable directories from PATH for services and privileged processes."
+      - "3. Audit scheduled tasks and services for unquoted paths containing spaces."
+    verify:
+      - "1. Re-read the service configuration; every path must be quoted and absolute."
+      - "2. Confirm no privileged process resolves executables from a writable directory."
+    references:
+      - "https://cwe.mitre.org/data/definitions/428.html"
+      - "https://attack.mitre.org/techniques/T1574/009/"
+
+  - id: sensitive-data-in-environment
+    cwe: CWE-526
+    summary: "Keep secrets out of process environment and build metadata, where they leak into crash dumps, logs and child processes."
+    steps:
+      - "1. Inject secrets from a secret manager at runtime through a file or API, not a persistent environment variable."
+      - "2. Scrub environment variables from crash reports and child processes."
+      - "3. Rotate any secret that was exposed in environment dumps."
+    verify:
+      - "1. Inspect the process environment and crash output; no secret may be present."
+      - "2. Confirm the secret is fetched from the store at use time."
+    references:
+      - "https://cwe.mitre.org/data/definitions/526.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
+
+  - id: xml-entity-expansion
+    cwe: CWE-776
+    summary: "Disable DTD and entity expansion in XML parsers and bound document size and depth."
+    steps:
+      - "1. Disable DTDs and external entities, and set expansion limits in every XML parser."
+      - "2. Cap document size, nesting depth and parse time."
+      - "3. Prefer JSON where the format is under your control."
+    verify:
+      - "1. Post the billion-laughs document; it must be rejected quickly."
+      - "2. Confirm DTD processing is disabled."
+    references:
+      - "https://cwe.mitre.org/data/definitions/776.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html"
+
+  # ----------------------------------------------------------------- supply chain
+  - id: untrusted-search-path
+    cwe: CWE-426
+    summary: "Resolve executables and libraries from trusted absolute paths and never from the current directory or a writable PATH entry."
+    steps:
+      - "1. Use absolute paths or a controlled library path for privileged processes."
+      - "2. Remove the current directory and writable directories from PATH and LD_LIBRARY_PATH for services."
+      - "3. Verify the integrity or signature of loaded modules where the platform supports it."
+    verify:
+      - "1. Confirm the process does not load from a writable directory."
+      - "2. Confirm absolute paths are used for executables."
+    references:
+      - "https://cwe.mitre.org/data/definitions/426.html"
+      - "https://attack.mitre.org/techniques/T1574/"
+
+  - id: download-without-integrity-check
+    cwe: CWE-494
+    summary: "Verify a signature or pinned hash before executing or installing downloaded code."
+    steps:
+      - "1. Pin the expected hash or signature and verify it before use."
+      - "2. Fetch over TLS from a trusted source and fail closed on a mismatch."
+      - "3. Record provenance and attestations with the artifact."
+    verify:
+      - "1. Corrupt the artifact and confirm it is rejected."
+      - "2. Confirm the verification step runs in the install and update path."
+    references:
+      - "https://cwe.mitre.org/data/definitions/494.html"
+      - "https://slsa.dev/"
+
+  - id: untrusted-control-sphere-inclusion
+    cwe: CWE-829
+    summary: "Do not include scripts, plugins or dependencies from untrusted sources; vendor and verify them."
+    steps:
+      - "1. Replace third-party includes and CDN scripts with locally vendored, integrity-checked copies, using subresource integrity where unavoidable."
+      - "2. Allowlist the domains and packages the build may fetch from."
+      - "3. Review the included code for provenance and permissions."
+    verify:
+      - "1. Confirm no page loads executable content from an unapproved origin."
+      - "2. Confirm included packages are pinned and verified."
+    references:
+      - "https://cwe.mitre.org/data/definitions/829.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/Third_Party_Javascript_Management_Cheat_Sheet.html"
+
+  - id: crlf-header-injection
+    cwe: CWE-113
+    checks: [m3.crlf-injection]
+    summary: "Never place user input in a response header; strip CR/LF and reject header-splitting input at the framework."
+    steps:
+      - "1. Do not build response headers from request parameters; set cookies and redirects from server-side values only."
+      - "2. If a value must reach a header, reject or canonicalise it so carriage return, line feed and encoded variants (%0d/%0a) cannot survive."
+      - "3. Keep the framework and reverse proxy patched; several header-splitting bugs were fixed in the web server, not the app."
+    verify:
+      - "1. Replay the injected request; the response must not contain the attacker-chosen header or a split Location."
+      - "2. Confirm the parameter no longer appears verbatim in any response header."
+    references:
+      - "https://cwe.mitre.org/data/definitions/113.html"
+      - "https://owasp.org/www-community/attacks/HTTP_Response_Splitting"
+
+  - id: diagnostic-endpoint-exposure
+    cwe: CWE-497
+    checks: [m4.actuator-exposure]
+    summary: "Disable or authenticate management/diagnostic endpoints and never expose them on a public interface."
+    steps:
+      - "1. Disable actuator/diagnostic endpoints that are not needed (Spring Boot `management.endpoints.web.exposure.include`, and the equivalents)."
+      - "2. Bind the management port to an internal interface and require authentication and authorization for what remains."
+      - "3. Remove environment, heap-dump and configuration endpoints from any path reachable anonymously."
+    verify:
+      - "1. Re-request the endpoint anonymously; it must return 401/403/404."
+      - "2. Confirm the management surface is not reachable from the internet-facing listener."
+    references:
+      - "https://cwe.mitre.org/data/definitions/497.html"
+      - "https://docs.spring.io/spring-boot/reference/actuator/endpoints.html"
+
+# ----------------------------------------------------------------- fallback
+default:
+  id: default-generic
+  summary: "Review the finding against the captured evidence, confirm it, and apply the vendor
+    or platform hardening guidance for the affected component."
+  steps:
+    - "1. Reproduce the finding using the captured request and response."
+    - "2. Apply the least-privilege configuration, patch or compensating control that removes the exposure."
+    - "3. Re-scan the asset and confirm the finding no longer reproduces."
+    - "4. Record the change against the scan id so the next report shows it as fixed."
+  references:
+    - "https://owasp.org/www-project-top-ten/"

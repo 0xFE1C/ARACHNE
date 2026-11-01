@@ -1,0 +1,54 @@
+{
+  "description": "Recorded target HTTP responses for the M1 hardening checks (m1.favicon-hash, m1.bucket-hunt, m1.doc-metadata). Bodies are synthetic: favicons are plain-text placeholders (a real binary icon is not retained by the capture pipeline), and the PDF carries an /Info dictionary the check reads. Used by the M1 hardening unit tests.",
+  "responses": [
+    {
+      "method": "GET",
+      "url": "https://example.com/favicon.ico",
+      "status": 200,
+      "headers": {"content-type": "image/x-icon"},
+      "body": "VENDOR-DEFAULT-FAVICON"
+    },
+    {
+      "method": "GET",
+      "url": "https://unlisted.example.com/favicon.ico",
+      "status": 200,
+      "headers": {"content-type": "image/x-icon"},
+      "body": "PLAIN-ICON-NOT-IN-TABLE"
+    },
+    {
+      "method": "GET",
+      "url": "https://example-backup.s3.amazonaws.com/",
+      "status": 200,
+      "headers": {"content-type": "application/xml"},
+      "body": "<?xml version=\"1.0\"?><ListBucketResult><Name>example-backup</Name><Contents><Key>db.sql.gz</Key></Contents></ListBucketResult>"
+    },
+    {
+      "method": "GET",
+      "url": "https://storage.googleapis.com/example-assets/",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "[{\"name\": \"logo.png\", \"size\": \"1024\"}]"
+    },
+    {
+      "method": "GET",
+      "url": "https://example-com.blob.core.windows.net/?comp=list",
+      "status": 200,
+      "headers": {"content-type": "application/xml"},
+      "body": "<?xml version=\"1.0\"?><EnumerationResults><Blobs><Blob><Name>logs.zip</Name></Blob></Blobs></EnumerationResults>"
+    },
+    {
+      "method": "GET",
+      "url": "https://example.com/reports/2024-q1.pdf",
+      "status": 200,
+      "headers": {"content-type": "application/pdf"},
+      "body": "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Info << /Author (internal\\\\jdoe) /Producer (Microsoft Word 2016) /CreationDate (D:20240101120000Z) >> >>\nstartxref\n0\n%%EOF"
+    },
+    {
+      "method": "GET",
+      "url": "https://example.com/index.html",
+      "status": 200,
+      "headers": {"content-type": "text/html; charset=utf-8"},
+      "body": "<!doctype html><html><body>not a document</body></html>"
+    }
+  ]
+}

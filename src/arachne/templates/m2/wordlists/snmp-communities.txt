@@ -1,0 +1,16 @@
+# ARACHNE SNMP community-string catalogue (research ch02#15).
+#
+# Ordered by how often they work in the field. The check tries a bounded prefix of this list
+# and always includes 'public'/'private'.
+public
+private
+community
+cisco
+snmp
+admin
+manager
+monitor
+read
+write
+default
+secret

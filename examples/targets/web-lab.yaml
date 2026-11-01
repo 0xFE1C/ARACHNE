@@ -1,0 +1,52 @@
+# The web-application lab fixture (S6): M3 against a deliberately vulnerable target.
+#
+# This definition points at the Docker compose lab of `docker/docker-compose.yml`
+# (`docker compose --profile lab up`): DVWA on 127.0.0.1:8081, OWASP Juice Shop on
+# 127.0.0.1:3000. Both are published on loopback **only** — a vulnerable-by-design container
+# on a routable interface is an incident, not a fixture.
+#
+# M3's checks are active (they send probes, not just GETs), so running them needs both
+# switches of F-01-09: `--active-checks` on the command line *and* an attestation that
+# authorizes active checks. The attestation below authorizes them for this loopback lab;
+# the command-line opt-in is deliberately left to the operator (`active_checks: false` here),
+# so nobody scans the lab by accident and, more importantly, so the same file is not a
+# template for pointing at something that is not yours. Replace the scope, the attestation and
+# the notes with your own authorization before using this shape against any other target.
+target:
+  name: web-lab
+  targets:
+    - kind: url
+      value: http://127.0.0.1:8081/
+      note: DVWA — the classic PHP/MySQL deliberately vulnerable application
+    - kind: url
+      value: http://127.0.0.1:3000/
+      note: OWASP Juice Shop — the modern SPA target
+  exclusions: []
+  attestation:
+    attested_by: "Lab operator <operator@localhost>"
+    attested_at: "2026-10-01T00:00:00Z"
+    expires_at: "2027-10-01T00:00:00Z"
+    authorization_ref: "LOCAL-LAB-1"
+    scope_statement: >-
+      Authorization to run active web-application checks against the two vulnerable-by-design
+      containers published by this repository's own compose lab on the loopback interface.
+      No other host is in scope, and no data leaving these containers is in scope.
+    allowed_targets:
+      - http://127.0.0.1:8081/
+      - http://127.0.0.1:3000/
+      - 127.0.0.1
+    active_checks_authorized: true
+
+options:
+  engine: heuristic
+  # The per-run opt-in for active checks (F-01-09). Turn it on with `--active-checks` or flip
+  # this flag once you have confirmed the attestation above matches what you are scanning.
+  active_checks: false
+  modules:
+    # M3 only: this fixture is about the web-application families. M1/M2 need no third-party
+    # access but would spend their own requests on the same two containers.
+    enabled: [M3]
+    disabled: []
+  notes: >-
+    Web-application lab (DVWA + Juice Shop). Run it with `--active-checks`, and prefix the
+    command with `ARACHNE_ALLOW_LOOPBACK=true` because the targets are on 127.0.0.1.

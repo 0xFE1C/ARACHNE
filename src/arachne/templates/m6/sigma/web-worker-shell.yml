@@ -1,0 +1,35 @@
+title: Web worker spawning a shell (anomalous worker traffic)
+id: 8f2c1a10-0e11-4a2b-9c33-6b0e5d7a1004
+status: stable
+description: >-
+  A web server worker process (php-fpm, apache2, nginx, w3wp) spawned a shell or interpreter.
+  This is the behavioural fingerprint that catches a webshell or an RCE-to-shell such as the
+  PHP2SHELL class *without* a CVE-specific signature (research ch06#24; case study (a)).
+references:
+  - https://securitylabs.datadoghq.com/articles/php2shell-critical-vulnerabilities-in-php/
+tags: [attack.execution, attack.t1059]
+logsource:
+  product: linux
+  category: process_creation
+detection:
+  selection:
+    EventID: 1
+    ParentImage|endswith:
+      - '/php-fpm'
+      - '/php'
+      - '/apache2'
+      - '/nginx'
+      - '/httpd'
+    Image|endswith:
+      - '/sh'
+      - '/bash'
+      - '/dash'
+      - '/python3'
+      - '/perl'
+      - '/nc'
+      - '/curl'
+      - '/wget'
+  condition: selection
+level: high
+falsepositives:
+  - Applications that intentionally shell out from an HTTP handler

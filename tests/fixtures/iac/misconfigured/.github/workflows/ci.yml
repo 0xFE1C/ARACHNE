@@ -1,0 +1,12 @@
+# The misconfigured CI pipeline: trips the workflow review (m5.cicd-audit, ch05#23).
+name: ci
+on:
+  pull_request_target:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - uses: actions/checkout@main
+      - run: |
+          echo "token: ${{ secrets.GITHUB_TOKEN }}"

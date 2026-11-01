@@ -1,0 +1,29 @@
+# ARACHNE M6 offline EPSS/KEV snapshot — managed data (ch06#7, F-09-03/F-09-04).
+#
+# The "offline-friendly" half of the EPSS feed ingestion: m6.cve-epss-correlation ranks
+# CVE-correlated findings by exploit likelihood without any network access, using this
+# snapshot; an operator points ARACHNE_M6_EPSS_FEED at a FIRST EPSS CSV and
+# ARACHNE_M6_KEV_FEED at a CISA KEV JSON to refresh the numbers without touching code.
+#
+# `epss` is the FIRST EPSS v3 probability that the CVE will see exploitation within 30 days
+# (0..1); `percentile` is the ranked percentile; `kev: true` means CISA has it in the Known
+# Exploited Vulnerabilities catalog (already exploited in the wild). Snapshot provenance:
+# FIRST EPSS + CISA KEV, curated to the CVEs the shipped checks and indexes can emit.
+version: "2026.10"
+generated_at: "2026-10-20T00:00:00Z"
+entries:
+  - {cve: CVE-2024-6387, epss: 0.75, percentile: 0.97, kev: true, cvss: 8.1}
+  - {cve: CVE-2021-4034, epss: 0.89, percentile: 0.98, kev: true, cvss: 7.8}
+  - {cve: CVE-2021-3156, epss: 0.42, percentile: 0.93, kev: false, cvss: 7.8}
+  - {cve: CVE-2022-0847, epss: 0.51, percentile: 0.95, kev: false, cvss: 7.8}
+  - {cve: CVE-2016-5195, epss: 0.35, percentile: 0.91, kev: true, cvss: 7.8}
+  - {cve: CVE-2023-0386, epss: 0.31, percentile: 0.90, kev: false, cvss: 7.8}
+  - {cve: CVE-2021-33909, epss: 0.22, percentile: 0.88, kev: false, cvss: 7.8}
+  - {cve: CVE-2019-13272, epss: 0.19, percentile: 0.86, kev: false, cvss: 7.8}
+  - {cve: CVE-2021-3999, epss: 0.12, percentile: 0.79, kev: false, cvss: 7.4}
+  - {cve: CVE-2021-23017, epss: 0.21, percentile: 0.87, kev: false, cvss: 7.7}
+  # The PHP2SHELL pair (case study (a)): high EPSS with a patch-to-exploit window measured in
+  # hours, which is exactly the signal this correlation exists to surface.
+  - {cve: CVE-2026-109618, epss: 0.94, percentile: 0.99, kev: true, cvss: 9.2}
+  - {cve: CVE-2026-109619, epss: 0.93, percentile: 0.99, kev: true, cvss: 9.2}
+  - {cve: CVE-2026-39987, epss: 0.66, percentile: 0.96, kev: true, cvss: 9.8}

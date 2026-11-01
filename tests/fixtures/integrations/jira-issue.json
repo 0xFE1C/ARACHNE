@@ -1,0 +1,19 @@
+{
+  "fields": {
+    "project": {
+      "key": "SEC"
+    },
+    "summary": "[ARACHNE][HIGH] Exposed .env file \u2014 https://target.example/.env (scan 7)",
+    "description": "ARACHNE found a high issue on https://target.example/.env.\n\nh2. What ARACHNE established\n\nThe environment file is reachable anonymously and contains credentials.\n\nh2. Remediation\n\nRemove the file from the deployment and rotate the exposed credentials.\n\nFull report: https://arachne.example/scans/7",
+    "issuetype": {
+      "name": "Bug"
+    },
+    "labels": [
+      "arachne",
+      "high"
+    ],
+    "priority": {
+      "name": "High"
+    }
+  }
+}
