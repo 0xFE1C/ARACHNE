@@ -92,6 +92,12 @@ from arachne.modules.m3.hardening import (
 )
 from arachne.modules.m3.identity import AuthSessionAudit, CsrfAudit, IdorOracle
 from arachne.modules.m3.injection import SqliOracle
+from arachne.modules.m3.injection_families import (
+    ArgumentInjectionOracle,
+    CodeInjectionOracle,
+    LdapInjectionOracle,
+    XpathInjectionOracle,
+)
 from arachne.modules.m3.proof_ladder import (
     CmdiOobProbe,
     RceEchoProof,
@@ -99,6 +105,13 @@ from arachne.modules.m3.proof_ladder import (
     SstiOobProbe,
     StateMarkerProof,
     XxeOobProbe,
+)
+from arachne.modules.m3.surface_families import (
+    AuthzBypass,
+    CacheDeception,
+    EmailHeaderInjection,
+    HostHeaderInjection,
+    InputValidationAudit,
 )
 from arachne.modules.m3.takeover import SubdomainTakeover
 from arachne.modules.m3.transport import CorsAudit, OpenRedirect, RateLimitAudit
@@ -172,6 +185,17 @@ M3_CHECKS: tuple[type[Module], ...] = (
     # REQ-DEPTH-004: the dynamic half of client-side analysis — an L2 check that verifies the
     # *impact* of a statically-found credential (anonymous access + the ladder's OOB token).
     ClientSecretVerify,
+    # WP-08 breadth (REQ-DET-004, REQ-DET-009): the four CWE Top 25 emitters and the five
+    # missing injection families. Every one is L1 and read-only.
+    LdapInjectionOracle,
+    XpathInjectionOracle,
+    CodeInjectionOracle,
+    ArgumentInjectionOracle,
+    HostHeaderInjection,
+    EmailHeaderInjection,
+    CacheDeception,
+    AuthzBypass,
+    InputValidationAudit,
 )
 
 #: The M3 module group . Bump the version when the check set or a check's
@@ -190,9 +214,11 @@ M3 = ModuleGroup(
         "takeover, rate-limit posture, and authenticated surface reachable only with a "
         "configured credential (S19), plus the S29 depth-expansion families: GraphQL "
         "depth/cost and resolver-authorization probes and the WebSocket upgrade-auth and "
-        "inert-message-relay probes."
+        "inert-message-relay probes, plus the WP-08 breadth families: LDAP, XPath, code and "
+        "command-argument injection, host- and email-header injection, web cache deception, "
+        "authorization-schema bypass and numeric input validation."
     ),
-    version="2.3.0",
+    version="2.4.0",
     research_chapter="ch03",
     checks=M3_CHECKS,
 )

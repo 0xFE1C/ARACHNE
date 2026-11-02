@@ -2615,6 +2615,67 @@ entries:
       - "https://cwe.mitre.org/data/definitions/497.html"
       - "https://docs.spring.io/spring-boot/reference/actuator/endpoints.html"
 
+  # ----------------------------------------------------------------- WP-08 breadth classes
+  - id: ldap-injection
+    cwe: CWE-90
+    checks: [m3.ldap-injection]
+    summary: "Build LDAP filters from an allowlist of attribute values and escape every filter metacharacter before the search."
+    steps:
+      - "1. Escape the RFC 4515 metacharacters (backslash, asterisk, parentheses, NUL) in every value interpolated into a filter."
+      - "2. Prefer a parameterised search API or a filter builder over string concatenation."
+      - "3. Bind the directory query with the least-privileged service account the endpoint needs."
+    verify:
+      - "1. Re-send the wildcard and malformed-filter probes; the result set and error text must no longer change."
+      - "2. Confirm the escaping runs in the code path the request reaches, not in the UI."
+    references:
+      - "https://cwe.mitre.org/data/definitions/90.html"
+      - "https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html"
+
+  - id: email-header-injection
+    cwe: CWE-93
+    checks: [m3.email-header-injection]
+    summary: "Reject CR and LF in any value that reaches a mail header, and build messages with a mail library rather than string concatenation."
+    steps:
+      - "1. Validate an address against a strict grammar before it reaches the mailer, and reject embedded CR/LF and their encoded forms."
+      - "2. Use the mail library's own header API so a value cannot become a new header line."
+      - "3. Pin or constrain the recipient domain where the endpoint's purpose allows it."
+    verify:
+      - "1. Re-send the CRLF payload; the composed message must contain no injected header."
+      - "2. Confirm the validation runs server-side before the mailer is called."
+    references:
+      - "https://cwe.mitre.org/data/definitions/93.html"
+      - "https://owasp.org/www-community/attacks/CRLF_Injection"
+
+  - id: host-header-poisoning
+    cwe: CWE-644
+    checks: [m3.host-header-injection]
+    summary: "Build absolute URLs from a configured canonical host, never from the request's Host or X-Forwarded-Host header."
+    steps:
+      - "1. Configure the public host(s) the application may emit and use that value for every generated link."
+      - "2. Reject or ignore a Host header that is not in the configured set, and do not trust X-Forwarded-Host from an untrusted proxy."
+      - "3. Keep password-reset and invitation links relative where possible, or sign them against the canonical host."
+    verify:
+      - "1. Re-send the forged Host; the response must not contain the forged name in any URL or Location header."
+      - "2. Confirm the link-building code path does not read the request header."
+    references:
+      - "https://cwe.mitre.org/data/definitions/644.html"
+      - "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/17-Testing_for_Host_Header_Injection"
+
+  - id: web-cache-deception
+    cwe: CWE-524
+    checks: [m3.cache-deception]
+    summary: "Mark personalized responses private and no-store, and never serve one for a static-looking path a shared cache will store."
+    steps:
+      - "1. Send Cache-Control: private, no-store (and Vary: Cookie where a cache might still store the response) on every personalized page."
+      - "2. Normalise static-looking suffixes before routing, so /account/x.css cannot resolve to the private handler."
+      - "3. Configure the CDN to cache only allowlisted static extensions, and to ignore Set-Cookie responses."
+    verify:
+      - "1. Re-request the private page through the static-looking path; it must be a 404 or carry private, no-store."
+      - "2. Confirm the shared cache does not store a response that sets a session cookie."
+    references:
+      - "https://cwe.mitre.org/data/definitions/524.html"
+      - "https://owasp.org/www-community/attacks/Web_Cache_Deception"
+
 # ----------------------------------------------------------------- fallback
 default:
   id: default-generic

@@ -6,7 +6,7 @@ the numbered methods in `docs/research/`.
 
 - research corpus: `docs/research`
 - source roots: `src/arachne/modules`
-- references found: **155**
+- references found: **164**
 - coverage: **148/175 (84.6%)**
 
 ## Summary
@@ -97,24 +97,24 @@ the numbered methods in `docs/research/`.
 
 | # | Method | Mapped | Checks |
 |---|---|---|---|
-| 1 | SQL injection detection | yes | `sqli-oob`, `sqli-oracle`, `state-marker` |
-| 2 | NoSQL injection detection | yes | `nosql-oracle` |
+| 1 | SQL injection detection | yes | `sqli-oob`, `sqli-oracle`, `state-marker`, `xpath-injection` |
+| 2 | NoSQL injection detection | yes | `ldap-injection`, `nosql-oracle` |
 | 3 | Cross-site scripting detection | yes | `client-secret-verify`, `xss-oracle` |
 | 4 | Cross-site request forgery audit | yes | `csrf-audit` |
 | 5 | Server-side request forgery probing | yes | `ssrf-probe` |
-| 6 | Server-side template injection | yes | `ssti-oob`, `ssti-oracle` |
+| 6 | Server-side template injection | yes | `code-injection-oracle`, `ssti-oob`, `ssti-oracle` |
 | 7 | XML external entity injection | yes | `xxe-oob`, `xxe-oracle` |
-| 8 | OS command injection detection | yes | `cmdi-oob`, `cmdi-oracle`, `rce-echo` |
+| 8 | OS command injection detection | yes | `argument-injection`, `cmdi-oob`, `cmdi-oracle`, `rce-echo` |
 | 9 | Insecure deserialisation audit | yes | `deser-audit` |
 | 10 | Unrestricted file upload audit | yes | `upload-audit` |
 | 11 | Path traversal detection | yes | `traversal-oracle` |
 | 12 | Directory traversal with encoded forms | yes | `directory-traversal` |
 | 13 | Local and remote file inclusion | yes | `file-inclusion` |
 | 14 | Open redirect detection | yes | `open-redirect` |
-| 15 | CRLF and header injection | yes | `crlf-injection` |
+| 15 | CRLF and header injection | yes | `crlf-injection`, `email-header-injection`, `host-header-injection` |
 | 16 | HTTP request smuggling | yes | `smuggling-oracle` |
-| 17 | Web cache poisoning audit | yes | `cache-poison-audit` |
-| 18 | Insecure direct object reference | yes | `idor-oracle` |
+| 17 | Web cache poisoning audit | yes | `cache-deception`, `cache-poison-audit` |
+| 18 | Insecure direct object reference | yes | `authz-bypass`, `idor-oracle` |
 | 19 | Authentication and session management | yes | `auth-session-audit`, `authenticated-surface`, `session-logout` |
 | 20 | JWT implementation audit | yes | `jwt-audit` |
 | 21 | OAuth 2.0 flow audit | yes | `oauth-flow-audit` |
@@ -126,7 +126,7 @@ the numbered methods in `docs/research/`.
 | 27 | Prototype pollution detection | yes | `proto-pollution` |
 | 28 | Second-order injection | no | — |
 | 29 | Race condition and TOCTOU probing | yes | `race-oracle` |
-| 30 | Business logic abuse testing | yes | `business-logic-audit` |
+| 30 | Business logic abuse testing | yes | `business-logic-audit`, `input-validation-audit` |
 | 31 | API surface enumeration | yes | `api-surface` |
 | 32 | GraphQL endpoint audit | yes | `graphql-audit`, `graphql-depth-abuse`, `graphql-resolver-auth` |
 | 33 | WebSocket handshake and message audit | yes | `websocket-audit`, `websocket-injection`, `websocket-upgrade-auth` |

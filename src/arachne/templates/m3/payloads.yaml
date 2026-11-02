@@ -15,7 +15,9 @@
 # which keeps a probe count proportional to the surface (and keeps a timestamp parameter from
 # being handed a traversal payload).
 
-version: "1.0"
+# 1.0 (S6/S10/S15) the original families; 1.1 (WP-08) the four CWE Top 25 emitters and the
+# five missing injection families (REQ-DET-004, REQ-DET-009).
+version: "1.1"
 
 # --------------------------------------------------------------------------- parameter hints
 # Which parameter names a family is tried against. A family is only attempted where its hint
@@ -514,3 +516,122 @@ state:
   # The deployment's SQL proof sink: a POST endpoint that executes one statement with
   # JSON parameters on the target's own database (the lab fixture ships /poc-sql).
   sink_path: "/poc-sql"
+
+# =====================================================================================
+# WP-08 · CWE Top 25 gap closure and the five missing injection families
+# (REQ-DET-004, REQ-DET-009). Every probe here is L1 and read-only: arithmetic
+# expressions, filter/predicate deltas, static-looking path suffixes and header deltas.
+# Nothing stores, executes a command of our choosing, or reads a credential. Each family
+# confirms a *measured difference* against a baseline — a reflection alone is not proof.
+# =====================================================================================
+
+# --------------------------------------------------------------------------- LDAP (ch03#2)
+ldap:
+  # Parameters that carry an LDAP search attribute or filter fragment.
+  param_hints: ["uid", "user", "username", "cn", "dn", "filter", "name", "login", "mail", "account", "group", "ou"]
+  # Filter syntax that only a parser reacts to: an unbalanced filter and an escape character.
+  # ``*)(`` opens a new filter component the application did not intend; a parser answers with
+  # its own exception text, which is the error oracle's positive.
+  error_payloads: ["*)((", "\\", "*)(uid=*"]
+  error_signatures:
+    generic: "InvalidSearchFilter|javax\\.naming\\.directory|LDAPException|Bad search filter|naming exception|protocol error in LDAP|invalid filter"
+  # The filter-broadening pair: ``*`` matches every entry, the literal matches none. A
+  # result-count differential between the two is the boolean oracle (never a reflection).
+  broaden_payload: "*"
+  literal_payload: "ar9x-no-such-entry"
+  # One record in the application's own result rendering. The oracle counts these, so the
+  # differential is "the wildcard returned more records than the literal", not page length.
+  result_marker: '<li class="record"'
+
+# --------------------------------------------------------------------------- XPath (ch03#1)
+xpath:
+  # Parameters that feed an XPath/XML query.
+  param_hints: ["q", "query", "sku", "search", "xpath", "select", "id", "name", "user", "category", "title"]
+  # Paths where the language is most likely XPath. They are probed first, not exclusively.
+  path_hints: ["xpath", "catalog", "xml", "search"]
+  # Malformed predicates: an unterminated bracket, a bare function, an unbalanced quote.
+  error_payloads: ["'[", "count(", "')("]
+  error_signatures:
+    generic: "XPathException|Invalid XPath|XPath syntax error|System\\.Xml\\.XPath|XPathExpressionException|Expression must evaluate to a node-set|unterminated XPath"
+  # The boolean pair is the XPath analogue of the SQL predicate pair: both are inert.
+  true_payloads: ["' or '1'='1", "1 or 1=1"]
+  false_payloads: ["' or '1'='2", "1 or 1=2"]
+  result_marker: '<li class="record"'
+
+# --------------------------------------------------------------------------- code injection (ch03#6)
+code_injection:
+  # Parameters that suggest an expression is evaluated (a calculator, a formula field, a
+  # scripting hook). Bare arithmetic only: no built-in, no attribute chain, no file access.
+  param_hints: ["expr", "expression", "calc", "calculate", "compute", "eval", "code", "formula", "script", "run", "value", "input"]
+  arithmetic:
+    - {probe: "7*7*7", expected: "343"}
+    - {probe: "9*9*9", expected: "729"}
+
+# --------------------------------------------------------------------------- argument injection (ch03#8)
+arg_injection:
+  # Parameters whose value is plausibly concatenated into a command line, and the paths where
+  # a command-line utility is wrapped by the application.
+  param_hints: ["host", "target", "domain", "query", "arg", "argument", "option", "param", "input", "name", "address", "ip"]
+  path_hints: ["lookup", "resolve", "ping", "nslookup", "whois", "dig", "tool", "host"]
+  # An unknown long option. Its only purpose is to make the utility's own argument parser
+  # say something the baseline did not — which proves the value was tokenized into argv
+  # (the CWE-77 neutralization failure). It is not a command and nothing is executed.
+  option_template: "--{nonce}"
+  diagnostics:
+    - "unrecognized option"
+    - "unknown option"
+    - "invalid option"
+    - "usage:"
+
+# --------------------------------------------------------------------------- host header (ch03#15)
+host_header:
+  # A non-resolving, non-secret name. The nonce makes the forged value impossible to find in
+  # the canonical response; the check reports only when an *absolute URL* or a Location
+  # header carries it (a link-poisoning primitive), not a bare reflection.
+  forged_host_template: "arachne-host-{nonce}.invalid"
+  headers: ["Host", "X-Forwarded-Host"]
+  absolute_url_prefixes: ["http://", "https://"]
+  # Pages that build links (a reset, an invite, a share sheet) are probed first.
+  path_hints: ["reset", "password", "account", "login", "signup", "invite", "share", "profile", "settings"]
+
+# --------------------------------------------------------------------------- email header (ch03#15)
+email_header:
+  # Parameters that receive a mail address, on paths that plausibly send mail.
+  param_hints: ["email", "mail", "to", "recipient", "address", "from", "sender", "reply_to", "contact"]
+  path_hints: ["subscribe", "contact", "newsletter", "invite", "register", "reset", "feedback", "notify"]
+  benign_value: "arachne-probe@example.com"
+  # ``\r\n`` is the injection. The header name is fixed so the check can look for it as a
+  # *header key* in a structured response, which is evidence the CRLF created a header.
+  header_name: "X-Arachne-Probe"
+  crlf_template: "{benign}\r\n{header}: {nonce}"
+
+# --------------------------------------------------------------------------- web cache deception (ch03#17)
+cache_deception:
+  # Paths that suggest a personalized page. Cache deception is the static-suffix trick: a
+  # shared cache stores the personalized page because the path ends in ``.css``.
+  private_path_hints: ["account", "portal", "profile", "settings", "dashboard", "orders", "billing", "api/me", "user", "admin"]
+  static_suffixes: [".css", ".js", ".png"]
+  suffix_template: "arachne-{nonce}"
+  cacheable_directives: ["public", "max-age", "s-maxage"]
+  private_directives: ["private", "no-store", "no-cache"]
+  cache_status_headers: ["x-cache", "cf-cache-status", "x-proxy-cache", "age"]
+
+# --------------------------------------------------------------------------- authorization bypass (ch03#18)
+authz_bypass:
+  # A denied response is the canonical endpoint; an alternate rendering of its path that
+  # returns the protected content is the incorrect-authorization finding (CWE-863).
+  denied_statuses: [401, 403]
+  login_path_hints: ["login", "signin", "sign-in", "sso", "auth"]
+  # A path segment this long (or longer) must appear in the alternate response for it to
+  # count as the protected resource rather than a generic 200 shell.
+  min_segment_length: 4
+
+# --------------------------------------------------------------------------- input validation (ch03#30)
+input_validation:
+  # Numeric parameters with an implicit domain. The probe is an out-of-domain number, and
+  # the finding requires the application to *accept* it (2xx, value echoed, no error
+  # marker) — a specific validation failure, never a catch-all for "odd input".
+  param_hints: ["qty", "quantity", "amount", "price", "limit", "count", "age", "id", "page", "size", "total", "balance", "score", "offset", "number", "num"]
+  out_of_domain_values: ["-17", "999999999999999999999999"]
+  type_probe: "1ar9x"
+  error_markers: ["invalid", "must be", "out of range", "not allowed", "rejected", "error", "negative", "forbidden"]

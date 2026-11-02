@@ -38,6 +38,8 @@ from typing import TYPE_CHECKING, Any
 from arachne.core.errors import ConfigurationError
 from arachne.modules.framework_map import (
     api_top10_coverage,
+    cwe_top25_coverage,
+    cwe_top25_framework,
     framework_versions,
     sorted_items,
     wstg_coverage,
@@ -558,6 +560,8 @@ class CoverageLedger:
     api_items: tuple[dict[str, Any], ...]
     registry_digest: str
     framework_versions: Mapping[str, str] = field(default_factory=dict)
+    cwe_items: tuple[dict[str, Any], ...] = ()
+    cwe_version: str = ""
     registry_version: str = REGISTRY_VERSION
     ledger_version: str = LEDGER_VERSION
 
@@ -591,6 +595,21 @@ class CoverageLedger:
             "total": len(self.api_items),
         }
 
+    def cwe_counts(self) -> dict[str, dict[str, Any]]:
+        """The REQ-DET-004 tally: in-scope coverage first, the full 25 beside it."""
+
+        def tally(items: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+            covered = sum(1 for item in items if item["covered"])
+            total = len(items)
+            return {
+                "covered": covered,
+                "total": total,
+                "percent": round(100.0 * covered / total, 1) if total else 0.0,
+            }
+
+        in_scope = [item for item in self.cwe_items if item["in_scope"]]
+        return {"in_scope": tally(in_scope), "all": tally(self.cwe_items)}
+
     # ------------------------------------------------------------------ rendering
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -606,6 +625,11 @@ class CoverageLedger:
             },
             "wstg": self.wstg_counts(),
             "api_top10": self.api_counts(),
+            "cwe_top25": {
+                "version": self.cwe_version,
+                **self.cwe_counts(),
+                "items": [dict(item) for item in self.cwe_items],
+            },
             "checks": [record.to_dict() for record in self.records],
             "wstg_items": [dict(item) for item in self.wstg_items],
         }
@@ -641,11 +665,14 @@ def build_ledger(
     date = generated_at if generated_at is not None else datetime.now(UTC).date().isoformat()
 
     by_item: dict[str, list[str]] = {}
+    by_cwe: dict[str, list[str]] = {}
     records: list[LedgerRecord] = []
     for metadata in registry.metadata():
         items = sorted_items(metadata.framework)
         for item in items:
             by_item.setdefault(item, []).append(metadata.id)
+        if metadata.cwe is not None:
+            by_cwe.setdefault(metadata.cwe, []).append(metadata.id)
         records.append(
             LedgerRecord(
                 id=metadata.id,
@@ -678,11 +705,24 @@ def build_ledger(
         }
         for state in api_top10_coverage(by_item)
     )
+    cwe_items = tuple(
+        {
+            "id": state.id,
+            "title": state.item.title,
+            "in_scope": state.in_scope,
+            "covered": state.covered,
+            "checks": list(state.checks),
+            **({"reason": state.item.reason} if state.item.reason else {}),
+        }
+        for state in cwe_top25_coverage(by_cwe)
+    )
     return CoverageLedger(
         generated_at=date,
         records=tuple(records),
         wstg_items=wstg_items,
         api_items=api_items,
+        cwe_items=cwe_items,
+        cwe_version=cwe_top25_framework().version,
         registry_digest=registry_digest(registry),
         framework_versions=framework_versions(),
     )
@@ -697,6 +737,7 @@ def render_ledger_markdown(ledger: CoverageLedger) -> str:
     """The committed Markdown ledger: the same data, readable in a diff."""
     wstg = ledger.wstg_counts()
     api = ledger.api_counts()
+    cwe = ledger.cwe_counts()
     versions = ", ".join(f"{name} {version}" for name, version in ledger.framework_versions.items())
     lines = [
         "# ARACHNE coverage ledger (REQ-DET-001)",
@@ -714,6 +755,9 @@ def render_ledger_markdown(ledger: CoverageLedger) -> str:
         f"- WSTG v4.2: **{wstg['mapped']}/{wstg['total']} mapped**, "
         f"{wstg['in_scope']} in scope, {wstg['out_of_scope']} out of scope, {wstg['gap']} gap",
         f"- OWASP API Top 10 (2023): **{api['mapped']}/{api['total']} mapped**",
+        f"- CWE Top 25 (2025), in scope: **{cwe['in_scope']['covered']}/"
+        f"{cwe['in_scope']['total']} covered**; all 25: "
+        f"{cwe['all']['covered']}/{cwe['all']['total']}",
         "",
         "## Checks",
         "",
@@ -750,6 +794,28 @@ def render_ledger_markdown(ledger: CoverageLedger) -> str:
     for item in ledger.api_items:
         checks = ", ".join(f"`{check}`" for check in item["checks"]) or "—"
         lines.append(f"| `{item['id']}` | {item['state']} | {checks} | {item['title']} |")
+    lines += [
+        "",
+        f"## CWE Top 25 ({ledger.cwe_version}) — {cwe['in_scope']['covered']}/"
+        f"{cwe['in_scope']['total']} in-scope ids covered",
+        "",
+        "An id is `covered` when at least one registered check classifies its findings as that",
+        "CWE (`CheckMetadata.cwe`). The seven memory-safety classes are in the denominator and",
+        "marked `out_of_scope` with a reason, so the 18/18 claim is visible against 25.",
+        "",
+        "| CWE id | State | Checks | Weakness |",
+        "|---|---|---|---|",
+    ]
+    for item in ledger.cwe_items:
+        checks = ", ".join(f"`{check}`" for check in item["checks"]) or "—"
+        if item["covered"]:
+            state = "covered"
+        elif item["in_scope"]:
+            state = "gap"
+        else:
+            state = "out_of_scope"
+        reason = f" — {item['reason']}" if item.get("reason") else ""
+        lines.append(f"| `{item['id']}` | {state} | {checks} | {item['title']}{reason} |")
     lines.append("")
     return "\n".join(lines)
 

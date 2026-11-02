@@ -47,9 +47,10 @@ def test_bundled_catalogue_covers_every_module_and_is_versioned() -> None:
     # 1.5 (S15) added the proof-ladder declaration to every row (REQ-PROOF-002);
     # 1.6 (S15) added the six proof-ladder check rows; 1.7 (S18) the three opt-in intel
     # rows; 1.8 (S19) the credentialed M3 rows and the M2 host check; 1.9 (S23) the M5
-    # continuous cloud-config posture row.
+    # continuous cloud-config posture row; 1.11 (WP-08) the four CWE Top 25 emitters and
+    # five injection families (REQ-DET-004/009).
     # tests/unit/test_registry.py keeps the catalogue and the registry in step.
-    assert catalog.catalog_version == "1.10"
+    assert catalog.catalog_version == "1.11"
     assert catalog.modules() == ("M1", "M2", "M3", "M4", "M5", "M6")
     assert len(catalog.checks) >= 30
     # "Version everything" : every check carries a version and a
@@ -58,13 +59,14 @@ def test_bundled_catalogue_covers_every_module_and_is_versioned() -> None:
     # Every row declares its proof level (S15). The original checks are L1 — 129 of them,
     # plus S18's three opt-in intel checks, S19's two credentialed M3 checks, S23's
     # continuous cloud-posture check and S29's eight L1 depth rows = 144; WP-07's three
-    # read-only MCP checks bring it to 147. The seven L2+ rows are opt-in, and only
-    # rce-echo/state-marker demand the state-change attestation.
+    # read-only MCP checks bring it to 147; WP-08's nine L1 breadth rows bring it to 156.
+    # The seven L2+ rows are opt-in, and only rce-echo/state-marker demand the
+    # state-change attestation.
     # (S29's tenth depth row, m1.mobile-artifact, declares L0 — it is the one check that
     # contacts nothing at all — so it is in neither list and is pinned here explicitly.)
     originals = [check for check in catalog.checks if check.proof.value == "L1"]
     ladder = [check for check in catalog.checks if check.proof.value in {"L2", "L3", "L4"}]
-    assert len(originals) == 147
+    assert len(originals) == 156
     assert {check.name for check in catalog.checks if check.proof.value == "L0"} == {
         "mobile-artifact"
     }

@@ -132,7 +132,12 @@ def test_build_coverage_reports_the_m1_m2_m3_and_m4_rows() -> None:
     assert ch03.total == 35
     assert ch03.mapped == 34
     mapped_m3 = {item.method.ref: item.checks for item in ch03.methods if item.mapped}
-    assert mapped_m3["ch03#1"] == ("sqli-oob", "sqli-oracle", "state-marker")
+    assert mapped_m3["ch03#1"] == (
+        "sqli-oob",
+        "sqli-oracle",
+        "state-marker",
+        "xpath-injection",
+    )
     assert mapped_m3["ch03#3"] == ("client-secret-verify", "xss-oracle")
     assert mapped_m3["ch03#11"] == ("traversal-oracle",)
     assert mapped_m3["ch03#24"] == ("security-headers",)

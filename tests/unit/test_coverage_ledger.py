@@ -36,6 +36,22 @@ from arachne.modules.registry import ModuleGroup, ModuleRegistry
 
 runner = CliRunner()
 
+#: WP-08's nine breadth checks (REQ-DET-004/009); they are excluded when pinning the 152
+#: checks that predate WP-07, so the original baseline remains asserted explicitly.
+WP08_IDS: frozenset[str] = frozenset(
+    {
+        "m3.ldap-injection",
+        "m3.xpath-injection",
+        "m3.code-injection-oracle",
+        "m3.argument-injection",
+        "m3.host-header-injection",
+        "m3.email-header-injection",
+        "m3.cache-deception",
+        "m3.authz-bypass",
+        "m3.input-validation-audit",
+    }
+)
+
 
 @pytest.fixture(scope="module")
 def registry() -> ModuleRegistry:
@@ -92,11 +108,13 @@ def test_every_check_names_a_wstg_or_api_item(ledger) -> None:  # type: ignore[n
 
 
 def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # type: ignore[no-untyped-def]
-    """REQ-DET-002's "all 152 existing checks" set, before WP-07's three MCP additions."""
+    """REQ-DET-002's "all 152 existing checks" set, before the later additions."""
     ids = {record.id for record in ledger.records}
     mcp = {record.id for record in ledger.records if record.id.startswith("m6.mcp-")}
-    assert len(ids - mcp) == 152
+    wp08 = {record.id for record in ledger.records if record.id in WP08_IDS}
+    assert len(ids - mcp - wp08) == 152
     assert len(mcp) == 3
+    assert len(wp08) == 9
 
 
 # ------------------------------------------------------------------ REQ-DET-003 WSTG
@@ -135,6 +153,73 @@ def test_a_gap_names_no_check_and_a_mapped_item_names_one(ledger) -> None:  # ty
 # ------------------------------------------------------------------ REQ-DET-005 API
 def test_the_api_top10_is_mapped_ten_of_ten(ledger) -> None:  # type: ignore[no-untyped-def]
     assert ledger.api_counts() == {"mapped": 10, "total": 10}
+
+
+# ------------------------------------------------------------------ REQ-DET-004 CWE Top 25
+def test_the_cwe_top25_is_covered_eighteen_of_eighteen_in_scope(ledger) -> None:  # type: ignore[no-untyped-def]
+    """REQ-DET-004: ``cwe_top25.in_scope.covered = 18 / 18``, and 18/25 overall."""
+    assert ledger.cwe_version == "2025"
+    counts = ledger.cwe_counts()
+    assert counts["in_scope"] == {"covered": 18, "total": 18, "percent": 100.0}
+    assert counts["all"] == {"covered": 18, "total": 25, "percent": 72.0}
+
+
+def test_the_cwe_top25_lists_all_25_ids_exactly_once(ledger) -> None:  # type: ignore[no-untyped-def]
+    ids = [item["id"] for item in ledger.cwe_items]
+    assert len(ids) == 25
+    assert len(set(ids)) == 25
+
+
+def test_the_json_carries_the_cwe_top25_tally(ledger) -> None:  # type: ignore[no-untyped-def]
+    document = ledger.to_dict()
+    assert document["cwe_top25"]["version"] == "2025"
+    assert document["cwe_top25"]["in_scope"]["covered"] == 18
+    assert len(document["cwe_top25"]["items"]) == 25
+
+
+def test_the_out_of_scope_top25_items_are_the_seven_memory_safety_classes(
+    ledger,  # type: ignore[no-untyped-def]
+) -> None:
+    out_of_scope = [item for item in ledger.cwe_items if not item["in_scope"]]
+    assert {item["id"] for item in out_of_scope} == {
+        "CWE-787",
+        "CWE-416",
+        "CWE-125",
+        "CWE-120",
+        "CWE-476",
+        "CWE-121",
+        "CWE-122",
+    }
+    for item in out_of_scope:
+        assert item["reason"]
+        assert item["checks"] == []
+        assert item["covered"] is False
+
+
+def test_the_four_wp08_cwes_are_emitted_by_their_new_checks(ledger) -> None:  # type: ignore[no-untyped-def]
+    by_id = {item["id"]: item for item in ledger.cwe_items}
+    expected = {
+        "CWE-94": "m3.code-injection-oracle",
+        "CWE-863": "m3.authz-bypass",
+        "CWE-20": "m3.input-validation-audit",
+        "CWE-77": "m3.argument-injection",
+    }
+    for cwe, check in expected.items():
+        assert check in by_id[cwe]["checks"], (cwe, by_id[cwe]["checks"])
+
+
+def test_the_five_injection_families_carry_their_cwe(ledger) -> None:  # type: ignore[no-untyped-def]
+    by_id = {record.id: record for record in ledger.records}
+    expected = {
+        "m3.ldap-injection": "CWE-90",
+        "m3.xpath-injection": "CWE-643",
+        "m3.host-header-injection": "CWE-644",
+        "m3.email-header-injection": "CWE-93",
+        "m3.cache-deception": "CWE-524",
+    }
+    for check_id, cwe in expected.items():
+        assert by_id[check_id].cwe == cwe
+        assert cwe in by_id[check_id].framework
 
 
 def test_the_mcp_family_is_registered_and_mapped() -> None:

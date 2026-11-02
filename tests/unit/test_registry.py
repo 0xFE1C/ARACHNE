@@ -86,8 +86,9 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # client-secret check, three default-on M2 gRPC/HTTP-2 posture checks, one opt-in M2
     # OT/ICS protocol probe and one opt-in M1 mobile-artifact check -> 152. WP-07 adds the
     # read-only MCP family to M6 (token-audience, session-auth, oauth-metadata), all
-    # default-on L1 GET-only checks -> 155.
-    assert len(registry.checks()) == 155
+    # default-on L1 GET-only checks -> 155. WP-08 adds the four CWE Top 25 emitters and the
+    # five injection families (REQ-DET-004/009), all default-on active L1 checks -> 164.
+    assert len(registry.checks()) == 164
     # M1's code-secret-mining, M2's SNMP and ICS checks, M4's metadata-ssrf and
     # default-credentials checks, M3's ssrf-probe, M5's imds-ssrf / azure-mi-audit and
     # M6's deception-listeners / ad-attack-path, S13's m1.bucket-hunt, S15's six
@@ -96,7 +97,7 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # S29's seven opt-in additions are the four GraphQL/WebSocket probes, the L2
     # client-secret check, the OT/ICS protocol probe and the mobile-artifact check.
     assert registry.totals()["opt_in_checks"] == 30
-    assert registry.totals()["active_checks"] == 82
+    assert registry.totals()["active_checks"] == 91
     # S15: the six L2+ declarations are exactly the proof ladder's opt-in rows. S29 adds one
     # more: m3.client-secret-verify, the L2 dynamic verification of a client-side credential.
     assert registry.totals()["proof_l2plus"] == 7
@@ -218,7 +219,7 @@ def test_a_plugin_extends_an_existing_module(monkeypatch) -> None:  # type: igno
     )
     registry = ModuleRegistry.discover()
     assert registry.module_ids() == ("M1", "M2", "M3", "M4", "M5", "M6")
-    assert len(registry.checks()) == 156
+    assert len(registry.checks()) == 165
     assert registry.group("M1").origin == "builtin+extra"  # type: ignore[union-attr]
 
 

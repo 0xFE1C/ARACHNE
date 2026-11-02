@@ -128,6 +128,19 @@ by_cwe:
   CWE-532: {C: "H", I: "N", A: "N"}
   CWE-778: {C: "L", I: "H", A: "N"}
 
+  # --- WP-08 breadth (REQ-DET-004/009). The query-injection classes change scope and read as
+  # well as write; the header classes are link/phishing primitives; cache deception is a
+  # confidentiality read; the authorization parent is a confidentiality/integrity mix; the
+  # validation parent is deliberately conservative (a range failure is not code execution).
+  CWE-90: {S: "C", C: "H", I: "H", A: "L"}
+  CWE-643: {S: "C", C: "H", I: "H", A: "L"}
+  CWE-77: {S: "C", C: "H", I: "H", A: "H"}
+  CWE-93: {C: "L", I: "L", A: "N"}
+  CWE-644: {C: "L", I: "L", A: "N"}
+  CWE-524: {C: "H", I: "N", A: "N"}
+  CWE-863: {C: "H", I: "L", A: "N"}
+  CWE-20: {C: "L", I: "L", A: "N"}
+
 by_check:
   # A TLS misconfiguration is high impact for confidentiality but does not by itself change
   # integrity; the rule's severity clause still decides the reported severity.

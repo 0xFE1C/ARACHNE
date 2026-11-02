@@ -1,0 +1,70 @@
+{
+  "framework": "CWE Top 25",
+  "version": "2025",
+  "title": "2025 CWE Top 25 Most Dangerous Software Weaknesses",
+  "source": "https://cwe.mitre.org/top25/",
+  "id_pattern": "^CWE-[0-9]{1,5}$",
+  "notes": "The ids and the in-scope split are the ones .spec/00-research/technique-landscape.md §8.1 analyses: 25 weaknesses, seven of which are memory-safety classes a black-box DAST engine cannot evidence. The vendored list makes REQ-DET-004's 18/18 claim machine-checkable; it is a coverage denominator, not a check mapping, so it lives beside the framework snapshots rather than inside the CWE vocabulary file.",
+  "items": [
+    {"id": "CWE-79", "title": "Cross-site Scripting"},
+    {"id": "CWE-89", "title": "SQL Injection"},
+    {"id": "CWE-352", "title": "Cross-Site Request Forgery"},
+    {"id": "CWE-862", "title": "Missing Authorization"},
+    {"id": "CWE-22", "title": "Path Traversal"},
+    {"id": "CWE-78", "title": "OS Command Injection"},
+    {"id": "CWE-434", "title": "Unrestricted Upload of File with Dangerous Type"},
+    {"id": "CWE-502", "title": "Deserialization of Untrusted Data"},
+    {"id": "CWE-284", "title": "Improper Access Control"},
+    {"id": "CWE-200", "title": "Exposure of Sensitive Information to an Unauthorized Actor"},
+    {"id": "CWE-306", "title": "Missing Authentication for Critical Function"},
+    {"id": "CWE-918", "title": "Server-Side Request Forgery"},
+    {"id": "CWE-639", "title": "Authorization Bypass Through User-Controlled Key"},
+    {"id": "CWE-770", "title": "Allocation of Resources Without Limits or Throttling"},
+    {
+      "id": "CWE-787",
+      "title": "Out-of-bounds Write",
+      "scope": "out_of_scope",
+      "reason": "Memory-safety class: a black-box DAST engine cannot evidence it without binary or source analysis (technique-landscape §8.1)."
+    },
+    {
+      "id": "CWE-416",
+      "title": "Use After Free",
+      "scope": "out_of_scope",
+      "reason": "Memory-safety class: a black-box DAST engine cannot evidence it without binary or source analysis (technique-landscape §8.1)."
+    },
+    {
+      "id": "CWE-125",
+      "title": "Out-of-bounds Read",
+      "scope": "out_of_scope",
+      "reason": "Memory-safety class: a black-box DAST engine cannot evidence it without binary or source analysis (technique-landscape §8.1)."
+    },
+    {"id": "CWE-94", "title": "Code Injection"},
+    {
+      "id": "CWE-120",
+      "title": "Buffer Copy without Checking Size of Input",
+      "scope": "out_of_scope",
+      "reason": "Memory-safety class: a black-box DAST engine cannot evidence it without binary or source analysis (technique-landscape §8.1)."
+    },
+    {
+      "id": "CWE-476",
+      "title": "NULL Pointer Dereference",
+      "scope": "out_of_scope",
+      "reason": "Memory-safety class: a black-box DAST engine cannot evidence it without binary or source analysis (technique-landscape §8.1)."
+    },
+    {
+      "id": "CWE-121",
+      "title": "Stack-based Buffer Overflow",
+      "scope": "out_of_scope",
+      "reason": "Memory-safety class: a black-box DAST engine cannot evidence it without binary or source analysis (technique-landscape §8.1)."
+    },
+    {
+      "id": "CWE-122",
+      "title": "Heap-based Buffer Overflow",
+      "scope": "out_of_scope",
+      "reason": "Memory-safety class: a black-box DAST engine cannot evidence it without binary or source analysis (technique-landscape §8.1)."
+    },
+    {"id": "CWE-863", "title": "Incorrect Authorization"},
+    {"id": "CWE-20", "title": "Improper Input Validation"},
+    {"id": "CWE-77", "title": "Command Injection"}
+  ]
+}

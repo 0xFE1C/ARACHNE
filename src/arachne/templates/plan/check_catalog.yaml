@@ -29,7 +29,7 @@
 # disagree, so a plan can never describe a check differently from the code that runs it.
 # S4 adds the M2 rows the registry implements; M3-M6 below are still *planned* only and the
 # plan marks them `implemented: false`.
-catalog_version: "1.10"
+catalog_version: "1.11"
 checks:
   # ---------------------------------------------------------------- M1 recon & attack surface
   # Implemented in S3 (arachne/modules/m1/). The rows below are generated from the check
@@ -1957,4 +1957,114 @@ checks:
     target_kinds:
     - url
     estimated_requests: 6
+    requires_active_checks: true
+  # ---------------------------------------------------------------- WP-08 breadth (REQ-DET-004, REQ-DET-009)
+  # Four CWE Top 25 emitters and five missing injection families, all L1 and read-only.
+  - module: M3
+    name: ldap-injection
+    version: '1.0'
+    title: LDAP injection oracle
+    description: 'Confirms that a parameter reaches an LDAP filter by two read-only differentials: a malformed filter whose response carries the directory server''s own exception text, or a wildcard filter that renders more records than a literal non-match. No entry is read, modified or enumerated; the probe is bounded to the crawled parameter surface.'
+    research_ref: ch03#2
+    proof: L1
+    cwe: CWE-90
+    target_kinds:
+    - url
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M3
+    name: xpath-injection
+    version: '1.0'
+    title: XPath injection oracle
+    description: 'Confirms that a parameter reaches an XPath expression by two read-only differentials: a malformed predicate whose response carries the XPath engine''s own exception text, or the inert true/false predicate pair whose rendered result counts diverge. The second probe is the differential that a quoted value cannot reproduce; no node is read or extracted.'
+    research_ref: ch03#1
+    proof: L1
+    cwe: CWE-643
+    target_kinds:
+    - url
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M3
+    name: code-injection-oracle
+    version: '1.0'
+    title: Code injection oracle
+    description: 'Sends a bare arithmetic expression (7*7*7) to parameters that suggest an evaluation context and reports only when the *computed* result appears where the benign baseline did not have it. This is the evaluation-context oracle of research ch03#6, distinct from SQL and command injection and from template injection (no template delimiters are sent). Arithmetic only: no built-in, no attribute chain, no file access.'
+    research_ref: ch03#6
+    proof: L1
+    cwe: CWE-94
+    target_kinds:
+    - url
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M3
+    name: argument-injection
+    version: '1.0'
+    title: Command-argument injection oracle
+    description: 'Appends an unknown long option to a value that is plausibly concatenated into a command line and reports when the wrapped utility''s own argument parser answers with a diagnostic the baseline did not have. That proves the value was split into argv without neutralization — CWE-77''s general command-injection precondition. No separator, shell metacharacter or command of our choosing is sent, and nothing is executed.'
+    research_ref: ch03#8
+    proof: L1
+    cwe: CWE-77
+    target_kinds:
+    - url
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M3
+    name: host-header-injection
+    version: '1.0'
+    title: Host header injection
+    description: 'Sends one forged Host / X-Forwarded-Host value to crawled pages and reports when the forged name appears inside an absolute URL in the response body or in a Location header that the canonical response did not carry. A bare reflection is not a finding: the poisoned value has to land in a URL the page would hand to a user. Read-only GET probes.'
+    research_ref: ch03#15
+    proof: L1
+    cwe: CWE-644
+    target_kinds:
+    - url
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M3
+    name: email-header-injection
+    version: '1.0'
+    title: Email header injection
+    description: 'Injects a CRLF sequence plus a nonce-named header into a mail-address parameter and reports only when the application''s structured message headers contain that header with the nonce. That is evidence the value was parsed as a header, not merely echoed; a validating endpoint rejects it. Read-only GET probes.'
+    research_ref: ch03#15
+    proof: L1
+    cwe: CWE-93
+    target_kinds:
+    - url
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M3
+    name: cache-deception
+    version: '1.0'
+    title: Web cache deception
+    description: 'Requests a personalized page through a static-looking path (a nonce named .css) and reports when the same personalized body is returned with shared-cacheable headers. A shared cache will store that response, so a third party who requests the static path receives the private page. Distinct from cache poisoning: no unkeyed input is injected. Read-only GET probes.'
+    research_ref: ch03#17
+    proof: L1
+    cwe: CWE-524
+    target_kinds:
+    - url
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M3
+    name: authz-bypass
+    version: '1.0'
+    title: Authorization-schema bypass
+    description: 'Takes a page the server denied (401/403) and reads alternate renderings of its path: a trailing slash, a case variant and a duplicated separator. A 200 that still carries a segment of the protected path means the authorization decision covered one spelling of the route and not the handler behind it — incorrect authorization (CWE-863), not a missing check. Read-only GET probes.'
+    research_ref: ch03#18
+    proof: L1
+    cwe: CWE-863
+    target_kinds:
+    - url
+    estimated_requests: 10
+    requires_active_checks: true
+  - module: M3
+    name: input-validation-audit
+    version: '1.0'
+    title: Input validation audit
+    description: 'Probes numeric parameters with an out-of-domain value (negative or far beyond any sane bound) and reports only when the application accepts it: a 2xx response that echoes the value, keeps the baseline''s success shape and carries no error marker. CWE-20 is emitted deliberately for this one specific failure, never as a catch-all for unusual input. Read-only GET probes.'
+    research_ref: ch03#30
+    proof: L1
+    cwe: CWE-20
+    target_kinds:
+    - url
+    estimated_requests: 8
     requires_active_checks: true

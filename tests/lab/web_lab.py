@@ -38,6 +38,7 @@ manager, so the suite can run in parallel with itself.
 
 from __future__ import annotations
 
+import ast
 import base64
 import hashlib
 import json
@@ -78,6 +79,8 @@ __all__ = [
     "M6_FALSE_POSITIVE_TRAPS",
     "M6_GROUND_TRUTH",
     "STORAGE_PREFIX",
+    "WP08_FALSE_POSITIVE_TRAPS",
+    "WP08_GROUND_TRUTH",
     "WebLab",
     "start_web_lab",
 ]
@@ -250,6 +253,36 @@ DEPTH_FALSE_POSITIVE_TRAPS: tuple[tuple[str, str], ...] = (
     ("m3.graphql-resolver-auth", "/graphql-safe"),
     ("m3.websocket-upgrade-auth", "/ws-safe"),
     ("m3.websocket-injection", "/ws-safe"),
+)
+
+#: WP-08 breadth ground truth (REQ-DET-004, REQ-DET-009): ``(check id, marker)`` in the same
+#: shape as :data:`M3X_GROUND_TRUTH`. One planted route per new check, each paired with the
+#: hardened twin below. The marker is the endpoint the candidate's evidence names, so the
+#: assertion is about the claim's location, not its prose.
+WP08_GROUND_TRUTH: tuple[tuple[str, str], ...] = (
+    ("m3.ldap-injection", "/directory?uid"),
+    ("m3.xpath-injection", "/xpath?q"),
+    ("m3.code-injection-oracle", "/calc?expr"),
+    ("m3.argument-injection", "/tools/lookup?host"),
+    ("m3.host-header-injection", "/reset"),
+    ("m3.email-header-injection", "/subscribe?email"),
+    ("m3.cache-deception", "/account"),
+    ("m3.authz-bypass", "/secure/reports"),
+    ("m3.input-validation-audit", "/api/quote?amount"),
+)
+
+#: The WP-08 hardened twins: a candidate whose evidence names one is a false positive for its
+#: family. Each twin differs from its planted sibling only in the control the finding claims.
+WP08_FALSE_POSITIVE_TRAPS: tuple[tuple[str, str], ...] = (
+    ("m3.ldap-injection", "/directory-safe"),
+    ("m3.xpath-injection", "/xpath-safe"),
+    ("m3.code-injection-oracle", "/calc-safe"),
+    ("m3.argument-injection", "/tools/lookup-safe"),
+    ("m3.host-header-injection", "/reset-safe"),
+    ("m3.email-header-injection", "/subscribe-safe"),
+    ("m3.cache-deception", "/account-hardened"),
+    ("m3.authz-bypass", "/secure/hardened"),
+    ("m3.input-validation-audit", "/api/quote-safe"),
 )
 
 
@@ -553,6 +586,29 @@ _HTML_SHELL = (
     # S11: the GenAI surface, linked from the app's assistant nav.
     "<li><a href='/v1/chat/completions'>assistant</a></li>"
     "<li><a href='/assistant/system-prompt.txt'>assistant instructions</a></li>"
+    # WP-08 (REQ-DET-004, REQ-DET-009): the four CWE emitters and five injection families.
+    # Each planted route is paired with its hardened control, so a positive and a decoy are
+    # one request apart on the same origin.
+    "<ul>"
+    "<li><a href='/directory?uid=alice'>directory</a></li>"
+    "<li><a href='/directory-safe?uid=alice'>safe directory</a></li>"
+    "<li><a href='/xpath?q=alice'>xpath search</a></li>"
+    "<li><a href='/xpath-safe?q=alice'>safe xpath</a></li>"
+    "<li><a href='/calc?expr=1'>calculator</a></li>"
+    "<li><a href='/calc-safe?expr=1'>safe calculator</a></li>"
+    "<li><a href='/tools/lookup?host=127.0.0.1'>lookup tool</a></li>"
+    "<li><a href='/tools/lookup-safe?host=127.0.0.1'>safe lookup</a></li>"
+    "<li><a href='/reset'>password reset</a></li>"
+    "<li><a href='/reset-safe'>safe reset</a></li>"
+    "<li><a href='/subscribe?email=alice@example.com'>subscribe</a></li>"
+    "<li><a href='/subscribe-safe?email=alice@example.com'>safe subscribe</a></li>"
+    "<li><a href='/account'>account</a></li>"
+    "<li><a href='/account-hardened'>safe account</a></li>"
+    "<li><a href='/secure/reports'>reports</a></li>"
+    "<li><a href='/secure/hardened'>hardened reports</a></li>"
+    "<li><a href='/api/quote?amount=100'>quote</a></li>"
+    "<li><a href='/api/quote-safe?amount=100'>safe quote</a></li>"
+    "</ul>"
     "</ul>"
     "<form action='/upload' method='post' enctype='multipart/form-data'>"
     "<input type='file' name='file'><input type='submit' value='upload'></form>"
@@ -579,6 +635,62 @@ _SQL_ERROR = (
     "<p>You have an error in your SQL syntax; check the manual that corresponds to your "
     "MySQL server version for the right syntax to use near ''' at line 1</p></body></html>"
 )
+
+#: WP-08 fixtures. The directory/catalog record marker is the one the LDAP and XPath oracles
+#: count; the error strings are the parser exceptions those oracles match.
+_RECORD_MARKER = '<li class="record">'
+_LDAP_NAMES = ("alice", "bob", "carol", "dave", "erin")
+_LDAP_ERROR = (
+    "<!doctype html><html><body><h1>Directory error</h1>"
+    "<p>LDAPException: Bad search filter (InvalidSearchFilter)</p></body></html>"
+)
+_XPATH_ERROR = (
+    "<!doctype html><html><body><h1>XPath error</h1>"
+    "<p>XPathException: Invalid XPath expression near '''</p></body></html>"
+)
+_SECURE_DENIED = (
+    "<!doctype html><html><body><h1>Forbidden</h1><p>authorization required</p></body></html>"
+)
+_SECURE_REPORTS = (
+    "<!doctype html><html><body><h1>Confidential reports</h1>"
+    f"<ul>{_RECORD_MARKER}Q3 revenue report</li>"
+    f"{_RECORD_MARKER}Board minutes</li></ul></body></html>"
+)
+
+
+def _arithmetic(expression: str) -> int | None:
+    """Evaluate a *bare integer arithmetic* expression without ``eval`` (the lab's calculator).
+
+    Only constants, ``+ - * /`` and integer literals survive the whitelist walk, so the
+    fixture cannot be talked into importing, calling or reading anything even if the probe
+    corpus grows. ``None`` means "not an arithmetic expression".
+    """
+    try:
+        tree = ast.parse(expression, mode="eval")
+    except SyntaxError:
+        return None
+
+    def walk(node: ast.AST) -> int | None:
+        if isinstance(node, ast.Expression):
+            return walk(node.body)
+        if isinstance(node, ast.Constant) and isinstance(node.value, int):
+            return int(node.value)
+        if isinstance(node, ast.BinOp):
+            left, right = walk(node.left), walk(node.right)
+            if left is None or right is None:
+                return None
+            if isinstance(node.op, ast.Add):
+                return left + right
+            if isinstance(node.op, ast.Sub):
+                return left - right
+            if isinstance(node.op, ast.Mult):
+                return left * right
+            if isinstance(node.op, ast.Div) and right:
+                return left // right
+        return None
+
+    return walk(tree)
+
 
 _USERS: dict[str, dict[str, Any]] = {
     "1": {"id": 1, "username": "alice", "email": "alice@example.com", "role": "user"},
@@ -715,6 +827,12 @@ class _Handler(BaseHTTPRequestHandler):
         handler = self._ROUTES.get(route)
         if handler is not None:
             handler(self, query)
+            return
+        # WP-08 cache deception: the personalized account page is also served for a
+        # static-looking suffix, which is the deception primitive. The hardened twin has no
+        # such branch, so its suffixed path is an ordinary 404.
+        if route.startswith("/account/") and route.endswith((".css", ".js", ".png")):
+            self._account(query)
             return
         self._respond(404, _NOT_FOUND)
 
@@ -1628,6 +1746,216 @@ class _Handler(BaseHTTPRequestHandler):
     def _saml_acs_safe(self, query: dict[str, list[str]], body: bytes) -> None:
         self._respond(400, "<html><body><p>invalid signature</p></body></html>")
 
+    # ------------------------------------------------------------------ routes (GET, WP-08 breadth)
+    # Each family has a planted route and a hardened twin. The twins differ only in the
+    # control the finding claims is missing, so the paired acceptance test is meaningful.
+    def _directory(self, query: dict[str, list[str]]) -> None:
+        """LDAP filter sink: ``*`` broadens, malformed filter syntax raises the parser."""
+        uid = query.get("uid", ["alice"])[0]
+        if any(token in uid for token in ("*)(", "\\")):
+            self._respond(400, _LDAP_ERROR)
+            return
+        matches = _LDAP_NAMES if uid == "*" else tuple(name for name in _LDAP_NAMES if name == uid)
+        records = "".join(f"{_RECORD_MARKER}{name}</li>" for name in matches)
+        self._respond(200, f"<html><body><h1>Directory</h1><ul>{records}</ul></body></html>")
+
+    def _directory_safe(self, query: dict[str, list[str]]) -> None:
+        """The control: filter metacharacters are escaped, so every value is a literal."""
+        uid = query.get("uid", ["alice"])[0]
+        matches = tuple(name for name in _LDAP_NAMES if name == uid)
+        records = "".join(f"{_RECORD_MARKER}{name}</li>" for name in matches)
+        self._respond(200, f"<html><body><h1>Directory</h1><ul>{records}</ul></body></html>")
+
+    def _xpath(self, query: dict[str, list[str]]) -> None:
+        """XPath predicate sink: the inert true/false pair widens or empties the result set."""
+        value = query.get("q", [""])[0]
+        if "'[" in value or "count(" in value or "')(" in value:
+            self._respond(500, _XPATH_ERROR)
+            return
+        if "' or '1'='1" in value or "1 or 1=1" in value:
+            matches: tuple[str, ...] = _LDAP_NAMES
+        elif "' or '1'='2" in value or "1 or 1=2" in value:
+            matches = ()
+        else:
+            matches = tuple(name for name in _LDAP_NAMES if name == value)
+        records = "".join(f"{_RECORD_MARKER}{name}</li>" for name in matches)
+        self._respond(200, f"<html><body><h1>Catalog</h1><ul>{records}</ul></body></html>")
+
+    def _xpath_safe(self, query: dict[str, list[str]]) -> None:
+        """The control: quotes are treated as literal text, so predicates match nothing."""
+        value = query.get("q", [""])[0]
+        matches = tuple(name for name in _LDAP_NAMES if name == value)
+        records = "".join(f"{_RECORD_MARKER}{name}</li>" for name in matches)
+        self._respond(200, f"<html><body><h1>Catalog</h1><ul>{records}</ul></body></html>")
+
+    def _calc(self, query: dict[str, list[str]]) -> None:
+        """An expression-evaluation sink: bare arithmetic is evaluated server-side."""
+        expression = query.get("expr", ["1"])[0]
+        result = _arithmetic(expression)
+        if result is None:
+            self._respond(400, "<html><body><p>invalid expression</p></body></html>")
+            return
+        self._respond(200, f"<html><body><p>= {result}</p></body></html>")
+
+    def _calc_safe(self, query: dict[str, list[str]]) -> None:
+        """The control: only a plain integer literal is accepted."""
+        expression = query.get("expr", ["1"])[0]
+        if not re.fullmatch(r"[0-9]+", expression):
+            self._respond(400, "<html><body><p>invalid expression</p></body></html>")
+            return
+        self._respond(200, f"<html><body><p>= {expression}</p></body></html>")
+
+    def _tool_lookup(self, query: dict[str, list[str]]) -> None:
+        """A command-line wrapper: the value is split into argv, so an option is parsed."""
+        host = query.get("host", ["127.0.0.1"])[0]
+        parts = host.split()
+        if len(parts) > 1:
+            self._respond(
+                400,
+                "<html><body><p>usage: lookup [-h] &lt;host&gt;</p>"
+                f"<p>lookup: unrecognized option '{parts[1]}'</p></body></html>",
+            )
+            return
+        self._respond(200, f"<html><body><p>lookup ok: {host}</p></body></html>")
+
+    def _tool_lookup_safe(self, query: dict[str, list[str]]) -> None:
+        """The control: the value is passed through as one opaque argument."""
+        host = query.get("host", ["127.0.0.1"])[0]
+        self._respond(200, f"<html><body><p>lookup ok: {host}</p></body></html>")
+
+    def _reset(self, query: dict[str, list[str]]) -> None:
+        """A password-reset page that builds its link from the client's Host header."""
+        host = self.headers.get("Host", "127.0.0.1")
+        self._respond(
+            200,
+            "<html><body><h1>Password reset</h1><p>A reset link was sent:</p>"
+            f"<a href='http://{host}/reset/confirm?token=lab-token'>confirm</a></body></html>",
+        )
+
+    def _reset_safe(self, query: dict[str, list[str]]) -> None:
+        """The control: the reset link is built from a configured canonical host."""
+        self._respond(
+            200,
+            "<html><body><h1>Password reset</h1><p>A reset link was sent.</p></body></html>",
+        )
+
+    def _subscribe(self, query: dict[str, list[str]]) -> None:
+        """A mail endpoint that splits CRLF in the address into additional headers."""
+        email = query.get("email", [""])[0]
+        headers: dict[str, str] = {
+            "To": email.split("\r\n")[0],
+            "Subject": "Subscription confirmed",
+        }
+        for line in email.split("\r\n")[1:]:
+            name, _, value = line.partition(":")
+            if name.strip():
+                headers[name.strip()] = value.strip()
+        self._respond(
+            200,
+            json.dumps({"queued": True, "headers": headers}),
+            content_type="application/json",
+        )
+
+    def _subscribe_safe(self, query: dict[str, list[str]]) -> None:
+        """The control: a strict address grammar rejects CRLF before the mailer sees it."""
+        email = query.get("email", [""])[0]
+        if not re.fullmatch(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", email):
+            self._respond(
+                400, json.dumps({"error": "invalid email"}), content_type="application/json"
+            )
+            return
+        self._respond(
+            200,
+            json.dumps(
+                {"queued": True, "headers": {"To": email, "Subject": "Subscription confirmed"}}
+            ),
+            content_type="application/json",
+        )
+
+    def _account(self, query: dict[str, list[str]]) -> None:
+        """A personalized page with shared-cacheable headers (the deception primitive)."""
+        self._respond(
+            200,
+            "<html><body><h1>Account overview</h1>"
+            "<p>Signed in as guest. Balance: 100 EUR. Account reference: ACC-0001.</p>"
+            "</body></html>",
+            headers={"Cache-Control": "public, max-age=600", "X-Cache": "MISS"},
+        )
+
+    def _account_hardened(self, query: dict[str, list[str]]) -> None:
+        """The control: the same page refuses shared caching and has no static branch."""
+        self._respond(
+            200,
+            "<html><body><h1>Account overview</h1>"
+            "<p>Signed in as guest. Balance: 100 EUR. Account reference: ACC-0001.</p>"
+            "</body></html>",
+            headers={"Cache-Control": "private, no-store"},
+        )
+
+    def _secure_reports(self, query: dict[str, list[str]]) -> None:
+        """A protected resource, denied on its canonical path."""
+        self._respond(403, _SECURE_DENIED)
+
+    def _secure_reports_bypass(self, query: dict[str, list[str]]) -> None:
+        """The authorization decision missed this spelling of the same handler."""
+        self._respond(200, _SECURE_REPORTS)
+
+    def _secure_hardened(self, query: dict[str, list[str]]) -> None:
+        """The control: every spelling of this route is denied."""
+        self._respond(403, _SECURE_DENIED)
+
+    def _secure_hardened_bypass(self, query: dict[str, list[str]]) -> None:
+        """The control's alternate spelling: also denied (path normalization before authz)."""
+        self._respond(403, _SECURE_DENIED)
+
+    def _quote(self, query: dict[str, list[str]]) -> None:
+        """A numeric sink that checks the type but not the range."""
+        amount = query.get("amount", ["100"])[0]
+        try:
+            value = int(amount)
+        except ValueError:
+            self._respond(
+                400, json.dumps({"error": "invalid amount"}), content_type="application/json"
+            )
+            return
+        self._respond(
+            200,
+            json.dumps(
+                {
+                    "accepted": True,
+                    "quote_reference": "Q-2026-0001",
+                    "amount": value,
+                    "currency": "EUR",
+                    "message": "quote generated",
+                }
+            ),
+            content_type="application/json",
+        )
+
+    def _quote_safe(self, query: dict[str, list[str]]) -> None:
+        """The control: a bounded non-negative integer grammar rejects out-of-domain values."""
+        amount = query.get("amount", ["100"])[0]
+        if not re.fullmatch(r"[0-9]+", amount) or int(amount) > 1_000_000:
+            self._respond(
+                400,
+                json.dumps({"error": "amount must be between 0 and 1000000"}),
+                content_type="application/json",
+            )
+            return
+        self._respond(
+            200,
+            json.dumps(
+                {
+                    "accepted": True,
+                    "quote_reference": "Q-2026-0001",
+                    "amount": int(amount),
+                    "currency": "EUR",
+                    "message": "quote generated",
+                }
+            ),
+            content_type="application/json",
+        )
+
     # ------------------------------------------------------------------ routes (POST, M4/S7)
     def _jenkins_login(self, query: dict[str, list[str]], body: bytes) -> None:
         fields = urllib.parse.parse_qs(body.decode("utf-8", "replace"))
@@ -2032,6 +2360,27 @@ _Handler._ROUTES = {
     "/merge": _Handler._merge,
     "/xxe": _Handler._xxe_page,
     "/deser": _Handler._deser_page,
+    # ---------------------------------------------------------- WP-08 breadth (REQ-DET-004/009)
+    "/directory": _Handler._directory,
+    "/directory-safe": _Handler._directory_safe,
+    "/xpath": _Handler._xpath,
+    "/xpath-safe": _Handler._xpath_safe,
+    "/calc": _Handler._calc,
+    "/calc-safe": _Handler._calc_safe,
+    "/tools/lookup": _Handler._tool_lookup,
+    "/tools/lookup-safe": _Handler._tool_lookup_safe,
+    "/reset": _Handler._reset,
+    "/reset-safe": _Handler._reset_safe,
+    "/subscribe": _Handler._subscribe,
+    "/subscribe-safe": _Handler._subscribe_safe,
+    "/account": _Handler._account,
+    "/account-hardened": _Handler._account_hardened,
+    "/secure/reports": _Handler._secure_reports,
+    "/Secure/Reports": _Handler._secure_reports_bypass,
+    "/secure/hardened": _Handler._secure_hardened,
+    "/Secure/Hardened": _Handler._secure_hardened_bypass,
+    "/api/quote": _Handler._quote,
+    "/api/quote-safe": _Handler._quote_safe,
     # ------------------------------------------------------------------ M6 (S11) routes
     "/uploads/shell.php": _Handler._served_shell,
     "/uploads/denied.php": _Handler._denied,

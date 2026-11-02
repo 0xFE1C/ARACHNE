@@ -89,8 +89,9 @@ def test_the_module_exposes_the_core_and_extended_checks() -> None:
     # S15 appended the six proof-ladder checks (4x L2 out-of-band variants + the attested
     # L3/L4 proofs) — 34 + 6 = 40; S19 appended the two credentialed checks — 42; S29 appended
     # the depth-expansion family: two GraphQL probes, two WebSocket probes and the L2
-    # client-secret check — 47.
-    assert len(ids) == 47, ids
+    # client-secret check — 47. WP-08 adds the four CWE Top 25 emitters and the five
+    # injection families (REQ-DET-004/009) — 56.
+    assert len(ids) == 56, ids
     assert len(set(ids)) == len(ids)
     # The proof ladder's declarations are part of the module's contract: the L2+ rows are
     # all opt-in, and only rce-echo/state-marker demand the state-change attestation.

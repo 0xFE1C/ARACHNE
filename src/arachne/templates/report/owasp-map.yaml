@@ -108,6 +108,8 @@ by_cwe:
   CWE-843: A04
   CWE-20: A03
   CWE-77: A03
+  CWE-90: A03
+  CWE-93: A03
   CWE-94: A03
   CWE-98: A03
   CWE-184: A03
@@ -115,9 +117,13 @@ by_cwe:
   CWE-471: A03
   CWE-610: A03
   CWE-643: A03
+  CWE-644: A03
   CWE-917: A03
   CWE-943: A03
   CWE-1236: A03
+  # Cache deception stores another user's response in a shared cache: a configuration
+  # failure of the caching policy (A05) rather than an injection.
+  CWE-524: A05
   CWE-913: A01
   CWE-259: A07
   CWE-276: A01

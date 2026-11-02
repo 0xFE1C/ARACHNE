@@ -1908,3 +1908,119 @@ rules:
     narrative: m6.ad-path
     tags: [ad, identity]
 
+  # ---------------------------------------------------------------- WP-08 breadth (REQ-DET-004, REQ-DET-009)
+  # The four CWE Top 25 emitters and five injection families. Each rule fires on the one
+  # artifact signal its check writes, so a finding still cites the oracle's facts rather
+  # than a prose match.
+  - id: web.ldap-injection
+    title: "LDAP injection"
+    check_ref: ["m3.ldap-injection", "M3#ldap-injection", "research:ch03#2"]
+    conditions:
+      matched: {evidence.artifact.signal == "ldap-injection"}
+    severity_if:
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.8"
+    cwe: CWE-90
+    tags: [injection, ldap]
+
+  - id: web.xpath-injection
+    title: "XPath injection"
+    check_ref: ["m3.xpath-injection", "M3#xpath-injection", "research:ch03#1"]
+    conditions:
+      matched: {evidence.artifact.signal == "xpath-injection"}
+    severity_if:
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.8"
+    cwe: CWE-643
+    tags: [injection, xpath]
+
+  - id: web.code-injection
+    title: "Code injection (expression evaluation)"
+    check_ref: ["m3.code-injection-oracle", "M3#code-injection-oracle", "research:ch03#6"]
+    conditions:
+      matched: {evidence.artifact.signal == "code-injection"}
+    severity_if:
+      - "matched -> critical"
+    confidence:
+      - "matched -> 0.85"
+    cwe: CWE-94
+    tags: [injection, code]
+
+  - id: web.argument-injection
+    title: "Command-argument injection"
+    check_ref: ["m3.argument-injection", "M3#argument-injection", "research:ch03#8"]
+    conditions:
+      matched: {evidence.artifact.signal == "argument-injection"}
+    severity_if:
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.7"
+    cwe: CWE-77
+    tags: [injection, command]
+
+  - id: web.host-header-injection
+    title: "Host header injection"
+    check_ref: ["m3.host-header-injection", "M3#host-header-injection", "research:ch03#15"]
+    conditions:
+      matched: {evidence.artifact.signal == "host-header-injection"}
+    severity_if:
+      - "matched -> medium"
+    confidence:
+      - "matched -> 0.75"
+    cwe: CWE-644
+    tags: [injection, headers]
+
+  - id: web.email-header-injection
+    title: "Email header injection"
+    check_ref: ["m3.email-header-injection", "M3#email-header-injection", "research:ch03#15"]
+    conditions:
+      matched: {evidence.artifact.signal == "email-header-injection"}
+    severity_if:
+      - "matched -> medium"
+    confidence:
+      - "matched -> 0.8"
+    cwe: CWE-93
+    tags: [injection, email]
+
+  - id: web.cache-deception
+    title: "Web cache deception"
+    check_ref: ["m3.cache-deception", "M3#cache-deception", "research:ch03#17"]
+    conditions:
+      matched: {evidence.artifact.signal == "cache-deception"}
+    severity_if:
+      - "matched -> medium"
+    confidence:
+      - "matched -> 0.7"
+    cwe: CWE-524
+    tags: [cache]
+
+  - id: web.authz-bypass
+    title: "Authorization-schema bypass"
+    check_ref: ["m3.authz-bypass", "M3#authz-bypass", "research:ch03#18"]
+    conditions:
+      matched: {evidence.artifact.signal == "authz-bypass"}
+    severity_if:
+      - "matched -> high"
+    confidence:
+      - "matched -> 0.8"
+    cwe: CWE-863
+    tags: [authorization]
+
+  - id: web.input-validation
+    title: "Improper input validation (out-of-domain value accepted)"
+    check_ref: [
+      "m3.input-validation-audit",
+      "M3#input-validation-audit",
+      "research:ch03#30",
+    ]
+    conditions:
+      matched: {evidence.artifact.signal == "input-validation"}
+    severity_if:
+      - "matched -> low"
+    confidence:
+      - "matched -> 0.6"
+    cwe: CWE-20
+    tags: [validation]
+

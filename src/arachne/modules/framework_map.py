@@ -40,17 +40,21 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
 from importlib.resources import files
-from typing import Any
+from typing import Any, Final
 
 from arachne.core.errors import ConfigurationError
 
 __all__ = [
+    "CWE_TOP25_FILE",
     "FRAMEWORK_FILES",
     "FRAMEWORK_ORDER",
+    "CweTop25State",
     "Framework",
     "FrameworkItem",
     "WstgState",
     "api_top10_coverage",
+    "cwe_top25_coverage",
+    "cwe_top25_framework",
     "framework",
     "framework_for_item",
     "framework_versions",
@@ -74,6 +78,11 @@ FRAMEWORK_FILES: tuple[tuple[str, str], ...] = (
 
 #: The order items are listed in, everywhere (stable output regardless of declaration order).
 FRAMEWORK_ORDER: tuple[str, ...] = ("WSTG", "API", "CWE", "ATT&CK", "LLM", "ASI")
+
+#: The CWE Top 25 (2025) denominator (REQ-DET-004). It is not a mapping vocabulary — a check
+#: never names a "CWE Top 25" item — so it is deliberately *not* in :data:`FRAMEWORK_FILES`;
+#: it is the list the ledger tallies the emitted CWEs against.
+CWE_TOP25_FILE: Final = "cwe-top25-2025.json"
 
 _FRAMEWORKS_PACKAGE = "arachne.data"
 _FRAMEWORKS_DIR = "frameworks"
@@ -324,4 +333,45 @@ def api_top10_coverage(mapped: Mapping[str, Sequence[str]]) -> tuple[WstgState, 
             checks=tuple(sorted(mapped.get(item.id, ()))),
         )
         for item in spec.items
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class CweTop25State:
+    """One CWE Top 25 (2025) id and the checks that *emit* it (REQ-DET-004)."""
+
+    item: FrameworkItem
+    checks: tuple[str, ...] = ()
+
+    @property
+    def id(self) -> str:
+        return self.item.id
+
+    @property
+    def in_scope(self) -> bool:
+        return self.item.in_scope
+
+    @property
+    def covered(self) -> bool:
+        return bool(self.checks)
+
+
+@lru_cache(maxsize=1)
+def cwe_top25_framework() -> Framework:
+    """The pinned CWE Top 25 (2025) denominator (``cwe-top25-2025.json``)."""
+    return _load("CWE Top 25", CWE_TOP25_FILE)
+
+
+def cwe_top25_coverage(mapped: Mapping[str, Sequence[str]]) -> tuple[CweTop25State, ...]:
+    """The 25 ids with the checks whose findings are classified as each (REQ-DET-004).
+
+    ``mapped`` is ``{CWE id: check ids}`` taken from the registry's **primary** ``cwe`` field,
+    so "covered" means at least one registered check emits that weakness, not merely that it
+    names the id in a framework tuple. The seven memory-safety classes are in the denominator
+    and authored ``out_of_scope`` with a reason, so 18/18 is visible against 25, not hidden
+    by a shrunken list.
+    """
+    return tuple(
+        CweTop25State(item=item, checks=tuple(sorted(mapped.get(item.id, ()))))
+        for item in cwe_top25_framework().items
     )
