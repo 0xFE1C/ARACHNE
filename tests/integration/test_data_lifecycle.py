@@ -43,6 +43,7 @@ SEARCH_URL = "https://search.example.net/search?q={query}&limit={limit}&format=j
 
 runner = CliRunner()
 
+
 #: The harness's viewer key, as a header dict (every read needs one).
 def _viewer_auth() -> dict[str, str]:
     from tests.helpers.api import VIEWER_KEY, auth
@@ -126,9 +127,7 @@ def _run_scan(extra: list[str] | None = None) -> tuple[int, dict[str, object]]:
 
 def _object_files(evidence_dir: Path) -> list[Path]:
     return sorted(
-        path
-        for path in evidence_dir.rglob("*")
-        if path.is_file() and path.parent.name != ".tmp"
+        path for path in evidence_dir.rglob("*") if path.is_file() and path.parent.name != ".tmp"
     )
 
 
@@ -144,10 +143,7 @@ def test_the_scan_offloads_large_evidence_content_addressed_and_compressed(
     try:
         candidates = services.findings.list_candidates(scan_id)
         offloaded = [
-            record
-            for candidate in candidates
-            for record in candidate.evidence
-            if record.offloaded
+            record for candidate in candidates for record in candidate.evidence if record.offloaded
         ]
         assert offloaded, "nothing was offloaded: the threshold did not bite"
         assert all(record.storage == "local" for record in offloaded)
@@ -277,9 +273,9 @@ def _download_settings(tmp_path: Path, database: Path, evidence_dir: Path) -> ob
 
     from arachne.core.config import EvidenceSettings
 
-    settings = build_api_settings(tmp_path, evidence=EvidenceSettings(
-        offload_threshold_bytes=64, dir=str(evidence_dir)
-    ))
+    settings = build_api_settings(
+        tmp_path, evidence=EvidenceSettings(offload_threshold_bytes=64, dir=str(evidence_dir))
+    )
     object.__setattr__(settings, "database_url", f"sqlite:///{database}")
     return settings
 
@@ -326,10 +322,7 @@ async def _audit_actions(services: object) -> set[str]:
     from arachne.data.models import AuditLog
 
     with services.session_factory() as session:  # type: ignore[attr-defined]
-        return {
-            str(value)
-            for value in session.scalars(select(AuditLog.action).distinct()).all()
-        }
+        return {str(value) for value in session.scalars(select(AuditLog.action).distinct()).all()}
 
 
 # --------------------------------------------------------------- REQ-DATA-001
@@ -421,9 +414,7 @@ def test_the_metrics_endpoint_reflects_a_real_scan(
         services.close()
 
 
-def test_a_real_scan_produces_a_span_tree(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_a_real_scan_produces_a_span_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _scan_env(tmp_path, monkeypatch)
     exporter = InMemoryExporter()
     configure_tracing(get_settings(), exporter=exporter, sample_ratio=1.0)

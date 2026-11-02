@@ -224,9 +224,7 @@ def test_a_traversal_payload_is_only_sent_to_a_file_parameter() -> None:
     )
     generic_plan = HttpFuzzPlan(
         label="generic-param",
-        parameters=(
-            HttpParameter(url="http://127.0.0.1:1/search?q=1", parameter="q"),
-        ),
+        parameters=(HttpParameter(url="http://127.0.0.1:1/search?q=1", parameter="q"),),
         families=("traversal",),
     )
     file_cases = http_cases(file_plan, payloads, limit=50)

@@ -185,9 +185,9 @@ async def test_the_agentic_step_runs_inside_the_scan_pipeline(lab: WebLab) -> No
     assert journal.state is HypothesisJournalState.COMPLETED
     assert journal.proposed >= 1, "the M3 lab should offer something to reason about"
     assert journal.cursor == len(journal.proposals)
-    assert (
-        len(journal.executed) + len(journal.refused) + _deferred(journal) == journal.cursor
-    ), "every proposal must have exactly one decision"
+    assert len(journal.executed) + len(journal.refused) + _deferred(journal) == journal.cursor, (
+        "every proposal must have exactly one decision"
+    )
     assert AuditAction.HYPOTHESIS_PROPOSED.value in harness.actions()
     assert AuditAction.HYPOTHESIS_COMPLETED.value in harness.actions()
 

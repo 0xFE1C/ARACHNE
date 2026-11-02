@@ -1169,8 +1169,7 @@ class _Handler(BaseHTTPRequestHandler):
             # One generic refusal for a real account: no enumeration signal for these.
             self._respond(
                 401,
-                "<html><body><h1>Log in</h1><p>Invalid username or password.</p>"
-                "</body></html>",
+                "<html><body><h1>Log in</h1><p>Invalid username or password.</p></body></html>",
             )
             return
         # The S6 enumeration trap: a *privileged-looking* name that is not an account.
@@ -1670,7 +1669,6 @@ class _Handler(BaseHTTPRequestHandler):
             content_type="text/plain; charset=utf-8",
         )
 
-
     # ------------------------------------------------------------------ S19 authenticated area
     def _auth_cookie(self) -> str | None:
         """The session token from the request's Cookie header (``AUTH_SID=<token>``)."""
@@ -1869,6 +1867,7 @@ class _Handler(BaseHTTPRequestHandler):
     def _logout_soft_post(self, query: dict[str, list[str]], body: bytes) -> None:
 
         self._logout_soft(query)
+
 
 _Handler._ROUTES = {
     "/": _Handler._index,

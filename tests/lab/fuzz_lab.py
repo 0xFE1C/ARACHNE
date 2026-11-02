@@ -115,9 +115,7 @@ def arc_stats_request(*, request_id: int = 1) -> bytes:
 
 def arc_lookup_request(key: bytes, *, request_id: int = 1) -> bytes:
     """A well-formed LOOKUP for ``key``."""
-    return arc_request(
-        OPCODE_LOOKUP, struct.pack(">H", len(key)) + key, request_id=request_id
-    )
+    return arc_request(OPCODE_LOOKUP, struct.pack(">H", len(key)) + key, request_id=request_id)
 
 
 @dataclass
@@ -227,13 +225,9 @@ class ArcServer:
                 request_id, STATUS_INTERNAL_FAULT, b"induced", request_id=request_id
             )
         if magic != ARC_MAGIC_REQUEST:
-            return self._respond(
-                request_id, STATUS_BAD_LENGTH, b"bad magic", request_id=request_id
-            )
+            return self._respond(request_id, STATUS_BAD_LENGTH, b"bad magic", request_id=request_id)
         if version != ARC_VERSION:
-            return self._respond(
-                request_id, STATUS_UNSUPPORTED_VERSION, b"", request_id=request_id
-            )
+            return self._respond(request_id, STATUS_UNSUPPORTED_VERSION, b"", request_id=request_id)
         body = data[8 : 8 + body_length]
         if len(body) != body_length:
             self.bad_lengths += 1

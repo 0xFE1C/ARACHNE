@@ -217,12 +217,9 @@ class DefenderReport:
         lines.append("| Action | Technique(s) | Verdict | Matching rules |")
         lines.append("|---|---|---|---|")
         for item in self.sigma:
-            matched = (
-                ", ".join(f"{title} ({level})" for _, title, level, _ in item.hits) or "none"
-            )
+            matched = ", ".join(f"{title} ({level})" for _, title, level, _ in item.hits) or "none"
             lines.append(
-                f"| {item.check_id} | {', '.join(item.techniques)} | {item.verdict} "
-                f"| {matched} |"
+                f"| {item.check_id} | {', '.join(item.techniques)} | {item.verdict} | {matched} |"
             )
         lines.append("")
         misses = [item for item in self.sigma if not item.matched]

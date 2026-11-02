@@ -151,6 +151,7 @@ class ScanServices:
     def close(self) -> None:
         self.engine.dispose()
 
+
 def require_schema(engine: Engine) -> None:
     """Fail with an actionable message when migrations have not been applied (F-09-02)."""
     present = set(inspect(engine).get_table_names())
@@ -241,9 +242,7 @@ def build_services(settings: Settings | None = None, *, check_schema: bool = Tru
         target_store=target_store,
         # S25: findings and evidence are signed as they are written, and every evidence row
         # is stamped with this deployment's region (REQ-RESIL-004).
-        findings=SqlFindingStore(
-            factory, signer=signer, region=effective.resilience.region
-        ),
+        findings=SqlFindingStore(factory, signer=signer, region=effective.resilience.region),
         analyses=SqlAnalysisStore(factory),
         projects=projects,
         feeds=FeedStore(factory, directory=effective.feeds_dir),

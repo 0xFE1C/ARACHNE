@@ -119,15 +119,18 @@ def test_decisions_refuse_a_naive_timestamp() -> None:
             outcome=HypothesisOutcome.EXECUTED,
             at=datetime(2026, 10, 30, 12, 0),
         )
-    assert HypothesisDecision(
-        hypothesis_id="h-1",
-        check_id="m3.sqli-oracle",
-        asset="https://x/",
-        kind=HypothesisKind.VERIFY_FINDING,
-        inputs_hash="deadbeef",
-        outcome=HypothesisOutcome.EXECUTED,
-        at=datetime(2026, 10, 30, 12, 0, tzinfo=UTC),
-    ).at.tzinfo is not None
+    assert (
+        HypothesisDecision(
+            hypothesis_id="h-1",
+            check_id="m3.sqli-oracle",
+            asset="https://x/",
+            kind=HypothesisKind.VERIFY_FINDING,
+            inputs_hash="deadbeef",
+            outcome=HypothesisOutcome.EXECUTED,
+            at=datetime(2026, 10, 30, 12, 0, tzinfo=UTC),
+        ).at.tzinfo
+        is not None
+    )
 
 
 # --------------------------------------------------------------------------- heuristic

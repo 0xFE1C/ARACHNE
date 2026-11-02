@@ -184,8 +184,9 @@ def test_a_destructive_added_line_is_refused(added: str) -> None:
 
 
 # ------------------------------------------------------------------ dependency manifests
-@pytest.mark.parametrize("manifest", ["requirements.txt", "package-lock.json", "go.mod",
-                                      "pyproject.toml", "Cargo.lock"])
+@pytest.mark.parametrize(
+    "manifest", ["requirements.txt", "package-lock.json", "go.mod", "pyproject.toml", "Cargo.lock"]
+)
 def test_a_dependency_manifest_edit_is_refused(manifest: str) -> None:
     diff = _diff(
         f"--- a/{manifest}",

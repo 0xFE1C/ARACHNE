@@ -69,7 +69,8 @@ BUILTIN_K8S_RULES: Final[tuple[K8sRule, ...]] = (
     K8sRule("k8s-hostpath-volume", "high", "a hostPath volume mounts host storage into the pod"),
     K8sRule("k8s-latest-image", "medium", "a container image has no pinned tag (or :latest)"),
     K8sRule(
-        "k8s-automount-token", "medium",
+        "k8s-automount-token",
+        "medium",
         "the pod automounts the default service-account token",
     ),
     K8sRule("k8s-dangerous-capability", "high", "a container adds a dangerous Linux capability"),

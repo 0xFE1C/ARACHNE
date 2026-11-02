@@ -341,9 +341,7 @@ def test_the_signed_headers_are_pinned_to_the_spec() -> None:
         "GET", backend.object_path(key), {}, payload_hash=empty, now=moment
     )
     authorization = headers["Authorization"]
-    assert (
-        "Credential=AKIAFAKEACCESSKEY000/20260101/us-east-1/s3/aws4_request" in authorization
-    )
+    assert "Credential=AKIAFAKEACCESSKEY000/20260101/us-east-1/s3/aws4_request" in authorization
     assert "SignedHeaders=host;x-amz-content-sha256;x-amz-date" in authorization
     signature = re.search(r"Signature=([0-9a-f]{64})$", authorization)
     assert signature is not None, authorization

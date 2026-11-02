@@ -80,9 +80,7 @@ def test_the_three_selector_kinds_match_what_they_say() -> None:
     assert pattern.matches(check_id="m3.xss-oracle", asset="https://app.example/search")
     assert not pattern.matches(check_id="m3.xss-oracle", asset="https://other.example/")
 
-    single = Suppression(
-        kind="finding", finding_id=42, reason="this instance is a test fixture"
-    )
+    single = Suppression(kind="finding", finding_id=42, reason="this instance is a test fixture")
     assert single.matches(check_id="m3.xss-oracle", asset="https://x/", finding_id=42)
     assert not single.matches(check_id="m3.xss-oracle", asset="https://x/", finding_id=7)
 
@@ -103,12 +101,19 @@ def test_the_rule_set_is_versioned_and_ordered_most_specific_first() -> None:
     rules = SuppressionSet.of(
         [
             Suppression(
-                id=1, version=1, kind="rule", check_id="m3.xss-oracle",
+                id=1,
+                version=1,
+                kind="rule",
+                check_id="m3.xss-oracle",
                 reason="hardened at the WAF",
             ),
             Suppression(
-                id=2, version=2, kind="pattern", check_id="m3.xss-oracle",
-                asset_pattern="https://app.example/*", reason="escaped by the front end",
+                id=2,
+                version=2,
+                kind="pattern",
+                check_id="m3.xss-oracle",
+                asset_pattern="https://app.example/*",
+                reason="escaped by the front end",
             ),
         ]
     )
@@ -139,8 +144,13 @@ def test_the_sql_store_round_trips_a_suppression(tmp_path) -> None:
     factory = _factory(tmp_path)
     store = SqlQualityStore(factory)
     stored = store.add_suppression(
-        Suppression(kind="pattern", check_id="m3.xss-oracle", asset_pattern="https://a/*",
-                    reason="escaped upstream", actor="alice")
+        Suppression(
+            kind="pattern",
+            check_id="m3.xss-oracle",
+            asset_pattern="https://a/*",
+            reason="escaped upstream",
+            actor="alice",
+        )
     )
     assert stored.id is not None and stored.version == 1
     again = store.list_suppressions()
@@ -263,8 +273,12 @@ def test_the_diff_respects_suppressions_and_says_so() -> None:
     rules = SuppressionSet.of(
         [
             Suppression(
-                id=1, version=4, kind="pattern", check_id="m3.xss-oracle",
-                asset_pattern="https://app.example/*", reason="escaped by the front end",
+                id=1,
+                version=4,
+                kind="pattern",
+                check_id="m3.xss-oracle",
+                asset_pattern="https://app.example/*",
+                reason="escaped by the front end",
             )
         ]
     )
@@ -285,11 +299,7 @@ def test_a_suppression_does_not_hide_a_change_to_a_known_finding() -> None:
     before = [_finding(1, severity="medium")]
     after = [_finding(1, severity="high")]
     rules = SuppressionSet.of(
-        [
-            Suppression(
-                kind="rule", check_id="m3.xss-oracle", reason="escaped by the front end"
-            )
-        ]
+        [Suppression(kind="rule", check_id="m3.xss-oracle", reason="escaped by the front end")]
     )
     diff = build_diff(before, after, scan_a="scan_1", scan_b="scan_2", suppressions=rules)
     assert diff.regressed == ("m3.xss-oracle|https://app.example/search",)

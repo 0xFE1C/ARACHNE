@@ -249,9 +249,7 @@ def test_config_violates_agrees_with_evaluate_policies() -> None:
 
 
 def test_policy_evaluation_is_deterministic() -> None:
-    snapshot = parse_snapshot_document(
-        _normalized([_resource("b"), _resource("a", public=True)])
-    )
+    snapshot = parse_snapshot_document(_normalized([_resource("b"), _resource("a", public=True)]))
     first = evaluate_policies(snapshot, _policies())
     second = evaluate_policies(snapshot, _policies())
     assert json.dumps([v.to_artifact() for v in first]) == json.dumps(

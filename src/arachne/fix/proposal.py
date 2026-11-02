@@ -208,9 +208,7 @@ class FixProposalEngine:
         self.services = services
         self.settings = services.settings
         self.auditor = auditor or services.auditor
-        self.plans = plans if plans is not None else load_fix_plan_catalog(
-            self.settings.fix.plans
-        )
+        self.plans = plans if plans is not None else load_fix_plan_catalog(self.settings.fix.plans)
         self.grants = grants if grants is not None else load_fix_grants(self.settings.fix.grants)
         self.author: PatchAuthor = author or TemplateAuthor()
         self.ai_author = ai_author
@@ -390,9 +388,7 @@ class FixProposalEngine:
         targets, skipped = resolve_targets(
             root, locations, globs=plan.globs, max_files=authorization.grant.max_files
         )
-        application = apply_plan(
-            plan, root, targets, max_files=authorization.grant.max_files
-        )
+        application = apply_plan(plan, root, targets, max_files=authorization.grant.max_files)
         if application.already_fixed:
             return self._record_refusal(
                 common,
@@ -426,8 +422,7 @@ class FixProposalEngine:
                 common,
                 status="refused",
                 reason=(
-                    "the artifact violates a scope prohibition: "
-                    + "; ".join(verdict.violations)
+                    "the artifact violates a scope prohibition: " + "; ".join(verdict.violations)
                 ),
                 extra={
                     "plan": plan.to_dict(),
@@ -461,9 +456,7 @@ class FixProposalEngine:
             rationale = f"{rationale} | {parity_detail}"
         record = store.add(
             **{
-                key: value
-                for key, value in common.items()
-                if key not in {"rationale", "meta_json"}
+                key: value for key, value in common.items() if key not in {"rationale", "meta_json"}
             },
             kind=plan.kind,
             status="proposed",
@@ -624,8 +617,7 @@ class FixProposalEngine:
         record = self._require(proposal_id)
         if record.status not in APPROVABLE:
             msg = (
-                f"proposal {proposal_id} is {record.status!r}; only a proposed one can be "
-                "approved"
+                f"proposal {proposal_id} is {record.status!r}; only a proposed one can be approved"
             )
             raise FixProposalError(msg)
         if not record.has_artifact:
@@ -648,9 +640,7 @@ class FixProposalEngine:
         )
         return updated
 
-    def reject(
-        self, proposal_id: int, *, actor: str, reason: str = ""
-    ) -> FixProposalRecord:
+    def reject(self, proposal_id: int, *, actor: str, reason: str = "") -> FixProposalRecord:
         record = self._require(proposal_id)
         updated = self._update(
             proposal_id,
@@ -1013,9 +1003,7 @@ class FixProposalEngine:
         status: str | None = None,
         limit: int = 50,
     ) -> tuple[FixProposalRecord, ...]:
-        return self._require_store().proposals(
-            finding_id=finding_id, status=status, limit=limit
-        )
+        return self._require_store().proposals(finding_id=finding_id, status=status, limit=limit)
 
     def proposal(self, proposal_id: int) -> FixProposalRecord:
         return self._require(proposal_id)

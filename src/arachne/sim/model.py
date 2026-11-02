@@ -315,10 +315,7 @@ class EstateGraph:
 
     def reachable_hosts(self) -> tuple[str, ...]:
         """Hosts a scan observed answering — the model's notion of reachability."""
-        out = {
-            edge.source.removeprefix("host:")
-            for edge in self.edges_of_kind(EdgeKind.EXPOSES)
-        }
+        out = {edge.source.removeprefix("host:") for edge in self.edges_of_kind(EdgeKind.EXPOSES)}
         return tuple(sorted(out))
 
     def observed_weaknesses(self) -> tuple[EstateWeakness, ...]:
@@ -365,9 +362,7 @@ class EstateGraph:
             return self
         key = (edge.kind.value, edge.source, edge.target)
         existing = [
-            item
-            for item in self.edges
-            if (item.kind.value, item.source, item.target) != key
+            item for item in self.edges if (item.kind.value, item.source, item.target) != key
         ]
         return replace(
             self,
@@ -609,9 +604,7 @@ def build_estate_graph(
             graph = graph.add_host(host, attributes=hosts[host])
 
         observations = (
-            services_from_candidates(candidates)
-            if reachability is None
-            else tuple(reachability)
+            services_from_candidates(candidates) if reachability is None else tuple(reachability)
         )
         for observation in observations:
             graph = graph.add_service(observation)

@@ -125,9 +125,7 @@ def model_command(
         typer.echo("")
         typer.echo("hosts (observed services):")
         for host in graph.hosts:
-            ports = ", ".join(
-                f"{item.port}/{item.protocol}" for item in graph.services_of(host)
-            )
+            ports = ", ".join(f"{item.port}/{item.protocol}" for item in graph.services_of(host))
             identities = ", ".join(graph.identities_of(host))
             suffix = f" identities: {identities}" if identities else ""
             typer.echo(f"  {host} — {ports or 'no observed service'}{suffix}")
@@ -284,9 +282,7 @@ def change_command(
         if delta.removed:
             typer.echo("removed:")
             for removed in delta.removed:
-                typer.echo(
-                    f"  {removed.id} {removed.asset} (terminal {removed.severity})"
-                )
+                typer.echo(f"  {removed.id} {removed.asset} (terminal {removed.severity})")
     finally:
         services.close()
 

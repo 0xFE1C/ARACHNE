@@ -223,9 +223,7 @@ def test_the_gate_reads_a_committed_baseline(tmp_path: Path) -> None:
 def test_a_committed_baseline_is_checked_for_internal_consistency() -> None:
     honest = _result(_score(detection=0.875))
     assert consistency_problems(honest) == ()
-    flattering = honest.model_copy(
-        update={"score": {**honest.score, "detection": 0.99}}
-    )
+    flattering = honest.model_copy(update={"score": {**honest.score, "detection": 0.99}})
     assert any("detection" in problem for problem in consistency_problems(flattering))
     impossible = honest.model_copy(
         update={"score": {**honest.score, "true_positives": 999, "detection": 0.99}}
@@ -351,6 +349,7 @@ def test_a_finding_can_be_measured_from_its_rendered_form() -> None:
         score=Score(confidence=90),
         remediation=RemediationPlan(id="fix-it", summary="parameterise the query"),
     )
+
     class Evidence:
         payload = {"endpoint": "/product"}
 

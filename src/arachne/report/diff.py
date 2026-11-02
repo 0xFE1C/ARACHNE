@@ -47,9 +47,10 @@ def suppression_summary(diff: ReportDiff) -> str:
         return "No suppression rules are in force for this scan."
     return (
         f"Suppressed by rule: {len(diff.suppressed)} of this scan's findings "
-        f"(suppressions v{diff.suppression_version}) — excluded from \"new\", never from "
+        f'(suppressions v{diff.suppression_version}) — excluded from "new", never from '
         "the record."
     )
+
 
 #: The change kinds persisted in ``scans_diff.changes_json`` .
 CHANGE_KINDS: Final[tuple[str, ...]] = ("new", "fixed", "regressed", "recurring")

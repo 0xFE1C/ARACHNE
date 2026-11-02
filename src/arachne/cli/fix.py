@@ -340,8 +340,7 @@ def _print_proposal(record: Any, *, include_diff: bool) -> None:
         typer.echo(f"  applied by {record.applied_by}")
     if record.verification_outcome:
         typer.echo(
-            f"  verification: {record.verification_outcome} "
-            f"(scan {record.verification_scan_id})"
+            f"  verification: {record.verification_outcome} (scan {record.verification_scan_id})"
         )
     if include_diff and record.diff_text:
         typer.echo("")

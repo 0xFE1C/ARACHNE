@@ -270,7 +270,7 @@ def test_m1_check_ids_and_defaults() -> None:
 
 
 def test_m1_is_passive_except_the_read_only_hybrids() -> None:
-    """ safety: passive, or a hybrid that only reads public content."""
+    """safety: passive, or a hybrid that only reads public content."""
     hybrids = {c.metadata.id for c in M1.checks if c.metadata.type == "hybrid"}
     assert hybrids == {
         "m1.js-asset-scan",

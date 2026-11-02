@@ -251,9 +251,7 @@ class SmbAuth(NetworkCheck, Module):
             )
             evidence = [self._evidence(ctx, service, result)]
             if not result.attempted:
-                yield ctx.skipped(
-                    f"no SMB credential for {service.key}: {result.detail}".strip()
-                )
+                yield ctx.skipped(f"no SMB credential for {service.key}: {result.detail}".strip())
                 continue
             service.notes["smb_auth"] = result.to_dict()
             if result.accepted:

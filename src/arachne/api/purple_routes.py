@@ -115,9 +115,7 @@ def list_campaigns(principal: AdminPrincipal, context: ContextDep) -> dict[str, 
 
 
 @purple_router.post("/purple/campaigns/{name}/run", tags=["purple"])
-async def run_campaign(
-    name: str, principal: AdminPrincipal, context: ContextDep
-) -> dict[str, Any]:
+async def run_campaign(name: str, principal: AdminPrincipal, context: ContextDep) -> dict[str, Any]:
     """Run one campaign inside its coordinated window (refused outside it, audited)."""
     service = _service(context)
     try:

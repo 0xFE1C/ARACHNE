@@ -127,9 +127,16 @@ def test_a_simulated_severity_never_reaches_a_count_or_a_gate_verdict() -> None:
     # The simulated block really does carry a critical hop — otherwise this proves nothing.
     assert any(hop.severity == "critical" for path in report.simulation.paths for hop in path.hops)
 
-    counts = {severity: len(report.findings_by_severity(severity)) for severity in (
-        "critical", "high", "medium", "low", "info",
-    )}
+    counts = {
+        severity: len(report.findings_by_severity(severity))
+        for severity in (
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "info",
+        )
+    }
     # The verified counts are the fixture's, untouched by the critical simulated hop.
     assert counts["critical"] == 1  # synthetic_report's own critical finding
     assert gate_exit_code(counts, "high") == 2  # the *verified* critical finding trips it

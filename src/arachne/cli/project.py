@@ -129,9 +129,7 @@ def project_pii(
         str | None,
         typer.Option("--categories", help="Comma-separated categories (default: all)."),
     ] = None,
-    action: Annotated[
-        str, typer.Option("--action", help="mask | hash | drop.")
-    ] = "mask",
+    action: Annotated[str, typer.Option("--action", help="mask | hash | drop.")] = "mask",
     salt: Annotated[
         str | None,
         typer.Option("--salt", help="Salt for action=hash (or set ARACHNE_PII_SALT)."),

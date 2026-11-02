@@ -205,9 +205,7 @@ class PurpleStore(Protocol):
 
     def run(self, run_id: int) -> RunRecord | None: ...
 
-    def runs(
-        self, campaign: str | None = None, *, limit: int = 50
-    ) -> tuple[RunRecord, ...]: ...
+    def runs(self, campaign: str | None = None, *, limit: int = 50) -> tuple[RunRecord, ...]: ...
 
     def previous_run(self, campaign: str, run_id: int) -> RunRecord | None: ...
 
@@ -434,9 +432,7 @@ class MemoryPurpleStore:
         return None
 
     # ------------------------------------------------------------------ alerts
-    def ingest_alerts(
-        self, alerts: Iterable[DefenderAlert], *, now: datetime | None = None
-    ) -> int:
+    def ingest_alerts(self, alerts: Iterable[DefenderAlert], *, now: datetime | None = None) -> int:
         existing = {(item.source, item.alert_id) for item in self._alerts}
         added = 0
         for alert in alerts:
@@ -645,8 +641,7 @@ class SqlPurpleStore:
     def runs(self, campaign: str | None = None, *, limit: int = 50) -> tuple[RunRecord, ...]:
         with self._session_factory() as session:
             names = {
-                row.id: row.name
-                for row in session.scalars(select(models.PurpleCampaign)).all()
+                row.id: row.name for row in session.scalars(select(models.PurpleCampaign)).all()
             }
             wanted = {key for key, name in names.items() if campaign is None or name == campaign}
             rows = session.scalars(
@@ -656,9 +651,7 @@ class SqlPurpleStore:
                 .limit(limit)
             ).all()
             ordered = list(reversed(rows))
-            return tuple(
-                _run_from_row(row, names.get(row.campaign_id, "")) for row in ordered
-            )
+            return tuple(_run_from_row(row, names.get(row.campaign_id, "")) for row in ordered)
 
     def previous_run(self, campaign: str, run_id: int) -> RunRecord | None:
         previous: RunRecord | None = None
@@ -669,9 +662,7 @@ class SqlPurpleStore:
         return None
 
     # ------------------------------------------------------------------ alerts
-    def ingest_alerts(
-        self, alerts: Iterable[DefenderAlert], *, now: datetime | None = None
-    ) -> int:
+    def ingest_alerts(self, alerts: Iterable[DefenderAlert], *, now: datetime | None = None) -> int:
         moment = _now(now)
         added = 0
         with self._session_factory() as session:
@@ -710,13 +701,9 @@ class SqlPurpleStore:
         with self._session_factory() as session:
             statement = select(models.PurpleAlert)
             if since is not None:
-                statement = statement.where(
-                    models.PurpleAlert.observed_at >= since.astimezone(UTC)
-                )
+                statement = statement.where(models.PurpleAlert.observed_at >= since.astimezone(UTC))
             if until is not None:
-                statement = statement.where(
-                    models.PurpleAlert.observed_at <= until.astimezone(UTC)
-                )
+                statement = statement.where(models.PurpleAlert.observed_at <= until.astimezone(UTC))
             statement = statement.order_by(
                 models.PurpleAlert.observed_at, models.PurpleAlert.id
             ).limit(limit)

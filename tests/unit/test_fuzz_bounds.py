@@ -124,9 +124,7 @@ def test_the_reported_reason_is_stable_when_two_bounds_run_out_together() -> Non
     )
 
     clock = FakeClock()
-    every = BudgetLedger(
-        FuzzBudget(max_cases=1, max_requests=1, max_seconds=1.0), clock=clock
-    )
+    every = BudgetLedger(FuzzBudget(max_cases=1, max_requests=1, max_seconds=1.0), clock=clock)
     every.spend(requests=1)
     clock.advance(2.0)
     assert "wall-clock budget spent" in (every.exhausted_reason() or "")
@@ -144,9 +142,7 @@ def test_a_discarded_payload_is_counted_apart_from_the_work_done() -> None:
 
 def test_the_ledger_reads_out_every_axis() -> None:
     clock = FakeClock()
-    ledger = BudgetLedger(
-        FuzzBudget(max_cases=10, max_requests=20, max_seconds=30.0), clock=clock
-    )
+    ledger = BudgetLedger(FuzzBudget(max_cases=10, max_requests=20, max_seconds=30.0), clock=clock)
     ledger.spend(requests=4)
     clock.advance(2.5)
     payload = ledger.to_dict()

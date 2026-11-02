@@ -119,9 +119,7 @@ class ScanResult:
             name = (record.check_key or "").split("/")[-1].split("@")[0]
             check = f"{record.module.lower()}.{name}"
             blob = " ".join(
-                f"{key}={value}"
-                for item in record.evidence
-                for key, value in item.payload.items()
+                f"{key}={value}" for item in record.evidence for key, value in item.payload.items()
             )
             for planted_check, marker in GROUND_TRUTH:
                 if planted_check == check and marker in blob:
@@ -442,9 +440,7 @@ async def test_the_vault_passphrase_is_needed_to_use_a_stored_credential(
             )
         },
     )
-    wrong = FileCredentialVault(
-        tmp_path / "credentials.enc", passphrase="not the passphrase"
-    )
+    wrong = FileCredentialVault(tmp_path / "credentials.enc", passphrase="not the passphrase")
     from arachne.core.errors import ConfigurationError
 
     with pytest.raises(ConfigurationError, match="could not be authenticated"):

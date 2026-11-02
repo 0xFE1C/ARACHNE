@@ -60,9 +60,7 @@ async def run_check(
 ) -> tuple[list[Any], Any, Any]:
     """Run ``m2.smb-auth`` over a real socket against the lab's SMB service."""
     settings = settings_for_checks(
-        safety=SafetySettings(
-            policy=UrlSafetyPolicy(allow_loopback=True, allow_private_ips=True)
-        ),
+        safety=SafetySettings(policy=UrlSafetyPolicy(allow_loopback=True, allow_private_ips=True)),
         rate_limit=RateLimitSettings(
             per_host_rate=1000.0,
             per_host_burst=1000,
@@ -161,9 +159,7 @@ async def test_a_credential_outside_its_scope_sends_nothing(
     lab: LabFixture, tmp_path: Path
 ) -> None:
     port = lab.services["smb"].port
-    results, memory, _check = await run_check(
-        lab, tmp_path, scope_hosts=("other.example.com",)
-    )
+    results, memory, _check = await run_check(lab, tmp_path, scope_hosts=("other.example.com",))
     assert len(results) == 1
     assert results[0].status == "info"  # a skipped result, with the reason in the note
     note = results[0].evidence[0].payload

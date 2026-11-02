@@ -64,8 +64,7 @@ class RiskAcceptance(BaseModel):
         cleaned = " ".join(value.split())
         if len(cleaned) < MIN_JUSTIFICATION_CHARS:
             msg = (
-                f"an acceptance justification must be at least {MIN_JUSTIFICATION_CHARS} "
-                "characters"
+                f"an acceptance justification must be at least {MIN_JUSTIFICATION_CHARS} characters"
             )
             raise ValueError(msg)
         return cleaned

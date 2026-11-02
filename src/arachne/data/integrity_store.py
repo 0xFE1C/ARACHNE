@@ -182,9 +182,7 @@ class SqlAuditChain:
                 tail_row = _newest_chained(session)
                 seq = int(tail_row.seq) + 1 if tail_row is not None and tail_row.seq else 1
                 prev = (
-                    str(tail_row.hash)
-                    if tail_row is not None and tail_row.hash
-                    else GENESIS_HASH
+                    str(tail_row.hash) if tail_row is not None and tail_row.hash else GENESIS_HASH
                 )
                 digest = chain_digest(seq, prev, body)
                 signature = (
@@ -275,9 +273,7 @@ class IntegrityService:
             evidences = _evidence_rows(session, scan_id)
             digest, manifest, count = seal_manifest(findings, evidences)
             signature = sign_seal(self.signer, scan_id, digest, count) if self.signer else None
-            existing = session.scalar(
-                select(IntegritySeal).where(IntegritySeal.scan_id == scan_id)
-            )
+            existing = session.scalar(select(IntegritySeal).where(IntegritySeal.scan_id == scan_id))
             if existing is None:
                 existing = IntegritySeal(
                     scan_id=scan_id,

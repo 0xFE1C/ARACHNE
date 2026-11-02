@@ -384,9 +384,7 @@ async def test_planted_instructions_are_recorded_and_change_nothing(lab: WebLab)
             "confidence": 99,
         },
     ]
-    harness = _hostile_harness(
-        lab, proposals=hostile, mode=HypothesisMode.AI, registry=registry
-    )
+    harness = _hostile_harness(lab, proposals=hostile, mode=HypothesisMode.AI, registry=registry)
     # The planted text must actually reach a candidate's evidence, or the test proves nothing.
     harness.request = harness.request.model_copy(
         update={

@@ -200,6 +200,6 @@ def test_every_report_key_a_renderer_names_exists_in_every_catalogue() -> None:
 
 def test_the_french_catalogue_is_a_real_file_of_the_expected_shape() -> None:
     text = _catalog_path("fr").read_text(encoding="utf-8")
-    assert 'locale: fr' in text
+    assert "locale: fr" in text
     parsed = load_catalog("fr")
     assert parsed["report.severity.critical"] == "Critique"

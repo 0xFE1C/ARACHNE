@@ -328,7 +328,7 @@ async def test_secrets_never_reach_evidence_and_the_manifest_is_encrypted(
 
 
 async def test_m3_and_m4_cors_findings_are_deduplicated_by_cwe_and_asset(lab: WebLab) -> None:
-    """ dedupe: one root cause, one finding, whichever module saw it first."""
+    """dedupe: one root cause, one finding, whichever module saw it first."""
     findings, analyses, session, _settings, _sink = await run_scan(lab, modules=("M3", "M4"))
     assert session.status is ScanStatus.COMPLETED
     scan_id = session.scan_id or 0

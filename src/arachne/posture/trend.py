@@ -270,8 +270,10 @@ def render_estate_markdown(
     lines: list[str] = []
     lines.append(f"# Estate posture — {posture.project}")
     lines.append("")
-    lines.append(f"Generated {posture.generated_at.strftime('%Y-%m-%d %H:%M UTC')} · "
-                 f"{len(posture.points)} scan(s) considered")
+    lines.append(
+        f"Generated {posture.generated_at.strftime('%Y-%m-%d %H:%M UTC')} · "
+        f"{len(posture.points)} scan(s) considered"
+    )
     lines.append("")
 
     lines.append("## Trend")
@@ -318,9 +320,11 @@ def render_estate_markdown(
         f"{posture.reopened_regressions} regression(s) re-opened; "
         f"{posture.still_open_verifications} verification(s) found the finding still present."
     )
-    lines.append(f"- Currently open: **{posture.open_total}** "
-                 f"({posture.open_counts.get('critical', 0)} critical, "
-                 f"{posture.open_counts.get('high', 0)} high).")
+    lines.append(
+        f"- Currently open: **{posture.open_total}** "
+        f"({posture.open_counts.get('critical', 0)} critical, "
+        f"{posture.open_counts.get('high', 0)} high)."
+    )
     lines.append("")
 
     lines.append("## Estate inventory")
@@ -329,12 +333,18 @@ def render_estate_markdown(
         for scope, count in posture.watched_scopes:
             lines.append(f"- `{scope}` — {count} resource(s) under continuous watch")
         lines.append("")
-        lines.append("Resources by service: " + ", ".join(
-            f"{service} ({count})" for service, count in sorted(posture.inventory.items())
-        ) + ".")
+        lines.append(
+            "Resources by service: "
+            + ", ".join(
+                f"{service} ({count})" for service, count in sorted(posture.inventory.items())
+            )
+            + "."
+        )
     else:
-        lines.append("_No continuous scope is watched yet — declare a continuous schedule "
-                     "targeting a cloud-config endpoint._")
+        lines.append(
+            "_No continuous scope is watched yet — declare a continuous schedule "
+            "targeting a cloud-config endpoint._"
+        )
     lines.append("")
     if simulation is not None and simulation.points:
         lines.append("## Simulated outlook (what-if)")

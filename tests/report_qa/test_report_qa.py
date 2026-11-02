@@ -609,9 +609,7 @@ def test_an_unverified_hop_renders_as_a_candidate_naming_its_check() -> None:
     assert not path.fully_verified
     candidate_hop = next(hop for hop in path.hops if not hop.verified)
     assert candidate_hop.verifying_check == "m4.env-file-probe"
-    block = render_markdown(report)[
-        render_markdown(report).index("## 9. Attack paths") :
-    ]
+    block = render_markdown(report)[render_markdown(report).index("## 9. Attack paths") :]
     assert "candidate — verify with m4.env-file-probe" in block
 
 
@@ -670,9 +668,7 @@ def test_the_framework_report_renders_coverage_and_explicit_gaps() -> None:
     iso = report.compliance[0]
     a517 = next(row for row in iso.controls if row.control == "A.5.17")
     assert a517.status == "fail" and a517.findings == ("F-000001",)
-    report_refs = {
-        ref for finding in report.findings for ref in finding.evidence_refs
-    }
+    report_refs = {ref for finding in report.findings for ref in finding.evidence_refs}
     assert set(a517.evidence_refs) == report_refs and report_refs
     assert "| A.5.17 |" in markdown and "**fail**" in markdown
     passed = [row.control for row in iso.controls if row.status == "pass"]

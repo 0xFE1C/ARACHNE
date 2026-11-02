@@ -241,12 +241,7 @@ def test_every_ladder_check_proved_its_class(run: LadderRun, check_name: str) ->
     """Each rung of the ladder produced a candidate with a proof artifact attached."""
     candidates = run.candidates_for(check_name)
     assert candidates, f"m3.{check_name} did not fire against the lab"
-    proofs = [
-        item
-        for record in candidates
-        for item in record.evidence
-        if item.kind == "proof"
-    ]
+    proofs = [item for record in candidates for item in record.evidence if item.kind == "proof"]
     assert proofs, f"m3.{check_name} fired without proof evidence"
     levels = {item.payload.get("level") for item in proofs}
     expected = {

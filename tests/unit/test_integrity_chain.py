@@ -235,9 +235,7 @@ def test_a_finding_signature_covers_its_identity() -> None:
 
     # A different title (the same row id) no longer verifies: the signature binds content.
     edited = _finding_row(title="Something else")
-    issue = verify_row_signature(
-        signer, FINDING_DOMAIN, edited, signature, subject="finding:7"
-    )
+    issue = verify_row_signature(signer, FINDING_DOMAIN, edited, signature, subject="finding:7")
     assert issue is not None and issue.kind == "modified"
 
 
@@ -262,9 +260,7 @@ def test_an_evidence_signature_pins_the_payload_digest() -> None:
     )
     # Rewriting the payload (and even leaving sha256 alone) breaks the signature.
     tampered = _evidence_row(payload_json={"status": 200, "body": "goodbye"})
-    issue = verify_row_signature(
-        signer, EVIDENCE_DOMAIN, tampered, signature, subject="evidence:4"
-    )
+    issue = verify_row_signature(signer, EVIDENCE_DOMAIN, tampered, signature, subject="evidence:4")
     assert issue is not None and issue.kind == "modified"
     assert payload_digest(row["payload_json"]) != payload_digest(tampered["payload_json"])
 
@@ -323,9 +319,7 @@ def test_a_deleted_finding_is_detected_by_the_seal() -> None:
     findings = [_finding_row(), _finding_row(id=8, title="Second")]
     evidences = [_evidence_row()]
     seal = _seal(signer, findings, evidences)
-    report = verify_seal(
-        seal, findings=findings[:1], evidences=evidences, signer=signer
-    )
+    report = verify_seal(seal, findings=findings[:1], evidences=evidences, signer=signer)
     assert not report.ok
     assert len(report.deleted) == 1
     assert "is gone" in report.deleted[0].detail
@@ -387,9 +381,20 @@ def test_the_seal_digest_changes_when_anything_changes() -> None:
 def test_the_reconstruction_matches_the_hashed_payload() -> None:
     """The verifier rebuilds the event from ``action`` + ``meta_json``; the keys must agree."""
     chain = MemoryAuditChain()
-    chain.append({"schema_version": "1.2", "id": "x", "ts": "2026-10-31T00:00:00+00:00",
-                  "actor": "a", "action": "scan.started", "outcome": "allowed",
-                  "target": None, "reason": None, "scan_id": 1, "meta": {"k": "v"}})
+    chain.append(
+        {
+            "schema_version": "1.2",
+            "id": "x",
+            "ts": "2026-10-31T00:00:00+00:00",
+            "actor": "a",
+            "action": "scan.started",
+            "outcome": "allowed",
+            "target": None,
+            "reason": None,
+            "scan_id": 1,
+            "meta": {"k": "v"},
+        }
+    )
     stored = dict(chain.links[0]["payload"])
     action = str(stored.pop("action"))
     rebuilt = reconstruct_audit_payload(action, stored)

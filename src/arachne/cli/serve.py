@@ -84,9 +84,7 @@ def serve_command(
         target = create_app(services, settings=settings)
     scheme = "https" if api.tls_configured else "http"
     suffix = f" ({worker_count} workers)" if worker_count > 1 else ""
-    typer.echo(
-        f"ARACHNE {__version__} serving on {scheme}://{bind_host}:{bind_port}{suffix}"
-    )
+    typer.echo(f"ARACHNE {__version__} serving on {scheme}://{bind_host}:{bind_port}{suffix}")
     try:
         uvicorn.run(
             target,

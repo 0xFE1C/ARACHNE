@@ -154,8 +154,9 @@ class ProofAccess:
                 "(state_changes_authorized); the L4 helper is unavailable"
             )
             raise ProofRefused(msg)
-        return SqlProof(executor=executor, ledger=self._ledger, check_id=self.check_id,
-                        auditor=self._auditor)
+        return SqlProof(
+            executor=executor, ledger=self._ledger, check_id=self.check_id, auditor=self._auditor
+        )
 
     # ------------------------------------------------------------------ internals
     def _require(self, minimum: ProofLevel, capability: str) -> None:

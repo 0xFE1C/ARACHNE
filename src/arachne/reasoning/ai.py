@@ -50,9 +50,7 @@ class AiHypothesisEngine:
         self.engine = engine
         self.policies = policies or HypothesisPolicies()
 
-    async def propose_async(
-        self, source: HypothesisInput, index: CheckIndex
-    ) -> HypothesisProposal:
+    async def propose_async(self, source: HypothesisInput, index: CheckIndex) -> HypothesisProposal:
         """Propose through the model; never raises (a failure is a recorded fallback)."""
         built = build_hypothesize_input(
             scan_id=source.scan_id,
@@ -98,9 +96,7 @@ class AiHypothesisEngine:
         return min(_MAX_PROPOSALS, self.policies.max_proposals)
 
 
-def _proposals_from(
-    value: Any, source: HypothesisInput, *, limit: int
-) -> tuple[Hypothesis, ...]:
+def _proposals_from(value: Any, source: HypothesisInput, *, limit: int) -> tuple[Hypothesis, ...]:
     """Turn a validated stage payload into proposals, deterministically and bounded."""
     try:
         parsed = HypothesizeOutput.model_validate(value)

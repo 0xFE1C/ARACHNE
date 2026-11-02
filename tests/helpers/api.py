@@ -159,9 +159,7 @@ class ApiHarness:
         the distinction a tenant-scoping test needs to exercise.
         """
         target_id = self.services.target_store.save(_seed_definition())
-        project_id = (
-            self.services.projects.resolve(project).id if project is not None else None
-        )
+        project_id = self.services.projects.resolve(project).id if project is not None else None
         record = self.services.store.create_scan(
             target_id=target_id,
             engine="heuristic",

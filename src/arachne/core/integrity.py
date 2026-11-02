@@ -455,9 +455,7 @@ def verify_row_signature(
                 detail="signatures are required but no deployment key is configured",
             )
         return None
-    if not signer.verify(
-        domain, canonical_bytes(row_signature_payload(domain, row)), signature
-    ):
+    if not signer.verify(domain, canonical_bytes(row_signature_payload(domain, row)), signature):
         return IntegrityIssue(
             check=f"{domain}-signature",
             kind="unsigned" if not signature else "modified",

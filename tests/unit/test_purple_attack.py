@@ -48,8 +48,7 @@ def test_every_replay_action_is_a_real_check_at_the_declared_level() -> None:
     """
     replay = load_technique_map()
     declared = {
-        metadata.id: metadata.proof.value
-        for metadata in ModuleRegistry.discover().metadata()
+        metadata.id: metadata.proof.value for metadata in ModuleRegistry.discover().metadata()
     }
     for check_id, action in replay.actions.items():
         assert check_id in declared, f"{check_id} is not a shipped check"
@@ -78,8 +77,7 @@ def test_technique_ids_normalize_from_every_form_seen_in_the_wild() -> None:
 
 
 def test_matching_counts_parents_and_sub_techniques_but_not_siblings() -> None:
-    """The coverage rule, stated once: see the whole family, never a sibling.
-    """
+    """The coverage rule, stated once: see the whole family, never a sibling."""
     assert technique_matches("T1059.004", "T1059.004")
     assert technique_matches("T1059.004", "T1059"), "a parent alert sees the sub-technique"
     assert technique_matches("T1059", "T1059.004"), "a finer rule is not a miss"
@@ -127,7 +125,15 @@ def test_no_evasion_anywhere_in_the_purple_package() -> None:
 
     package = Path(__file__).resolve().parents[2] / "src" / "arachne" / "purple"
     forbidden_modules = {
-        "base64", "binascii", "codecs", "gzip", "marshal", "pickle", "quopri", "uu", "zlib",
+        "base64",
+        "binascii",
+        "codecs",
+        "gzip",
+        "marshal",
+        "pickle",
+        "quopri",
+        "uu",
+        "zlib",
     }
     forbidden_names = re.compile(
         r"^(?:b64\w*|rot13|obfuscat\w*|evad\w*|stealth\w*|encode\w*|escape\w*|fromhex|"

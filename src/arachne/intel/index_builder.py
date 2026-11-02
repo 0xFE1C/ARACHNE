@@ -274,7 +274,7 @@ def build_baseline(
         index_version=f"nvd-{moment.strftime('%Y.%m.%d')}"[:32],
         generated_at=moment.isoformat(),
         source=source,
-        entries=tuple(ordered[:max(1, max_entries)]),
+        entries=tuple(ordered[: max(1, max_entries)]),
     )
 
 

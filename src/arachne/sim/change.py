@@ -114,9 +114,7 @@ def simulate_change(
         auditor=auditor,
         record_audit=record_audit,
     )
-    before = tuple(
-        SimulatedPath(path=path, hops=()) for path in run.baseline
-    )
+    before = tuple(SimulatedPath(path=path, hops=()) for path in run.baseline)
     return ChangeDelta(
         change=change,
         before=before,

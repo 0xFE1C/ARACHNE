@@ -101,8 +101,7 @@ def test_a_hardened_manifest_passes_clean() -> None:
                     "containers": [
                         {
                             "name": "api",
-                            "image": "registry.local/api@sha256:"
-                            + "0123456789abcdef" * 4,
+                            "image": "registry.local/api@sha256:" + "0123456789abcdef" * 4,
                             "securityContext": {
                                 "privileged": False,
                                 "allowPrivilegeEscalation": False,
@@ -129,8 +128,11 @@ def test_a_cronjob_spec_is_unwrapped() -> None:
                     "template": {
                         "spec": {
                             "containers": [
-                                {"name": "job", "image": "img:latest",
-                                 "securityContext": {"privileged": True}}
+                                {
+                                    "name": "job",
+                                    "image": "img:latest",
+                                    "securityContext": {"privileged": True},
+                                }
                             ]
                         }
                     }
@@ -141,9 +143,7 @@ def test_a_cronjob_spec_is_unwrapped() -> None:
     violations = evaluate_k8s_manifest(doc)
     ids = {item.rule_id for item in violations}
     assert {"k8s-privileged", "k8s-latest-image"} <= ids
-    assert any(
-        item.path.startswith("spec/jobTemplate/spec/template/spec") for item in violations
-    )
+    assert any(item.path.startswith("spec/jobTemplate/spec/template/spec") for item in violations)
 
 
 def test_evaluation_is_deterministic() -> None:

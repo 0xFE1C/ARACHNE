@@ -216,8 +216,13 @@ def _plan_with(checks: Sequence[str]) -> dict[str, Any]:
         "target_name": "target.example",
         "engine": "heuristic",
         "checks": [
-            {"module": check.split(".", 1)[0].upper(), "name": check.split(".", 1)[1],
-             "version": "1.0", "title": check, "included": True}
+            {
+                "module": check.split(".", 1)[0].upper(),
+                "name": check.split(".", 1)[1],
+                "version": "1.0",
+                "title": check,
+                "included": True,
+            }
             for check in checks
         ],
     }
@@ -236,9 +241,11 @@ def _report(*findings: str, plan: dict[str, Any] | None = None) -> ReportData:
         for index, check in enumerate(findings)
     ]
     return build_report_data(
-        make_inputs(candidates=candidates, plan=plan or _plan_with(
-            ["m4.env-file-probe", "m4.debug-endpoints", "m4.directory-listing"]
-        ))
+        make_inputs(
+            candidates=candidates,
+            plan=plan
+            or _plan_with(["m4.env-file-probe", "m4.debug-endpoints", "m4.directory-listing"]),
+        )
     )
 
 
@@ -310,7 +317,7 @@ def test_settings_drive_the_report_block(tmp_path: Path) -> None:
     custom = tmp_path / "pci-dss.yaml"
     custom.write_text(
         "framework: pci-dss\nname: Overlay\nedition: v4.0\ntotal_controls: 12\n"
-        "controls:\n  - id: \"6.2\"\n    title: Secure coding\n    checks: [m4.env-file-probe]\n",
+        'controls:\n  - id: "6.2"\n    title: Secure coding\n    checks: [m4.env-file-probe]\n',
         encoding="utf-8",
     )
     report = build_report_data(
@@ -329,9 +336,7 @@ def test_settings_drive_the_report_block(tmp_path: Path) -> None:
 # --------------------------------------------------------------------------- export
 def test_the_evidence_export_is_self_contained(test_map: ComplianceMap) -> None:
     report = _report("m4.env-file-probe")
-    document = export_control_evidence(
-        test_map, report, generated_at="2026-10-31T00:00:00+00:00"
-    )
+    document = export_control_evidence(test_map, report, generated_at="2026-10-31T00:00:00+00:00")
     assert document["document"] == "arachne-control-evidence"
     assert document["generated_at"] == "2026-10-31T00:00:00+00:00"
     coverage = document["coverage"]
@@ -384,10 +389,14 @@ def test_a_report_with_frameworks_validates_against_the_current_schema(tmp_path:
     report = _report("m4.env-file-probe")
     assert report.schema_version == REPORT_SCHEMA_VERSION
     inputs = make_inputs(
-        candidates=[make_candidate(
-            number=1, title="Env file exposed",
-            asset_value="https://target.example/.env", severity="medium",
-        )],
+        candidates=[
+            make_candidate(
+                number=1,
+                title="Env file exposed",
+                asset_value="https://target.example/.env",
+                severity="medium",
+            )
+        ],
     )
     with_frameworks = ReportInputs(
         **{

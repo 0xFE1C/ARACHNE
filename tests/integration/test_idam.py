@@ -58,9 +58,7 @@ def sso_settings(**overrides: object) -> SsoSettings:
 def idp_only(tmp_path):  # type: ignore[no-untyped-def]
     """An app with an IdP configured and *no* static API keys (SSO is the only way in)."""
     idp = CannedIdP()
-    harness = make_api_harness(
-        tmp_path, keys=(), sso=sso_settings(), oidc_transport=idp.transport
-    )
+    harness = make_api_harness(tmp_path, keys=(), sso=sso_settings(), oidc_transport=idp.transport)
     try:
         yield harness, idp
     finally:
@@ -143,9 +141,7 @@ def test_an_sso_user_scan_records_the_user_as_requester(idp_only) -> None:  # ty
         scan_id = started.json()["scan_id"]
         detail = wait_for_scan(client, {}, scan_id)
         assert detail["stats"]["requested_by"] == "user alice@corp.example"
-        document = json.loads(
-            client.get(f"/api/v1/scans/{scan_id}/report?format=json").content
-        )
+        document = json.loads(client.get(f"/api/v1/scans/{scan_id}/report?format=json").content)
         assert document["scope"]["requested_by"] == "user alice@corp.example"
     created = harness.events_of(AuditAction.SCAN_CREATED)
     assert created and created[-1].actor == "user alice@corp.example"
@@ -170,9 +166,7 @@ def test_an_unconfigured_idp_is_refused_and_the_api_stays_closed(tmp_path) -> No
     harness = make_api_harness(tmp_path)
     try:
         with harness.client() as client:
-            assert (
-                client.get("/api/v1/auth/sso/login", follow_redirects=False).status_code == 503
-            )
+            assert client.get("/api/v1/auth/sso/login", follow_redirects=False).status_code == 503
             assert (
                 client.get(
                     "/api/v1/auth/sso/callback?code=x&state=y", follow_redirects=False
@@ -251,9 +245,7 @@ def test_rotated_service_account_key_is_rejected_and_the_new_key_works(tmp_path)
             )
             assert created.status_code == 201, created.text
             old_secret = created.json()["secret"]
-            assert (
-                client.get("/api/v1/scans", headers={"X-API-Key": old_secret}).status_code == 200
-            )
+            assert client.get("/api/v1/scans", headers={"X-API-Key": old_secret}).status_code == 200
 
             rotated = client.post(
                 "/api/v1/service-accounts/ci-pipeline/rotate", headers=auth(ADMIN_KEY)

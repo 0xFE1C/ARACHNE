@@ -256,9 +256,7 @@ class Event(BaseModel):
         return cls(
             type=EventType.FUZZ_STARTED,
             scan_id=scan_id,
-            payload=_redact(
-                {"run_id": run_id, "engine": engine, "targets": targets}
-            ),
+            payload=_redact({"run_id": run_id, "engine": engine, "targets": targets}),
         )
 
     @classmethod

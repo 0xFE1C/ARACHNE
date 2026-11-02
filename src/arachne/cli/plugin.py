@@ -202,9 +202,7 @@ def review_plugin(
                 outcome=AuditOutcome.ALLOWED if report.listed else AuditOutcome.BLOCKED,
                 target=report.name,
                 reason=(
-                    None
-                    if report.listed
-                    else "; ".join(item.message for item in report.blockers)
+                    None if report.listed else "; ".join(item.message for item in report.blockers)
                 ),
                 meta={
                     "version": report.version,
@@ -230,9 +228,7 @@ def review_plugin(
             where = f" ({finding.path}:{finding.line})" if finding.path else ""
             typer.echo(f"    - {finding.code}{where}: {finding.message}", err=True)
         if not publish:
-            typer.echo(
-                "not recorded; pass --publish to store the verdict in the provenance store"
-            )
+            typer.echo("not recorded; pass --publish to store the verdict in the provenance store")
     raise typer.Exit(code=0 if report.listed else 2)
 
 

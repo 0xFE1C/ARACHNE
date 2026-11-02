@@ -55,8 +55,11 @@ class RuleAlignment:
             "check_id": self.check_id,
             "techniques": list(self.techniques),
             "verdict": self.verdict,
-            "event": {"summary": self.event_summary, "logsource": dict(self.logsource),
-                      "fields": dict(self.fields)},
+            "event": {
+                "summary": self.event_summary,
+                "logsource": dict(self.logsource),
+                "fields": dict(self.fields),
+            },
             "hits": [
                 {"rule_id": rid, "title": title, "level": level, "techniques": list(tags)}
                 for rid, title, level, tags in self.hits

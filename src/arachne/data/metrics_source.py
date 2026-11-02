@@ -98,9 +98,7 @@ def _scan_gauges(registry: MetricsRegistry, factory: Any) -> None:
         registry.set("arachne_scans", float(count), {"status": str(status)})
 
 
-def _queue_gauges(
-    registry: MetricsRegistry, services: Any, factory: Any, now: datetime
-) -> None:
+def _queue_gauges(registry: MetricsRegistry, services: Any, factory: Any, now: datetime) -> None:
     queue = getattr(services, "queue", None)
     stats: dict[str, int] = {}
     if queue is not None:
@@ -119,14 +117,10 @@ def _queue_gauges(
             )
     except Exception:
         oldest = None
-    registry.set(
-        "arachne_queue_oldest_age_seconds", _age_seconds(oldest, now) or 0.0
-    )
+    registry.set("arachne_queue_oldest_age_seconds", _age_seconds(oldest, now) or 0.0)
 
 
-def _agent_gauges(
-    registry: MetricsRegistry, services: Any, factory: Any, now: datetime
-) -> None:
+def _agent_gauges(registry: MetricsRegistry, services: Any, factory: Any, now: datetime) -> None:
     agents = getattr(services, "agents", None)
     records: tuple[Any, ...] = ()
     if agents is not None:
@@ -163,9 +157,7 @@ def _feed_gauges(registry: MetricsRegistry, services: Any, settings: Any) -> Non
     try:
         from arachne.intel.freshness import observations_from_store
 
-        observations = observations_from_store(
-            feeds, ttl_hours=dict(settings.intel.freshness_ttl)
-        )
+        observations = observations_from_store(feeds, ttl_hours=dict(settings.intel.freshness_ttl))
     except Exception:
         return
     for observation in observations:

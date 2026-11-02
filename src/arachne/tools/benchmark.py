@@ -145,8 +145,10 @@ def run(
         else:
             # A suite whose target is hosted elsewhere: the gate verifies what it can (the
             # committed baseline's presence and arithmetic) and says so.
-            report = verify_recorded(item, directory=_baseline_dir()) if gate_results else (
-                GateReport(suite=item.name, measured=False)
+            report = (
+                verify_recorded(item, directory=_baseline_dir())
+                if gate_results
+                else (GateReport(suite=item.name, measured=False))
             )
             reports.append(report)
 

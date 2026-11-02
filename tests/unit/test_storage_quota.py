@@ -30,7 +30,7 @@ from arachne.data.quota import StorageQuota
 
 @pytest.fixture
 def factory(tmp_path: Path) -> Any:
-    engine = create_sqlite_engine(f"sqlite:///{tmp_path/'quota.db'}")
+    engine = create_sqlite_engine(f"sqlite:///{tmp_path / 'quota.db'}")
     create_all(engine)
     yield create_session_factory(engine)
     engine.dispose()
@@ -184,14 +184,15 @@ def test_a_negative_limit_is_refused(factory: Any) -> None:
 
 
 # --------------------------------------------------------------------- the service
-def _service(tmp_path: Path, factory: Any, *, quota: StorageQuota, threshold: int = 256,
-             preview: int = 32) -> tuple[EvidenceService, LocalEvidenceBackend, MemoryAuditSink]:
+def _service(
+    tmp_path: Path, factory: Any, *, quota: StorageQuota, threshold: int = 256, preview: int = 32
+) -> tuple[EvidenceService, LocalEvidenceBackend, MemoryAuditSink]:
     backend = LocalEvidenceBackend(tmp_path / "evidence")
     sink = MemoryAuditSink()
     from arachne.core.audit import Auditor
 
     settings = Settings(
-        database_url=f"sqlite:///{tmp_path/'quota.db'}",
+        database_url=f"sqlite:///{tmp_path / 'quota.db'}",
         evidence=EvidenceSettings(
             offload_threshold_bytes=threshold,
             preview_chars=preview,
@@ -221,9 +222,11 @@ async def test_a_small_payload_stays_inline_because_its_stub_would_be_bigger(
         project_id=None,
     )
     assert staged.evidence[0].payload.get("offloaded") is None
-    assert (await backend.exists(  # nothing was uploaded
-        "0" * 64
-    )) is False
+    assert (
+        await backend.exists(  # nothing was uploaded
+            "0" * 64
+        )
+    ) is False
     assert backend.stats()["objects_written"] == 0
 
 
@@ -302,7 +305,4 @@ def test_a_scan_with_no_project_reports_no_usage(factory: Any) -> None:
         assert StorageQuota.project_for_scan(session, 4242) is None
     assert StorageQuota(factory).usage(None) == 0
     with factory() as session:
-        assert (
-            session.scalar(select(Project.used_bytes).where(Project.slug == "acme"))
-            is None
-        )
+        assert session.scalar(select(Project.used_bytes).where(Project.slug == "acme")) is None

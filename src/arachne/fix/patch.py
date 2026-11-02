@@ -273,9 +273,7 @@ def apply_plan(
         if text == before:
             skipped.append(f"{relative}: the plan leaves this file unchanged")
             continue
-        edits.append(
-            FileEdit(relative=relative, before=before, after=text, matched=matched)
-        )
+        edits.append(FileEdit(relative=relative, before=before, after=text, matched=matched))
     if not edits:
         reason = "already-fixed" if already_fixed else "the plan does not apply to this tree"
         return PlanApplication(

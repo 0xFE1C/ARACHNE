@@ -83,9 +83,7 @@ def test_monitor_mode_always_allows_and_names_the_findings() -> None:
 
 
 def test_enforce_mode_denies_above_the_threshold_in_a_staged_namespace() -> None:
-    settings = AdmissionSettings(
-        mode="enforce", enforce_namespaces=("prod",), deny_on="high"
-    )
+    settings = AdmissionSettings(mode="enforce", enforce_namespaces=("prod",), deny_on="high")
     decision, response = evaluate_admission_review(_review(), settings, _RULES)
     assert not decision.allowed
     assert decision.mode == "enforce"
@@ -96,18 +94,14 @@ def test_enforce_mode_denies_above_the_threshold_in_a_staged_namespace() -> None
 
 
 def test_enforce_mode_allows_below_the_threshold() -> None:
-    settings = AdmissionSettings(
-        mode="enforce", enforce_namespaces=("prod",), deny_on="critical"
-    )
+    settings = AdmissionSettings(mode="enforce", enforce_namespaces=("prod",), deny_on="critical")
     decision, _ = evaluate_admission_review(_review(), settings, _RULES)
     assert decision.allowed
     assert decision.violations  # the findings are still reported
 
 
 def test_enforce_mode_outside_the_staged_namespaces_is_monitor_only() -> None:
-    settings = AdmissionSettings(
-        mode="enforce", enforce_namespaces=("staging",), deny_on="high"
-    )
+    settings = AdmissionSettings(mode="enforce", enforce_namespaces=("staging",), deny_on="high")
     decision, _ = evaluate_admission_review(_review(namespace="prod"), settings, _RULES)
     assert decision.allowed
     assert "not in the rollout" in decision.message
@@ -126,9 +120,7 @@ def test_the_explicit_wildcard_stages_every_namespace() -> None:
 
 
 def test_off_mode_refuses_the_review() -> None:
-    decision, response = evaluate_admission_review(
-        _review(), AdmissionSettings(mode="off"), _RULES
-    )
+    decision, response = evaluate_admission_review(_review(), AdmissionSettings(mode="off"), _RULES)
     assert not decision.allowed
     assert decision.mode == "off"
     assert response["response"]["status"]["message"]

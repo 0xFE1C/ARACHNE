@@ -111,8 +111,4 @@ def test_the_gate_scan_is_a_real_scan_with_check_provenance(cli_db: None) -> Non
     assert all("repo:" in (candidate.asset_value or "") for candidate in candidates)
     # The same capture → store path as any scan: each finding carries linked evidence.
     assert all(candidate.evidence for candidate in candidates)
-    assert any(
-        item.kind == "artifact"
-        for candidate in candidates
-        for item in candidate.evidence
-    )
+    assert any(item.kind == "artifact" for candidate in candidates for item in candidate.evidence)

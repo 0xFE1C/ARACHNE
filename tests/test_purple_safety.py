@@ -103,7 +103,9 @@ def _scan_stack(
         from arachne.purple.campaign import PurpleRunner
 
         handlers = build_handlers(
-            settings=settings, registry=registry, auditor=auditor,
+            settings=settings,
+            registry=registry,
+            auditor=auditor,
             purple=PurpleRunner.build(settings),
         )
     else:
@@ -284,13 +286,11 @@ def test_purple_mode_still_requires_the_active_checks_opt_in() -> None:
     with pytest.raises(ValidationError, match="requires active_checks=True"):
         build_scan_request(
             attestation={
-
-                    "attested_by": "t",
-                    "attested_at": (NOW - timedelta(hours=1)).isoformat(),
-                    "scope_statement": "purple window test scope",
-                    "allowed_targets": [f"https://{TARGET_HOST}/"],
-                    "detection_window": WINDOW_OPEN
-
+                "attested_by": "t",
+                "attested_at": (NOW - timedelta(hours=1)).isoformat(),
+                "scope_statement": "purple window test scope",
+                "allowed_targets": [f"https://{TARGET_HOST}/"],
+                "detection_window": WINDOW_OPEN,
             },
             options={"purple": {"campaign": "c", "actions": ["m3.cmdi-oob"]}},
         )
@@ -472,9 +472,7 @@ def test_the_shipped_map_and_the_registry_agree_so_the_gate_never_fires_on_them(
     from arachne.purple.attack import load_technique_map
 
     replay = load_technique_map()
-    levels = {
-        metadata.id: metadata.proof.value for metadata in ModuleRegistry.builtin().metadata()
-    }
+    levels = {metadata.id: metadata.proof.value for metadata in ModuleRegistry.builtin().metadata()}
     mismatches = {
         check_id: (action.level, levels.get(check_id))
         for check_id, action in replay.actions.items()

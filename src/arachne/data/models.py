@@ -858,9 +858,7 @@ class PurpleCampaign(Base):
     spec_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     #: When the campaign last ran (any status), for the operator's view.
-    last_run_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, nullable=False
     )
@@ -896,14 +894,10 @@ class PurpleRun(Base):
     nonce: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     window_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    finished_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     #: completed | window_refused | failed
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="completed")
-    emissions_json: Mapped[list[dict[str, Any]]] = mapped_column(
-        JSON, nullable=False, default=list
-    )
+    emissions_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False, default=list)
     sigma_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False, default=list)
     coverage_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     #: Techniques this run's coverage found unseen — denormalised so the trend query does
@@ -1169,9 +1163,7 @@ class FixProposal(Base):
     diff_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     #: False when a masked removal means the diff is not byte-applicable (manual apply).
     verbatim: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    manual_apply_required: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
+    manual_apply_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     safety_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     self_scan_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     #: Repository mode: the granted repo, the branch created, the base and the commit.
@@ -1184,9 +1176,7 @@ class FixProposal(Base):
     #: Where the reviewable PR artifact was written (a file, since nothing is pushed).
     pr_artifact: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     #: The repository's own test suite: the declared argv, both runs and their outcomes.
-    test_command_json: Mapped[dict[str, Any]] = mapped_column(
-        JSON, nullable=False, default=dict
-    )
+    test_command_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     test_outcome: Mapped[str | None] = mapped_column(String(24), nullable=True)
     test_output: Mapped[str | None] = mapped_column(Text, nullable=True)
     requested_by: Mapped[str] = mapped_column(String(128), nullable=False, default="system")
@@ -1237,9 +1227,7 @@ class SimulationPointRecord(Base):
     path_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     introduced: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     exposure_score: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    severity_counts_json: Mapped[dict[str, Any]] = mapped_column(
-        JSON, nullable=False, default=dict
-    )
+    severity_counts_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, nullable=False, index=True
     )

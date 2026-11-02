@@ -74,12 +74,20 @@ def test_host_grouping_walks_one_application() -> None:
 def test_a_two_hop_path_is_composed_and_its_severity_is_the_terminal_impact() -> None:
     analyses = [
         _analysis(
-            1, check_id="m4.env-file-probe", asset="https://target.example/.env",
-            cwe="CWE-200", severity="medium", confidence=88,
+            1,
+            check_id="m4.env-file-probe",
+            asset="https://target.example/.env",
+            cwe="CWE-200",
+            severity="medium",
+            confidence=88,
         ),
         _analysis(
-            2, check_id="m4.dashboard-exposure", asset="https://target.example/admin",
-            cwe="CWE-306", severity="critical", confidence=95,
+            2,
+            check_id="m4.dashboard-exposure",
+            asset="https://target.example/admin",
+            cwe="CWE-306",
+            severity="critical",
+            confidence=95,
         ),
     ]
     paths = build_attack_paths(analyses)
@@ -117,11 +125,16 @@ def test_the_chain_can_start_later_and_still_be_a_path() -> None:
 def test_an_unverified_finding_is_a_candidate_hop_naming_its_verifying_check() -> None:
     analyses = [
         _analysis(
-            1, check_id="m4.env-file-probe", asset="https://t.example/.env", cwe="CWE-200",
+            1,
+            check_id="m4.env-file-probe",
+            asset="https://t.example/.env",
+            cwe="CWE-200",
             confidence=40,
         ),
         _analysis(
-            2, check_id="m4.dashboard-exposure", asset="https://t.example/admin",
+            2,
+            check_id="m4.dashboard-exposure",
+            asset="https://t.example/admin",
             cwe="CWE-306",
         ),
     ]
@@ -157,11 +170,16 @@ def test_a_stored_candidate_without_an_analysis_becomes_a_candidate_hop() -> Non
 def test_a_dropped_finding_is_never_a_hop() -> None:
     analyses = [
         _analysis(
-            1, check_id="m4.env-file-probe", asset="https://t.example/.env", cwe="CWE-200",
+            1,
+            check_id="m4.env-file-probe",
+            asset="https://t.example/.env",
+            cwe="CWE-200",
             verdict="dropped",
         ),
         _analysis(
-            2, check_id="m4.dashboard-exposure", asset="https://t.example/admin",
+            2,
+            check_id="m4.dashboard-exposure",
+            asset="https://t.example/admin",
             cwe="CWE-306",
         ),
     ]
@@ -172,12 +190,18 @@ def test_the_cheapest_break_prefers_a_verified_cheap_early_hop() -> None:
     hops = build_attack_paths(
         [
             _analysis(
-                1, check_id="m4.env-file-probe", asset="https://t.example/.env", cwe="CWE-200",
+                1,
+                check_id="m4.env-file-probe",
+                asset="https://t.example/.env",
+                cwe="CWE-200",
                 steps=2,
             ),
             _analysis(
-                2, check_id="m4.dashboard-exposure", asset="https://t.example/admin",
-                cwe="CWE-306", steps=9,
+                2,
+                check_id="m4.dashboard-exposure",
+                asset="https://t.example/admin",
+                cwe="CWE-306",
+                steps=9,
             ),
         ]
     )[0].hops
@@ -189,19 +213,19 @@ def test_the_cheapest_break_prefers_a_verified_cheap_early_hop() -> None:
 def test_the_cheapest_break_prefers_a_verified_hop_over_a_candidate_one() -> None:
     verified = _analysis(1, check_id="m3.a", asset="a", cwe="CWE-89", steps=6)
     candidate = _analysis(2, check_id="m3.b", asset="a", cwe="CWE-269", confidence=10, steps=1)
-    cheapest, reason = cheapest_break(
-        tuple(build_attack_paths([verified, candidate])[0].hops)
-    )
+    cheapest, reason = cheapest_break(tuple(build_attack_paths([verified, candidate])[0].hops))
     assert cheapest is not None and cheapest.check_id == "m3.a"
     assert "verified hop" in reason
 
 
 def test_a_path_with_no_catalogued_remediation_says_so() -> None:
     analyses = [
-        _analysis(1, check_id="m4.a", asset="https://t.example/x", cwe="CWE-200",
-                  remediation_id=None),
-        _analysis(2, check_id="m4.b", asset="https://t.example/y", cwe="CWE-306",
-                  remediation_id=None),
+        _analysis(
+            1, check_id="m4.a", asset="https://t.example/x", cwe="CWE-200", remediation_id=None
+        ),
+        _analysis(
+            2, check_id="m4.b", asset="https://t.example/y", cwe="CWE-306", remediation_id=None
+        ),
     ]
     path = build_attack_paths(analyses)[0]
     assert path.cheapest is None
@@ -211,11 +235,13 @@ def test_a_path_with_no_catalogued_remediation_says_so() -> None:
 def test_paths_are_deterministic_and_ordered_by_impact() -> None:
     analyses = [
         _analysis(1, check_id="m4.a", asset="https://a.example/.env", cwe="CWE-200"),
-        _analysis(2, check_id="m4.b", asset="https://a.example/admin", cwe="CWE-306",
-                  severity="medium"),
+        _analysis(
+            2, check_id="m4.b", asset="https://a.example/admin", cwe="CWE-306", severity="medium"
+        ),
         _analysis(3, check_id="m4.c", asset="https://b.example/.env", cwe="CWE-200"),
-        _analysis(4, check_id="m4.d", asset="https://b.example/admin", cwe="CWE-269",
-                  severity="critical"),
+        _analysis(
+            4, check_id="m4.d", asset="https://b.example/admin", cwe="CWE-269", severity="critical"
+        ),
     ]
     first = build_attack_paths(analyses)
     second = build_attack_paths(list(reversed(analyses)))

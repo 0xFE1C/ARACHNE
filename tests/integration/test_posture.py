@@ -220,15 +220,14 @@ async def test_the_fix_then_regress_cycle_closes_and_reopens_with_linked_evidenc
         # The finding is closed, and the verification scan planned *only* the affected check.
         record = harness.services.store.get_scan(verification_scan_id)
         planned = [check for check in record.plan["checks"] if check.get("included")]
-        assert [
-            f"{check['module']}/{check['name']}@{check['version']}" for check in planned
-        ] == ["M5/bucket-enumerator@1.0"]
+        assert [f"{check['module']}/{check['name']}@{check['version']}" for check in planned] == [
+            "M5/bucket-enumerator@1.0"
+        ]
         with harness.services.session_factory() as session:
             row = session.get(FindingRow, original_finding_id)
             assert row is not None and row.status == "closed"
             linked = [
-                ref for ref in row.evidence_refs_json
-                if session.get(EvidenceRow, ref) is not None
+                ref for ref in row.evidence_refs_json if session.get(EvidenceRow, ref) is not None
             ]
             assert linked
         verifications = harness.services.posture.verifications_for(original_finding_id)
@@ -246,8 +245,7 @@ async def test_the_fix_then_regress_cycle_closes_and_reopens_with_linked_evidenc
             row = session.get(FindingRow, original_finding_id)
             assert row is not None and row.status == "open"
         assert [
-            item.outcome
-            for item in harness.services.posture.verifications_for(original_finding_id)
+            item.outcome for item in harness.services.posture.verifications_for(original_finding_id)
         ] == ["verified", "reopened"]
         assert len(harness.sink.of_action(AuditAction.POSTURE_FIX_REGRESSED)) == 1
         # Both acts linked their evidence to the original finding (two evidence rows now).

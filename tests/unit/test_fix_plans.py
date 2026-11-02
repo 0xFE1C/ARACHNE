@@ -93,17 +93,13 @@ def test_the_regex_rule_and_the_structural_rule_reach_the_same_plan() -> None:
     """The M5 review reports both ``privileged-container`` (regex) and ``k8s-privileged``."""
     catalog = load_fix_plan_catalog()
     for rule in ("k8s-privileged", "privileged-container"):
-        selection = catalog.select(
-            FindingProfile(check_key="M5/tfstate-exposure@1.1", rule=rule)
-        )
+        selection = catalog.select(FindingProfile(check_key="M5/tfstate-exposure@1.1", rule=rule))
         assert selection.plan is not None and selection.plan.id == "k8s-privileged-container"
 
 
 def test_an_uncovered_class_is_unsupported_not_guessed() -> None:
     catalog = load_fix_plan_catalog()
-    selection = catalog.select(
-        FindingProfile(check_key="M1/exposed-dotfile@1.0", rule="env-file")
-    )
+    selection = catalog.select(FindingProfile(check_key="M1/exposed-dotfile@1.0", rule="env-file"))
     assert selection.unsupported
     assert selection.plan is None
 

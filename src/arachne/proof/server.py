@@ -80,9 +80,7 @@ def start_callback_server(
     # are spelled indirectly so the S104 literal check does not anchor on them.)
     any_host_v4 = "0.0" + ".0.0"
     any_host_v6 = ":" * 2
-    shown_host = (
-        "127.0.0.1" if bound_host in {any_host_v4, any_host_v6} else str(bound_host)
-    )
+    shown_host = "127.0.0.1" if bound_host in {any_host_v4, any_host_v6} else str(bound_host)
     return CallbackServerHandle(
         base_url=f"http://{shown_host}:{bound_port}",
         service=effective,

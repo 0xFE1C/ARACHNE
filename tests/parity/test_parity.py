@@ -343,9 +343,7 @@ async def test_a_whole_scan_in_both_modes_yields_the_same_findings(
 
     baseline_rows = index(baseline["analyses"])
     upgraded_rows = index(upgraded["analyses"])
-    assert set(upgraded_rows) == set(baseline_rows), (
-        "the finding set differs between engines "
-    )
+    assert set(upgraded_rows) == set(baseline_rows), "the finding set differs between engines "
     for key, row in upgraded_rows.items():
         counterpart = baseline_rows[key]
         for field in PARITY_FIELDS:

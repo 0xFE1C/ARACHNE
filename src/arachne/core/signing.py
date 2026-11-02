@@ -144,9 +144,7 @@ def build_signer(settings: Settings | None = None) -> DeploymentSigner | None:
     return DeploymentSigner(configured, key_id=effective.integrity.key_id or None)
 
 
-def sign_mapping(
-    signer: DeploymentSigner, domain: str, value: Mapping[str, Any]
-) -> str:
+def sign_mapping(signer: DeploymentSigner, domain: str, value: Mapping[str, Any]) -> str:
     """Convenience: sign a mapping's canonical form."""
     return signer.sign(domain, canonical_bytes(dict(value)))
 

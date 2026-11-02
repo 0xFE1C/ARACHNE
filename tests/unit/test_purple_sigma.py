@@ -98,8 +98,9 @@ def test_the_alignment_uses_the_library_it_is_given() -> None:
             }
         },
     )
-    assert match_event(narrowed, {"EventID": 1, "ParentImage": "/usr/sbin/php-fpm",
-                                  "Image": "/bin/sh"})
+    assert match_event(
+        narrowed, {"EventID": 1, "ParentImage": "/usr/sbin/php-fpm", "Image": "/bin/sh"}
+    )
     replay = load_technique_map()
     assert align_action(replay.require("m3.cmdi-oob"), (narrowed,)).verdict == "rule-hit"
     assert align_action(replay.require("m3.sqli-oob"), (narrowed,)).verdict == "rule-miss"

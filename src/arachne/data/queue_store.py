@@ -477,22 +477,22 @@ class WorkQueue:
 
     def held_by(self, agent_name: str) -> tuple[QueueEntry, ...]:
         with self._session_factory() as session:
-            rows = session.execute(
-                select(ScanQueue)
-                .join(ScanAgent, ScanQueue.agent_id == ScanAgent.id)
-                .where(ScanAgent.name == agent_name, ScanQueue.status == "leased")
-            ).scalars().all()
+            rows = (
+                session.execute(
+                    select(ScanQueue)
+                    .join(ScanAgent, ScanQueue.agent_id == ScanAgent.id)
+                    .where(ScanAgent.name == agent_name, ScanQueue.status == "leased")
+                )
+                .scalars()
+                .all()
+            )
             return tuple(self._entry(session, row) for row in rows)
 
     def list_entries(
         self, *, status: str | None = None, limit: int = 100
     ) -> tuple[QueueEntry, ...]:
         with self._session_factory() as session:
-            query = (
-                select(ScanQueue)
-                .order_by(ScanQueue.id.desc())
-                .limit(max(1, limit))
-            )
+            query = select(ScanQueue).order_by(ScanQueue.id.desc()).limit(max(1, limit))
             if status is not None:
                 query = query.where(ScanQueue.status == status)
             rows = session.scalars(query).all()
@@ -507,9 +507,7 @@ class WorkQueue:
         return {str(status): int(count) for status, count in rows}
 
     # ------------------------------------------------------------------ internals
-    def _claim_one(
-        self, agent_id: int, *, ttl_s: float, now: datetime
-    ) -> QueueEntry | None:
+    def _claim_one(self, agent_id: int, *, ttl_s: float, now: datetime) -> QueueEntry | None:
         """Claim exactly one queued row, or ``None`` when the queue is drained."""
         with self._session_factory() as session:
             if self._dialect == "postgresql":

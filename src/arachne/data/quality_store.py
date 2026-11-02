@@ -258,8 +258,7 @@ class MemoryQualityStore:
         return tuple(
             event
             for event in self._feedback
-            if (wanted is None or event.key in wanted)
-            and (since is None or event.at >= since)
+            if (wanted is None or event.key in wanted) and (since is None or event.at >= since)
         )
 
     def _audit(
@@ -441,8 +440,7 @@ class SqlQualityStore:
         moment = _now(now)
         with self._session_factory() as session:
             rows = tuple(
-                _acceptance_from_row(row)
-                for row in session.scalars(select(models.RiskAcceptance))
+                _acceptance_from_row(row) for row in session.scalars(select(models.RiskAcceptance))
             )
             decisions = reopen_decisions(rows, moment=moment)
             for decision in decisions:

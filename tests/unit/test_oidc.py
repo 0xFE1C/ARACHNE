@@ -91,9 +91,7 @@ def test_a_symmetric_token_cannot_ride_the_rs256_allowlist() -> None:
     idp = CannedIdP()
     token = sign_hs256({"sub": "x", "iss": ISSUER, "aud": AUDIENCE, "exp": 9e9}, "shared")
     with pytest.raises(IdentityError, match="algorithm"):
-        verify_jwt(
-            token, _jwks(idp), algorithms=("RS256",), issuer=ISSUER, audience=AUDIENCE
-        )
+        verify_jwt(token, _jwks(idp), algorithms=("RS256",), issuer=ISSUER, audience=AUDIENCE)
 
 
 def test_an_hs256_token_verifies_against_an_oct_jwks() -> None:
@@ -115,9 +113,7 @@ def test_an_hs256_token_verifies_against_an_oct_jwks() -> None:
         ({"nonce": "different"}, "nonce"),
     ],
 )
-def test_standard_claim_failures_are_refused(
-    overrides: dict[str, object], message: str
-) -> None:
+def test_standard_claim_failures_are_refused(overrides: dict[str, object], message: str) -> None:
     idp = CannedIdP()
     kwargs = {"subject": "alice", "nonce": "n-1", **overrides}
     token = idp.id_token(**kwargs)  # type: ignore[arg-type]

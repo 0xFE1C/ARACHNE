@@ -53,9 +53,7 @@ def _sha256(data: bytes) -> str:
 
 def serialized_size(payload: Mapping[str, Any]) -> int:
     """Logical bytes of one evidence payload (the number quota and metrics count)."""
-    return len(
-        json.dumps(payload, default=str, ensure_ascii=False, sort_keys=True).encode("utf-8")
-    )
+    return len(json.dumps(payload, default=str, ensure_ascii=False, sort_keys=True).encode("utf-8"))
 
 
 def _truncate(value: Any, limit: int, depth: int = 0) -> Any:
@@ -312,9 +310,7 @@ class EvidenceService:
     ) -> str | None:
         """A time-limited URL for the backend, or ``None`` when it streams through the API."""
         self.require_region(region)
-        return self.backend.presign(
-            key, ttl_s=self.config.presign_ttl_s, filename=filename
-        )
+        return self.backend.presign(key, ttl_s=self.config.presign_ttl_s, filename=filename)
 
     def stats(self) -> dict[str, Any]:
         return self.backend.stats()

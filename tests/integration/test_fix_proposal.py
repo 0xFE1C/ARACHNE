@@ -294,8 +294,12 @@ async def test_propose_apply_then_the_loop_auto_closes_the_finding(tmp_path: Pat
         assert submitted.status == "submitted", submitted.flagged_reason
 
         # The human applies the fix (they merged the branch ARACHNE opened).
-        _apply_fix(repo, "infra/main.tf", old="publicly_accessible = true",
-                   new="publicly_accessible = false")
+        _apply_fix(
+            repo,
+            "infra/main.tf",
+            old="publicly_accessible = true",
+            new="publicly_accessible = false",
+        )
         engine.mark_applied(proposal.id or 0, actor="jane.operator@example.com")
 
         verified = await engine.verify(proposal.id or 0, actor="jane.operator@example.com")

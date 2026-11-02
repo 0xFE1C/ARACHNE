@@ -557,9 +557,7 @@ def get_project(slug: str, principal: ViewerPrincipal, context: ContextDep) -> P
 
 
 @api_router.get("/projects/{slug}/retention", tags=["projects"])
-def get_retention(
-    slug: str, principal: ViewerPrincipal, context: ContextDep
-) -> dict[str, Any]:
+def get_retention(slug: str, principal: ViewerPrincipal, context: ContextDep) -> dict[str, Any]:
     """A tenant's effective retention policy (S20, REQ-DATA-001).
 
     The *effective* policy is what the pruning job will act on: the project's own overrides on
@@ -1270,14 +1268,10 @@ def webhook_status(principal: AdminPrincipal, context: ContextDep) -> JSONRespon
 def list_service_accounts(principal: AdminPrincipal, context: ContextDep) -> JSONResponse:
     """Every service-account key, newest metadata only — never a secret (REQ-IDAM-003)."""
     store = _service_accounts(context)
-    return JSONResponse(
-        {"accounts": [record.to_dict() for record in store.list_accounts()]}
-    )
+    return JSONResponse({"accounts": [record.to_dict() for record in store.list_accounts()]})
 
 
-@api_router.post(
-    "/service-accounts", status_code=status.HTTP_201_CREATED, tags=["identity"]
-)
+@api_router.post("/service-accounts", status_code=status.HTTP_201_CREATED, tags=["identity"])
 def create_service_account(
     payload: ServiceAccountIn, principal: AdminPrincipal, context: ContextDep
 ) -> JSONResponse:

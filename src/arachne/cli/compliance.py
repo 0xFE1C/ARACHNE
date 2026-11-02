@@ -93,8 +93,7 @@ def export_command(
     canonical = canonical_framework(framework)
     if canonical is None:
         raise ConfigurationError(
-            f"unknown compliance framework {framework!r} "
-            "(see `arachne compliance frameworks`)"
+            f"unknown compliance framework {framework!r} (see `arachne compliance frameworks`)"
         )
     map_data = load_compliance_framework(canonical, maps_dir=settings.report.compliance_map_dir)
 

@@ -197,9 +197,7 @@ class FakeS3:
         return path[len(prefix) :]
 
     # ------------------------------------------------------------------ signature
-    def _authorized(
-        self, request: httpx.Request, parsed: Any, query: dict[str, str]
-    ) -> bool:
+    def _authorized(self, request: httpx.Request, parsed: Any, query: dict[str, str]) -> bool:
         if "X-Amz-Signature" in query:
             return self._verify_presign(parsed, query)
         header = request.headers.get("authorization")

@@ -101,13 +101,11 @@ def test_secrets_come_from_env_files_or_vault(values: dict[str, Any]) -> None:
     """The three secret sources REQ-OPS-005 names, all wired."""
     assert values["vault"]["enabled"] is False  # off by default, documented on
     template = _template("deployment-api.yaml")
-    assert "secretKeyRef" in template                    # env
-    assert "existingSecret" in template                  # files (mounted / referenced)
+    assert "secretKeyRef" in template  # env
+    assert "existingSecret" in template  # files (mounted / referenced)
     assert "vault" in (CHART / "values.yaml").read_text(encoding="utf-8")
     # The values file documents the Vault Agent injection path.
-    assert "vault.hashicorp.com/agent-inject" in (CHART / "values.yaml").read_text(
-        encoding="utf-8"
-    )
+    assert "vault.hashicorp.com/agent-inject" in (CHART / "values.yaml").read_text(encoding="utf-8")
 
 
 def test_the_chart_ships_no_default_credentials(values: dict[str, Any]) -> None:
@@ -118,8 +116,8 @@ def test_the_chart_ships_no_default_credentials(values: dict[str, Any]) -> None:
     # The guards fail the render when a source is missing.
     helpers = _template("_helpers.tpl")
     assert "REQ-OPS-006" in helpers
-    assert "fail \"postgres.auth.password" in helpers
-    assert "fail \"api.auth.apiKeys" in helpers
+    assert 'fail "postgres.auth.password' in helpers
+    assert 'fail "api.auth.apiKeys' in helpers
     # And no template carries a literal credential value.
     for path in (CHART / "templates").iterdir():
         text = path.read_text(encoding="utf-8")

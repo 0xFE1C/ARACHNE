@@ -384,8 +384,7 @@ def metadata_proof_problems(
         )
     if not proof.needs_state_attestation and requires_state_attestation:
         problems.append(
-            f"proof {proof.value} does not change state: requires_state_attestation "
-            "must stay False"
+            f"proof {proof.value} does not change state: requires_state_attestation must stay False"
         )
     return tuple(problems)
 

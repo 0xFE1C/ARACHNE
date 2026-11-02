@@ -134,9 +134,7 @@ def test_concurrent_claimants_never_receive_the_same_row(tmp_path) -> None:  # t
         except Exception as exc:  # pragma: no cover - surfaced below if it happens
             errors.append(exc)
 
-    threads = [
-        threading.Thread(target=claim, args=(agent.name, agent.id)) for agent in claimants
-    ]
+    threads = [threading.Thread(target=claim, args=(agent.name, agent.id)) for agent in claimants]
     for thread in threads:
         thread.start()
     for thread in threads:

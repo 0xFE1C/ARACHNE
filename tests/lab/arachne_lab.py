@@ -682,16 +682,16 @@ _SMB_LOCK = threading.Lock()
 def _smb2_header(status: int, command: int, *, message_id: int = 1, session_id: int = 0) -> bytes:
     return (
         b"\xfeSMB"
-        + struct.pack("<H", 64)     # StructureSize
-        + struct.pack("<H", 1)      # CreditCharge
+        + struct.pack("<H", 64)  # StructureSize
+        + struct.pack("<H", 1)  # CreditCharge
         + struct.pack("<I", status)
         + struct.pack("<H", command)
-        + struct.pack("<H", 1)      # CreditResponse
-        + struct.pack("<I", 1)      # Flags: SMB2_FLAGS_SERVER_TO_REDIR
-        + struct.pack("<I", 0)      # NextCommand
+        + struct.pack("<H", 1)  # CreditResponse
+        + struct.pack("<I", 1)  # Flags: SMB2_FLAGS_SERVER_TO_REDIR
+        + struct.pack("<I", 0)  # NextCommand
         + struct.pack("<Q", message_id)
         + struct.pack("<I", 0xFEFF)  # ProcessId
-        + struct.pack("<I", 0)       # TreeId
+        + struct.pack("<I", 0)  # TreeId
         + struct.pack("<Q", session_id)
         + b"\x00" * 16
     )
@@ -702,19 +702,19 @@ def _smb2_negotiate_response() -> bytes:
     # ServerGuid, Capabilities, MaxTransactSize, MaxReadSize, MaxWriteSize, SystemTime,
     # ServerStartTime, SecurityBufferOffset/Length.
     body = (
-        struct.pack("<H", 65)        # StructureSize
+        struct.pack("<H", 65)  # StructureSize
         + struct.pack("<H", 0x0001)  # SecurityMode: signing enabled, not required
-        + struct.pack("<H", 0)       # Reserved
+        + struct.pack("<H", 0)  # Reserved
         + struct.pack("<H", LAB_SMB_DIALECT)
-        + b"\x11" * 16               # ServerGuid
+        + b"\x11" * 16  # ServerGuid
         + struct.pack("<I", 0x00000001)  # Capabilities
-        + struct.pack("<I", 1 << 20)     # MaxTransactSize
-        + struct.pack("<I", 1 << 20)     # MaxReadSize
-        + struct.pack("<I", 1 << 20)     # MaxWriteSize
-        + struct.pack("<Q", 0)           # SystemTime
-        + struct.pack("<Q", 0)           # ServerStartTime
-        + struct.pack("<H", 0)           # SecurityBufferOffset
-        + struct.pack("<H", 0)           # SecurityBufferLength
+        + struct.pack("<I", 1 << 20)  # MaxTransactSize
+        + struct.pack("<I", 1 << 20)  # MaxReadSize
+        + struct.pack("<I", 1 << 20)  # MaxWriteSize
+        + struct.pack("<Q", 0)  # SystemTime
+        + struct.pack("<Q", 0)  # ServerStartTime
+        + struct.pack("<H", 0)  # SecurityBufferOffset
+        + struct.pack("<H", 0)  # SecurityBufferLength
     )
     payload = _smb2_header(0x00000000, 0) + body
     return b"\x00" + len(payload).to_bytes(3, "big") + payload
@@ -723,7 +723,7 @@ def _smb2_negotiate_response() -> bytes:
 def _smb2_session_setup_response(status: int, blob: bytes, *, session_id: int) -> bytes:
     offset = 64 + 8
     body = (
-        struct.pack("<H", 9)    # StructureSize
+        struct.pack("<H", 9)  # StructureSize
         + struct.pack("<H", 0)  # SessionFlags
         + struct.pack("<H", offset)
         + struct.pack("<H", len(blob))
@@ -737,8 +737,8 @@ def _ntlmssp_challenge(server_challenge: bytes, target_info: bytes) -> bytes:
     return (
         b"NTLMSSP\x00"
         + struct.pack("<I", 2)
-        + struct.pack("<HHI", 0, 0, 48)          # target name: absent
-        + struct.pack("<I", 0x00080001)          # UNICODE | NTLM | EXTENDED_SESSIONSECURITY
+        + struct.pack("<HHI", 0, 0, 48)  # target name: absent
+        + struct.pack("<I", 0x00080001)  # UNICODE | NTLM | EXTENDED_SESSIONSECURITY
         + server_challenge
         + b"\x00" * 8
         + struct.pack("<HHI", len(target_info), len(target_info), 48)

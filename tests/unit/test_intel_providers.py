@@ -176,9 +176,7 @@ async def test_a_key_in_a_provider_url_is_redacted_everywhere() -> None:
     """Shodan's API takes its key as a query parameter; no record may keep it."""
     auditor = Auditor(MemoryAuditSink(), actor="pytest")
     osint = make_osint(providers=("shodan",), auditor=auditor)
-    response = await osint.fetch(
-        "shodan", shodan_host_url("203.0.113.9", api_key=SHODAN_KEY)
-    )
+    response = await osint.fetch("shodan", shodan_host_url("203.0.113.9", api_key=SHODAN_KEY))
     assert SHODAN_KEY not in response.url
     assert "key=[REDACTED" in response.url
     payload = response.evidence_payload()

@@ -174,9 +174,7 @@ class GrammarEngine:
     """
 
     name: str = DEFAULT_ENGINE
-    description: str = (
-        "Grammar-aware boundary mutation in declaration order; no feedback (default)"
-    )
+    description: str = "Grammar-aware boundary mutation in declaration order; no feedback (default)"
     _index: int = field(default=0, init=False, repr=False, compare=False)
 
     def plan(self, grammar: MessageGrammar, *, limit: int) -> tuple[FuzzCase, ...]:
@@ -184,9 +182,7 @@ class GrammarEngine:
         for field_name, operator in grammar.case_plan():
             if len(cases) >= limit:
                 break
-            cases.append(
-                grammar.build_case(field_name, operator, index=len(cases))
-            )
+            cases.append(grammar.build_case(field_name, operator, index=len(cases)))
         return tuple(cases)
 
     def observe(self, outcome: CaseOutcome) -> tuple[FuzzCase, ...]:

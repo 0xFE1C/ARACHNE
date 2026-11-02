@@ -116,7 +116,10 @@ def test_a_suppression_survives_a_rescan_and_the_diff_states_the_count(
     # The second re-scan reads the same rule from the same store: still suppressed, still
     # counted, and the persisted document carries it (a stored diff is not silently smaller).
     rescan_two = build_diff(
-        first.findings, second.findings, scan_a="scan_1", scan_b="scan_3",
+        first.findings,
+        second.findings,
+        scan_a="scan_1",
+        scan_b="scan_3",
         suppressions=store.active_suppressions(),
     )
     assert rescan_two.suppressed == rescan_one.suppressed
@@ -217,12 +220,11 @@ def test_the_quality_workflow_over_http(harness: ApiHarness) -> None:
         )
         assert refused.status_code == 422
 
-        revoked = client.delete(
-            f"/api/v1/suppressions/{rule['id']}", headers=auth(SCANNER_KEY)
-        )
+        revoked = client.delete(f"/api/v1/suppressions/{rule['id']}", headers=auth(SCANNER_KEY))
         assert revoked.status_code == 204
         still_there = client.get(
-            "/api/v1/suppressions", params={"include_revoked": "true"},
+            "/api/v1/suppressions",
+            params={"include_revoked": "true"},
             headers=auth(VIEWER_KEY),
         )
         assert any(not item["active"] for item in still_there.json())

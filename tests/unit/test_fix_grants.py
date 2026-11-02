@@ -124,9 +124,7 @@ def test_every_declared_runner_is_a_known_one(tmp_path: Path) -> None:
         parse_fix_grants(
             {
                 "version": "1.0",
-                "repos": [
-                    {"name": "x", "path": str(tmp_path), "test_command": ["/bin/sh"]}
-                ],
+                "repos": [{"name": "x", "path": str(tmp_path), "test_command": ["/bin/sh"]}],
             }
         )
 
@@ -157,9 +155,7 @@ def test_the_grant_budget_becomes_the_diff_budget(tmp_path: Path) -> None:
 
 def test_duplicate_grant_names_are_refused(tmp_path: Path) -> None:
     with pytest.raises(ConfigurationError, match="duplicate"):
-        parse_fix_grants(
-            {"version": "1.0", "repos": [_grant(tmp_path), _grant(tmp_path)]}
-        )
+        parse_fix_grants({"version": "1.0", "repos": [_grant(tmp_path), _grant(tmp_path)]})
 
 
 def test_an_empty_grant_set_serializes_as_nothing() -> None:

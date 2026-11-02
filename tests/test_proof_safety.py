@@ -278,7 +278,9 @@ def test_l2_checks_send_nothing_without_their_opt_in_chain() -> None:
     """An L2 check is opt-in (REQ-PROOF-001) AND active-gated (F-01-09): proven at plan level."""
     orchestrator, _sink, _requests = _scan_stack()
     # Not named → not selected at all.
-    default_request = build_scan_request(targets=[{"kind": "url", "value": f"https://{TARGET_HOST}/"}])
+    default_request = build_scan_request(
+        targets=[{"kind": "url", "value": f"https://{TARGET_HOST}/"}]
+    )
     plan = orchestrator.plan(default_request, dry_run=True)
     assert all(not check.included for check in plan.checks if check.proof.is_opt_in)
     # Named but not active-authorized → withheld with the active-checks code.
@@ -489,7 +491,9 @@ def test_the_callback_service_never_dials_out() -> None:
     original = socket.socket
     socket.socket = ExplodingSocket  # type: ignore[misc]
     try:
-        hit = service.record_hit(str(token), body=hostile_body, headers={"Referer": "http://attacker.invalid"})
+        hit = service.record_hit(
+            str(token), body=hostile_body, headers={"Referer": "http://attacker.invalid"}
+        )
     finally:
         socket.socket = original  # type: ignore[misc]
     assert hit is not None

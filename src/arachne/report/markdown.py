@@ -317,8 +317,7 @@ def _scope_section(report: ReportData) -> list[str]:
         # scan saw an authenticated surface, and which vault entry it used.
         state = "authenticated" if scope.authenticated else "no session established"
         lines.append(
-            f"- Credentials: {', '.join(_inline(label) for label in scope.credentials)} "
-            f"({state})"
+            f"- Credentials: {', '.join(_inline(label) for label in scope.credentials)} ({state})"
         )
     if scope.modules:
         lines.append(f"- Modules enabled: {', '.join(scope.modules)}")
@@ -488,13 +487,9 @@ def _simulation_section(report: ReportData) -> list[str]:
         scans = ", ".join(str(item) for item in simulation.built_from_scans)
         lines.append(f"- Built from scan(s): {scans}")
     if simulation.model:
-        summary = " · ".join(
-            f"{key}={simulation.model[key]}" for key in sorted(simulation.model)
-        )
+        summary = " · ".join(f"{key}={simulation.model[key]}" for key in sorted(simulation.model))
         lines.append(f"- Model: {summary}")
-    lines.append(
-        f"- Exposure score: {simulation.exposure_before} → {simulation.exposure_after}"
-    )
+    lines.append(f"- Exposure score: {simulation.exposure_before} → {simulation.exposure_after}")
     lines.append("")
     if simulation.hypotheses:
         lines.extend([f"### {_t('report.simulation.hypotheses', report)}", ""])
@@ -565,9 +560,7 @@ def _simulation_section(report: ReportData) -> list[str]:
         direction = "worse" if change.exposure_delta > 0 else "better"
         if change.exposure_delta == 0:
             direction = "unchanged"
-        lines.extend(
-            [f"### {_t('report.simulation.change', report)}: {_inline(change.name)}", ""]
-        )
+        lines.extend([f"### {_t('report.simulation.change', report)}: {_inline(change.name)}", ""])
         if change.description:
             lines.extend([_inline(change.description), ""])
         lines.extend(
@@ -582,9 +575,7 @@ def _simulation_section(report: ReportData) -> list[str]:
                 f"- Paths introduced: {', '.join(_inline(item) for item in change.introduced)}"
             )
         if change.removed:
-            lines.append(
-                f"- Paths removed: {', '.join(_inline(item) for item in change.removed)}"
-            )
+            lines.append(f"- Paths removed: {', '.join(_inline(item) for item in change.removed)}")
         lines.append("")
     return lines
 
@@ -805,7 +796,8 @@ def _intel_section(report: ReportData) -> list[str]:
             age = f"{feed.age_hours:.1f} h" if feed.age_hours is not None else "—"
             ttl = f"{feed.ttl_hours:.0f} h" if feed.ttl_hours else "—"
             integrity = (
-                f"verified ({_inline(feed.verification)})" if feed.verified and feed.verification
+                f"verified ({_inline(feed.verification)})"
+                if feed.verified and feed.verification
                 else ("verified" if feed.verified else "not verified")
             )
             lines.append(

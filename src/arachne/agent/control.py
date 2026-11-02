@@ -242,9 +242,7 @@ class DirectControlPlane:
         return dict(self._service.heartbeat(name, principal=self._principal))
 
     async def lease(self, name: str, *, cap: int, ttl_s: float) -> tuple[AgentLease, ...]:
-        entries = self._service.lease(
-            name, principal=self._principal, cap=cap, ttl_s=ttl_s
-        )
+        entries = self._service.lease(name, principal=self._principal, cap=cap, ttl_s=ttl_s)
         return tuple(
             AgentLease(
                 scan_id=entry.scan_id,

@@ -69,9 +69,7 @@ def quality_trends(
         store = _quality(services)
         since = datetime.now(UTC) - timedelta(days=max(1, days))
         trends = compute_trends(store.feedback_history(since=since), days=days)
-        alerts = rising_alerts(
-            trends, threshold=alert, window=window, min_marks=minimum_marks
-        )
+        alerts = rising_alerts(trends, threshold=alert, window=window, min_marks=minimum_marks)
         if as_json:
             typer.echo(
                 json.dumps(
@@ -150,9 +148,7 @@ def quality_suppress(
 
 @quality_app.command("suppressions")
 def quality_suppressions(
-    all_rules: Annotated[
-        bool, typer.Option("--all", help="Include revoked rules.")
-    ] = False,
+    all_rules: Annotated[bool, typer.Option("--all", help="Include revoked rules.")] = False,
     as_json: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = False,
 ) -> None:
     """List the suppression rules (newest first)."""

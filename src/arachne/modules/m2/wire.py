@@ -1199,9 +1199,7 @@ def parse_s7_connection_confirm(data: bytes) -> S7Connection | None:
                 destination_tsap = value
     except ValueError:
         return None
-    return S7Connection(
-        source_tsap=source_tsap, destination_tsap=destination_tsap, confirmed=True
-    )
+    return S7Connection(source_tsap=source_tsap, destination_tsap=destination_tsap, confirmed=True)
 
 
 # --------------------------------------------------------------------------- DNP3 (S29)
@@ -2170,6 +2168,7 @@ def parse_tls_server_hello(data: bytes) -> dict[str, Any] | None:
 #
 # MD4 is only used for the NT hash — the one place the NTLM family still needs it, and the one
 # hash `hashlib` does not guarantee (OpenSSL moved it to the legacy provider).
+
 
 @dataclass(frozen=True, slots=True)
 class NtlmChallenge:

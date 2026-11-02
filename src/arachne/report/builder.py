@@ -952,9 +952,7 @@ def build_report_data(inputs: ReportInputs) -> m.ReportData:
             finding_refs=finding_refs,
             criticality=inputs.criticality,
         ),
-        compliance=_compliance_block(
-            inputs, checks=scope_section.checks, findings=findings
-        ),
+        compliance=_compliance_block(inputs, checks=scope_section.checks, findings=findings),
         detection_validation=_detection_validation_block(
             inputs.detection_validation, sigma=inputs.detection_sigma
         ),
@@ -1131,8 +1129,7 @@ def simulation_block(
     else:
         paths = _simulated_paths(change.after)
         refusals = tuple(
-            f"{item.hypothesis.id}: {item.reason}"
-            for item in getattr(change, "refusals", ())
+            f"{item.hypothesis.id}: {item.reason}" for item in getattr(change, "refusals", ())
         )
         model = {}
         exposure_before = int(getattr(change, "exposure_before", 0))
@@ -1318,9 +1315,7 @@ def build_report_for_scan(
             compliance_frameworks=compliance_frameworks,
             compliance_map_dir=compliance_map_dir,
             criticality=criticality,
-            detection_validation=(
-                dict(record.stats.get("purple") or {}) if record.stats else {}
-            ),
+            detection_validation=(dict(record.stats.get("purple") or {}) if record.stats else {}),
             simulation=simulation,
         )
     )

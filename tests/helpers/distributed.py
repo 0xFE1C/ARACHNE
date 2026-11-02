@@ -47,8 +47,11 @@ def distributed_settings(db_path: Path, **distributed: object) -> Settings:
         log_json=False,
         actor="distributed-test",
         api=ApiSettings(
-            keys=("admin:admin:rootsecret", "scanner:scanner:scansecret",
-                  "viewer:viewer:viewsecret"),
+            keys=(
+                "admin:admin:rootsecret",
+                "scanner:scanner:scansecret",
+                "viewer:viewer:viewsecret",
+            ),
             require_tls=False,
             rate_limit_per_minute=100_000,
             rate_limit_burst=100_000,
@@ -103,9 +106,7 @@ def build_stack(
         default_limit_bytes=effective.evidence.default_quota_bytes,
         warn_ratio=effective.evidence.quota_warn_ratio,
     )
-    evidence = EvidenceService(
-        evidence_backend, settings=effective, quota=quota, auditor=auditor
-    )
+    evidence = EvidenceService(evidence_backend, settings=effective, quota=quota, auditor=auditor)
     services = ScanServices(
         settings=effective,
         engine=engine,

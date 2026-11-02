@@ -170,9 +170,7 @@ def build_handlers(
     """
     effective_registry = registry or ModuleRegistry.discover()
     effective_findings = findings or MemoryFindingStore()
-    effective_osint = (
-        osint if osint is not None else osint_from_settings(settings, auditor=auditor)
-    )
+    effective_osint = osint if osint is not None else osint_from_settings(settings, auditor=auditor)
     module_config = module_config_from_settings(settings, feeds)
     analysis_handlers = build_analysis_handlers(
         settings=settings,
@@ -959,9 +957,7 @@ async def _record_results(
         if result.status == "vulnerable":
             candidates += 1
             stats["candidates"] += 1
-            staged = await _stage_evidence(
-                ctx, result=result, asset=asset, check=metadata.id
-            )
+            staged = await _stage_evidence(ctx, result=result, asset=asset, check=metadata.id)
             record = _persist(
                 findings,
                 ctx.scan_id,

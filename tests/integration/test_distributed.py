@@ -142,9 +142,7 @@ async def test_two_agents_drain_a_twenty_scan_queue_without_duplicate_execution(
             overview = (await http.get("/api/v1/agent/queue", headers=auth(VIEWER_KEY))).json()
             assert overview["stats"]["queued"] == 20
 
-            agents = [
-                agent_loop(harness, f"agent-{i}", pipeline=(ScanStep.RECON,)) for i in (1, 2)
-            ]
+            agents = [agent_loop(harness, f"agent-{i}", pipeline=(ScanStep.RECON,)) for i in (1, 2)]
             executed = await asyncio.gather(*(loop.run_until_drained() for loop in agents))
             assert sum(executed) == 20
             for loop in agents:

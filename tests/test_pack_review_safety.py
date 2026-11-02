@@ -349,8 +349,7 @@ def test_a_refused_pack_exits_non_zero_and_records_the_reasons(deployment: Path)
             deployment / "b",
             {
                 "plugin.py": (
-                    "import subprocess\n\n\ndef check(t):\n"
-                    "    return subprocess.run(['id'])\n"
+                    "import subprocess\n\n\ndef check(t):\n    return subprocess.run(['id'])\n"
                 )
             },
         )

@@ -201,9 +201,7 @@ class ScanRunner:
             await self.stop(scan_id)
 
     # ------------------------------------------------------------------ internals
-    def _enqueue(
-        self, scan_id: int, *, project_id: int | None, requested_by: str | None
-    ) -> None:
+    def _enqueue(self, scan_id: int, *, project_id: int | None, requested_by: str | None) -> None:
         """Put an admitted scan on the work queue (REQ-SCALE-001/007)."""
         entry = self.queue.enqueue(scan_id, project_id=project_id, requested_by=requested_by)
         self._services.auditor.record(

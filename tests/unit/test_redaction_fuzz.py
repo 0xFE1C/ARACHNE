@@ -183,8 +183,9 @@ _CREDENTIAL_CARRIERS: tuple[tuple[str, Callable[[str, str], str]], ...] = (
     ),
     (
         "basic-auth-line",
-        lambda user, secret: "Authorization: Basic "
-        + base64.b64encode(f"{user}:{secret}".encode()).decode(),
+        lambda user, secret: (
+            "Authorization: Basic " + base64.b64encode(f"{user}:{secret}".encode()).decode()
+        ),
     ),
 )
 

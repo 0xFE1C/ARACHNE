@@ -234,9 +234,7 @@ def _outermost(findings: Iterable[PIIFinding]) -> tuple[PIIFinding, ...]:
     ordered = sorted(findings, key=lambda item: (item.start, -(item.end - item.start)))
     kept: list[PIIFinding] = []
     for finding in ordered:
-        if any(
-            outer.start <= finding.start and finding.end <= outer.end for outer in kept
-        ):
+        if any(outer.start <= finding.start and finding.end <= outer.end for outer in kept):
             continue
         kept.append(finding)
     return tuple(sorted(kept, key=lambda item: item.start))
@@ -306,9 +304,7 @@ def _valid_phone(raw: str, digits: str) -> bool:
     # grouped *consistently*: "123-45-6789 4111" mixes dashes and spaces, which is one number
     # colliding with the next token rather than a phone number.
     separators = {char for char in raw if char in " .-"}
-    return (
-        9 <= len(digits) <= 15 and bool(separators) and len(separators) == 1
-    )
+    return 9 <= len(digits) <= 15 and bool(separators) and len(separators) == 1
 
 
 def _masked(category: str, value: str) -> str:
@@ -352,8 +348,7 @@ def _walk(
         return _mask_string(value, policy, salt, counts)
     if isinstance(value, Mapping):
         return {
-            key: _walk(item, policy, salt, counts, depth=depth + 1)
-            for key, item in value.items()
+            key: _walk(item, policy, salt, counts, depth=depth + 1) for key, item in value.items()
         }
     if isinstance(value, list):
         return [_walk(item, policy, salt, counts, depth=depth + 1) for item in value]

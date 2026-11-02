@@ -140,9 +140,7 @@ def test_a_scan_produces_a_verifiable_chain_and_a_seal(
         services.close()
 
 
-def test_an_edited_audit_row_is_detected(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_an_edited_audit_row_is_detected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _env(tmp_path, monkeypatch)
     _run_scan()
     services = build_services(get_settings())
@@ -422,9 +420,7 @@ def test_a_killed_worker_loses_no_scan(tmp_path: Path, monkeypatch: pytest.Monke
             services.queue.enqueue(scan_id, project_id=None, requested_by="pytest")
 
         # Replica A leases three and finishes two, then is killed while holding the third.
-        leased = services.queue.lease_next(
-            "replica-a", agent_id=int(agent_a.id), cap=3, ttl_s=1
-        )
+        leased = services.queue.lease_next("replica-a", agent_id=int(agent_a.id), cap=3, ttl_s=1)
         assert len(leased) == 3
         held = [entry.scan_id for entry in leased]
         for scan_id in held[:2]:
@@ -494,9 +490,7 @@ def test_the_release_migration_applies_to_a_populated_database(
     engine = create_engine(database_url)
     try:
         with engine.connect() as connection:
-            version = connection.exec_driver_sql(
-                "SELECT version_num FROM alembic_version"
-            ).scalar()
+            version = connection.exec_driver_sql("SELECT version_num FROM alembic_version").scalar()
             targets = connection.exec_driver_sql("SELECT COUNT(*) FROM targets").scalar()
             findings = connection.exec_driver_sql("SELECT COUNT(*) FROM findings").scalar()
         assert version == LATEST_SCHEMA_REVISION
@@ -628,9 +622,7 @@ def test_pii_masking_is_applied_to_the_scans_evidence(
             status="info",
             detail="seeded PII",
             confidence=0.5,
-            evidence=(
-                EvidenceItem.of("note", {"contact": "jane.operator@example.com"}),
-            ),
+            evidence=(EvidenceItem.of("note", {"contact": "jane.operator@example.com"}),),
         )
         staged = asyncio.run(services.evidence.stage(result, scan_id=scan_id, project_id=None))
         assert "jane.operator@example.com" not in json.dumps(staged.evidence[0].payload)
@@ -656,9 +648,7 @@ def test_the_api_serves_the_shipped_security_txt(
         # RFC 9116 admits either a mailbox or a URL as the Contact; this project's
         # working channel is the private advisory form, so assert the shape, not a
         # mailbox the project does not operate.
-        contact = next(
-            line for line in response.text.splitlines() if line.startswith("Contact:")
-        )
+        contact = next(line for line in response.text.splitlines() if line.startswith("Contact:"))
         assert contact.startswith(("Contact: mailto:", "Contact: https:")), contact
         assert "Expires:" in response.text
     finally:

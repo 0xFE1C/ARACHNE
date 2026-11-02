@@ -411,9 +411,7 @@ def coverage_points(payloads: Iterable[Mapping[str, Any]]) -> tuple[CoveragePoin
     return tuple(points)
 
 
-def detect_regressions(
-    previous: CoveragePoint | None, current: CoveragePoint
-) -> tuple[str, ...]:
+def detect_regressions(previous: CoveragePoint | None, current: CoveragePoint) -> tuple[str, ...]:
     """Techniques seen in ``previous`` and unseen in ``current`` (REQ-VALID-006).
 
     The regression alert is deliberately narrow: only a technique that was *seen* before

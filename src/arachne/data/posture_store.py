@@ -401,9 +401,7 @@ class SqlPostureStore:
     def forget_scope(self, scope_key: str) -> int:
         with self._session_factory() as session:
             rows = session.scalars(
-                select(models.PostureBaseline).where(
-                    models.PostureBaseline.scope_key == scope_key
-                )
+                select(models.PostureBaseline).where(models.PostureBaseline.scope_key == scope_key)
             ).all()
             for row in rows:
                 session.delete(row)

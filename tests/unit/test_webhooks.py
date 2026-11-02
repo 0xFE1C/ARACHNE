@@ -332,8 +332,6 @@ async def test_a_secret_never_reaches_a_payload_an_audit_line_or_the_log(
     # 3) The structured log mirror of the same trail.
     with caplog.at_level(logging.DEBUG, logger="core.audit"):
         for event in sink.events:
-            logging.getLogger("core.audit").info(
-                "audit", extra={"event": event.to_dict()}
-            )
+            logging.getLogger("core.audit").info("audit", extra={"event": event.to_dict()})
     for secret in secrets:
         assert secret not in caplog.text

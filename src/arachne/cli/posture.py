@@ -210,16 +210,14 @@ def cmdb_import_command(
             typer.secho("cmdb import: no posture store wired", fg=typer.colors.RED, err=True)
             raise typer.Exit(code=2)
         rows = store.import_criticality(
-
-                CriticalityEntry(
-                    host=entry.host,
-                    tier=entry.tier,
-                    name=entry.name,
-                    note=entry.note,
-                    source=source,
-                )
-                for entry in entries
-
+            CriticalityEntry(
+                host=entry.host,
+                tier=entry.tier,
+                name=entry.name,
+                note=entry.note,
+                source=source,
+            )
+            for entry in entries
         )
     finally:
         services.close()
@@ -266,12 +264,8 @@ def admission_check_command(
                     "request": {
                         "uid": f"local:{manifest.name}",
                         "kind": {"kind": str(document.get("kind", ""))},
-                        "name": str(
-                            document.get("metadata", {}).get("name", manifest.name)
-                        ),
-                        "namespace": str(
-                            document.get("metadata", {}).get("namespace", "default")
-                        ),
+                        "name": str(document.get("metadata", {}).get("name", manifest.name)),
+                        "namespace": str(document.get("metadata", {}).get("namespace", "default")),
                         "operation": "CREATE",
                         "object": document,
                     }

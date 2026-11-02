@@ -236,9 +236,7 @@ def _bump(previous: str | None) -> str:
     return f"{numbers[0]}.{numbers[1] + 1}.0"
 
 
-def approve(
-    proposal: CheckProposal, *, parity: ParityEvidence, reviewer: str
-) -> CheckProposal:
+def approve(proposal: CheckProposal, *, parity: ParityEvidence, reviewer: str) -> CheckProposal:
     """Record a review: parity must have passed, and the approver is named (REQ-AGENT-004)."""
     if not parity.ok:
         raise ConfigurationError(
@@ -280,9 +278,7 @@ def write_artifacts(proposals: Sequence[CheckProposal], directory: str | Path) -
         (folder / "check.yaml").write_text(
             yaml.safe_dump(proposal.catalogue_row(), sort_keys=False), encoding="utf-8"
         )
-        (folder / "test_proposed_check.py").write_text(
-            _test_scaffold(proposal), encoding="utf-8"
-        )
+        (folder / "test_proposed_check.py").write_text(_test_scaffold(proposal), encoding="utf-8")
         (folder / "REVIEW.md").write_text(_review_notes(proposal), encoding="utf-8")
         (folder / "proposal.json").write_text(
             json.dumps(proposal.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -319,7 +315,7 @@ def _test_scaffold(proposal: CheckProposal) -> str:
         f"Proposed check: {proposal.check_id} {proposal.proposed_version}\n"
         f"Based on: {proposal.based_on.cve} ({proposal.based_on.source})\n\n"
         "Fill in the fixtures: the vulnerable response must raise the candidate, and the\n"
-        'hardened counterpart must not. Until then this module fails, by design.\n'
+        "hardened counterpart must not. Until then this module fails, by design.\n"
         '"""\n\n'
         "from __future__ import annotations\n\n"
         "import pytest\n\n"

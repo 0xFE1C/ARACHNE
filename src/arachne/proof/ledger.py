@@ -90,9 +90,7 @@ class StateChangeRecord:
             check_id=str(data.get("check_id") or ""),
             table=str(data.get("table") or ""),
             locator=str(data.get("locator") or ""),
-            before=(
-                dict(data["before"]) if isinstance(data.get("before"), dict) else None
-            ),
+            before=(dict(data["before"]) if isinstance(data.get("before"), dict) else None),
             after=dict(data["after"]) if isinstance(data.get("after"), dict) else {},
             restored=bool(data.get("restored")),
             restored_at=None,

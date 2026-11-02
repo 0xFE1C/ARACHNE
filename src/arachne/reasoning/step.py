@@ -172,9 +172,7 @@ def _correlation_version(ctx: StepContext) -> str:
     return ""
 
 
-def _group_lines(
-    records: Sequence[Any], candidates: Sequence[Any], index: CheckIndex
-) -> list[str]:
+def _group_lines(records: Sequence[Any], candidates: Sequence[Any], index: CheckIndex) -> list[str]:
     """One line per correlation group: its asset and the module-mates worth trying next.
 
     The next hop is derived, not guessed: a group on an asset proves that the *module* that
@@ -201,9 +199,9 @@ def _group_lines(
                 break
         if module is None or not asset:
             continue
-        next_hops = tuple(
-            entry.id for entry in index.of_module(module) if entry.id not in covered
-        )[:3]
+        next_hops = tuple(entry.id for entry in index.of_module(module) if entry.id not in covered)[
+            :3
+        ]
         if not next_hops:
             continue
         out.append(
@@ -274,9 +272,7 @@ def _concrete_checks(rule: Rule, index: CheckIndex) -> tuple[str, ...]:
     for selector in rule.selectors():
         if selector.kind == "check":
             pattern = selector.check_pattern or ""
-            out.extend(
-                entry.id for entry in index.all() if fnmatch.fnmatchcase(entry.id, pattern)
-            )
+            out.extend(entry.id for entry in index.all() if fnmatch.fnmatchcase(entry.id, pattern))
         elif selector.kind == "module":
             out.extend(entry.id for entry in index.of_module(selector.module or ""))
     return tuple(dict.fromkeys(out))
@@ -284,13 +280,9 @@ def _concrete_checks(rule: Rule, index: CheckIndex) -> tuple[str, ...]:
 
 def _selector_matches(rule: Rule, check_id: str) -> bool:
     for selector in rule.selectors():
-        if selector.kind == "check" and fnmatch.fnmatchcase(
-            check_id, selector.check_pattern or ""
-        ):
+        if selector.kind == "check" and fnmatch.fnmatchcase(check_id, selector.check_pattern or ""):
             return True
-        if selector.kind == "module" and check_id.startswith(
-            (selector.module or "").lower() + "."
-        ):
+        if selector.kind == "module" and check_id.startswith((selector.module or "").lower() + "."):
             return True
     return False
 
@@ -410,9 +402,7 @@ def _build_hypothesis_ai_engine(settings: Any, auditor: Any) -> Any:
         prompts = load_prompt_store(path, stages=("hypothesize",))
     except ConfigurationError:  # pragma: no cover - a broken corpus is an operator error
         return None
-    return build_ai_engine(
-        settings, heuristic=HeuristicEngine(), prompts=prompts, auditor=auditor
-    )
+    return build_ai_engine(settings, heuristic=HeuristicEngine(), prompts=prompts, auditor=auditor)
 
 
 def make_hypothesis_handler(runtime: HypothesisRuntime) -> StepHandler:

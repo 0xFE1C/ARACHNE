@@ -173,7 +173,7 @@ def test_the_metrics_endpoint_serves_the_exposition(harness: Any) -> None:
     # silent, so only the ones that always have a value are required here.
     for family in ("arachne_build_info", "arachne_queue_depth"):
         assert family in body, f"{family} missing from /metrics"
-    assert 'arachne_build_info{version=' in body
+    assert "arachne_build_info{version=" in body
     assert 'arachne_queue_depth{status="queued"} 0' in body
 
 
@@ -189,9 +189,7 @@ def test_the_metrics_endpoint_is_absent_when_disabled(tmp_path: Any) -> None:
     from tests.helpers.api import build_api_settings, make_api_harness
 
     settings = build_api_settings(tmp_path)
-    object.__setattr__(
-        settings, "observability", ObservabilitySettings(metrics_enabled=False)
-    )
+    object.__setattr__(settings, "observability", ObservabilitySettings(metrics_enabled=False))
     harness = make_api_harness(tmp_path, settings=settings)
     assert harness.client().get("/metrics").status_code == 404
 

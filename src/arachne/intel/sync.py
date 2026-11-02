@@ -172,9 +172,7 @@ class FixtureFeedTransport:
                 headers={
                     str(key): str(value) for key, value in (data.get("headers") or {}).items()
                 },
-                signature=(
-                    signature_path.read_bytes() if signature_path.is_file() else None
-                ),
+                signature=(signature_path.read_bytes() if signature_path.is_file() else None),
             )
         return responses
 
@@ -630,9 +628,11 @@ class FeedSyncService:
         payloads: list[FeedPayload] = []
         offset = 0
         for _page in range(max(1, self.settings.max_pages)):
-            url = epss_url(
-                since=since, offset=offset, limit=_EPSS_PAGE_SIZE
-            ) if since else epss_url(offset=offset, limit=_EPSS_PAGE_SIZE)
+            url = (
+                epss_url(since=since, offset=offset, limit=_EPSS_PAGE_SIZE)
+                if since
+                else epss_url(offset=offset, limit=_EPSS_PAGE_SIZE)
+            )
             payload = await self.transport.fetch("epss", url)
             payloads.append(payload)
             if not payload.ok:
@@ -644,9 +644,7 @@ class FeedSyncService:
         return payloads
 
     # ------------------------------------------------------------------ audit
-    def _audit_verification(
-        self, source: str, verification: VerificationResult, url: str
-    ) -> None:
+    def _audit_verification(self, source: str, verification: VerificationResult, url: str) -> None:
         if self.auditor is None:
             return
         if verification.verified:

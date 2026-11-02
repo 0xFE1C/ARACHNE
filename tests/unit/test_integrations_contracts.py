@@ -139,7 +139,8 @@ def test_siem_export_is_ndjson_with_findings_and_the_audit_trail(
         },
     ]
     payloads = [
-        p for p in render_payloads(report, _settings(), audit_events=audit_events)
+        p
+        for p in render_payloads(report, _settings(), audit_events=audit_events)
         if p.name == "siem"
     ]
     assert payloads, "a configured SIEM collector must receive the export"
@@ -157,8 +158,13 @@ def test_siem_export_is_ndjson_with_findings_and_the_audit_trail(
 
 def test_siem_records_match_the_recorded_collector_shape(report: ReportData) -> None:
     audit_events = [
-        {"action": "http.request", "outcome": "allowed", "target": "https://t.example/",
-         "reason": None, "meta": {"method": "GET"}},
+        {
+            "action": "http.request",
+            "outcome": "allowed",
+            "target": "https://t.example/",
+            "reason": None,
+            "meta": {"method": "GET"},
+        },
     ]
     records = siem_records(report, audit_events)
     recorded = _recorded_lines("siem-events.jsonl")
@@ -190,7 +196,7 @@ async def test_the_siem_body_is_posted_verbatim_and_audited(report: ReportData) 
     notifier = WebhookNotifier(settings, auditor=Auditor(sink, actor="pytest"), post_json=poster)
     results = await notifier.notify(synthetic_report())
     assert all(result.ok for result in results)
-    (_url, body, headers), = poster.calls
+    ((_url, body, headers),) = poster.calls
     assert isinstance(body, str) and body.endswith("\n")
     assert headers["Authorization"] == "Bearer siem-token"
     delivered = [event for event in sink.events if event.action.value == "webhook.delivered"]
@@ -221,9 +227,7 @@ def test_the_report_format_and_the_webhook_send_the_same_defectdojo_document(
     documents: an operator can hand the file over or let the scan push it, and
     DefectDojo sees the same import either way.
     """
-    webhook = next(
-        p for p in render_payloads(report, _settings()) if p.name == "defectdojo"
-    )
+    webhook = next(p for p in render_payloads(report, _settings()) if p.name == "defectdojo")
     document = json.loads(render_defectdojo(report))
     assert webhook.body == document
     assert document["findings"][0]["description"], (
@@ -322,9 +326,7 @@ def test_the_sender_posts_the_raw_siem_body_through_the_real_seam(
     monkeypatch.setattr(http_module, "ScopedHttpClient", FakeClient)
     from pydantic import SecretStr
 
-    hooks = WebhookSettings(
-        enabled=True, siem_url=SecretStr("https://siem.example/collector")
-    )
+    hooks = WebhookSettings(enabled=True, siem_url=SecretStr("https://siem.example/collector"))
     settings = Settings(
         webhooks=hooks,
         api=ApiSettings(base_url="https://arachne.example", require_tls=False),

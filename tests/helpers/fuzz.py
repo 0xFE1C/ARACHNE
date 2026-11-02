@@ -265,9 +265,7 @@ class FuzzHarness:
     def audit_meta(self, action: str) -> list[dict[str, Any]]:
         """The ``meta`` of every audit event with ``action``, in order."""
         return [
-            dict(event.meta or {})
-            for event in self.sink.events
-            if event.action.value == action
+            dict(event.meta or {}) for event in self.sink.events if event.action.value == action
         ]
 
 

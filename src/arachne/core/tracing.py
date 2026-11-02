@@ -536,9 +536,7 @@ def configure_tracing(
         )
     _TRACER = Tracer(
         exporter,
-        sample_ratio=(
-            observability.tracing_sample_ratio if sample_ratio is None else sample_ratio
-        ),
+        sample_ratio=(observability.tracing_sample_ratio if sample_ratio is None else sample_ratio),
         service_name=observability.service_name,
     )
     return _TRACER
@@ -564,9 +562,7 @@ def _build_otlp_client(settings: Settings) -> Any:
         from dataclasses import replace
 
         policy = replace(policy, allow_private_ips=True)
-    return ScopedHttpClient(
-        settings=settings, scope=Scope(allowed_hosts=(host,)), policy=policy
-    )
+    return ScopedHttpClient(settings=settings, scope=Scope(allowed_hosts=(host,)), policy=policy)
 
 
 def reset_tracer() -> None:

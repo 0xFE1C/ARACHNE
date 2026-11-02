@@ -158,9 +158,7 @@ class ScheduleSpec:
             enabled=bool(data.get("enabled", True)),
             continuous=bool(data.get("continuous", False)),
             budget=ScheduleBudget.from_dict(data.get("budget")),
-            purple_campaign=(
-                str(data["purple_campaign"]) if data.get("purple_campaign") else None
-            ),
+            purple_campaign=(str(data["purple_campaign"]) if data.get("purple_campaign") else None),
         )
 
 
@@ -208,7 +206,7 @@ class ScheduleState:
         """A copy with ``moment`` appended and the run list pruned to the budget window."""
         window_start = moment - timedelta(hours=window_hours)
         kept = tuple(item for item in self.run_times if window_start <= item <= moment)
-        pruned = (*kept, moment)[max(0, len(kept) + 1 - cap):]
+        pruned = (*kept, moment)[max(0, len(kept) + 1 - cap) :]
         return ScheduleState(
             last_run_at=self.last_run_at,
             last_scan_id=self.last_scan_id,

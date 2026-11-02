@@ -253,7 +253,7 @@ def services(tmp_path: Any) -> Any:
     from arachne.data.services import ScanServices
 
     settings = Settings(
-        database_url=f"sqlite:///{tmp_path/'property.db'}",
+        database_url=f"sqlite:///{tmp_path / 'property.db'}",
         retention=RetentionSettings(batch_limit=100_000),
     )
     engine = create_sqlite_engine(settings.database_url)
@@ -329,9 +329,7 @@ async def test_pruning_removes_only_what_the_policies_allow(services: Any, seed:
         # ---- 3b: the run removed exactly what the plan announced, plus the rows the
         # announced scans take with them (the foreign-key cascade, which the plan reports as
         # ``cascaded_rows`` under ``scans`` rather than as separate victims).
-        removed_scans_planned = set(plan.category("scans").ids) | set(
-            applied.category("scans").ids
-        )
+        removed_scans_planned = set(plan.category("scans").ids) | set(applied.category("scans").ids)
         removed_findings_planned = set(plan.category("findings").ids) | set(
             applied.category("findings").ids
         )
@@ -438,7 +436,7 @@ async def test_pruning_removes_only_what_the_policies_allow(services: Any, seed:
 
 
 async def test_a_legal_hold_stops_the_job_for_that_project(tmp_path: Any) -> None:
-    settings = Settings(database_url=f"sqlite:///{tmp_path/'hold.db'}")
+    settings = Settings(database_url=f"sqlite:///{tmp_path / 'hold.db'}")
     engine = create_sqlite_engine(settings.database_url)
     create_all(engine)
     factory = create_session_factory(engine)
@@ -493,7 +491,7 @@ async def test_a_legal_hold_stops_the_job_for_that_project(tmp_path: Any) -> Non
 
 
 async def test_a_category_at_zero_days_keeps_its_data_for_ever(tmp_path: Any) -> None:
-    settings = Settings(database_url=f"sqlite:///{tmp_path/'zero.db'}")
+    settings = Settings(database_url=f"sqlite:///{tmp_path / 'zero.db'}")
     engine = create_sqlite_engine(settings.database_url)
     create_all(engine)
     factory = create_session_factory(engine)

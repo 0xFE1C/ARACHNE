@@ -213,9 +213,7 @@ SPECS: dict[str, ProviderSpec] = {
 }
 
 
-def _drop_unusable(
-    providers: list[str], usable: Callable[[str], bool] | None
-) -> dict[str, str]:
+def _drop_unusable(providers: list[str], usable: Callable[[str], bool] | None) -> dict[str, str]:
     """Remove providers the deployment cannot use, returning ``{name: reason}``.
 
     Dropping happens *before* the scope is built, so a provider missing a credential is out of

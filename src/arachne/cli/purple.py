@@ -351,9 +351,7 @@ def report_command(
         typer.secho(f"purple report: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(code=2) from exc
     services.close()
-    rendered = (
-        json.dumps(report.to_dict(), indent=2) if json_output else report.render_markdown()
-    )
+    rendered = json.dumps(report.to_dict(), indent=2) if json_output else report.render_markdown()
     if output is not None:
         Path(output).write_text(rendered, encoding="utf-8")
         typer.echo(f"wrote {output}")

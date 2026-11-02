@@ -22,7 +22,7 @@ from arachne.core.errors import ConfigurationError
 
 
 def test_the_shipped_adapters_are_exactly_the_specs_table() -> None:
-    """ lists seven adapters; the registry must implement exactly those."""
+    """lists seven adapters; the registry must implement exactly those."""
     assert set(ADAPTERS) == {
         "openai",
         "openai_compatible",

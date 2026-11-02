@@ -379,8 +379,8 @@ class ScopedHttpClient:
         #: *deployment's* scan targets (never this instance's pinned scope, which for a
         #: webhook or metrics client is exactly the external host the mode exists to refuse).
         self._airgap = build_airgap_policy(self.settings)
-        self._airgap_scope_hosts: tuple[str, ...] = (
-            tuple(safety.scope.allowed_hosts) + tuple(safety.scope.allowed_domains)
+        self._airgap_scope_hosts: tuple[str, ...] = tuple(safety.scope.allowed_hosts) + tuple(
+            safety.scope.allowed_domains
         )
 
     # ------------------------------------------------------------------ context manager

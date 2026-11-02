@@ -197,9 +197,7 @@ class SimulatedPath:
         match = self._cheapest()
         if match is None or not match.hypothetical:
             return self.path.cheapest_reason
-        dependents = len(
-            [item for item in self.hops if item.hop.stage.rank >= chosen.stage.rank]
-        )
+        dependents = len([item for item in self.hops if item.hop.stage.rank >= chosen.stage.rank])
         return (
             f"fix {chosen.check_id} on {chosen.asset} (hypothetical hop introduced by "
             f"{match.hypothesis_id or 'a hypothesis'}): "
@@ -510,16 +508,12 @@ def simulate(
     return run
 
 
-def _wrap(
-    paths: Sequence[AttackPath], origins: Mapping[str, str]
-) -> tuple[SimulatedPath, ...]:
+def _wrap(paths: Sequence[AttackPath], origins: Mapping[str, str]) -> tuple[SimulatedPath, ...]:
     """Attach origin and provenance to composed paths."""
     out: list[SimulatedPath] = []
     for path in paths:
         hops = tuple(_originated(hop, origins) for hop in path.hops)
-        introduced = tuple(
-            dict.fromkeys(item.hypothesis_id for item in hops if item.hypothesis_id)
-        )
+        introduced = tuple(dict.fromkeys(item.hypothesis_id for item in hops if item.hypothesis_id))
         out.append(SimulatedPath(path=path, hops=hops, introduced_by=introduced))
     return tuple(out)
 

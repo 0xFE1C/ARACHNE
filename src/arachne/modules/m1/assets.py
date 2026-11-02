@@ -211,11 +211,7 @@ class JsAssetScan(Module):
                     + ") in code that also reads an attacker-influenceable source ("
                     + ", ".join(
                         sorted(
-                            {
-                                name
-                                for source in source_fed
-                                for name in dom_sinks[source]["sources"]
-                            }
+                            {name for source in source_fed for name in dom_sinks[source]["sources"]}
                         )
                     )
                     + "). This is the *static* precondition of a DOM-XSS path: the bundle was "
@@ -228,9 +224,7 @@ class JsAssetScan(Module):
             )
 
 
-def _remember_dom(
-    target: dict[str, dict[str, list[str]]], body: str, source: str
-) -> None:
+def _remember_dom(target: dict[str, dict[str, list[str]]], body: str, source: str) -> None:
     """Record the DOM sink/source shapes of one body (only when it has a sink at all)."""
     signals = dom_sink_signals(body)
     if not signals.sinks:

@@ -93,9 +93,7 @@ def test_a_window_must_be_well_formed_and_tz_aware() -> None:
     with pytest.raises(ValidationError, match="after starts_at"):
         DetectionWindow(starts_at=END, ends_at=START, coordinator="soc")
     with pytest.raises(ValidationError, match="timezone"):
-        DetectionWindow(
-            starts_at=datetime(2026, 10, 31, 12, 0), ends_at=END, coordinator="soc"
-        )
+        DetectionWindow(starts_at=datetime(2026, 10, 31, 12, 0), ends_at=END, coordinator="soc")
     with pytest.raises(ValidationError, match="coordinator"):
         DetectionWindow(starts_at=START, ends_at=END, coordinator="")
 
@@ -130,9 +128,12 @@ def test_a_purple_window_must_sit_inside_its_own_authorization() -> None:
             expires_at=START + timedelta(minutes=30),
         )
     # Inside the authorization: fine.
-    assert _attestation(
-        detection_window=_window(), expires_at=END + timedelta(hours=1)
-    ).detection_window is not None
+    assert (
+        _attestation(
+            detection_window=_window(), expires_at=END + timedelta(hours=1)
+        ).detection_window
+        is not None
+    )
 
 
 def test_the_attestation_round_trips_the_window_into_every_stored_form() -> None:
@@ -182,6 +183,9 @@ def test_purple_mode_requires_the_operator_active_checks_opt_in() -> None:
     switches (F-01-09), and it cannot be implied by the attestation."""
     with pytest.raises(ValidationError, match="requires active_checks=True"):
         ScanOptions(purple=PurpleRunOptions(campaign="c1", actions=("m3.cmdi-oob",)))
-    assert ScanOptions(
-        active_checks=True, purple=PurpleRunOptions(campaign="c1", actions=("m3.cmdi-oob",))
-    ).purple is not None
+    assert (
+        ScanOptions(
+            active_checks=True, purple=PurpleRunOptions(campaign="c1", actions=("m3.cmdi-oob",))
+        ).purple
+        is not None
+    )

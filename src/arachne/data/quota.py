@@ -117,9 +117,7 @@ class StorageQuota:
         if project_id is None:
             return 0
         with self._session_factory() as session:
-            value = session.scalar(
-                select(Project.used_bytes).where(Project.id == project_id)
-            )
+            value = session.scalar(select(Project.used_bytes).where(Project.id == project_id))
         return int(value or 0)
 
     def recompute(self, project_id: int | None) -> int:
@@ -200,9 +198,7 @@ class StorageQuota:
                     "slug": str(slug),
                     "used_bytes": used_bytes,
                     "limit_bytes": limit,
-                    "ratio": (
-                        round(used_bytes / limit, 4) if limit else 0.0
-                    ),
+                    "ratio": (round(used_bytes / limit, 4) if limit else 0.0),
                 }
             )
         return tuple(out)

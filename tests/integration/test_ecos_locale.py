@@ -79,9 +79,7 @@ def test_a_report_can_be_rendered_in_either_language(harness: ApiHarness) -> Non
 def test_an_unknown_locale_falls_back_to_english_rather_than_failing(harness: ApiHarness) -> None:
     with harness.client() as client:
         scan_id = harness.seed_scan()
-        response = client.get(
-            f"/api/v1/scans/{scan_id}/report?locale=zz", headers=auth(VIEWER_KEY)
-        )
+        response = client.get(f"/api/v1/scans/{scan_id}/report?locale=zz", headers=auth(VIEWER_KEY))
         assert response.status_code == 200, response.text
         assert "## 1. Executive summary" in response.text
 
@@ -118,9 +116,7 @@ def test_the_locale_is_audited_with_the_report(harness: ApiHarness) -> None:
 
     with harness.client() as client:
         scan_id = harness.seed_scan()
-        response = client.get(
-            f"/api/v1/scans/{scan_id}/report?locale=fr", headers=auth(VIEWER_KEY)
-        )
+        response = client.get(f"/api/v1/scans/{scan_id}/report?locale=fr", headers=auth(VIEWER_KEY))
         assert response.status_code == 200
     events = harness.events_of(AuditAction.REPORT_GENERATED)
     assert events
@@ -137,9 +133,7 @@ def test_the_project_locale_command_sets_and_clears_the_default(
     monkeypatch.setenv("ARACHNE_REPORT_LOCALE", "en")
     reset_settings_cache()
     assert runner.invoke(app, ["db", "upgrade"]).exit_code == 0
-    assert (
-        runner.invoke(app, ["project", "create", "acme", "--name", "Acme Corp"]).exit_code == 0
-    )
+    assert runner.invoke(app, ["project", "create", "acme", "--name", "Acme Corp"]).exit_code == 0
 
     set_locale = runner.invoke(app, ["project", "locale", "--project", "acme", "--locale", "fr"])
     assert set_locale.exit_code == 0, set_locale.output

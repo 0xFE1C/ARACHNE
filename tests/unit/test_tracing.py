@@ -112,7 +112,7 @@ def test_span_attributes_are_redacted() -> None:
         span.set_attribute("http.headers", {"authorization": "Bearer abcdefghijkl"})
         span.add_event("retry", {"token": "ghp_" + "a" * 36})
     tracer.flush()
-    recorded, = exporter.spans
+    (recorded,) = exporter.spans
     payload = json.dumps(
         {
             "attributes": recorded.attributes,
@@ -131,7 +131,7 @@ def test_a_hostile_span_name_or_attribute_cannot_bloat_the_trace() -> None:
     with tracer.start_span("x") as span:
         span.set_attribute("body", "A" * 100_000)
     tracer.flush()
-    recorded, = exporter.spans
+    (recorded,) = exporter.spans
     assert len(str(recorded.attributes["body"])) <= 512
 
 

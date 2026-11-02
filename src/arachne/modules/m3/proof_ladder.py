@@ -82,9 +82,7 @@ def _strongest_origin_target(
     origin = origin_of(ctx.asset.value)
     rank = {name.lower(): index for index, name in enumerate(hint_order)}
     candidates: list[tuple[int, int, str, str]] = []
-    for crawl_order, (url, param) in enumerate(
-        inventory.parameter_targets(names=set(hint_order))
-    ):
+    for crawl_order, (url, param) in enumerate(inventory.parameter_targets(names=set(hint_order))):
         if origin_of(url) != origin:
             continue
         candidates.append((rank.get(param.lower(), len(rank)), crawl_order, url, param))
@@ -124,9 +122,7 @@ def _oob_url(ctx: CheckContext) -> tuple[CallbackToken, str] | None:
     return issued.token, issued.url
 
 
-def _oob_urls(
-    ctx: CheckContext, count: int
-) -> list[tuple[CallbackToken, str]] | None:
+def _oob_urls(ctx: CheckContext, count: int) -> list[tuple[CallbackToken, str]] | None:
     """One token per sink, so a hit names the exact parameter that reached it.
 
     ``None`` when the check is downgraded (no callback configured). Tokens are bounded
@@ -342,8 +338,7 @@ class XxeOobProbe(WebCheck, Module):
             "xxe_oob",
             "document_template",
             default=(
-                '<?xml version="1.0"?><!DOCTYPE r [<!ENTITY xxe SYSTEM "{callback}">]>'
-                "<r>&xxe;</r>"
+                '<?xml version="1.0"?><!DOCTYPE r [<!ENTITY xxe SYSTEM "{callback}">]><r>&xxe;</r>'
             ),
         )
         content_types = payloads.strings("xxe", "content_types") or ("application/xml",)
@@ -741,9 +736,7 @@ class RceEchoProof(WebCheck, Module):
             return
 
         async def sink(value: str) -> Any:
-            return await safe_fetch(
-                ctx, probe_url(url, param, f"127.0.0.1{separator}{value}")
-            )
+            return await safe_fetch(ctx, probe_url(url, param, f"127.0.0.1{separator}{value}"))
 
         try:
             result = await proof.prove(sink)

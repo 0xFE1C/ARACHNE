@@ -71,9 +71,7 @@ class GroupLine:
     severity: str = "info"
 
     def encode(self) -> str:
-        return _SEP.join(
-            [self.rule_id, self.group_key, _LIST.join(self.check_ids), self.severity]
-        )
+        return _SEP.join([self.rule_id, self.group_key, _LIST.join(self.check_ids), self.severity])
 
 
 @dataclass(frozen=True, slots=True)

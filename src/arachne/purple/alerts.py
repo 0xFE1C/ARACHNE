@@ -41,11 +41,24 @@ __all__ = [
 #: The keys a SIEM export might use for the timestamp, tried in order.
 _TIME_KEYS = ("observed_at", "timestamp", "time", "@timestamp", "event_time", "created_at")
 #: The keys that might carry an ATT&CK technique id.
-_TECHNIQUE_KEYS = ("technique", "technique_id", "attack_technique", "mitre_technique",
-                   "signature_id")
+_TECHNIQUE_KEYS = (
+    "technique",
+    "technique_id",
+    "attack_technique",
+    "mitre_technique",
+    "signature_id",
+)
 #: The keys that might carry the run nonce (or free text containing it).
-_NONCE_KEYS = ("nonce", "detection_nonce", "test_nonce", "message", "description", "title",
-               "rule_name", "name")
+_NONCE_KEYS = (
+    "nonce",
+    "detection_nonce",
+    "test_nonce",
+    "message",
+    "description",
+    "title",
+    "rule_name",
+    "name",
+)
 _ID_KEYS = ("alert_id", "id", "uuid", "event_id")
 _TITLE_KEYS = ("title", "name", "rule_name", "signature", "message", "description")
 
@@ -198,9 +211,7 @@ def normalize_alert(payload: Any, *, source: str, index: int = 0) -> DefenderAle
     )
 
 
-def parse_alert_document(
-    document: Any, *, source: str = "webhook"
-) -> tuple[DefenderAlert, ...]:
+def parse_alert_document(document: Any, *, source: str = "webhook") -> tuple[DefenderAlert, ...]:
     """Parse a decoded SIEM payload: one alert, or ``{"alerts": [...]}``.
 
     Returns a tuple (possibly empty). An empty body is refused — a webhook that reports
@@ -217,8 +228,7 @@ def parse_alert_document(
         return (normalize_alert(document, source=source, index=0),)
     if isinstance(document, Sequence) and not isinstance(document, (str, bytes)):
         return tuple(
-            normalize_alert(item, source=source, index=index)
-            for index, item in enumerate(document)
+            normalize_alert(item, source=source, index=index) for index, item in enumerate(document)
         )
     msg = f"{source}: an alert payload must be an object or a list of objects"
     raise ConfigurationError(msg)

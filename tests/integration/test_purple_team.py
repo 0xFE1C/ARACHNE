@@ -238,9 +238,7 @@ async def test_the_campaign_scores_coverage_against_the_planted_siem_fixture(
     # 5. The defender report joins the gaps to what an attacker could do unseen
     #    (REQ-VALID-005) and states the miss (REQ-VALID-004).
     stored_analyses = [
-        item
-        for item in harness.services.analyses.list_analyses(result.scan_id)
-        if item is not None
+        item for item in harness.services.analyses.list_analyses(result.scan_id) if item is not None
     ]
     from arachne.data.analysis_store import analysis_from_log
 

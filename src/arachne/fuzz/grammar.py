@@ -94,9 +94,7 @@ class FieldKind(StrEnum):
     OPAQUE = "opaque"
 
 
-NUMERIC_KINDS: Final[frozenset[FieldKind]] = frozenset(
-    {FieldKind.U8, FieldKind.U16, FieldKind.U32}
-)
+NUMERIC_KINDS: Final[frozenset[FieldKind]] = frozenset({FieldKind.U8, FieldKind.U16, FieldKind.U32})
 _WIDTH_BY_KIND: Final[Mapping[FieldKind, int]] = {
     FieldKind.U8: 1,
     FieldKind.U16: 2,
@@ -578,8 +576,7 @@ class MessageGrammar:
         for spec in ordered:
             if spec.end > len(seed):
                 msg = (
-                    f"grammar {self.name}: field {spec.name} extends past the "
-                    f"{len(seed)}-byte seed"
+                    f"grammar {self.name}: field {spec.name} extends past the {len(seed)}-byte seed"
                 )
                 raise ConfigurationError(msg)
             if spec.offset < previous_end:
@@ -830,7 +827,6 @@ class MessageGrammar:
             return framing.region_length(seed)
         return spec.read(seed)
 
-
     def _value_replacement(self, spec: FieldSpec, operator: MutationOperator) -> int:
         """A declared operation/value for ``spec``, refused if it is not read-only.
 
@@ -858,9 +854,7 @@ class MessageGrammar:
         return value
 
     # ------------------------------------------------------------------ cases
-    def build_case(
-        self, field_name: str, operator: MutationOperator, *, index: int
-    ) -> FuzzCase:
+    def build_case(self, field_name: str, operator: MutationOperator, *, index: int) -> FuzzCase:
         """One case, refused by the prohibition table if its payload would be prohibited.
 
         The validation is here, at the single point where a payload becomes a case, so no

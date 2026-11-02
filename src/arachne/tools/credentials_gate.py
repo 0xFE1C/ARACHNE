@@ -81,9 +81,7 @@ CI_FILES: Final[frozenset[str]] = frozenset(
 #: The words that make a setting a credential *value*. ``key`` alone is included: an
 #: ``ARACHNE_VAULT_KEY=shortkey`` is a credential, and the reference-suffix rule is what
 #: keeps pointers (``..._KEY_FILE``) and bounds (``..._KEY_LENGTH``) out of the way.
-_CREDENTIAL_NAME: Final = (
-    r"(?:password|passwd|pwd|secret|token|key|apikey)"
-)
+_CREDENTIAL_NAME: Final = r"(?:password|passwd|pwd|secret|token|key|apikey)"
 #: ``password: value`` / ``ARACHNE_API_KEYS=value`` in yaml, dotenv or a shell snippet.
 #:
 #: The two anchors matter more than the name pattern. The name must start at the beginning
@@ -362,9 +360,7 @@ def main(argv: list[str] | None = None) -> int:
     root = Path(args[0]) if args else Path(__file__).resolve().parents[3]
     findings = scan_paths(root)
     if not findings:
-        sys.stdout.write(
-            f"no default credentials found under {root} (REQ-OPS-006: gate green)\n"
-        )
+        sys.stdout.write(f"no default credentials found under {root} (REQ-OPS-006: gate green)\n")
         return 0
     sys.stderr.write("default credentials found (REQ-OPS-006: gate FAILED)\n")
     for finding in findings:

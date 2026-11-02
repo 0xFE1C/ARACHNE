@@ -62,10 +62,7 @@ def _hints_from_feed(kind: str, limit: int) -> tuple[FeedHint, ...]:
                 or ""
             )
             summary = str(
-                row.get("shortDescription")
-                or row.get("summary")
-                or row.get("description")
-                or ""
+                row.get("shortDescription") or row.get("summary") or row.get("description") or ""
             )
             known = bool(row.get("knownExploited") or kind == "kev")
             cvss = row.get("cvss") or row.get("baseScore")

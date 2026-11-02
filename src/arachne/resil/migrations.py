@@ -251,9 +251,7 @@ def _read_revision(path: Path) -> tuple[str | None, str | None]:
     return revision, down
 
 
-def revision_order(
-    versions_dir: str | Path, *, head: str | None = None
-) -> tuple[str, ...]:
+def revision_order(versions_dir: str | Path, *, head: str | None = None) -> tuple[str, ...]:
     """Revision ids in application order (base → head), following ``down_revision``."""
     directory = Path(versions_dir)
     graph: dict[str, tuple[str | None, Path]] = {}

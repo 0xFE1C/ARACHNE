@@ -459,9 +459,7 @@ class PurpleCampaignService:
         self.technique_map.select(actions)  # raises naming what is replayable
 
     # ------------------------------------------------------------------ the run
-    async def run_campaign(
-        self, name: str, *, now: datetime | None = None
-    ) -> CampaignRunResult:
+    async def run_campaign(self, name: str, *, now: datetime | None = None) -> CampaignRunResult:
         """Run one campaign: gate on the window, scan, collect alerts, score, trend."""
         moment = (now or self.clock()).astimezone(UTC)
         campaign = self.get_campaign(name)

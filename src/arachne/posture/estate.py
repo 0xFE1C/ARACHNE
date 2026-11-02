@@ -71,9 +71,7 @@ def assemble_estate(
         else {"verified": 0, "reopened": 0, "still-open": 0}
     )
     inventory = (
-        posture.baseline_inventory()
-        if posture is not None
-        else {"scopes": (), "by_service": {}}
+        posture.baseline_inventory() if posture is not None else {"scopes": (), "by_service": {}}
     )
     return build_estate_posture(
         project=name,

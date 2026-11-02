@@ -148,9 +148,7 @@ def test_a_rules_tenant_cannot_be_forged_through_the_form(harness: ApiHarness) -
         assert len(stored) == 1
         # The default project owns them; the form's project_id was ignored.
         default = harness.services.projects.resolve(None)
-        assert harness.services.quality.list_suppressions(
-            active_only=False, project_id=default.id
-        )
+        assert harness.services.quality.list_suppressions(active_only=False, project_id=default.id)
         assert not harness.services.quality.list_suppressions(
             active_only=False, project_id=harness.services.projects.resolve("globex").id
         )

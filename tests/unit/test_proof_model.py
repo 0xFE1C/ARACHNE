@@ -1,14 +1,14 @@
 """Unit tests for the proof ladder's pure model and helpers (S15, area PROOF).
 
- REQ-PROOF-001 — the metadata declaration is unrepresentable-invalid: an L2+ check that
- is not opt-in, or an L3/L4 check without the state-change attestation requirement,
- cannot be constructed (and the registry re-checks construction bypasses).
- REQ-PROOF-005 — token format ``arachne-<scan-id>-<check-id>-<nonce>``, uniqueness under
- concurrent issuance, single-use matching in the service.
- REQ-PROOF-007 — the L3 helper has no arbitrary command API and is one-shot.
- REQ-PROOF-008/010 — the L4 SQL helper: INSERT-first, before-capture, auto-restore,
- re-verification, write-ahead ledger, destructive-SQL refusal, cleanup pass.
- REQ-PROOF-009 — the calm, self-identifying marker format.
+REQ-PROOF-001 — the metadata declaration is unrepresentable-invalid: an L2+ check that
+is not opt-in, or an L3/L4 check without the state-change attestation requirement,
+cannot be constructed (and the registry re-checks construction bypasses).
+REQ-PROOF-005 — token format ``arachne-<scan-id>-<check-id>-<nonce>``, uniqueness under
+concurrent issuance, single-use matching in the service.
+REQ-PROOF-007 — the L3 helper has no arbitrary command API and is one-shot.
+REQ-PROOF-008/010 — the L4 SQL helper: INSERT-first, before-capture, auto-restore,
+re-verification, write-ahead ledger, destructive-SQL refusal, cleanup pass.
+REQ-PROOF-009 — the calm, self-identifying marker format.
 """
 
 from __future__ import annotations

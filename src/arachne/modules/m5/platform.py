@@ -435,8 +435,7 @@ class TfstateExposure(EndpointCheck, RepoCheck, Module):
                 },
                 confidence=0.75,
                 detail=(
-                    f"{k8s_hint.get(rule_id, rule_id)} in "
-                    f"{', '.join(sorted(set(locations))[:3])}"
+                    f"{k8s_hint.get(rule_id, rule_id)} in {', '.join(sorted(set(locations))[:3])}"
                 ),
                 source=sorted(set(locations))[0],
             )

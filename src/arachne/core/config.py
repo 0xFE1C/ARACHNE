@@ -1493,8 +1493,7 @@ class SsoSettings:
             raise ConfigurationError(msg)
         if self.default_role is not None and self.default_role not in API_ROLES:
             msg = (
-                f"sso.default_role must be one of {', '.join(API_ROLES)}, "
-                f"got {self.default_role!r}"
+                f"sso.default_role must be one of {', '.join(API_ROLES)}, got {self.default_role!r}"
             )
             raise ConfigurationError(msg)
         for entry in self.group_roles:
@@ -1505,7 +1504,9 @@ class SsoSettings:
                     f"{', '.join(API_ROLES)}"
                 )
                 raise ConfigurationError(msg)
-        if self.redirect_url is not None and not self.redirect_url.startswith(("http://", "https://")):
+        if self.redirect_url is not None and not self.redirect_url.startswith(
+            ("http://", "https://")
+        ):
             msg = "sso.redirect_url must be an absolute http(s) URL"
             raise ConfigurationError(msg)
         if self.client_secret is not None and not self.client_secret.get_secret_value().strip():
@@ -2590,12 +2591,8 @@ class Settings:
                 sbom_tool=_env_str(source, "ARACHNE_M5_SBOM_TOOL") or None,
                 max_file_bytes=_env_int(source, "ARACHNE_M5_MAX_FILE_BYTES", 262144),
                 max_repo_files=_env_int(source, "ARACHNE_M5_MAX_REPO_FILES", 4000),
-                posture_max_resources=_env_int(
-                    source, "ARACHNE_M5_POSTURE_MAX_RESOURCES", 200
-                ),
-                posture_max_bytes=_env_int(
-                    source, "ARACHNE_M5_POSTURE_MAX_BYTES", 1_048_576
-                ),
+                posture_max_resources=_env_int(source, "ARACHNE_M5_POSTURE_MAX_RESOURCES", 200),
+                posture_max_bytes=_env_int(source, "ARACHNE_M5_POSTURE_MAX_BYTES", 1_048_576),
                 posture_token=_env_secret(source, "ARACHNE_M5_POSTURE_TOKEN"),
             ),
             m5_probes=_env_str(source, "ARACHNE_M5_PROBES") or None,
@@ -2743,9 +2740,7 @@ class Settings:
                 allow_install=_env_bool(source, "ARACHNE_PLUGIN_INSTALL", default=False),
                 marketplace=_env_str(source, "ARACHNE_MARKETPLACE") or None,
                 install_timeout_s=_env_float(source, "ARACHNE_PLUGIN_TIMEOUT_S", 600.0),
-                require_review=_env_bool(
-                    source, "ARACHNE_PLUGIN_REQUIRE_REVIEW", default=True
-                ),
+                require_review=_env_bool(source, "ARACHNE_PLUGIN_REQUIRE_REVIEW", default=True),
                 allow_unsigned_packs=_env_bool(
                     source, "ARACHNE_PLUGIN_ALLOW_UNSIGNED", default=False
                 ),
@@ -2797,13 +2792,9 @@ class Settings:
                     source, "ARACHNE_EVIDENCE_OFFLOAD_THRESHOLD_BYTES", 16 * 1024
                 ),
                 preview_chars=_env_int(source, "ARACHNE_EVIDENCE_PREVIEW_CHARS", 2048),
-                default_quota_bytes=_env_int(
-                    source, "ARACHNE_EVIDENCE_DEFAULT_QUOTA_BYTES", 0
-                )
+                default_quota_bytes=_env_int(source, "ARACHNE_EVIDENCE_DEFAULT_QUOTA_BYTES", 0)
                 or None,
-                quota_warn_ratio=_env_float(
-                    source, "ARACHNE_EVIDENCE_QUOTA_WARN_RATIO", 0.8
-                ),
+                quota_warn_ratio=_env_float(source, "ARACHNE_EVIDENCE_QUOTA_WARN_RATIO", 0.8),
                 compress=_env_bool(source, "ARACHNE_EVIDENCE_COMPRESS", default=True),
                 compress_level=_env_int(source, "ARACHNE_EVIDENCE_COMPRESS_LEVEL", 6),
                 dedup=_env_bool(source, "ARACHNE_EVIDENCE_DEDUP", default=True),
@@ -2824,9 +2815,7 @@ class Settings:
                 metrics_enabled=_env_bool(source, "ARACHNE_METRICS_ENABLED", default=True),
                 metrics_token=_env_secret(source, "ARACHNE_METRICS_TOKEN"),
                 tracing_enabled=_env_bool(source, "ARACHNE_TRACING_ENABLED", default=False),
-                tracing_sample_ratio=_env_float(
-                    source, "ARACHNE_TRACING_SAMPLE_RATIO", 0.1
-                ),
+                tracing_sample_ratio=_env_float(source, "ARACHNE_TRACING_SAMPLE_RATIO", 0.1),
                 otlp_endpoint=_env_str(source, "ARACHNE_OTLP_ENDPOINT") or None,
                 otlp_timeout_s=_env_float(source, "ARACHNE_OTLP_TIMEOUT_S", 10.0),
                 otlp_allow_private_ips=_env_bool(
@@ -2845,21 +2834,17 @@ class Settings:
                 journal_path=_env_str(source, "ARACHNE_HYPOTHESIS_JOURNAL") or None,
             ),
             posture=PostureSettings(
-                default_max_runs_per_day=_env_int(
-                    source, "ARACHNE_POSTURE_MAX_RUNS_PER_DAY", 24
-                ),
-                default_max_requests=_env_int(
-                    source, "ARACHNE_POSTURE_MAX_REQUESTS", 5000
-                ),
-                admission_mode=(
-                    _env_str(source, "ARACHNE_ADMISSION_MODE") or "monitor"
-                ).strip().lower(),
+                default_max_runs_per_day=_env_int(source, "ARACHNE_POSTURE_MAX_RUNS_PER_DAY", 24),
+                default_max_requests=_env_int(source, "ARACHNE_POSTURE_MAX_REQUESTS", 5000),
+                admission_mode=(_env_str(source, "ARACHNE_ADMISSION_MODE") or "monitor")
+                .strip()
+                .lower(),
                 admission_enforce_namespaces=(
                     _env_csv_tuple(source, "ARACHNE_ADMISSION_ENFORCE_NAMESPACES") or ()
                 ),
-                admission_deny_on=(
-                    _env_str(source, "ARACHNE_ADMISSION_DENY_ON") or "high"
-                ).strip().lower(),
+                admission_deny_on=(_env_str(source, "ARACHNE_ADMISSION_DENY_ON") or "high")
+                .strip()
+                .lower(),
                 cmdb_max_rows=_env_int(source, "ARACHNE_POSTURE_CMDB_MAX_ROWS", 10_000),
                 cmdb_max_bytes=_env_int(source, "ARACHNE_POSTURE_CMDB_MAX_BYTES", 4_194_304),
             ),
@@ -2870,9 +2855,7 @@ class Settings:
                 ai_authoring=_env_bool(source, "ARACHNE_FIX_AI_AUTHORING", default=False),
                 max_diff_lines=_env_int(source, "ARACHNE_FIX_MAX_DIFF_LINES", 400),
                 max_files=_env_int(source, "ARACHNE_FIX_MAX_FILES", 12),
-                test_timeout_seconds=_env_int(
-                    source, "ARACHNE_FIX_TEST_TIMEOUT_SECONDS", 900
-                ),
+                test_timeout_seconds=_env_int(source, "ARACHNE_FIX_TEST_TIMEOUT_SECONDS", 900),
             ),
             purple=PurpleSettings(
                 alerts_url=_env_str(source, "ARACHNE_PURPLE_ALERTS_URL") or None,
@@ -2930,9 +2913,7 @@ class Settings:
                 max_seconds=_env_float(source, "ARACHNE_FUZZ_MAX_SECONDS", 60.0),
                 batch_size=_env_int(source, "ARACHNE_FUZZ_BATCH_SIZE", 25),
                 engine=_env_str(source, "ARACHNE_FUZZ_ENGINE") or "grammar",
-                allow_production=_env_bool(
-                    source, "ARACHNE_FUZZ_ALLOW_PRODUCTION", default=False
-                ),
+                allow_production=_env_bool(source, "ARACHNE_FUZZ_ALLOW_PRODUCTION", default=False),
                 health_min_samples=_env_int(source, "ARACHNE_FUZZ_HEALTH_MIN_SAMPLES", 3),
                 max_error_rate=_env_float(source, "ARACHNE_FUZZ_MAX_ERROR_RATE", 0.34),
                 max_latency_ratio=_env_float(source, "ARACHNE_FUZZ_MAX_LATENCY_RATIO", 4.0),

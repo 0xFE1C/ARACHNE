@@ -532,9 +532,7 @@ def gate(
     )
 
 
-def verify_recorded(
-    suite: BenchmarkSuite, *, directory: str | Path
-) -> GateReport:
+def verify_recorded(suite: BenchmarkSuite, *, directory: str | Path) -> GateReport:
     """What the gate can still check for a suite whose target is hosted elsewhere."""
     baseline = load_baseline(directory, suite.name)
     if baseline is None:

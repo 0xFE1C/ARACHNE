@@ -242,11 +242,7 @@ class CloudPosture(EndpointCheck, Module):
         """One drift delta: before/after in the artifact, finding when policy-relevant."""
         after = dict(delta.after or {})
         breaches = sorted(
-            {
-                policy_id
-                for policy_id, policy in policies.items()
-                if config_violates(after, policy)
-            }
+            {policy_id for policy_id, policy in policies.items() if config_violates(after, policy)}
         )
         artifact: dict[str, Any] = {
             "signal": "cloud-config-drift",

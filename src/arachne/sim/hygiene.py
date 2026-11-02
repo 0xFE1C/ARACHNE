@@ -274,9 +274,7 @@ def _apply_guard_exemption(
     if path != GUARD_MODULE:
         return violations
     return tuple(
-        item
-        for item in violations
-        if item.name.partition(".")[0] not in GUARD_ALLOWED_IMPORTS
+        item for item in violations if item.name.partition(".")[0] not in GUARD_ALLOWED_IMPORTS
     )
 
 

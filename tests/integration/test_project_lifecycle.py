@@ -110,7 +110,7 @@ def test_a_quota_change_is_audited(harness: Any) -> None:
 # --------------------------------------------------------------------------- CLI
 @pytest.fixture
 def cli_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    monkeypatch.setenv("ARACHNE_DATABASE_URL", f"sqlite:///{tmp_path/'cli.db'}")
+    monkeypatch.setenv("ARACHNE_DATABASE_URL", f"sqlite:///{tmp_path / 'cli.db'}")
     monkeypatch.setenv("ARACHNE_LOG_LEVEL", "CRITICAL")
     monkeypatch.setenv("ARACHNE_LOG_JSON", "false")
     reset_settings_cache()

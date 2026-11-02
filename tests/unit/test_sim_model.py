@@ -189,9 +189,7 @@ def test_the_graph_composes_paths_with_the_reports_own_composer() -> None:
 def test_a_dropped_finding_is_not_a_weakness_in_the_model() -> None:
     """The analyzer saying "no" is not a fact about the estate."""
     shapes = lab_inputs()
-    dropped = [
-        item for item in shapes.analyses if item.check_id != "m4.env-file-probe"
-    ]
+    dropped = [item for item in shapes.analyses if item.check_id != "m4.env-file-probe"]
     graph = build_estate_graph(
         estate_key=ESTATE_KEY,
         assets=shapes.assets,

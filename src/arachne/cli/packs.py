@@ -179,9 +179,7 @@ def packs_export(
     kinds = manifest.kinds()
     typer.echo(f"  {manifest.name} {manifest.version}: {len(manifest.files)} files {kinds}")
     typer.echo(f"  digest {manifest.digest[:16]}…")
-    typer.echo(
-        "  signature: " + (f"{signer.key_id}" if signer else "NONE (unsigned lab pack)")
-    )
+    typer.echo("  signature: " + (f"{signer.key_id}" if signer else "NONE (unsigned lab pack)"))
     typer.echo("carry this file to the air-gapped estate and run `arachne packs import` there")
 
 

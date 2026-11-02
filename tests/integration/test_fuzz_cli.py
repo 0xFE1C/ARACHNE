@@ -73,9 +73,7 @@ def permissive(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("arachne.cli.fuzz.get_settings", lambda: settings)
 
 
-def test_fuzz_run_finds_the_planted_bug_and_exits_zero(
-    tmp_path: Path, permissive: None
-) -> None:
+def test_fuzz_run_finds_the_planted_bug_and_exits_zero(tmp_path: Path, permissive: None) -> None:
     with lab_arc() as lab:
         with arc_grammars_registered():
             report_path = tmp_path / "report.json"
@@ -109,9 +107,7 @@ def test_fuzz_run_exits_non_zero_when_the_guard_aborts(tmp_path: Path, permissiv
     with lab_arc() as lab:
         with arc_grammars_registered():
             lab.arm_drop_after(10)
-            result = CliRunner().invoke(
-                app, ["fuzz", "run", str(write_plan(tmp_path, lab.port))]
-            )
+            result = CliRunner().invoke(app, ["fuzz", "run", str(write_plan(tmp_path, lab.port))])
 
     assert result.exit_code == 1, "an abort is not a success exit code"
     assert "aborted-on-degradation" in result.output

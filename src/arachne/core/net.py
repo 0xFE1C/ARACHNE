@@ -836,8 +836,8 @@ class ScopedNetClient:
         self.probes = 0
         #: The air-gapped egress allowlist (S25, REQ-RESIL-001); inert unless enabled.
         self._airgap = build_airgap_policy(self.settings)
-        self._airgap_scope_hosts: tuple[str, ...] = (
-            tuple(safety.scope.allowed_hosts) + tuple(safety.scope.allowed_domains)
+        self._airgap_scope_hosts: tuple[str, ...] = tuple(safety.scope.allowed_hosts) + tuple(
+            safety.scope.allowed_domains
         )
 
     async def __aenter__(self) -> ScopedNetClient:

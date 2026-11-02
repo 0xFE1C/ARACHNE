@@ -42,8 +42,17 @@ def test_the_root_component_is_the_arachne_application(sbom: dict[str, Any]) -> 
 def test_the_dependency_set_is_transitive_and_purl_refed(sbom: dict[str, Any]) -> None:
     names = {component["name"] for component in sbom["components"]}
     # The declared runtime dependencies (pyproject) are all present…
-    for expected in ("httpx", "pydantic", "fastapi", "uvicorn", "typer", "jinja2",
-                     "sqlalchemy", "alembic", "pyyaml"):
+    for expected in (
+        "httpx",
+        "pydantic",
+        "fastapi",
+        "uvicorn",
+        "typer",
+        "jinja2",
+        "sqlalchemy",
+        "alembic",
+        "pyyaml",
+    ):
         assert expected in names, expected
     # …and so is a second-level dependency no [project.dependencies] row names.
     assert "pydantic-core" in names or "anyio" in names
@@ -76,8 +85,14 @@ def test_a_changed_dependency_set_changes_the_serial() -> None:
     real = sbom_module._components
     inflated = [
         *real(),
-        {"type": "library", "bom-ref": "x@1", "name": "x", "version": "1",
-         "purl": "pkg:pypi/x@1", "scope": "required"},
+        {
+            "type": "library",
+            "bom-ref": "x@1",
+            "name": "x",
+            "version": "1",
+            "purl": "pkg:pypi/x@1",
+            "scope": "required",
+        },
     ]
     sbom_module._components = lambda: inflated  # type: ignore[assignment]
     try:

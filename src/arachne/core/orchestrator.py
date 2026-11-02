@@ -501,9 +501,7 @@ class Orchestrator:
             # S24 (REQ-VALID-001): purple mode is refused at the *authorization* gate when
             # the attestation carries no detection window — no window class, no detection
             # test — and then bounded by the window gate below.
-            self.assert_authorized(
-                request, purple=options.purple is not None, now=moment
-            )
+            self.assert_authorized(request, purple=options.purple is not None, now=moment)
         self._assert_engine_available(options.engine.value)
         # S24 (REQ-VALID-001): a purple-team run additionally needs an *open* coordinated
         # detection window, checked on the same path that admits the scan.
@@ -514,8 +512,7 @@ class Orchestrator:
             definition.attestation is not None and definition.attestation.active_checks_authorized
         )
         state_authorized = bool(
-            definition.attestation is not None
-            and definition.attestation.state_changes_authorized
+            definition.attestation is not None and definition.attestation.state_changes_authorized
         )
         plan = self.planner.plan(
             request,

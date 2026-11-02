@@ -245,9 +245,7 @@ def _parse_data(
                 msg = f"{source}: control {control_id!r} maps unknown check {check!r}"
                 raise ConfigurationError(msg)
             known_ids.append(check)
-        parsed.append(
-            ControlMapping(id=control_id, title=title, checks=tuple(known_ids))
-        )
+        parsed.append(ControlMapping(id=control_id, title=title, checks=tuple(known_ids)))
     if total < len(parsed):
         msg = (
             f"{source}: total_controls ({total}) is smaller than the mapped control count "
@@ -294,9 +292,7 @@ def compute_framework_coverage(
     # The plan's check rows carry (module, bare name); findings carry the qualified
     # `m3.sqli-oracle` id — so the join key is the qualified form (M1 and M2 both ship a
     # `favicon-hash`, which a bare-name join would conflate).
-    ran_checks = {
-        f"{check.module.lower()}.{check.name}" for check in checks if check.ran
-    }
+    ran_checks = {f"{check.module.lower()}.{check.name}" for check in checks if check.ran}
     finding_by_check: dict[str, list[str]] = {}
     evidence_by_check: dict[str, tuple[str, ...]] = {}
     for finding in findings:
@@ -391,9 +387,7 @@ def export_control_evidence(
                         "payload": entry.payload,
                         "sha256": entry.sha256,
                         "redacted": entry.redacted,
-                        "captured_at": entry.captured_at.isoformat()
-                        if entry.captured_at
-                        else None,
+                        "captured_at": entry.captured_at.isoformat() if entry.captured_at else None,
                     }
                 )
             finding_docs.append(

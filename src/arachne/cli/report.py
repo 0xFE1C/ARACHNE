@@ -267,9 +267,7 @@ def _resolve_branding(
     return resolve_branding(services.settings, override)
 
 
-def _resolve_locale(
-    services: Any, record: Any, *, project: str | None, locale: str | None
-) -> str:
+def _resolve_locale(services: Any, record: Any, *, project: str | None, locale: str | None) -> str:
     """The report language: ``--locale``, else the project's, else the deployment default.
 
     Returns ``""`` when nothing selects one, leaving the choice to the deployment setting and

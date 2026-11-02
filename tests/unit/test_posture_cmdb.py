@@ -15,8 +15,7 @@ from arachne.posture.cmdb import CriticalityIndex, parse_cmdb
 _CSV = "host,tier,name\npayments.example.com,1,Payments\nbuild.example.com,4,Builders\n"
 
 _JSON = (
-    '[{"host": "api.example.com", "tier": 2, "name": "API"},'
-    ' {"host": "*.example.com", "tier": 3}]'
+    '[{"host": "api.example.com", "tier": 2, "name": "API"}, {"host": "*.example.com", "tier": 3}]'
 )
 
 

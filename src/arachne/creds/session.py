@@ -504,6 +504,4 @@ async def perform_logout(client: Any, session: WebSession) -> LogoutOutcome | No
                 "label": session.label,
             },
         )
-    return LogoutOutcome(
-        survived=bool(survived), url=spec.logout_url, exchanges=tuple(exchanges)
-    )
+    return LogoutOutcome(survived=bool(survived), url=spec.logout_url, exchanges=tuple(exchanges))

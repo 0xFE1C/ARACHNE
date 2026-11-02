@@ -173,8 +173,7 @@ def put_command(
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1) from exc
     typer.echo(
-        f"stored {entry.label!r} ({entry.kind}) scoped to {entry.scope.describe()} "
-        f"in {vault.path}"
+        f"stored {entry.label!r} ({entry.kind}) scoped to {entry.scope.describe()} in {vault.path}"
     )
 
 

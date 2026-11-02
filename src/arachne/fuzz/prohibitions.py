@@ -213,6 +213,7 @@ OPERATION_PROTOCOLS: Final[frozenset[str]] = frozenset(READ_ONLY_OPERATIONS) | f
     READ_ONLY_VERBS
 )
 
+
 @dataclass(frozen=True, slots=True)
 class NonDestructiveVerdict:
     """The prohibition table's reading of one generated payload."""
@@ -242,9 +243,7 @@ def _is_textual(payload: bytes) -> bool:
     """
     if not payload:
         return True
-    readable = sum(
-        1 for byte in payload if byte in b"\t\n\r" or 0x20 <= byte <= 0x7E
-    )
+    readable = sum(1 for byte in payload if byte in b"\t\n\r" or 0x20 <= byte <= 0x7E)
     return readable / len(payload) >= _TEXTUAL_FRACTION
 
 
@@ -376,9 +375,7 @@ class ProhibitionSummary:
     """The table as a report renders it — what fuzzing may not generate, in one place."""
 
     classes: tuple[str, ...] = field(default_factory=lambda: tuple(FORBIDDEN_SEQUENCES))
-    protocols: tuple[str, ...] = field(
-        default_factory=lambda: tuple(sorted(READ_ONLY_OPERATIONS))
-    )
+    protocols: tuple[str, ...] = field(default_factory=lambda: tuple(sorted(READ_ONLY_OPERATIONS)))
 
     def to_dict(self) -> dict[str, Any]:
         return {

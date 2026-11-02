@@ -520,8 +520,9 @@ The worked example is `examples/plugins/arachne_example_report_plugin/`:
 from arachne.report.formats import ReportFormat
 from arachne.report.model import ReportData
 
-def render_csv(report: ReportData) -> str:
-    ...
+
+def render_csv(report: ReportData) -> str: ...
+
 
 CSV_FORMAT = ReportFormat(
     name="example-csv",
@@ -565,6 +566,7 @@ Rules that apply to a format plugin as much as a check:
 ```python
 from arachne.report.formats import ReportFormatRegistry, ReportFormat
 from arachne.report import render_report
+
 
 def test_my_format_renders(synthetic_report):
     registry = ReportFormatRegistry.discover(extra=[MY_FORMAT])
@@ -620,9 +622,9 @@ path, manifest = write_pack(
     {"checks": "my-pack/checks"},
     name="my-pack",
     version="1.0.0",
-    signer=build_signer(settings),        # the deployment's ARACHNE_INTEGRITY_KEY
+    signer=build_signer(settings),  # the deployment's ARACHNE_INTEGRITY_KEY
     meta={
-        "kind": "check",                  # or "module" | "report-format" | "provider"
+        "kind": "check",  # or "module" | "report-format" | "provider"
         "entry_point_group": "arachne.modules",
         "checks": ["m4.example-added-check"],
         # "formats": ["example-csv"],     # a report-format pack declares its formats instead

@@ -145,9 +145,7 @@ def test_finding_status_transitions_link_evidence(store: int, tmp_path) -> None:
     under_test = _stores(tmp_path)[store]
     finding_id: int
     if isinstance(under_test, _Seeded):
-        finding = under_test.seed_finding(
-            {"id": 0, "title": "public bucket", "status": "open"}
-        )
+        finding = under_test.seed_finding({"id": 0, "title": "public bucket", "status": "open"})
         finding_id = int(finding["id"])
     else:
         finding = under_test.seed_finding(
@@ -235,9 +233,12 @@ def test_closed_findings_query_by_identity(store: int, tmp_path) -> None:
 @pytest.mark.parametrize("store", [0, 1], ids=["memory", "sql"])
 def test_criticality_import_upserts_and_indexes(store: int, tmp_path) -> None:
     under_test = _stores(tmp_path)[store]
-    assert under_test.import_criticality(
-        [CriticalityEntry(host="Payments.Example.com", tier=1, name="Payments")]
-    ) == 1
+    assert (
+        under_test.import_criticality(
+            [CriticalityEntry(host="Payments.Example.com", tier=1, name="Payments")]
+        )
+        == 1
+    )
     under_test.import_criticality(
         [
             CriticalityEntry(

@@ -246,9 +246,7 @@ class MemoryFixProposalStore:
             return None
         from dataclasses import replace
 
-        payload = {
-            key: value for key, value in changes.items() if key in UPDATABLE_FIELDS
-        }
+        payload = {key: value for key, value in changes.items() if key in UPDATABLE_FIELDS}
         payload["updated_at"] = _now(None)
         updated = replace(current, **payload)
         self._rows[proposal_id] = updated
@@ -366,9 +364,7 @@ def _record(row: models.FixProposal) -> FixProposalRecord:
         rejected_by=row.rejected_by,
         applied_by=row.applied_by,
         applied_at=as_utc(row.applied_at) if row.applied_at is not None else None,
-        verification_id=(
-            int(row.verification_id) if row.verification_id is not None else None
-        ),
+        verification_id=(int(row.verification_id) if row.verification_id is not None else None),
         verification_outcome=row.verification_outcome,
         verification_scan_id=(
             int(row.verification_scan_id) if row.verification_scan_id is not None else None

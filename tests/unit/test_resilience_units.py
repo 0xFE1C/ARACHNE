@@ -157,9 +157,7 @@ def test_a_pack_signed_by_another_key_is_refused(tmp_path: Path) -> None:
 
 def test_an_unsigned_pack_is_refused_by_default_and_accepted_explicitly(tmp_path: Path) -> None:
     source = _tree(tmp_path / "src")
-    archive, _, signature = build_pack(
-        {"checks": source / "plan"}, name="p", version="1"
-    )
+    archive, _, signature = build_pack({"checks": source / "plan"}, name="p", version="1")
     assert signature is None
     # With a key configured, an unsigned pack fails the signature check.
     with pytest.raises(ContentPackError, match="signature does not verify"):
@@ -195,9 +193,7 @@ def test_a_tampered_manifest_is_refused(tmp_path: Path) -> None:
     original = json.loads(_members(archive)[MANIFEST_NAME].decode())
     original["files"][0]["sha256"] = "0" * 64
     members = dict(_members(archive))
-    members[MANIFEST_NAME] = json.dumps(
-        original, sort_keys=True, separators=(",", ":")
-    ).encode()
+    members[MANIFEST_NAME] = json.dumps(original, sort_keys=True, separators=(",", ":")).encode()
     rebuilt = _rebuild(members)
     with pytest.raises(ContentPackError, match="signature does not verify"):
         read_pack(rebuilt, signer=signer)
@@ -234,8 +230,11 @@ def test_an_undeclared_extra_file_is_refused(tmp_path: Path) -> None:
 
 def test_a_pack_member_that_escapes_the_content_directory_is_refused() -> None:
     with pytest.raises(ContentPackError, match="escapes the content directory"):
-        read_pack(_rebuild({MANIFEST_NAME: b"{}", "../../etc/passwd": b"x"}), signer=None,
-                  require_signature=False)
+        read_pack(
+            _rebuild({MANIFEST_NAME: b"{}", "../../etc/passwd": b"x"}),
+            signer=None,
+            require_signature=False,
+        )
 
 
 def test_a_pack_that_is_not_a_tarball_is_refused() -> None:
@@ -496,9 +495,7 @@ def test_the_revision_order_follows_down_revision() -> None:
 
 def test_a_bad_pack_argument_is_refused(tmp_path: Path) -> None:
     with pytest.raises(ContentPackError, match="unsafe pack name or version"):
-        install_pack(
-            _minimal_pack(".."), content_dir=tmp_path / "content"
-        )
+        install_pack(_minimal_pack(".."), content_dir=tmp_path / "content")
 
 
 def test_settings_expose_the_content_directory() -> None:

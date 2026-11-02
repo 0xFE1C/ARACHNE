@@ -279,21 +279,15 @@ class DegradationPolicy:
                 )
             if signals.error_rate > self.max_error_rate:
                 reasons.append(
-                    f"probe error rate {signals.error_rate:.0%} exceeds "
-                    f"{self.max_error_rate:.0%}"
+                    f"probe error rate {signals.error_rate:.0%} exceeds {self.max_error_rate:.0%}"
                 )
-            if (
-                signals.baseline_latency_s > 0
-                and signals.latency_ratio > self.max_latency_ratio
-            ):
+            if signals.baseline_latency_s > 0 and signals.latency_ratio > self.max_latency_ratio:
                 reasons.append(
                     f"probe latency {signals.median_latency_s * 1000:.0f}ms is "
                     f"{signals.latency_ratio:.1f}x the {signals.baseline_latency_s * 1000:.0f}ms "
                     f"baseline (limit {self.max_latency_ratio:.1f}x)"
                 )
-        return DegradationVerdict(
-            degraded=bool(reasons), reasons=tuple(reasons), signals=signals
-        )
+        return DegradationVerdict(degraded=bool(reasons), reasons=tuple(reasons), signals=signals)
 
     def _signals(
         self, baseline: HealthBaseline, window: tuple[HealthSample, ...]

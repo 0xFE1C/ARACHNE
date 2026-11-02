@@ -107,9 +107,7 @@ def test_the_model_verb_shows_the_estate_and_its_verified_paths(
 
 
 def test_the_model_verb_emits_the_graph_as_json(deployed: dict[str, Any]) -> None:
-    result = RUNNER.invoke(
-        app, ["simulate", "model", "--scan", str(deployed["scan_id"]), "--json"]
-    )
+    result = RUNNER.invoke(app, ["simulate", "model", "--scan", str(deployed["scan_id"]), "--json"])
 
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
@@ -146,9 +144,7 @@ def test_the_what_if_verb_labels_every_line_simulated(
 
 
 def test_the_what_if_verb_refuses_an_empty_hypothesis_set(deployed: dict[str, Any]) -> None:
-    result = RUNNER.invoke(
-        app, ["simulate", "what-if", "--scan", str(deployed["scan_id"])]
-    )
+    result = RUNNER.invoke(app, ["simulate", "what-if", "--scan", str(deployed["scan_id"])])
 
     assert result.exit_code == 2
     assert "name a hypothesis document" in result.output
@@ -194,9 +190,7 @@ def test_the_trend_verb_records_a_point_and_shows_the_series(
     assert first.exit_code == 0, first.output
     assert "Re-simulation | Paths | New under hypotheses | Exposure score" in first.output
 
-    second = RUNNER.invoke(
-        app, ["simulate", "trend", "--estate", estate, "--json"]
-    )
+    second = RUNNER.invoke(app, ["simulate", "trend", "--estate", estate, "--json"])
     assert second.exit_code == 0, second.output
     payload = json.loads(second.output)
     assert payload["provenance"] == "simulated"
@@ -273,9 +267,7 @@ def test_the_report_verb_without_simulate_has_no_section(
 def test_the_verbs_agree_on_the_same_estate(deployed: dict[str, Any], tmp_path: Path) -> None:
     """The model the CLI shows is the model the verbs compute over — not a second one."""
     scan = str(deployed["scan_id"])
-    model = json.loads(
-        RUNNER.invoke(app, ["simulate", "model", "--scan", scan, "--json"]).output
-    )
+    model = json.loads(RUNNER.invoke(app, ["simulate", "model", "--scan", scan, "--json"]).output)
     what_if = json.loads(
         RUNNER.invoke(
             app,

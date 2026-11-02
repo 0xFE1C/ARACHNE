@@ -85,17 +85,13 @@ def complete_agent(
     payload: AgentCompleteIn, principal: ScannerPrincipal, context: ContextDep
 ) -> JSONResponse:
     """Ack a finished (or failed) leased scan. A lost lease is a 409, not an error path."""
-    released = _service(context).complete(
-        payload.name, payload.scan_id, principal=principal.label
-    )
+    released = _service(context).complete(payload.name, payload.scan_id, principal=principal.label)
     if not released:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"scan {payload.scan_id} is not leased to agent {payload.name!r}",
         )
-    return JSONResponse(
-        {"agent": payload.name, "scan_id": payload.scan_id, "released": True}
-    )
+    return JSONResponse({"agent": payload.name, "scan_id": payload.scan_id, "released": True})
 
 
 @agent_router.get("/agent/queue", tags=["agent"])

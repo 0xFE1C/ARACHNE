@@ -590,9 +590,7 @@ def quality_page(
         else []
     )
     acceptances = (
-        store.list_acceptances(
-            active_only=False, project_id=None if show_all else project.id
-        )
+        store.list_acceptances(active_only=False, project_id=None if show_all else project.id)
         if store is not None
         else []
     )

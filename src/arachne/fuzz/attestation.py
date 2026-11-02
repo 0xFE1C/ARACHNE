@@ -284,9 +284,7 @@ def fuzz_authorization_errors(
             f"fuzzing attestation is dated in the future ({attestation.attested_at.isoformat()})"
         )
     if attestation.is_expired(moment) and attestation.expires_at is not None:
-        errors.append(
-            f"fuzzing attestation expired at {attestation.expires_at.isoformat()}"
-        )
+        errors.append(f"fuzzing attestation expired at {attestation.expires_at.isoformat()}")
     uncovered = attestation.uncovered(definition.targets)
     if uncovered:
         rendered = ", ".join(f"{selector.kind.value}:{selector.value}" for selector in uncovered)

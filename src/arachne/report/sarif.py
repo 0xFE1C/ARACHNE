@@ -97,9 +97,7 @@ def sarif_document(report: ReportData) -> dict[str, Any]:
 
 def render_sarif(report: ReportData) -> str:
     """Render ``report`` as deterministic, indented SARIF JSON."""
-    return (
-        json.dumps(sarif_document(report), indent=2, sort_keys=False, ensure_ascii=False) + "\n"
-    )
+    return json.dumps(sarif_document(report), indent=2, sort_keys=False, ensure_ascii=False) + "\n"
 
 
 def load_sarif_schema() -> dict[str, Any]:

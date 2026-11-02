@@ -46,9 +46,7 @@ def make_vault(
     return vault
 
 
-def vault_settings(
-    tmp_path: Path, *, passphrase: str = LAB_PASSPHRASE
-) -> VaultSettings:
+def vault_settings(tmp_path: Path, *, passphrase: str = LAB_PASSPHRASE) -> VaultSettings:
     """The :class:`VaultSettings` pointing at this test's vault file."""
     return VaultSettings(
         path=str(tmp_path / "credentials.enc"),

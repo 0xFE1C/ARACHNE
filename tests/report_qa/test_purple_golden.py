@@ -84,12 +84,33 @@ def _rebuilt(stored: list[object]) -> list[object]:
 
 def _coverage_with_one_gap():
     emissions = (
-        Emission("m3.sqli-oracle", "In-band SQL injection oracle", "T1190", "initial-access",
-                 "high", NONCE, NOW + timedelta(minutes=2)),
-        Emission("m3.cmdi-oob", "Out-of-band command injection", "T1059", "execution",
-                 "high", NONCE, NOW + timedelta(minutes=3)),
-        Emission("m3.state-marker", "Minimal reversible state change", "T1565.001", "impact",
-                 "high", NONCE, NOW + timedelta(minutes=4)),
+        Emission(
+            "m3.sqli-oracle",
+            "In-band SQL injection oracle",
+            "T1190",
+            "initial-access",
+            "high",
+            NONCE,
+            NOW + timedelta(minutes=2),
+        ),
+        Emission(
+            "m3.cmdi-oob",
+            "Out-of-band command injection",
+            "T1059",
+            "execution",
+            "high",
+            NONCE,
+            NOW + timedelta(minutes=3),
+        ),
+        Emission(
+            "m3.state-marker",
+            "Minimal reversible state change",
+            "T1565.001",
+            "impact",
+            "high",
+            NONCE,
+            NOW + timedelta(minutes=4),
+        ),
     )
     from arachne.core.target import DetectionWindow
     from arachne.purple.alerts import DefenderAlert

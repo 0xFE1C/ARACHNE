@@ -196,7 +196,7 @@ def test_the_gate_accepts_the_kubernetes_reference_idiom(tmp_path: Path) -> None
                 "  auth:",
                 '    password: ""',
                 "    secretKey: postgres-password",
-                "    existingSecret: \"\"",
+                '    existingSecret: ""',
             ]
         ),
         encoding="utf-8",

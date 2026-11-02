@@ -322,9 +322,7 @@ def test_the_trend_round_trips_and_feeds_the_posture_view(
 
     # The event-driven half: a finished scan is a model update.
     resim.subscribe(services.bus)
-    asyncio.run(
-        services.bus.publish(Event(type=EventKind.SCAN_FINISHED, scan_id=scan_id))
-    )
+    asyncio.run(services.bus.publish(Event(type=EventKind.SCAN_FINISHED, scan_id=scan_id)))
     resim.close()
 
     points = store.points(estate_key=ESTATE)

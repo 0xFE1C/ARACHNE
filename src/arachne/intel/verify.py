@@ -153,8 +153,7 @@ def parse_checksum_manifest(text: str, *, source: str = "<manifest>") -> dict[st
         data = None
     if isinstance(data, Mapping):
         return {
-            str(key).strip().lower(): normalise_digest(str(value))
-            for key, value in data.items()
+            str(key).strip().lower(): normalise_digest(str(value)) for key, value in data.items()
         }
     if isinstance(data, list):
         entries = [item for item in data if isinstance(item, Mapping)]

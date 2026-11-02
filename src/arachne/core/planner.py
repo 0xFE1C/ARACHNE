@@ -89,12 +89,11 @@ def pipeline_with_hypotheses(pipeline: Sequence[ScanStep]) -> tuple[ScanStep, ..
         return tuple(pipeline)
     ordered = list(pipeline)
     position = (
-        ordered.index(ScanStep.CORRELATION) + 1
-        if ScanStep.CORRELATION in ordered
-        else len(ordered)
+        ordered.index(ScanStep.CORRELATION) + 1 if ScanStep.CORRELATION in ordered else len(ordered)
     )
     ordered.insert(position, ScanStep.HYPOTHESIS)
     return tuple(ordered)
+
 
 #: Which pipeline step a module's checks belong to (/"Detect").
 MODULE_STEP: Final[dict[str, ScanStep]] = {
@@ -448,9 +447,7 @@ class Planner:
                 1 for check in planned if check.included and check.proof_effective.is_opt_in
             ),
             proof_state_changes=sum(
-                1
-                for check in planned
-                if check.included and check.proof.needs_state_attestation
+                1 for check in planned if check.included and check.proof.needs_state_attestation
             ),
             proof_downgrades=sum(
                 1 for check in planned if check.proof_effective.rank < check.proof.rank

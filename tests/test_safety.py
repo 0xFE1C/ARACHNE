@@ -1167,12 +1167,8 @@ def test_one_queued_scan_yields_exactly_one_lease_across_nodes(tmp_path: Any) ->
         service_b.register("agent-b", principal="safety")
 
         with ThreadPoolExecutor(max_workers=2) as pool:
-            lease_a = pool.submit(
-                service_a.lease, "agent-a", principal="safety", cap=1, ttl_s=60
-            )
-            lease_b = pool.submit(
-                service_b.lease, "agent-b", principal="safety", cap=1, ttl_s=60
-            )
+            lease_a = pool.submit(service_a.lease, "agent-a", principal="safety", cap=1, ttl_s=60)
+            lease_b = pool.submit(service_b.lease, "agent-b", principal="safety", cap=1, ttl_s=60)
             first, second = lease_a.result(), lease_b.result()
 
         claimed = [entry.scan_id for entry in (*first, *second)]
@@ -1294,9 +1290,7 @@ async def test_a_provider_key_never_reaches_a_log_line_a_record_or_a_finding() -
     configure_logging("DEBUG", json_output=True, stream=stream)
     collected: list[Any] = []
     try:
-        step, memory = make_step_context(
-            seed=[("host", "203.0.113.9"), ("domain", "example.com")]
-        )
+        step, memory = make_step_context(seed=[("host", "203.0.113.9"), ("domain", "example.com")])
         osint = make_osint(
             providers=("shodan", "hibp", "censys", "certspotter", "whois"),
             auditor=memory.auditor,
@@ -1326,9 +1320,11 @@ async def test_a_provider_key_never_reaches_a_log_line_a_record_or_a_finding() -
         json.dumps([event.payload for event in memory.bus.history()]),
         json.dumps(
             [
-                {"title": result.title, "detail": result.detail, "evidence": [
-                    evidence.payload for evidence in result.evidence
-                ]}
+                {
+                    "title": result.title,
+                    "detail": result.detail,
+                    "evidence": [evidence.payload for evidence in result.evidence],
+                }
                 for result in collected
             ],
             default=str,
@@ -1380,9 +1376,7 @@ async def test_a_credential_outside_its_scope_is_refused_before_a_request(
         hosts=(TARGET_HOST,),
     )
     broker.validate_selection()
-    session = await broker.login(
-        client=client, inventory=None, url=f"http://{TARGET_HOST}/login"
-    )
+    session = await broker.login(client=client, inventory=None, url=f"http://{TARGET_HOST}/login")
     await client.aclose()
 
     assert session is None

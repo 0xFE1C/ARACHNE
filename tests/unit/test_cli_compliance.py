@@ -95,7 +95,9 @@ def _seed_scan() -> int:
                 check="m4.env-file-probe",
                 module="M4",
                 evidence=(
-                    Evidence.of("http_request", {"method": "GET", "url": "https://target.example/.env"}),
+                    Evidence.of(
+                        "http_request", {"method": "GET", "url": "https://target.example/.env"}
+                    ),
                     Evidence.of(
                         "http_response",
                         {"status_code": 200, "body": "AWS_ACCESS_KEY_ID=[REDACTED:aws-key]"},
@@ -148,8 +150,16 @@ def test_the_export_writes_a_self_contained_document(
     target = tmp_path / "iso-evidence.json"
     result = runner.invoke(
         app,
-        ["compliance", "export", "--scan", str(scan_id), "--framework", "iso27001",
-         "--output", str(target)],
+        [
+            "compliance",
+            "export",
+            "--scan",
+            str(scan_id),
+            "--framework",
+            "iso27001",
+            "--output",
+            str(target),
+        ],
     )
     assert result.exit_code == 0, result.output
     document = json.loads(target.read_text(encoding="utf-8"))
@@ -197,9 +207,7 @@ def test_the_export_refuses_an_unknown_framework(cli_db: str) -> None:
 
 
 def test_the_export_refuses_an_unknown_scan(cli_db: str) -> None:
-    result = runner.invoke(
-        app, ["compliance", "export", "--scan", "9999", "--framework", "cis"]
-    )
+    result = runner.invoke(app, ["compliance", "export", "--scan", "9999", "--framework", "cis"])
     assert result.exit_code != 0
     assert isinstance(result.exception, ReportError)
     assert "does not exist" in str(result.exception)

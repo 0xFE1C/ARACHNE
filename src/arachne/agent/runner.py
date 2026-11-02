@@ -143,9 +143,7 @@ def build_executor(
     return execute
 
 
-def _note_mode(
-    services: ScanServices, auditor: Any, lease: AgentLease, mode: str
-) -> None:
+def _note_mode(services: ScanServices, auditor: Any, lease: AgentLease, mode: str) -> None:
     """Record how this node executed the scan, once per lease (S19, REQ-CREDS-003).
 
     The trail has to answer "was this scan run from outside the target network or inside it?"

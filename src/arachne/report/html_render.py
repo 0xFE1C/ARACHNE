@@ -425,7 +425,7 @@ def _findings(report: ReportData) -> str:
     for number, severity in enumerate(_SEVERITY_ORDER, start=4):
         label = _severity_label(severity, report)
         findings = report.findings_by_severity(severity)
-        section = _t('report.section.findings', report)
+        section = _t("report.section.findings", report)
         parts.append(f"<section><h2>{number}. {section} — {label}</h2>")
         if not findings:
             parts.append(f'<p class="muted">No {label.lower()} findings were confirmed.</p>')
@@ -509,9 +509,9 @@ def _patch_gap(report: ReportData) -> str:
 def _appendix(report: ReportData) -> str:
     appendix = report.appendix
     parts = [
-            f"<section><h2>11. {_t('report.section.appendix', report)}</h2>",
-            f"<h3>A. {_t('report.appendix.evidence', report)}</h3>",
-        ]
+        f"<section><h2>11. {_t('report.section.appendix', report)}</h2>",
+        f"<h3>A. {_t('report.appendix.evidence', report)}</h3>",
+    ]
     if not appendix.evidence:
         parts.append('<p class="muted">No evidence was captured.</p>')
     for entry in appendix.evidence:
@@ -690,7 +690,8 @@ def render_html(report: ReportData) -> str:
         )
     return (
         "<!doctype html>\n"
-        '<html lang="' + html.escape(report.locale or DEFAULT_LOCALE, quote=True)
+        '<html lang="'
+        + html.escape(report.locale or DEFAULT_LOCALE, quote=True)
         + '"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         f"<title>{_esc(title)}</title><style>{style}</style></head>\n"

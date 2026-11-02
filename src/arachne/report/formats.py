@@ -240,8 +240,7 @@ def _builtin_formats() -> list[ReportFormat]:
             render=render_sarif,
             media_type="application/sarif+json; charset=utf-8",
             description=(
-                "SARIF 2.1.0 for CI code scanning and pull-request annotations "
-                "(S26, REQ-ECOS-003)."
+                "SARIF 2.1.0 for CI code scanning and pull-request annotations (S26, REQ-ECOS-003)."
             ),
         ),
     ]

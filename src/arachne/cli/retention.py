@@ -224,12 +224,8 @@ def _emit(report: dict[str, Any], json_output: bool) -> None:
         if not entry["rows"]:
             continue
         detail = f" (+{entry['cascaded_rows']} cascaded rows)" if entry["cascaded_rows"] else ""
-        typer.echo(
-            f"  {category:<9} {entry['rows']:>7} rows{detail}  {_bytes(entry['bytes'])}"
-        )
-    typer.echo(
-        f"  total     {report['total_rows']:>7} rows  {_bytes(report['total_bytes'])}"
-    )
+        typer.echo(f"  {category:<9} {entry['rows']:>7} rows{detail}  {_bytes(entry['bytes'])}")
+    typer.echo(f"  total     {report['total_rows']:>7} rows  {_bytes(report['total_bytes'])}")
     for project in report["projects"]:
         rows = sum(
             entry["rows"] + entry["cascaded_rows"] for entry in project["categories"].values()
@@ -251,4 +247,3 @@ def _bytes(value: int | None) -> str:
             return f"{size:.0f} {unit}" if unit == "B" else f"{size:.1f} {unit}"
         size /= 1024
     return f"{size:.1f} TiB"  # pragma: no cover - unreachable
-

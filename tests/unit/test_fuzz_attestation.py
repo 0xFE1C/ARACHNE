@@ -113,8 +113,7 @@ def test_a_fuzzing_grant_that_does_not_cover_every_target_is_refused() -> None:
         fuzz_grant(allowed_targets=["lab.example.test"]),
     )
     assert errors == (
-        "fuzzing attestation does not cover every declared target "
-        "(domain:other.example.test)",
+        "fuzzing attestation does not cover every declared target (domain:other.example.test)",
     )
 
 
@@ -200,9 +199,7 @@ def test_the_refusal_precedes_the_exception_so_a_lost_exception_is_still_audited
     sink = MemoryAuditSink()
     auditor = Auditor(sink, actor="pytest")
     with pytest.raises(FuzzRefused) as caught:
-        authorize_fuzz(
-            definition(), fuzz_grant(environment="live"), auditor=auditor, now=NOW
-        )
+        authorize_fuzz(definition(), fuzz_grant(environment="live"), auditor=auditor, now=NOW)
     assert len(sink.events) == 1
     assert "fuzzing refused:" in str(caught.value)
     assert caught.value.reason

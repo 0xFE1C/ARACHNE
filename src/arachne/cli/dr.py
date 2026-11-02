@@ -163,8 +163,7 @@ def dr_restore(
         typer.echo(json.dumps(payload, indent=2, default=str))
         return
     typer.echo(
-        f"restored {report.rows} rows across {len(report.tables)} tables "
-        f"in {report.seconds:.1f}s"
+        f"restored {report.rows} rows across {len(report.tables)} tables in {report.seconds:.1f}s"
     )
     keys = ", ".join(report.keys) or "(none)"
     typer.echo(f"  {report.evidence_objects} evidence objects, keys: {keys}")
@@ -235,9 +234,7 @@ def _leases(services: Any) -> list[dict[str, Any]]:
     from arachne.data.leader_store import LeaderElector
 
     names = ("scheduler", "retention", "integrity-anchor")
-    return [
-        LeaderElector(services.session_factory, name=name).state().to_dict() for name in names
-    ]
+    return [LeaderElector(services.session_factory, name=name).state().to_dict() for name in names]
 
 
 def _migrations_dir() -> Path:

@@ -92,9 +92,7 @@ def _age_feeds(services: Any, *, days: int) -> None:
     from arachne.data.models import Feed
 
     with services.session_factory() as session:
-        session.execute(
-            update(Feed).values(created_at=datetime.now(UTC) - timedelta(days=days))
-        )
+        session.execute(update(Feed).values(created_at=datetime.now(UTC) - timedelta(days=days)))
         session.commit()
 
 

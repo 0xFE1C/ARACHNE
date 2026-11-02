@@ -128,11 +128,15 @@ def _resource_from_entry(entry: Mapping[str, Any], provider: str, *, source: str
     if not resource_id:
         raise ConfigurationError(f"{source}: a snapshot resource needs an id (got {entry!r:.120})")
     config = entry.get("config")
-    normalized: dict[str, Any] = dict(config) if isinstance(config, Mapping) else {
-        key: value
-        for key, value in entry.items()
-        if key not in {"id", "resource_id", "service", "type", "name", "region", "provider"}
-    }
+    normalized: dict[str, Any] = (
+        dict(config)
+        if isinstance(config, Mapping)
+        else {
+            key: value
+            for key, value in entry.items()
+            if key not in {"id", "resource_id", "service", "type", "name", "region", "provider"}
+        }
+    )
     return CloudResource(
         provider=provider,
         service=service,
@@ -146,9 +150,7 @@ def _resource_from_entry(entry: Mapping[str, Any], provider: str, *, source: str
 def _bounded_config(config: Mapping[str, Any], *, source: str) -> dict[str, Any]:
     """A shallow, bounded copy: the diff and the policies read scalars, not forests."""
     if len(config) > 128:
-        raise ConfigurationError(
-            f"{source}: a snapshot resource config carries more than 128 keys"
-        )
+        raise ConfigurationError(f"{source}: a snapshot resource config carries more than 128 keys")
     return {str(key): config[key] for key in sorted(config)[:128]}
 
 

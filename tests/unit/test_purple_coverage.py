@@ -112,7 +112,7 @@ def test_coverage_is_reported_per_tactic_and_the_percentage_is_honest() -> None:
 
 
 def test_a_tactic_nothing_tested_is_not_a_gap() -> None:
-    """"0% of nothing" would drag the estate number down for a decision nobody made."""
+    """ "0% of nothing" would drag the estate number down for a decision nobody made."""
     report = score_coverage(
         (_emission("T1059", "execution"),),
         (),

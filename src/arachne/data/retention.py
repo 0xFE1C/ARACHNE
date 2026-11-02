@@ -229,9 +229,7 @@ class ProjectPrune:
             "project_id": self.project_id,
             "slug": self.slug,
             "policy": self.policy.to_dict(),
-            "categories": {
-                name: plan.to_dict() for name, plan in sorted(self.categories.items())
-            },
+            "categories": {name: plan.to_dict() for name, plan in sorted(self.categories.items())},
         }
 
 
@@ -319,9 +317,7 @@ class RetentionPruner:
             enabled=retention.enabled,
         )
 
-    def policy_for(
-        self, retention: Mapping[str, Any] | None, *, source: str
-    ) -> RetentionPolicy:
+    def policy_for(self, retention: Mapping[str, Any] | None, *, source: str) -> RetentionPolicy:
         return policy_for(self.defaults, retention, source=source)
 
     def policies(self) -> tuple[tuple[int | None, str, RetentionPolicy], ...]:
@@ -365,9 +361,7 @@ class RetentionPruner:
                 if cutoff is not None
                 else CategoryPlan("audit")
             )
-        return PrunePlan(
-            dry_run=True, generated_at=moment, projects=tuple(entries), audit=audit
-        )
+        return PrunePlan(dry_run=True, generated_at=moment, projects=tuple(entries), audit=audit)
 
     def _project_rows(
         self, session: Session, project_id: int | None
@@ -420,9 +414,7 @@ class RetentionPruner:
                 or 0
             )
             cascade_stats = session.execute(
-                select(
-                    func.count(Evidence.id), func.coalesce(func.sum(Evidence.size_bytes), 0)
-                )
+                select(func.count(Evidence.id), func.coalesce(func.sum(Evidence.size_bytes), 0))
                 .select_from(Evidence)
                 .join(Finding, Finding.id == Evidence.finding_id)
                 .where(Finding.scan_id.in_(scan_ids))
@@ -540,10 +532,7 @@ class RetentionPruner:
         if cutoff is None:
             return []
         statement = (
-            select(Scan.id)
-            .where(Scan.created_at < cutoff)
-            .order_by(Scan.created_at)
-            .limit(limit)
+            select(Scan.id).where(Scan.created_at < cutoff).order_by(Scan.created_at).limit(limit)
         )
         statement = _scope(statement, project_id)
         return [int(value) for value in session.scalars(statement).all()]
@@ -599,9 +588,7 @@ class RetentionPruner:
                 ):
                     category_plan = entry.categories[name]
                     if category_plan.ids:
-                        session.execute(
-                            delete(model).where(model.id.in_(category_plan.ids))
-                        )
+                        session.execute(delete(model).where(model.id.in_(category_plan.ids)))
                         session.flush()
                     categories[name] = category_plan
                     keys.extend(category_plan.keys)
@@ -660,8 +647,7 @@ class RetentionPruner:
                     for name in CATEGORIES
                 },
                 "projects": [
-                    {"project_id": entry.project_id, "slug": entry.slug}
-                    for entry in plan.projects
+                    {"project_id": entry.project_id, "slug": entry.slug} for entry in plan.projects
                 ],
             },
         )
@@ -676,9 +662,7 @@ class RetentionPruner:
         )
 
     def _count_metrics(self, plan: PrunePlan, *, deleted: bool) -> None:
-        metric = (
-            "arachne_retention_deleted_total" if deleted else "arachne_retention_planned_total"
-        )
+        metric = "arachne_retention_deleted_total" if deleted else "arachne_retention_planned_total"
         for name in CATEGORIES:
             category = plan.category(name)
             rows = category.rows + category.cascaded_rows

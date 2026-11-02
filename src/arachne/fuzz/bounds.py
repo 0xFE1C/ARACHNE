@@ -100,9 +100,7 @@ class FuzzBudget:
                 else self.max_requests
             ),
             max_seconds=(
-                min(self.max_seconds, max_seconds)
-                if max_seconds is not None
-                else self.max_seconds
+                min(self.max_seconds, max_seconds) if max_seconds is not None else self.max_seconds
             ),
             batch_size=(
                 min(self.batch_size, batch_size) if batch_size is not None else self.batch_size
@@ -177,13 +175,10 @@ class BudgetLedger:
         """
         if self.elapsed >= self.budget.max_seconds:
             return (
-                f"wall-clock budget spent ({self.elapsed:.1f}s of "
-                f"{self.budget.max_seconds:.1f}s)"
+                f"wall-clock budget spent ({self.elapsed:.1f}s of {self.budget.max_seconds:.1f}s)"
             )
         if self.requests >= self.budget.max_requests:
-            return (
-                f"request budget spent ({self.requests} of {self.budget.max_requests})"
-            )
+            return f"request budget spent ({self.requests} of {self.budget.max_requests})"
         if self.cases >= self.budget.max_cases:
             return f"case budget spent ({self.cases} of {self.budget.max_cases})"
         return None
@@ -215,8 +210,7 @@ class BudgetLedger:
             raise FuzzBudgetExhaustedError(reason)
         if self.cases + cases > self.budget.max_cases:
             reason = (
-                f"case budget would be exceeded ({self.cases} + {cases} of "
-                f"{self.budget.max_cases})"
+                f"case budget would be exceeded ({self.cases} + {cases} of {self.budget.max_cases})"
             )
             raise FuzzBudgetExhaustedError(reason)
         # The time bound is re-read here because a target that answers slowly spends it in

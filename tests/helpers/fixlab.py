@@ -261,9 +261,7 @@ def build_lab_repo(
         cwd=root,
     )
     test_command: tuple[str, ...] = (
-        ("python3", "-m", "pytest", "-q", "-p", "no:cacheprovider", "specs")
-        if testable
-        else ()
+        ("python3", "-m", "pytest", "-q", "-p", "no:cacheprovider", "specs") if testable else ()
     )
     return LabRepo(
         root=root,

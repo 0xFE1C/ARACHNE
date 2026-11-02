@@ -214,9 +214,7 @@ def test_a_mutation_may_not_grow_a_payload_past_the_cap() -> None:
         name="big.extensions",
         protocol="tls",
         description="a grammar whose extension block is already near the cap",
-        builder=lambda: (
-            grammar.seed()[:-2] + b"\x30\x00" + b"\xaa" * 4000
-        ),
+        builder=lambda: grammar.seed()[:-2] + b"\x30\x00" + b"\xaa" * 4000,
         fields=(FieldSpec("extensions", 62, 4000, FieldKind.OPAQUE),),
     )
     with pytest.raises(ConfigurationError):

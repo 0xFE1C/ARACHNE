@@ -89,9 +89,7 @@ class AirgapPolicy:
         if not host:
             return False
         candidate = host.strip().lower().rstrip(".")
-        return any(
-            _matches(candidate, allowed) for allowed in (*self.allowed_hosts, *scope_hosts)
-        )
+        return any(_matches(candidate, allowed) for allowed in (*self.allowed_hosts, *scope_hosts))
 
     def refusal(self, host: str | None, *, scope_hosts: tuple[str, ...] = ()) -> str | None:
         """The refusal reason for ``host``, or ``None`` when it is allowed."""

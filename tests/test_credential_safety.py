@@ -163,11 +163,7 @@ async def run_credentialed_scan(lab: WebLab, tmp_path: Path) -> CredentialedScan
     make_vault(
         tmp_path,
         name="safety.enc",
-        entries={
-            "portal": portal_credential(
-                lab.base_url, username="carol", password=SECRET
-            )
-        },
+        entries={"portal": portal_credential(lab.base_url, username="carol", password=SECRET)},
     )
     findings = MemoryFindingStore()
     analyses = MemoryAnalysisStore()
@@ -406,9 +402,7 @@ async def test_authenticated_requests_still_pass_the_rate_limiter(
     make_vault(
         tmp_path,
         name="rate.enc",
-        entries={
-            "portal": portal_credential(lab.base_url, username="carol", password=SECRET)
-        },
+        entries={"portal": portal_credential(lab.base_url, username="carol", password=SECRET)},
     )
     store = MemoryScanStateStore()
 

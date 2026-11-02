@@ -388,9 +388,7 @@ def read_pack_file(
     except OSError as exc:
         msg = f"cannot read content pack {resolved}: {exc}"
         raise ContentPackError(msg) from exc
-    return read_pack(
-        data, signer=signer, require_signature=require_signature, source=str(resolved)
-    )
+    return read_pack(data, signer=signer, require_signature=require_signature, source=str(resolved))
 
 
 def _read_members(data: bytes) -> dict[str, bytes]:
@@ -530,9 +528,7 @@ def installed_packs(content_dir: str | Path) -> tuple[dict[str, Any], ...]:
             continue
         signature_path = manifest_path.with_name(PACK_SIGNATURE_NAME)
         signature = (
-            signature_path.read_text(encoding="ascii").strip()
-            if signature_path.is_file()
-            else None
+            signature_path.read_text(encoding="ascii").strip() if signature_path.is_file() else None
         )
         found.append(
             {

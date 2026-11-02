@@ -120,9 +120,7 @@ def candidate_id(*, grammar: str, target: str, field: str, operator: str) -> str
     Stable rather than random so that re-running the same bounded plan produces the same
     candidate ids, and a report diff shows what *changed* rather than a wall of new rows.
     """
-    digest = hashlib.sha256(
-        "\x00".join((grammar, target, field, operator)).encode()
-    ).hexdigest()
+    digest = hashlib.sha256("\x00".join((grammar, target, field, operator)).encode()).hexdigest()
     return f"fc-{digest[:12]}"
 
 

@@ -167,6 +167,7 @@ def _tls_reading(data: bytes) -> ResponseReading:
         return ResponseReading("unknown", "the reply is not a TLS ServerHello")
     return ResponseReading("ok", f"negotiated {hello.get('legacy_version', 'unknown')}")
 
+
 #: Fixed values that make each seed reproducible. Not secrets: the point is that the same
 #: grammar produces the same baseline on every run, so a report's differentials are meaningful.
 _DNS_TXID: Final = 0x1234

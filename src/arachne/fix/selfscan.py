@@ -215,9 +215,7 @@ async def self_scan_tree(
     if not required:
         return SelfScanResult(required=False, clean=True, scan_id=after_scan, findings=after)
     before_scan, before = (
-        await review_tree(
-            services, baseline_root, changed_files=changed_files, phase="pre-fix"
-        )
+        await review_tree(services, baseline_root, changed_files=changed_files, phase="pre-fix")
         if baseline_root is not None
         else (None, ())
     )

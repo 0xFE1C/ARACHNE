@@ -111,9 +111,7 @@ class HypothesisReasoner:
                     engine="ai+heuristic",
                     detail=proposal.detail,
                 )
-            return HypothesisProposal(
-                hypotheses=(), engine=proposal.engine, detail=proposal.detail
-            )
+            return HypothesisProposal(hypotheses=(), engine=proposal.engine, detail=proposal.detail)
         # Degraded: the AI half could not answer. The heuristic set is the fallback whenever
         # the mode allows it; ``ai`` alone (an operator's explicit demand) still yields the
         # heuristic hypotheses, because "AI failure degrades quality, never safety".

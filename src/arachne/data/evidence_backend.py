@@ -91,8 +91,10 @@ def _sha256(data: bytes) -> str:
 def encode_container(data: bytes, *, compress: bool = True, level: int = 6) -> bytes:
     """Encode ``data`` into the container format."""
     if compress:
-        return CONTAINER_MAGIC + _CONTAINER_HEADER.pack(_FLAG_ZLIB, len(data)) + zlib.compress(
-            data, level
+        return (
+            CONTAINER_MAGIC
+            + _CONTAINER_HEADER.pack(_FLAG_ZLIB, len(data))
+            + zlib.compress(data, level)
         )
     return CONTAINER_MAGIC + _CONTAINER_HEADER.pack(_FLAG_RAW, len(data)) + data
 
@@ -628,9 +630,7 @@ class S3EvidenceBackend:
                 response = await self.client.request(
                     "PUT",
                     f"{self.object_url(key)}?{_query_string(params)}",
-                    headers=self._signed_headers(
-                        "PUT", path, params, payload_hash=_sha256(part)
-                    ),
+                    headers=self._signed_headers("PUT", path, params, payload_hash=_sha256(part)),
                     content=part,
                 )
                 if not response.ok:

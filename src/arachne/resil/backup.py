@@ -303,9 +303,7 @@ def _redact(value: Any, depth: int = 0) -> Any:
     if isinstance(value, SecretStr):
         return {"set": True}
     if isinstance(value, Mapping):
-        return {
-            str(key): _redact(item, depth + 1) for key, item in value.items()
-        }
+        return {str(key): _redact(item, depth + 1) for key, item in value.items()}
     if isinstance(value, list | tuple | set):
         return [_redact(item, depth + 1) for item in value]
     if hasattr(value, "__dataclass_fields__"):

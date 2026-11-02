@@ -188,9 +188,7 @@ async def test_a_correctly_parsing_service_produces_no_candidate_at_all() -> Non
         lab.arc.strict = True
         with arc_grammars_registered():
             harness = build_runner()
-            report = await harness.runner.run(
-                arc_plan(lab, budget=arc_budget(max_cases=200))
-            )
+            report = await harness.runner.run(arc_plan(lab, budget=arc_budget(max_cases=200)))
 
     target = report.targets[0]
     assert target.cases_run > 0, "the same cases ran"

@@ -423,9 +423,7 @@ class OidcProvider:
             issuer=self._sso.issuer,
         )
         required = (
-            endpoints.authorization_endpoint
-            and endpoints.token_endpoint
-            and endpoints.jwks_uri
+            endpoints.authorization_endpoint and endpoints.token_endpoint and endpoints.jwks_uri
         )
         if not required:
             msg = "the provider's discovery document is missing required endpoints"

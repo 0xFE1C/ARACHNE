@@ -147,9 +147,7 @@ class ServiceExposureDrift(Module):
                 )
         if not looked_up:
             yield ctx.error(
-                OsintError(
-                    "; ".join(failures) or "no provider returned a usable answer"
-                )
+                OsintError("; ".join(failures) or "no provider returned a usable answer")
             )
             return
         coverage = _catalogue_ports(ctx)
@@ -272,9 +270,7 @@ async def _lookup(ctx: CheckContext, provider: str, address: str) -> dict[str, A
     if ctx.config.censys_api_id is None or ctx.config.censys_api_secret is None:
         return None
     token = f"{ctx.config.censys_api_id}:{ctx.config.censys_api_secret.get_secret_value()}"
-    response = await ctx.osint.fetch(
-        "censys", censys_host_url(address), headers=_basic_auth(token)
-    )
+    response = await ctx.osint.fetch("censys", censys_host_url(address), headers=_basic_auth(token))
     if response.status in (404, 403):
         return None
     censys_record = parse_censys_host(response.json(), address=address)
@@ -285,9 +281,7 @@ async def _lookup(ctx: CheckContext, provider: str, address: str) -> dict[str, A
         "provider": "censys",
         "url": censys_host_url(address),
         "ports": list(censys_record.ports),
-        "services": [
-            service.to_dict() for service in censys_record.services[:MAX_REPORTED_PORTS]
-        ],
+        "services": [service.to_dict() for service in censys_record.services[:MAX_REPORTED_PORTS]],
     }
 
 
@@ -412,8 +406,7 @@ class CertificateSurprise(Module):
                 detail=(
                     f"{len(issuances)} issuance(s) from {ct_source or 'no CT source'}, none "
                     f"within {window_days} days, and every name it lists is inside this "
-                    "scan's scope."
-                    + _registration_note(registration)
+                    "scan's scope." + _registration_note(registration)
                 ),
                 evidence=[evidence],
                 confidence=0.7,
@@ -421,8 +414,7 @@ class CertificateSurprise(Module):
             return
         if recent:
             yield ctx.candidate(
-                f"{len(recent)} certificate(s) issued for {domain} in the last "
-                f"{window_days} days",
+                f"{len(recent)} certificate(s) issued for {domain} in the last {window_days} days",
                 detail=(
                     "Certificate Transparency records what is issued, not who asked: a recent "
                     "certificate for the domain can be a planned deployment, a hosting change, "
@@ -569,16 +561,12 @@ class BreachExposure(Module):
             yield ctx.info(
                 f"no published breach lists accounts at {domain}",
                 detail="HIBP has no breach attributed to this domain.",
-                evidence=[
-                    ctx.evidence("note", {"domain": domain, "breaches": 0}, source=domain)
-                ],
+                evidence=[ctx.evidence("note", {"domain": domain, "breaches": 0}, source=domain)],
                 confidence=0.6,
             )
             return
         if not response.ok:
-            yield ctx.error(
-                OsintError(f"HIBP returned HTTP {response.status} for {domain}")
-            )
+            yield ctx.error(OsintError(f"HIBP returned HTTP {response.status} for {domain}"))
             return
         breaches = parse_hibp_breaches(response.json())
         evidence = ctx.evidence(
@@ -588,9 +576,7 @@ class BreachExposure(Module):
                 "breach_count": len(breaches),
                 "accounts_exposed": sum(item.pwn_count for item in breaches),
                 "breaches": [item.to_dict() for item in breaches[:25]],
-                "data_classes": sorted(
-                    {name for item in breaches for name in item.data_classes}
-                ),
+                "data_classes": sorted({name for item in breaches for name in item.data_classes}),
             },
             source=domain,
         )
@@ -604,9 +590,7 @@ class BreachExposure(Module):
             return
         accounts = sum(item.pwn_count for item in breaches)
         data_classes = sorted({name for item in breaches for name in item.data_classes})
-        passwords = any(
-            "password" in name.lower() for name in data_classes
-        )
+        passwords = any("password" in name.lower() for name in data_classes)
         yield ctx.candidate(
             f"{len(breaches)} breach(es) exposed accounts at {domain}",
             detail=(

@@ -156,9 +156,7 @@ def replay_journal(
         decisions=journal.cursor,
         executed=len(journal.executed),
         refused=len(journal.refused),
-        deferred=sum(
-            1 for item in journal.decisions if item.outcome is HypothesisOutcome.DEFERRED
-        ),
+        deferred=sum(1 for item in journal.decisions if item.outcome is HypothesisOutcome.DEFERRED),
         proposals_reproduced=proposals_reproduced,
         reproduced_probes=reproduced,
         missing_probes=missing,
@@ -179,9 +177,7 @@ def _check_decisions(journal: HypothesisJournal) -> list[str]:
     if journal.state is HypothesisJournalState.COMPLETED and journal.cursor != len(
         journal.proposals
     ):
-        problems.append(
-            "the journal says the run completed but not every proposal has a decision"
-        )
+        problems.append("the journal says the run completed but not every proposal has a decision")
     for position, decision in enumerate(journal.decisions):
         if position >= len(journal.proposals):
             break

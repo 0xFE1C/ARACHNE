@@ -206,8 +206,18 @@ def test_packs_export_without_a_key_refuses(
     (source / "x.yaml").write_text("y: 1\n", encoding="utf-8")
     result = runner.invoke(
         app,
-        ["packs", "export", "--out", str(deployment / "p.tar.gz"), "--name", "n",
-         "--version", "1", "--content", str(source)],
+        [
+            "packs",
+            "export",
+            "--out",
+            str(deployment / "p.tar.gz"),
+            "--name",
+            "n",
+            "--version",
+            "1",
+            "--content",
+            str(source),
+        ],
     )
     assert result.exit_code == 2
     assert "no content key" in result.output
@@ -221,8 +231,18 @@ def test_packs_verify_refuses_a_tampered_pack(deployment: Path) -> None:
     assert (
         runner.invoke(
             app,
-            ["packs", "export", "--out", str(pack), "--name", "n", "--version", "1",
-             "--content", str(source)],
+            [
+                "packs",
+                "export",
+                "--out",
+                str(pack),
+                "--name",
+                "n",
+                "--version",
+                "1",
+                "--content",
+                str(source),
+            ],
         ).exit_code
         == 0
     )

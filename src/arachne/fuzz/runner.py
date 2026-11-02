@@ -265,9 +265,7 @@ class FuzzReport:
 
     @property
     def candidates(self) -> tuple[FuzzCandidate, ...]:
-        return tuple(
-            candidate for target in self.targets for candidate in target.candidates
-        )
+        return tuple(candidate for target in self.targets for candidate in target.candidates)
 
     @property
     def cases_run(self) -> int:
@@ -372,9 +370,7 @@ class FuzzRunner:
         if authorization.overrides:
             budget = budget.narrowed(**authorization.overrides)  # type: ignore[arg-type]
         if self.bus is not None:
-            await self.bus.emit(
-                self._started_event(plan, run_id, engine, plan.target_count)
-            )
+            await self.bus.emit(self._started_event(plan, run_id, engine, plan.target_count))
 
         policy = DegradationPolicy.from_settings(self.settings.fuzz)
         targets: list[TargetReport] = []
@@ -734,9 +730,7 @@ class FuzzRunner:
             field=case.field,
             operator=case.operator.value,
             signal=signal,
-            status=(
-                CandidateStatus.PROPOSED if verifier else CandidateStatus.NEEDS_MANUAL_TRIAGE
-            ),
+            status=(CandidateStatus.PROPOSED if verifier else CandidateStatus.NEEDS_MANUAL_TRIAGE),
             confidence=SIGNAL_CONFIDENCE[signal],
             observation=(
                 f"{spec.transport.upper()} {spec.target}: {outcome.detail or signal.value}"
@@ -1049,9 +1043,7 @@ class FuzzRunner:
                 latency_s=elapsed,
                 detail=str(exc),
             )
-            return outcome, self._http_candidate(
-                case, asset, outcome, None, run_id
-            )
+            return outcome, self._http_candidate(case, asset, outcome, None, run_id)
         elapsed = max(0.0, self._clock() - started)
         ratio = (elapsed / baseline_latency) if baseline_latency > 0 else 0.0
         body = exchange.body or ""
@@ -1112,9 +1104,7 @@ class FuzzRunner:
             field=case.parameter,
             operator=case.encoding,
             signal=signal,
-            status=(
-                CandidateStatus.PROPOSED if resolved else CandidateStatus.NEEDS_MANUAL_TRIAGE
-            ),
+            status=(CandidateStatus.PROPOSED if resolved else CandidateStatus.NEEDS_MANUAL_TRIAGE),
             confidence=SIGNAL_CONFIDENCE[signal],
             observation=(
                 reading.detail if reading is not None and reading.detail else outcome.detail
@@ -1127,9 +1117,7 @@ class FuzzRunner:
                 "response_bytes": outcome.response_bytes,
                 "latency_ms": round(outcome.latency_s * 1000, 1),
             },
-            payload_sha256=hashlib.sha256(
-                case.payload.encode("utf-8", "replace")
-            ).hexdigest(),
+            payload_sha256=hashlib.sha256(case.payload.encode("utf-8", "replace")).hexdigest(),
             payload_bytes=len(case.payload.encode("utf-8", "replace")),
             payload_preview_hex=case.payload.encode("utf-8", "replace")[:512].hex(),
             verifier=resolved,
@@ -1152,9 +1140,7 @@ class FuzzRunner:
             ledger.spend(requests=1, cases=0)
         except FuzzBudgetExhaustedError as exc:
             return (
-                transport_failure(
-                    url, at=self._clock(), outcome=OUTCOME_ERROR, detail=str(exc)
-                ),
+                transport_failure(url, at=self._clock(), outcome=OUTCOME_ERROR, detail=str(exc)),
                 None,
             )
         try:
@@ -1425,5 +1411,3 @@ class _HttpBaseline:
 
     status: int
     length: int
-
-

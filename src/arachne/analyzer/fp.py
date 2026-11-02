@@ -826,9 +826,7 @@ def compute_trends(
         if event.is_fp:
             buckets[key][bucket] += 1
     out: list[FpTrend] = []
-    calendar = [
-        (start + timedelta(days=offset)).isoformat() for offset in range(max(0, days) + 1)
-    ]
+    calendar = [(start + timedelta(days=offset)).isoformat() for offset in range(max(0, days) + 1)]
     for key in sorted(totals):
         points = tuple(
             FpTrendPoint(
