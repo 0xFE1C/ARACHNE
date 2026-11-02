@@ -8,8 +8,8 @@ the web UI need lives here, next to the writer of the table it reads. Three idea
   the dashboard's severity trend. None of them is an ORM object, so a router cannot lazily
   load half the database from a template.
 * **Filters are data, not SQL from the caller.** A finding query takes named filters
-  (module, severity, CWE, status, asset substring, title substring) and applies them here;
-  the API's query string maps onto them one-to-one.
+  (module, severity, CWE, status, asset substring, title substring, plus the cursor
+  boundary) and applies them here; the API's query string maps onto them one-to-one.
 * **Writes are narrow.** The API may flip a finding's ``status`` (the F-05-07 review verb),
   delete a finding, or delete a scan. It never writes ``severity``/``confidence`` — that is
   the analyzer's column (ADR-02).
@@ -25,6 +25,7 @@ from typing import Any
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from arachne.data.keyset import PageWindow, with_finding_page
 from arachne.data.models import Asset as AssetRow
 from arachne.data.models import Check, Evidence, Finding, Scan
 from arachne.data.scan_store import as_utc
@@ -45,6 +46,10 @@ SEVERITIES: tuple[str, ...] = ("critical", "high", "medium", "low", "info")
 
 #: Statuses the API may set on a finding (F-05-07).
 FINDING_STATUSES: frozenset[str] = frozenset({"open", "verified", "fp", "merged"})
+
+#: The API's ``sort`` vocabulary for ``/findings`` (REQ-UIX-002) lives in
+#: :mod:`arachne.data.keyset` as a closed enum; only ``id`` is indexed, and the endpoint
+#: documents the other fields as a full scan.
 
 
 @dataclass(frozen=True, slots=True)
@@ -226,15 +231,22 @@ class ApiQueryStore:
         offset: int = 0,
         project_id: int | None = None,
         include_unassigned: bool = False,
+        window: PageWindow | None = None,
     ) -> tuple[FindingRow, ...]:
-        """Findings matching the filters, ordered by id."""
+        """Findings matching the filters, ordered by ``window`` with an ``id`` tiebreaker.
+
+        ``window`` carries the validated sort vocabulary and, when a cursor was supplied, the
+        keyset boundary it decodes to: rows strictly after that boundary are returned
+        (``limit + 1`` of them, so the caller can detect a next page without a count query).
+        It is typed and closed — never a raw query string.
+        """
         check_alias = Check
-        query_stmt = (
+        query_stmt: Any = (
             select(Finding, Check, AssetRow)
             .outerjoin(check_alias, Finding.check_id == check_alias.id)
             .outerjoin(AssetRow, Finding.asset_id == AssetRow.id)
-            .order_by(Finding.id)
         )
+        query_stmt = with_finding_page(query_stmt, window=window, limit=limit)
         if project_id is not None:
             # The tenant lives on ``scans`` (F-07-06); filter through it rather than
             # denormalising project_id onto every child row.

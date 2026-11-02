@@ -34,6 +34,7 @@ import type {
   HypothesisControlIn,
   ModuleOut,
   PackReviewRequest,
+  Page,
   PluginInstallRequest,
   ProjectIn,
   ProjectOut,
@@ -191,6 +192,7 @@ export class ArachneClient {
     method: string,
     path: string,
     options: RequestOptions = {},
+    page = false,
   ): Promise<T> {
     if (this.apiKey.trim() === "") {
       // Defence in depth: the constructor already refused this, and it stays
@@ -254,7 +256,17 @@ export class ArachneClient {
     }
     const contentType = response.headers.get("content-type") ?? "";
     if (contentType.includes("json")) {
-      return JSON.parse(text) as T;
+      const payload = JSON.parse(text) as unknown;
+      if (!page) {
+        return payload as T;
+      }
+      return {
+        items: payload,
+        next_cursor: response.headers.get("x-next-cursor"),
+        prev_cursor: response.headers.get("x-prev-cursor"),
+        has_more: response.headers.get("x-has-more") === "true",
+        limit: parseIntOrNull(response.headers.get("x-limit")),
+      } as unknown as T;
     }
     return text as T;
   }
@@ -288,14 +300,16 @@ export class ArachneClient {
       findingId?: number | null;
       activeOnly?: boolean | null;
       allProjects?: boolean | null;
+      cursor?: string | null;
+      limit?: number | null;
       project?: string | null;
     } = {},
-  ): Promise<Array<AcceptanceOut>> {
+  ): Promise<Page<AcceptanceOut>> {
     /**
      * List Acceptances GET /api/v1/acceptances (operationId
      * `list_acceptances_api_v1_acceptances_get`).
      */
-    return this.request<Array<AcceptanceOut>>(
+    return this.request<Page<AcceptanceOut>>(
       "GET",
       "/api/v1/acceptances",
       {
@@ -303,9 +317,12 @@ export class ArachneClient {
           finding_id: options.findingId,
           active_only: options.activeOnly,
           all_projects: options.allProjects,
+          cursor: options.cursor,
+          limit: options.limit,
         },
         project: options.project,
       },
+      true,
     );
   }
 
@@ -670,18 +687,21 @@ export class ArachneClient {
     options: {
       scanId?: number | null;
       module?: string | null;
-      severity?: string | null;
+      severity?: "critical" | "high" | "medium" | "low" | "info" | "unanalysed" | null;
       cwe?: string | null;
-      status?: string | null;
+      status?: "open" | "verified" | "fp" | "merged" | null;
       asset?: string | null;
       q?: string | null;
+      sort?: "id" | "severity" | "status" | "title" | null;
+      order?: "asc" | "desc" | null;
+      cursor?: string | null;
       limit?: number | null;
       offset?: number | null;
       project?: string | null;
     } = {},
-  ): Promise<Array<FindingOut>> {
+  ): Promise<Page<FindingOut>> {
     /** List Findings GET /api/v1/findings (operationId `list_findings_api_v1_findings_get`). */
-    return this.request<Array<FindingOut>>(
+    return this.request<Page<FindingOut>>(
       "GET",
       "/api/v1/findings",
       {
@@ -693,11 +713,15 @@ export class ArachneClient {
           status: options.status,
           asset: options.asset,
           q: options.q,
+          sort: options.sort,
+          order: options.order,
+          cursor: options.cursor,
           limit: options.limit,
           offset: options.offset,
         },
         project: options.project,
       },
+      true,
     );
   }
 
@@ -800,14 +824,18 @@ export class ArachneClient {
     );
   }
 
-  async listModules(options: { project?: string | null; } = {}): Promise<Array<ModuleOut>> {
+  async listModules(
+    options: { cursor?: string | null; limit?: number | null; project?: string | null; } = {},
+  ): Promise<Page<ModuleOut>> {
     /** List Modules GET /api/v1/modules (operationId `list_modules_api_v1_modules_get`). */
-    return this.request<Array<ModuleOut>>(
+    return this.request<Page<ModuleOut>>(
       "GET",
       "/api/v1/modules",
       {
+        query: { cursor: options.cursor, limit: options.limit },
         project: options.project,
       },
+      true,
     );
   }
 
@@ -914,14 +942,18 @@ export class ArachneClient {
     );
   }
 
-  async listProjects(options: { project?: string | null; } = {}): Promise<Array<ProjectOut>> {
+  async listProjects(
+    options: { cursor?: string | null; limit?: number | null; project?: string | null; } = {},
+  ): Promise<Page<ProjectOut>> {
     /** List Projects GET /api/v1/projects (operationId `list_projects_api_v1_projects_get`). */
-    return this.request<Array<ProjectOut>>(
+    return this.request<Page<ProjectOut>>(
       "GET",
       "/api/v1/projects",
       {
+        query: { cursor: options.cursor, limit: options.limit },
         project: options.project,
       },
+      true,
     );
   }
 
@@ -1120,16 +1152,32 @@ export class ArachneClient {
   }
 
   async listScans(
-    options: { limit?: number | null; project?: string | null; } = {},
-  ): Promise<Array<ScanSummary>> {
+    options: {
+      status?: "pending" | "running" | "completed" | "failed" | "aborted" | null;
+      targetId?: number | null;
+      sort?: "id" | "status" | null;
+      order?: "asc" | "desc" | null;
+      cursor?: string | null;
+      limit?: number | null;
+      project?: string | null;
+    } = {},
+  ): Promise<Page<ScanSummary>> {
     /** List Scans GET /api/v1/scans (operationId `list_scans_api_v1_scans_get`). */
-    return this.request<Array<ScanSummary>>(
+    return this.request<Page<ScanSummary>>(
       "GET",
       "/api/v1/scans",
       {
-        query: { limit: options.limit },
+        query: {
+          status: options.status,
+          target_id: options.targetId,
+          sort: options.sort,
+          order: options.order,
+          cursor: options.cursor,
+          limit: options.limit,
+        },
         project: options.project,
       },
+      true,
     );
   }
 
@@ -1269,14 +1317,18 @@ export class ArachneClient {
     );
   }
 
-  async listSchedules(options: { project?: string | null; } = {}): Promise<Array<ScheduleOut>> {
+  async listSchedules(
+    options: { cursor?: string | null; limit?: number | null; project?: string | null; } = {},
+  ): Promise<Page<ScheduleOut>> {
     /** List Schedules GET /api/v1/schedules (operationId `list_schedules_api_v1_schedules_get`). */
-    return this.request<Array<ScheduleOut>>(
+    return this.request<Page<ScheduleOut>>(
       "GET",
       "/api/v1/schedules",
       {
+        query: { cursor: options.cursor, limit: options.limit },
         project: options.project,
       },
+      true,
     );
   }
 
@@ -1408,20 +1460,28 @@ export class ArachneClient {
     options: {
       includeRevoked?: boolean | null;
       allProjects?: boolean | null;
+      cursor?: string | null;
+      limit?: number | null;
       project?: string | null;
     } = {},
-  ): Promise<Array<SuppressionOut>> {
+  ): Promise<Page<SuppressionOut>> {
     /**
      * List Suppressions GET /api/v1/suppressions (operationId
      * `list_suppressions_api_v1_suppressions_get`).
      */
-    return this.request<Array<SuppressionOut>>(
+    return this.request<Page<SuppressionOut>>(
       "GET",
       "/api/v1/suppressions",
       {
-        query: { include_revoked: options.includeRevoked, all_projects: options.allProjects },
+        query: {
+          include_revoked: options.includeRevoked,
+          all_projects: options.allProjects,
+          cursor: options.cursor,
+          limit: options.limit,
+        },
         project: options.project,
       },
+      true,
     );
   }
 
@@ -1462,16 +1522,17 @@ export class ArachneClient {
   }
 
   async listTargets(
-    options: { limit?: number | null; project?: string | null; } = {},
-  ): Promise<Array<TargetOut>> {
+    options: { cursor?: string | null; limit?: number | null; project?: string | null; } = {},
+  ): Promise<Page<TargetOut>> {
     /** List Targets GET /api/v1/targets (operationId `list_targets_api_v1_targets_get`). */
-    return this.request<Array<TargetOut>>(
+    return this.request<Page<TargetOut>>(
       "GET",
       "/api/v1/targets",
       {
-        query: { limit: options.limit },
+        query: { cursor: options.cursor, limit: options.limit },
         project: options.project,
       },
+      true,
     );
   }
 

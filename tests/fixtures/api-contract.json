@@ -1,0 +1,605 @@
+{
+ "DELETE /api/v1/acceptances/{acceptance_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:acceptance_id"
+  ],
+  "response_required": []
+ },
+ "DELETE /api/v1/feeds/{feed_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:feed_id"
+  ],
+  "response_required": []
+ },
+ "DELETE /api/v1/findings/{finding_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:finding_id"
+  ],
+  "response_required": []
+ },
+ "DELETE /api/v1/projects/{slug}": {
+  "body_required": [],
+  "parameters": [
+   "path:slug"
+  ],
+  "response_required": []
+ },
+ "DELETE /api/v1/scans/{scan_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:scan_id"
+  ],
+  "response_required": []
+ },
+ "DELETE /api/v1/schedules/{schedule_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:schedule_id"
+  ],
+  "response_required": []
+ },
+ "DELETE /api/v1/suppressions/{suppression_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:suppression_id"
+  ],
+  "response_required": []
+ },
+ "DELETE /api/v1/targets/{target_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:target_id"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/acceptances": {
+  "body_required": [],
+  "parameters": [
+   "query:active_only",
+   "query:all_projects",
+   "query:cursor",
+   "query:finding_id",
+   "query:limit"
+  ],
+  "response_required": [
+   "accepted_at",
+   "actor",
+   "expires_at",
+   "justification",
+   "owner"
+  ]
+ },
+ "GET /api/v1/agent/queue": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "GET /api/v1/auth/me": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "GET /api/v1/auth/sso/callback": {
+  "body_required": [],
+  "parameters": [
+   "query:code",
+   "query:error",
+   "query:state"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/auth/sso/login": {
+  "body_required": [],
+  "parameters": [
+   "query:next"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/config": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "GET /api/v1/evidence/{evidence_id}/download": {
+  "body_required": [],
+  "parameters": [
+   "path:evidence_id",
+   "query:redirect"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/feeds": {
+  "body_required": [],
+  "parameters": [
+   "query:kind"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/feeds/lookup/{cve}": {
+  "body_required": [],
+  "parameters": [
+   "path:cve"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/feeds/stats": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "GET /api/v1/feeds/{feed_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:feed_id",
+   "query:limit"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/findings": {
+  "body_required": [],
+  "parameters": [
+   "query:asset",
+   "query:cursor",
+   "query:cwe",
+   "query:limit",
+   "query:module",
+   "query:offset",
+   "query:order",
+   "query:q",
+   "query:scan_id",
+   "query:severity",
+   "query:sort",
+   "query:status"
+  ],
+  "response_required": [
+   "id",
+   "scan_id",
+   "title"
+  ]
+ },
+ "GET /api/v1/findings/{finding_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:finding_id"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/health": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": [
+   "database",
+   "version"
+  ]
+ },
+ "GET /api/v1/integrity/status": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "GET /api/v1/integrity/verify": {
+  "body_required": [],
+  "parameters": [
+   "query:scan_id"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/modules": {
+  "body_required": [],
+  "parameters": [
+   "query:cursor",
+   "query:limit"
+  ],
+  "response_required": [
+   "id",
+   "version"
+  ]
+ },
+ "GET /api/v1/plugins": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "GET /api/v1/plugins/formats": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "GET /api/v1/plugins/marketplace": {
+  "body_required": [],
+  "parameters": [
+   "query:search"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/plugins/reviews": {
+  "body_required": [],
+  "parameters": [
+   "query:limit"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/projects": {
+  "body_required": [],
+  "parameters": [
+   "query:cursor",
+   "query:limit"
+  ],
+  "response_required": [
+   "id",
+   "name",
+   "slug"
+  ]
+ },
+ "GET /api/v1/projects/{slug}": {
+  "body_required": [],
+  "parameters": [
+   "path:slug"
+  ],
+  "response_required": [
+   "id",
+   "name",
+   "slug"
+  ]
+ },
+ "GET /api/v1/projects/{slug}/retention": {
+  "body_required": [],
+  "parameters": [
+   "path:slug"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/projects/{slug}/storage": {
+  "body_required": [],
+  "parameters": [
+   "path:slug"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/purple/campaigns": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "GET /api/v1/resilience/status": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "GET /api/v1/scans": {
+  "body_required": [],
+  "parameters": [
+   "query:cursor",
+   "query:limit",
+   "query:order",
+   "query:sort",
+   "query:status",
+   "query:target_id"
+  ],
+  "response_required": [
+   "engine",
+   "id",
+   "status"
+  ]
+ },
+ "GET /api/v1/scans/{scan_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:scan_id"
+  ],
+  "response_required": [
+   "engine",
+   "id",
+   "status"
+  ]
+ },
+ "GET /api/v1/scans/{scan_id}/hypotheses": {
+  "body_required": [],
+  "parameters": [
+   "path:scan_id"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/scans/{scan_id}/report": {
+  "body_required": [],
+  "parameters": [
+   "path:scan_id",
+   "query:diff_with",
+   "query:format",
+   "query:locale"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/schedules": {
+  "body_required": [],
+  "parameters": [
+   "query:cursor",
+   "query:limit"
+  ],
+  "response_required": [
+   "spec"
+  ]
+ },
+ "GET /api/v1/service-accounts": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "GET /api/v1/suppressions": {
+  "body_required": [],
+  "parameters": [
+   "query:all_projects",
+   "query:cursor",
+   "query:include_revoked",
+   "query:limit"
+  ],
+  "response_required": [
+   "active",
+   "actor",
+   "created_at",
+   "kind",
+   "reason",
+   "version"
+  ]
+ },
+ "GET /api/v1/targets": {
+  "body_required": [],
+  "parameters": [
+   "query:cursor",
+   "query:limit"
+  ],
+  "response_required": [
+   "id",
+   "name"
+  ]
+ },
+ "GET /api/v1/targets/{target_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:target_id"
+  ],
+  "response_required": [
+   "id",
+   "name"
+  ]
+ },
+ "GET /api/v1/webhooks": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "PATCH /api/v1/findings/{finding_id}": {
+  "body_required": [
+   "status"
+  ],
+  "parameters": [
+   "path:finding_id"
+  ],
+  "response_required": [
+   "id",
+   "scan_id",
+   "title"
+  ]
+ },
+ "POST /api/v1/acceptances": {
+  "body_required": [
+   "justification",
+   "owner"
+  ],
+  "parameters": [],
+  "response_required": [
+   "accepted_at",
+   "actor",
+   "expires_at",
+   "justification",
+   "owner"
+  ]
+ },
+ "POST /api/v1/acceptances/expire": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "POST /api/v1/admission": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "POST /api/v1/agent/complete": {
+  "body_required": [
+   "name",
+   "scan_id"
+  ],
+  "parameters": [],
+  "response_required": []
+ },
+ "POST /api/v1/agent/heartbeat": {
+  "body_required": [
+   "name"
+  ],
+  "parameters": [],
+  "response_required": []
+ },
+ "POST /api/v1/agent/lease": {
+  "body_required": [
+   "name"
+  ],
+  "parameters": [],
+  "response_required": []
+ },
+ "POST /api/v1/agent/register": {
+  "body_required": [
+   "name"
+  ],
+  "parameters": [],
+  "response_required": []
+ },
+ "POST /api/v1/auth/sso/logout": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "POST /api/v1/feeds": {
+  "body_required": [
+   "content",
+   "kind",
+   "name"
+  ],
+  "parameters": [],
+  "response_required": []
+ },
+ "POST /api/v1/plugins/install": {
+  "body_required": [
+   "source"
+  ],
+  "parameters": [],
+  "response_required": []
+ },
+ "POST /api/v1/plugins/review": {
+  "body_required": [
+   "pack"
+  ],
+  "parameters": [],
+  "response_required": []
+ },
+ "POST /api/v1/projects": {
+  "body_required": [
+   "slug"
+  ],
+  "parameters": [],
+  "response_required": [
+   "id",
+   "name",
+   "slug"
+  ]
+ },
+ "POST /api/v1/purple/alerts": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "POST /api/v1/purple/alerts/text": {
+  "body_required": [],
+  "parameters": [
+   "query:body"
+  ],
+  "response_required": []
+ },
+ "POST /api/v1/purple/campaigns/{name}/run": {
+  "body_required": [],
+  "parameters": [
+   "path:name"
+  ],
+  "response_required": []
+ },
+ "POST /api/v1/scans": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "POST /api/v1/scans/{scan_id}/hypotheses/control": {
+  "body_required": [
+   "directive"
+  ],
+  "parameters": [
+   "path:scan_id"
+  ],
+  "response_required": []
+ },
+ "POST /api/v1/scans/{scan_id}/report": {
+  "body_required": [],
+  "parameters": [
+   "path:scan_id"
+  ],
+  "response_required": []
+ },
+ "POST /api/v1/scans/{scan_id}/stop": {
+  "body_required": [],
+  "parameters": [
+   "path:scan_id"
+  ],
+  "response_required": []
+ },
+ "POST /api/v1/schedules": {
+  "body_required": [
+   "cron",
+   "id",
+   "target"
+  ],
+  "parameters": [],
+  "response_required": [
+   "spec"
+  ]
+ },
+ "POST /api/v1/schedules/{schedule_id}/run": {
+  "body_required": [],
+  "parameters": [
+   "path:schedule_id"
+  ],
+  "response_required": []
+ },
+ "POST /api/v1/service-accounts": {
+  "body_required": [
+   "label",
+   "role"
+  ],
+  "parameters": [],
+  "response_required": []
+ },
+ "POST /api/v1/service-accounts/{label}/revoke": {
+  "body_required": [],
+  "parameters": [
+   "path:label"
+  ],
+  "response_required": []
+ },
+ "POST /api/v1/service-accounts/{label}/rotate": {
+  "body_required": [],
+  "parameters": [
+   "path:label"
+  ],
+  "response_required": []
+ },
+ "POST /api/v1/suppressions": {
+  "body_required": [
+   "reason"
+  ],
+  "parameters": [],
+  "response_required": [
+   "active",
+   "actor",
+   "created_at",
+   "kind",
+   "reason",
+   "version"
+  ]
+ },
+ "POST /api/v1/targets": {
+  "body_required": [
+   "name",
+   "targets"
+  ],
+  "parameters": [],
+  "response_required": [
+   "id",
+   "name"
+  ]
+ },
+ "PUT /api/v1/projects/{slug}/retention": {
+  "body_required": [],
+  "parameters": [
+   "path:slug"
+  ],
+  "response_required": []
+ },
+ "PUT /api/v1/projects/{slug}/storage": {
+  "body_required": [],
+  "parameters": [
+   "path:slug"
+  ],
+  "response_required": []
+ }
+}

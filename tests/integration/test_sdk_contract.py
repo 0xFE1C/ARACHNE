@@ -209,18 +209,27 @@ def test_the_generated_client_reads_the_live_api(sdk: ModuleType, api: LiveApi) 
         assert health["status"] == "ok"
         assert isinstance(health["api_keys"], int)
         scans = client.list_scans()
-        assert isinstance(scans, list) and len(scans) == 1
-        assert set(scans[0]) >= {"id", "status", "engine", "counts"}
-        assert isinstance(scans[0]["counts"], dict)
+        # REQ-UIX-001: a collection method returns a page, so pagination is exposed by the
+        # generated client itself — the cursors come from the response headers.
+        assert isinstance(scans, dict) and set(scans) >= {
+            "items",
+            "next_cursor",
+            "prev_cursor",
+            "has_more",
+        }
+        items = scans["items"]
+        assert isinstance(items, list) and len(items) == 1
+        assert set(items[0]) >= {"id", "status", "engine", "counts"}
+        assert isinstance(items[0]["counts"], dict)
         # The models the client declares really are the shapes the server sends.
-        detail = client.get_scan(scans[0]["id"])
-        assert detail["id"] == scans[0]["id"]
+        detail = client.get_scan(items[0]["id"])
+        assert detail["id"] == items[0]["id"]
 
 
 def test_the_project_header_is_sent_and_acted_on(sdk: ModuleType, api: LiveApi) -> None:
     """A bogus tenant is the *server's* 404: the ``x-project`` header crossed the wire."""
     with sdk.Client(base_url=api.base_url, api_key=ADMIN_KEY) as client:
-        assert client.list_scans() == []
+        assert client.list_scans()["items"] == []
         with pytest.raises(sdk.ArachneAPIError) as info:
             client.list_scans(project="no-such-tenant")
         assert info.value.status_code == 404

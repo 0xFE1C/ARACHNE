@@ -21,6 +21,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 from arachne.core.target import TargetDefinition
+from arachne.data.keyset import PageWindow, with_target_page
 from arachne.data.models import Target
 from arachne.data.scan_store import as_utc
 
@@ -100,10 +101,15 @@ class SqlTargetStore:
         limit: int = 100,
         project_id: int | None = None,
         include_unassigned: bool = False,
+        window: PageWindow | None = None,
     ) -> tuple[TargetRecord, ...]:
-        """Recent targets; ``project_id`` filters, ``include_unassigned`` adds pre-S14 rows."""
+        """Recent targets; ``project_id`` filters, ``include_unassigned`` adds pre-S14 rows.
+
+        ``window`` carries the cursor boundary (targets have one sort field, ``id``); the
+        default order is newest first.
+        """
         with self._session_factory() as session:
-            query = select(Target).order_by(Target.id.desc()).limit(limit)
+            query = with_target_page(select(Target), window=window, limit=limit)
             if project_id is not None:
                 condition = Target.project_id == project_id
                 if include_unassigned:

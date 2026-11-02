@@ -28,6 +28,7 @@ from arachne.core.lifecycle import (
     StepStatus,
 )
 from arachne.core.planner import ScanStep
+from arachne.data.keyset import PageWindow, with_scan_page
 from arachne.data.models import Asset, Scan, ScanStepRecord
 
 __all__ = ["SqlScanStateStore"]
@@ -86,10 +87,24 @@ class SqlScanStateStore(ScanStateStore):
         limit: int = 50,
         project_id: int | None = None,
         include_unassigned: bool = False,
+        status: str | None = None,
+        target_id: int | None = None,
+        window: PageWindow | None = None,
     ) -> tuple[ScanRecord, ...]:
-        """Recent scans; ``project_id`` filters, ``include_unassigned`` adds pre-S14 rows."""
+        """Recent scans; ``project_id`` filters, ``include_unassigned`` adds pre-S14 rows.
+
+        ``status`` is a validated lifecycle state (the route maps the query value onto
+        :class:`~arachne.core.lifecycle.ScanStatus` before it arrives). ``window`` carries
+        the validated sort vocabulary and, when a cursor was supplied, the keyset boundary it
+        decodes to. The default order is newest first, as the dashboard expects; a ``prev``
+        cursor reverses the fetch and the caller reverses the rows back.
+        """
         with self._session_factory() as session:
-            query = select(Scan).order_by(Scan.id.desc()).limit(limit)
+            query = with_scan_page(select(Scan), window=window, limit=limit)
+            if status is not None:
+                query = query.where(Scan.status == status)
+            if target_id is not None:
+                query = query.where(Scan.target_id == target_id)
             if project_id is not None:
                 condition = Scan.project_id == project_id
                 if include_unassigned:

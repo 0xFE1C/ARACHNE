@@ -44,6 +44,7 @@ from arachne.api.auth import (
     identify,
 )
 from arachne.api.context import AppContext
+from arachne.api.openapi import build_openapi
 from arachne.api.purple_routes import purple_router
 from arachne.api.resilience_routes import resilience_router
 from arachne.api.routes_api import api_router
@@ -165,6 +166,10 @@ def create_app(
     )
     app.state.context = context
     app.state.settings = effective
+    # REQ-UIX-001: the cursor parameter is documented once, as a shared component, and the
+    # paginated collection operations are tagged for the client generator and the contract
+    # test. Everything else is FastAPI's own document.
+    app.openapi = lambda: build_openapi(app)  # type: ignore[method-assign]
 
     _install_middleware(app, effective, context)
     _install_handlers(app)

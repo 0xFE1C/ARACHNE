@@ -14,6 +14,22 @@
  * with a `// generic JSON` comment naming the reason.
  */
 
+/**
+ * One page of a cursor-paginated collection (REQ-UIX-001).
+ *
+ * `next_cursor` is the token to pass back as the `cursor` query option for the following
+ * page (`null` once the collection is exhausted); `prev_cursor` walks back. Both are read
+ * from the response's `Link` / `X-Next-Cursor` headers, so a caller can iterate a
+ * collection without hand-writing any client code.
+ */
+export interface Page<T> {
+  items: T[];
+  next_cursor: string | null;
+  prev_cursor: string | null;
+  has_more: boolean;
+  limit: number | null;
+}
+
 /** A risk acceptance as an operator submits it (S21, REQ-QUAL-003). */
 export interface AcceptanceIn {
   finding_id?: number | null;

@@ -27,7 +27,7 @@ endpoint's HTML/PDF) is returned as ``str``.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Literal, NotRequired, TypedDict, cast
+from typing import Generic, Literal, NotRequired, TypedDict, TypeVar, cast
 from urllib.parse import quote
 
 import httpx
@@ -76,6 +76,24 @@ __all__ = [
 API_KEY_HEADER = "x-api-key"
 PROJECT_HEADER = "x-project"
 DEFAULT_TIMEOUT_S = 30.0
+
+_T = TypeVar("_T")
+
+
+class Page(TypedDict, Generic[_T]):
+    """One page of a cursor-paginated collection (REQ-UIX-001).
+
+    ``next_cursor`` is the token to pass back as the ``cursor`` query parameter for the
+    following page (``None`` once the collection is exhausted); ``prev_cursor`` walks back.
+    Both are read from the response's ``Link`` / ``X-Next-Cursor`` headers, so a caller can
+    iterate a collection without hand-writing any client code.
+    """
+
+    items: list[_T]
+    next_cursor: str | None
+    prev_cursor: str | None
+    has_more: bool
+    limit: int | None
 
 
 class ArachneConfigError(ValueError):
@@ -588,6 +606,7 @@ class Client:
         query: Mapping[str, object] | None = None,
         body: object | None = None,
         project: str | None = None,
+        page: bool = False,
     ) -> object:
         """The one egress path: every method funnels through here, and only here.
 
@@ -637,9 +656,18 @@ class Client:
             )
         if response.status_code == 204 or not response.content:
             return None
-        if "json" in response.headers.get("Content-Type", ""):
-            return cast(object, response.json())
-        return response.text
+        if "json" not in response.headers.get("Content-Type", ""):
+            return response.text
+        payload = cast(object, response.json())
+        if not page:
+            return payload
+        return {
+            "items": payload,
+            "next_cursor": response.headers.get("X-Next-Cursor"),
+            "prev_cursor": response.headers.get("X-Prev-Cursor"),
+            "has_more": response.headers.get("X-Has-More") == "true",
+            "limit": _parse_int(response.headers.get("X-Limit")),
+        }
 
     def list_acceptances(
         self,
@@ -647,15 +675,17 @@ class Client:
         finding_id: int | None = None,
         active_only: bool | None = None,
         all_projects: bool | None = None,
+        cursor: str | None = None,
+        limit: int | None = None,
         project: str | None = None,
-    ) -> list[AcceptanceOut]:
+    ) -> Page[AcceptanceOut]:
         """List Acceptances
 
         ``GET /api/v1/acceptances`` (operationId
         ``list_acceptances_api_v1_acceptances_get``).
         """
         return cast(
-            "list[AcceptanceOut]",
+            "Page[AcceptanceOut]",
             self._request(
                 "GET",
                 "/api/v1/acceptances",
@@ -663,8 +693,11 @@ class Client:
                     "finding_id": finding_id,
                     "active_only": active_only,
                     "all_projects": all_projects,
+                    "cursor": cursor,
+                    "limit": limit,
                 },
                 project=project,
+                page=True,
             ),
         )
 
@@ -1083,21 +1116,24 @@ class Client:
         *,
         scan_id: int | None = None,
         module: str | None = None,
-        severity: str | None = None,
+        severity: Literal["critical", "high", "medium", "low", "info", "unanalysed"] | None = None,
         cwe: str | None = None,
-        status: str | None = None,
+        status: Literal["open", "verified", "fp", "merged"] | None = None,
         asset: str | None = None,
         q: str | None = None,
+        sort: Literal["id", "severity", "status", "title"] | None = None,
+        order: Literal["asc", "desc"] | None = None,
+        cursor: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
         project: str | None = None,
-    ) -> list[FindingOut]:
+    ) -> Page[FindingOut]:
         """List Findings
 
         ``GET /api/v1/findings`` (operationId ``list_findings_api_v1_findings_get``).
         """
         return cast(
-            "list[FindingOut]",
+            "Page[FindingOut]",
             self._request(
                 "GET",
                 "/api/v1/findings",
@@ -1109,10 +1145,14 @@ class Client:
                     "status": status,
                     "asset": asset,
                     "q": q,
+                    "sort": sort,
+                    "order": order,
+                    "cursor": cursor,
                     "limit": limit,
                     "offset": offset,
                 },
                 project=project,
+                page=True,
             ),
         )
 
@@ -1235,18 +1275,26 @@ class Client:
 
     def list_modules(
         self,
+        *,
+        cursor: str | None = None,
+        limit: int | None = None,
         project: str | None = None,
-    ) -> list[ModuleOut]:
+    ) -> Page[ModuleOut]:
         """List Modules
 
         ``GET /api/v1/modules`` (operationId ``list_modules_api_v1_modules_get``).
         """
         return cast(
-            "list[ModuleOut]",
+            "Page[ModuleOut]",
             self._request(
                 "GET",
                 "/api/v1/modules",
+                query={
+                    "cursor": cursor,
+                    "limit": limit,
+                },
                 project=project,
+                page=True,
             ),
         )
 
@@ -1369,18 +1417,26 @@ class Client:
 
     def list_projects(
         self,
+        *,
+        cursor: str | None = None,
+        limit: int | None = None,
         project: str | None = None,
-    ) -> list[ProjectOut]:
+    ) -> Page[ProjectOut]:
         """List Projects
 
         ``GET /api/v1/projects`` (operationId ``list_projects_api_v1_projects_get``).
         """
         return cast(
-            "list[ProjectOut]",
+            "Page[ProjectOut]",
             self._request(
                 "GET",
                 "/api/v1/projects",
+                query={
+                    "cursor": cursor,
+                    "limit": limit,
+                },
                 project=project,
+                page=True,
             ),
         )
 
@@ -1623,22 +1679,33 @@ class Client:
     def list_scans(
         self,
         *,
+        status: Literal["pending", "running", "completed", "failed", "aborted"] | None = None,
+        target_id: int | None = None,
+        sort: Literal["id", "status"] | None = None,
+        order: Literal["asc", "desc"] | None = None,
+        cursor: str | None = None,
         limit: int | None = None,
         project: str | None = None,
-    ) -> list[ScanSummary]:
+    ) -> Page[ScanSummary]:
         """List Scans
 
         ``GET /api/v1/scans`` (operationId ``list_scans_api_v1_scans_get``).
         """
         return cast(
-            "list[ScanSummary]",
+            "Page[ScanSummary]",
             self._request(
                 "GET",
                 "/api/v1/scans",
                 query={
+                    "status": status,
+                    "target_id": target_id,
+                    "sort": sort,
+                    "order": order,
+                    "cursor": cursor,
                     "limit": limit,
                 },
                 project=project,
+                page=True,
             ),
         )
 
@@ -1809,18 +1876,26 @@ class Client:
 
     def list_schedules(
         self,
+        *,
+        cursor: str | None = None,
+        limit: int | None = None,
         project: str | None = None,
-    ) -> list[ScheduleOut]:
+    ) -> Page[ScheduleOut]:
         """List Schedules
 
         ``GET /api/v1/schedules`` (operationId ``list_schedules_api_v1_schedules_get``).
         """
         return cast(
-            "list[ScheduleOut]",
+            "Page[ScheduleOut]",
             self._request(
                 "GET",
                 "/api/v1/schedules",
+                query={
+                    "cursor": cursor,
+                    "limit": limit,
+                },
                 project=project,
+                page=True,
             ),
         )
 
@@ -1962,23 +2037,28 @@ class Client:
         *,
         include_revoked: bool | None = None,
         all_projects: bool | None = None,
+        cursor: str | None = None,
+        limit: int | None = None,
         project: str | None = None,
-    ) -> list[SuppressionOut]:
+    ) -> Page[SuppressionOut]:
         """List Suppressions
 
         ``GET /api/v1/suppressions`` (operationId
         ``list_suppressions_api_v1_suppressions_get``).
         """
         return cast(
-            "list[SuppressionOut]",
+            "Page[SuppressionOut]",
             self._request(
                 "GET",
                 "/api/v1/suppressions",
                 query={
                     "include_revoked": include_revoked,
                     "all_projects": all_projects,
+                    "cursor": cursor,
+                    "limit": limit,
                 },
                 project=project,
+                page=True,
             ),
         )
 
@@ -2025,22 +2105,25 @@ class Client:
     def list_targets(
         self,
         *,
+        cursor: str | None = None,
         limit: int | None = None,
         project: str | None = None,
-    ) -> list[TargetOut]:
+    ) -> Page[TargetOut]:
         """List Targets
 
         ``GET /api/v1/targets`` (operationId ``list_targets_api_v1_targets_get``).
         """
         return cast(
-            "list[TargetOut]",
+            "Page[TargetOut]",
             self._request(
                 "GET",
                 "/api/v1/targets",
                 query={
+                    "cursor": cursor,
                     "limit": limit,
                 },
                 project=project,
+                page=True,
             ),
         )
 

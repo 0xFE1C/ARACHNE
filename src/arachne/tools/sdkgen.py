@@ -184,11 +184,24 @@ class OperationIr:
     query_params: tuple[ParamIr, ...]
     body: BodyIr | None
     returns: IrType
+    #: True for a cursor-paginated collection operation (``x-arachne-paginated``): its return
+    #: type is wrapped in a page carrying the next/prev cursors (REQ-UIX-001).
+    paginated: bool = False
 
 
 def _generic(note: str) -> IrType:
     """The honest type for a JSON value whose schema carries no usable type."""
     return IrType("object", "unknown", note=note)
+
+
+def _page_of(element: IrType) -> IrType:
+    """Wrap a collection's element type in the page the client returns (REQ-UIX-001)."""
+    py, ts = element.py, element.ts
+    if py.startswith("list[") and py.endswith("]"):
+        py = py[len("list[") : -1]
+    if ts.startswith("Array<") and ts.endswith(">"):
+        ts = ts[len("Array<") : -1]
+    return IrType(f"Page[{py}]", f"Page<{ts}>", refs=element.refs)
 
 
 def _is_null_only(schema: Mapping[str, object]) -> bool:
@@ -501,12 +514,15 @@ def _operation(
     operation_id = _text(op.get("operationId"), f"{where}.operationId")
     summary = _optional_text(op.get("summary")) or f"{method} {path}"
     params = _parameters(op, where, known)
+    paginated = _flag(op.get("x-arachne-paginated"))
     schema = _success_response(op, where)
     returns = (
         _type_of(schema, where=f"{where}.responses", known=known)
         if schema is not None
         else _generic("no success response schema is declared")
     )
+    if paginated:
+        returns = _page_of(returns)
     return OperationIr(
         name=_operation_name(operation_id, path, method),
         method=method.upper(),
@@ -517,7 +533,36 @@ def _operation(
         query_params=tuple(param for param in params if param.location == "query"),
         body=_body(op, where, known),
         returns=returns,
+        paginated=paginated,
     )
+
+
+def _expand_parameter_refs(
+    spec: Mapping[str, object], op: Mapping[str, object], where: str
+) -> Mapping[str, object]:
+    """Inline a shared ``components.parameters`` ``$ref`` before the parameter IR is built.
+
+    The API hoists the ``cursor`` parameter into one shared component (REQ-UIX-001), so an
+    operation's ``parameters`` list carries a ``$ref`` instead of the full object. Resolving
+    it here keeps every downstream reader working on a plain parameter.
+    """
+    raw = op.get("parameters")
+    if not isinstance(raw, list):
+        return op
+    components = spec.get("components")
+    available = components.get("parameters") if isinstance(components, Mapping) else None
+    resolved: list[object] = []
+    for index, item in enumerate(raw):
+        ref = item.get("$ref") if isinstance(item, Mapping) else None
+        if ref is None:
+            resolved.append(item)
+            continue
+        name = str(ref).rsplit("/", 1)[-1]
+        target = available.get(name) if isinstance(available, Mapping) else None
+        if target is None:
+            raise SpecError(f"{where}.parameters[{index}]: unresolved reference {ref!r}")
+        resolved.append(target)
+    return {**op, "parameters": resolved}
 
 
 def _operations(spec: Mapping[str, object], known: frozenset[str]) -> tuple[OperationIr, ...]:
@@ -529,7 +574,9 @@ def _operations(spec: Mapping[str, object], known: frozenset[str]) -> tuple[Oper
             raw = item.get(method)
             if raw is None:
                 continue
-            operations.append(_operation(method, path, _mapping(raw, f"{method} {path}"), known))
+            where = f"{method} {path}"
+            operation = _expand_parameter_refs(spec, _mapping(raw, where), where)
+            operations.append(_operation(method, path, operation, known))
     names = [operation.name for operation in operations]
     if len(set(names)) != len(names):
         duplicates = sorted({name for name in names if names.count(name) > 1})
@@ -733,6 +780,8 @@ def _py_method(operation: OperationIr) -> str:
     if operation.body is not None:
         lines.append(f"{pad}body=body,")
     lines.append(f"{pad}project=project,")
+    if operation.paginated:
+        lines.append(f"{pad}page=True,")
     if typed_return:
         lines.append("            ),")
         lines.append("        )")
@@ -773,7 +822,7 @@ endpoint's HTML/PDF) is returned as ``str``.
         "from __future__ import annotations\n"
         "\n"
         "from collections.abc import Mapping\n"
-        "from typing import Literal, NotRequired, TypedDict, cast\n"
+        "from typing import Generic, Literal, NotRequired, TypedDict, TypeVar, cast\n"
         "from urllib.parse import quote\n"
         "\n"
         f"import {_TRANSPORT_IMPORT}"
@@ -787,6 +836,25 @@ endpoint's HTML/PDF) is returned as ``str``.
     body.append("__all__ = [\n" + "".join(f'    "{item}",\n' for item in exported) + "]")
     body.append(
         'API_KEY_HEADER = "x-api-key"\nPROJECT_HEADER = "x-project"\nDEFAULT_TIMEOUT_S = 30.0'
+    )
+    body.append(
+        '''_T = TypeVar("_T")
+
+
+class Page(TypedDict, Generic[_T]):
+    """One page of a cursor-paginated collection (REQ-UIX-001).
+
+    ``next_cursor`` is the token to pass back as the ``cursor`` query parameter for the
+    following page (``None`` once the collection is exhausted); ``prev_cursor`` walks back.
+    Both are read from the response's ``Link`` / ``X-Next-Cursor`` headers, so a caller can
+    iterate a collection without hand-writing any client code.
+    """
+
+    items: list[_T]
+    next_cursor: str | None
+    prev_cursor: str | None
+    has_more: bool
+    limit: int | None'''
     )
     body.append(
         '''class ArachneConfigError(ValueError):
@@ -939,6 +1007,7 @@ def _parse_int(value: str | None) -> int | None:
         query: Mapping[str, object] | None = None,
         body: object | None = None,
         project: str | None = None,
+        page: bool = False,
     ) -> object:
         """The one egress path: every method funnels through here, and only here.
 
@@ -988,9 +1057,18 @@ def _parse_int(value: str | None) -> int | None:
             )
         if response.status_code == 204 or not response.content:
             return None
-        if "json" in response.headers.get("Content-Type", ""):
-            return cast(object, response.json())
-        return response.text'''
+        if "json" not in response.headers.get("Content-Type", ""):
+            return response.text
+        payload = cast(object, response.json())
+        if not page:
+            return payload
+        return {
+            "items": payload,
+            "next_cursor": response.headers.get("X-Next-Cursor"),
+            "prev_cursor": response.headers.get("X-Prev-Cursor"),
+            "has_more": response.headers.get("X-Has-More") == "true",
+            "limit": _parse_int(response.headers.get("X-Limit")),
+        }'''
     ]
     for operation in operations:
         client.append(_py_method(operation))
@@ -1059,6 +1137,23 @@ def render_typescript_types(models: Sequence[ModelIr]) -> str:
  */
 """
     blocks: list[str] = [header.rstrip("\n")]
+    blocks.append(
+        """/**
+ * One page of a cursor-paginated collection (REQ-UIX-001).
+ *
+ * `next_cursor` is the token to pass back as the `cursor` query option for the following
+ * page (`null` once the collection is exhausted); `prev_cursor` walks back. Both are read
+ * from the response's `Link` / `X-Next-Cursor` headers, so a caller can iterate a
+ * collection without hand-writing any client code.
+ */
+export interface Page<T> {
+  items: T[];
+  next_cursor: string | null;
+  prev_cursor: string | null;
+  has_more: boolean;
+  limit: number | null;
+}"""
+    )
     for model in models:
         lines: list[str] = []
         lines.extend(_ts_doc(model.doc, indent=0))
@@ -1151,6 +1246,8 @@ def _ts_method(operation: OperationIr) -> str:
         lines.append("        body,")
     lines.append("        project: options.project,")
     lines.append("      },")
+    if operation.paginated:
+        lines.append("      true,")
     lines.append("    );")
     lines.append("  }")
     return "\n".join(lines)
@@ -1170,6 +1267,10 @@ def _ts_referenced_models(
             types.append(operation.body.type)
         for type_ in types:
             referenced.update(name for name in type_.refs if name in known)
+        if operation.paginated:
+            # The page envelope is not a schema from the document, so it is not in ``known``;
+            # it is still a type ``client.ts`` imports from ``types.ts``.
+            referenced.add("Page")
     return sorted(referenced)
 
 
@@ -1384,6 +1485,7 @@ def render_typescript_client(models: Sequence[ModelIr], operations: Sequence[Ope
                 "    method: string,",
                 "    path: string,",
                 "    options: RequestOptions = {},",
+                "    page = false,",
                 "  ): Promise<T> {",
                 '    if (this.apiKey.trim() === "") {',
                 "      // Defence in depth: the constructor already refused this, and it stays",
@@ -1447,7 +1549,17 @@ def render_typescript_client(models: Sequence[ModelIr], operations: Sequence[Ope
                 "    }",
                 '    const contentType = response.headers.get("content-type") ?? "";',
                 '    if (contentType.includes("json")) {',
-                "      return JSON.parse(text) as T;",
+                "      const payload = JSON.parse(text) as unknown;",
+                "      if (!page) {",
+                "        return payload as T;",
+                "      }",
+                "      return {",
+                "        items: payload,",
+                '        next_cursor: response.headers.get("x-next-cursor"),',
+                '        prev_cursor: response.headers.get("x-prev-cursor"),',
+                '        has_more: response.headers.get("x-has-more") === "true",',
+                '        limit: parseIntOrNull(response.headers.get("x-limit")),',
+                "      } as unknown as T;",
                 "    }",
                 "    return text as T;",
                 "  }",

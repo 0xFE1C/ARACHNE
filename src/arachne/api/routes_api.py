@@ -32,9 +32,9 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from arachne import __version__
@@ -45,6 +45,29 @@ from arachne.api.deps import (
     ProjectDep,
     ScannerPrincipal,
     ViewerPrincipal,
+)
+from arachne.api.filters import (
+    FINDING_FILTER_FIELDS,
+    FINDING_SORT_VALUES,
+    SCAN_FILTER_FIELDS,
+    SCAN_SORT_VALUES,
+    STATUS_FILTER_FIELDS,
+    FindingStatusValue,
+    ScanStatusValue,
+    SeverityValue,
+    SortOrder,
+)
+from arachne.api.pagination import (
+    DEFAULT_LIMIT,
+    MAX_LIMIT,
+    Cursor,
+    apply_page,
+    build_page,
+    clamp_limit,
+    cursor_or_400,
+    paginate_sequence,
+    reject_unknown_query_params,
+    resolve_sort_field,
 )
 from arachne.api.schemas import (
     AcceptanceIn,
@@ -77,6 +100,7 @@ from arachne.core.audit import AuditAction, AuditOutcome
 from arachne.core.errors import ArachneError, ConfigurationError
 from arachne.core.lifecycle import ScanRecord
 from arachne.core.target import ScanRequest, TargetDefinition
+from arachne.data.keyset import PageWindow
 from arachne.data.project_store import DEFAULT_PROJECT_SLUG, ProjectRecord
 from arachne.report import module_versions_for
 
@@ -107,18 +131,59 @@ def list_scans(
     principal: ViewerPrincipal,
     context: ContextDep,
     project: ProjectDep,
-    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    request: Request,
+    response: Response,
+    status_filter: Annotated[
+        ScanStatusValue | None,
+        Query(alias="status", description="Only scans in this lifecycle state."),
+    ] = None,
+    target_id: Annotated[
+        int | None, Query(ge=1, description="Only scans of this stored target.")
+    ] = None,
+    sort: Annotated[
+        Literal["id", "status"] | None,
+        Query(description="Sort field. `id` is indexed; `status` is not (documented as slow)."),
+    ] = None,
+    order: Annotated[
+        SortOrder | None, Query(description="Sort direction (default `desc`).")
+    ] = None,
+    cursor: Annotated[
+        str | None, Query(description="Opaque cursor from a `next`/`prev` Link header.")
+    ] = None,
+    limit: Annotated[
+        int,
+        Query(description=f"Page size, clamped to {MAX_LIMIT}. Values above are not honoured."),
+    ] = DEFAULT_LIMIT,
 ) -> list[ScanSummary]:
-    """List this project's recent scans with their severity counts (the dashboard's data)."""
+    """List this project's scans, newest first, with cursor pagination and validated filters."""
+    reject_unknown_query_params(request, SCAN_FILTER_FIELDS)
+    page_cursor = cursor_or_400(cursor)
+    size = clamp_limit(limit, default=DEFAULT_LIMIT, maximum=MAX_LIMIT)
+    sort_field = resolve_sort_field(sort, SCAN_SORT_VALUES, default="id")
+    descending = order != "asc"
+    window = _page_window(page_cursor, sort_field, descending)
     records = context.services.store.list_scans(
-        limit=limit,
+        limit=size + 1,
         project_id=project.id,
         include_unassigned=_include_unassigned(project),
+        status=status_filter,
+        target_id=target_id,
+        window=window,
     )
-    counts = context.queries.severity_counts_for([record.id for record in records])
+    ordered = _forward_order(records, page_cursor)
+    page = build_page(
+        ordered,
+        limit=size,
+        key_of=_scan_sort_key(sort_field),
+        id_of=lambda record: record.id,
+        cursor=page_cursor,
+        backward=bool(page_cursor and page_cursor.backward),
+    )
+    apply_page(response, request, page)
+    counts = context.queries.severity_counts_for([record.id for record in page.items])
     return [
         _scan_summary(record, counts.get(record.id, {}), context.runner.is_running(record.id))
-        for record in records
+        for record in page.items
     ]
 
 
@@ -275,17 +340,58 @@ def list_findings(
     principal: ViewerPrincipal,
     context: ContextDep,
     project: ProjectDep,
-    scan_id: Annotated[int | None, Query()] = None,
-    module: Annotated[str | None, Query()] = None,
-    severity: Annotated[str | None, Query()] = None,
-    cwe: Annotated[str | None, Query()] = None,
-    status_filter: Annotated[str | None, Query(alias="status")] = None,
-    asset: Annotated[str | None, Query()] = None,
-    q: Annotated[str | None, Query()] = None,
-    limit: Annotated[int, Query(ge=1, le=1000)] = 200,
-    offset: Annotated[int, Query(ge=0)] = 0,
+    request: Request,
+    response: Response,
+    scan_id: Annotated[int | None, Query(ge=1, description="Only findings of this scan.")] = None,
+    module: Annotated[
+        str | None, Query(max_length=64, description="Only findings from this module.")
+    ] = None,
+    severity: Annotated[
+        SeverityValue | None,
+        Query(description="Only findings of this severity (`unanalysed` matches a NULL severity)."),
+    ] = None,
+    cwe: Annotated[
+        str | None, Query(max_length=32, description="Only findings with this CWE id.")
+    ] = None,
+    status_filter: Annotated[
+        FindingStatusValue | None, Query(alias="status", description="Only findings in this state.")
+    ] = None,
+    asset: Annotated[
+        str | None, Query(max_length=2048, description="Substring match on the asset value.")
+    ] = None,
+    q: Annotated[
+        str | None, Query(max_length=512, description="Substring match on the finding title.")
+    ] = None,
+    sort: Annotated[
+        Literal["id", "severity", "status", "title"] | None,
+        Query(description="Sort field. `id` is indexed; the others are a full scan (slow)."),
+    ] = None,
+    order: Annotated[SortOrder | None, Query(description="Sort direction (default `asc`).")] = None,
+    cursor: Annotated[
+        str | None, Query(description="Opaque cursor from a `next`/`prev` Link header.")
+    ] = None,
+    limit: Annotated[
+        int,
+        Query(description=f"Page size, clamped to {MAX_LIMIT}. Values above are not honoured."),
+    ] = DEFAULT_LIMIT,
+    offset: Annotated[
+        int,
+        Query(
+            ge=0, deprecated=True, description="Deprecated: use `cursor`. Ignored with a cursor."
+        ),
+    ] = 0,
 ) -> list[FindingOut]:
-    """List/filter this project's findings (the report viewer's query endpoint)."""
+    """List/filter this project's findings, with cursor pagination and a validated vocabulary.
+
+    Every filter above is validated: an unknown query field is a ``400`` naming it, and a
+    value outside the documented enum is refused rather than silently matching nothing.
+    """
+    reject_unknown_query_params(request, FINDING_FILTER_FIELDS)
+    page_cursor = cursor_or_400(cursor)
+    size = clamp_limit(limit, default=DEFAULT_LIMIT, maximum=MAX_LIMIT)
+    sort_field = resolve_sort_field(sort, FINDING_SORT_VALUES, default="id")
+    descending = order == "desc"
+    window = _page_window(page_cursor, sort_field, descending)
     rows = context.queries.finding_rows(
         scan_id=scan_id,
         module=module,
@@ -294,12 +400,23 @@ def list_findings(
         status=status_filter,
         asset=asset,
         query=q,
-        limit=limit,
-        offset=offset,
+        limit=size + 1,
+        offset=0 if page_cursor is not None else offset,
         project_id=project.id,
         include_unassigned=_include_unassigned(project),
+        window=window,
     )
-    return [FindingOut.model_validate(row.to_dict()) for row in rows]
+    ordered = _forward_order(rows, page_cursor)
+    page = build_page(
+        ordered,
+        limit=size,
+        key_of=_finding_sort_key(sort_field),
+        id_of=lambda row: row.id,
+        cursor=page_cursor,
+        backward=bool(page_cursor and page_cursor.backward),
+    )
+    apply_page(response, request, page)
+    return [FindingOut.model_validate(row.to_dict()) for row in page.items]
 
 
 @api_router.get("/findings/{finding_id}", tags=["findings"])
@@ -386,14 +503,38 @@ def list_targets(
     principal: ViewerPrincipal,
     context: ContextDep,
     project: ProjectDep,
-    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    request: Request,
+    response: Response,
+    cursor: Annotated[
+        str | None, Query(description="Opaque cursor from a `next`/`prev` Link header.")
+    ] = None,
+    limit: Annotated[
+        int,
+        Query(description=f"Page size, clamped to {MAX_LIMIT}. Values above are not honoured."),
+    ] = DEFAULT_LIMIT,
 ) -> list[TargetOut]:
+    """List this project's stored targets, newest first, with cursor pagination."""
+    reject_unknown_query_params(request, frozenset())
+    page_cursor = cursor_or_400(cursor)
+    size = clamp_limit(limit, default=DEFAULT_LIMIT, maximum=MAX_LIMIT)
+    window = _page_window(page_cursor, "id", True)
     records = context.services.target_store.list_targets(
-        limit=limit,
+        limit=size + 1,
         project_id=project.id,
         include_unassigned=_include_unassigned(project),
+        window=window,
     )
-    return [TargetOut.model_validate(record.to_dict()) for record in records]
+    ordered = _forward_order(records, page_cursor)
+    page = build_page(
+        ordered,
+        limit=size,
+        key_of=lambda record: record.id,
+        id_of=lambda record: record.id,
+        cursor=page_cursor,
+        backward=bool(page_cursor and page_cursor.backward),
+    )
+    apply_page(response, request, page)
+    return [TargetOut.model_validate(record.to_dict()) for record in page.items]
 
 
 @api_router.post(
@@ -434,7 +575,19 @@ def delete_target(
 
 # --------------------------------------------------------------------------- modules
 @api_router.get("/modules", response_model=list[ModuleOut], tags=["modules"])
-def list_modules(principal: ViewerPrincipal, context: ContextDep) -> list[ModuleOut]:
+def list_modules(
+    principal: ViewerPrincipal,
+    context: ContextDep,
+    request: Request,
+    response: Response,
+    cursor: Annotated[
+        str | None, Query(description="Opaque cursor from a `next`/`prev` Link header.")
+    ] = None,
+    limit: Annotated[
+        int,
+        Query(description=f"Page size, clamped to {MAX_LIMIT}. Values above are not honoured."),
+    ] = DEFAULT_LIMIT,
+) -> list[ModuleOut]:
     """The installed modules and their checks, plus this deployment's effective config.
 
     Module configuration is environment-driven (F-08-01) and therefore read-only here: the
@@ -471,7 +624,19 @@ def list_modules(principal: ViewerPrincipal, context: ContextDep) -> list[Module
                 checks=checks,
             )
         )
-    return out
+    reject_unknown_query_params(request, frozenset())
+    page_cursor = cursor_or_400(cursor)
+    size = clamp_limit(limit, default=DEFAULT_LIMIT, maximum=MAX_LIMIT)
+    positions = {module.id: index for index, module in enumerate(out)}
+    page = paginate_sequence(
+        out,
+        limit=size,
+        key_of=lambda module: module.id,
+        id_of=lambda module: positions[module.id],
+        cursor=page_cursor,
+    )
+    apply_page(response, request, page)
+    return page.items
 
 
 @api_router.get("/config", tags=["modules"])
@@ -508,13 +673,40 @@ def effective_config(principal: AdminPrincipal, context: ContextDep) -> JSONResp
 
 # --------------------------------------------------------------------------- projects
 @api_router.get("/projects", response_model=list[ProjectOut], tags=["projects"])
-def list_projects(principal: ViewerPrincipal, context: ContextDep) -> list[ProjectOut]:
-    """Every tenant/workspace (F-07-06). The default workspace is created on demand."""
+def list_projects(
+    principal: ViewerPrincipal,
+    context: ContextDep,
+    request: Request,
+    response: Response,
+    cursor: Annotated[
+        str | None, Query(description="Opaque cursor from a `next`/`prev` Link header.")
+    ] = None,
+    limit: Annotated[
+        int,
+        Query(description=f"Page size, clamped to {MAX_LIMIT}. Values above are not honoured."),
+    ] = DEFAULT_LIMIT,
+) -> list[ProjectOut]:
+    """Every tenant/workspace (F-07-06). The default workspace is created on demand.
+
+    Ordered by slug, with cursor pagination.
+    """
     context.services.projects.ensure_default()
-    return [
+    records = [
         ProjectOut.model_validate(record.to_dict())
         for record in context.services.projects.list_projects()
     ]
+    reject_unknown_query_params(request, frozenset())
+    page_cursor = cursor_or_400(cursor)
+    size = clamp_limit(limit, default=DEFAULT_LIMIT, maximum=MAX_LIMIT)
+    page = paginate_sequence(
+        records,
+        limit=size,
+        key_of=lambda project: project.slug,
+        id_of=lambda project: project.id,
+        cursor=page_cursor,
+    )
+    apply_page(response, request, page)
+    return page.items
 
 
 @api_router.post(
@@ -995,11 +1187,20 @@ def list_suppressions(
     principal: ViewerPrincipal,
     context: ContextDep,
     project: ProjectDep,
+    request: Request,
+    response: Response,
     include_revoked: Annotated[bool, Query()] = False,
     all_projects: Annotated[
         bool,
         Query(description="Return every tenant's rules (S26); the project header is ignored."),
     ] = False,
+    cursor: Annotated[
+        str | None, Query(description="Opaque cursor from a `next`/`prev` Link header.")
+    ] = None,
+    limit: Annotated[
+        int,
+        Query(description=f"Page size, clamped to {MAX_LIMIT}. Values above are not honoured."),
+    ] = DEFAULT_LIMIT,
 ) -> list[SuppressionOut]:
     """The suppression rules in force for the requesting tenant, newest first.
 
@@ -1009,11 +1210,23 @@ def list_suppressions(
     needs — and it is a *read*, so it is available to any viewer rather than gated further.
     """
     del principal
+    reject_unknown_query_params(request, STATUS_FILTER_FIELDS)
+    page_cursor = cursor_or_400(cursor)
+    size = clamp_limit(limit, default=DEFAULT_LIMIT, maximum=MAX_LIMIT)
     rows = _quality(context).list_suppressions(
         active_only=not include_revoked,
         project_id=None if all_projects else project.id,
     )
-    return [SuppressionOut.model_validate(row.to_dict()) for row in rows]
+    page = paginate_sequence(
+        rows,
+        limit=size,
+        key_of=lambda rule: rule.id,
+        id_of=lambda rule: rule.id or 0,
+        descending=True,
+        cursor=page_cursor,
+    )
+    apply_page(response, request, page)
+    return [SuppressionOut.model_validate(row.to_dict()) for row in page.items]
 
 
 @api_router.post(
@@ -1063,18 +1276,39 @@ def list_acceptances(
     principal: ViewerPrincipal,
     context: ContextDep,
     project: ProjectDep,
-    finding_id: Annotated[int | None, Query()] = None,
+    request: Request,
+    response: Response,
+    finding_id: Annotated[int | None, Query(ge=1)] = None,
     active_only: Annotated[bool, Query()] = True,
     all_projects: Annotated[bool, Query(description="Return every tenant's (S26).")] = False,
+    cursor: Annotated[
+        str | None, Query(description="Opaque cursor from a `next`/`prev` Link header.")
+    ] = None,
+    limit: Annotated[
+        int,
+        Query(description=f"Page size, clamped to {MAX_LIMIT}. Values above are not honoured."),
+    ] = DEFAULT_LIMIT,
 ) -> list[AcceptanceOut]:
     """The risk acceptances recorded for this tenant, and the deployment-wide ones (S26)."""
     del principal
+    reject_unknown_query_params(request, frozenset({"finding_id", "active_only", "all_projects"}))
+    page_cursor = cursor_or_400(cursor)
+    size = clamp_limit(limit, default=DEFAULT_LIMIT, maximum=MAX_LIMIT)
     rows = _quality(context).list_acceptances(
         finding_id=finding_id,
         active_only=active_only,
         project_id=None if all_projects else project.id,
     )
-    return [AcceptanceOut.model_validate(row.to_dict()) for row in rows]
+    page = paginate_sequence(
+        rows,
+        limit=size,
+        key_of=lambda acceptance: acceptance.id,
+        id_of=lambda acceptance: acceptance.id or 0,
+        descending=True,
+        cursor=page_cursor,
+    )
+    apply_page(response, request, page)
+    return [AcceptanceOut.model_validate(row.to_dict()) for row in page.items]
 
 
 @api_router.post(
@@ -1182,11 +1416,38 @@ def control_hypotheses(
 
 # --------------------------------------------------------------------------- schedules
 @api_router.get("/schedules", response_model=list[ScheduleOut], tags=["schedules"])
-def list_schedules(principal: ViewerPrincipal, context: ContextDep) -> list[ScheduleOut]:
+def list_schedules(
+    principal: ViewerPrincipal,
+    context: ContextDep,
+    request: Request,
+    response: Response,
+    cursor: Annotated[
+        str | None, Query(description="Opaque cursor from a `next`/`prev` Link header.")
+    ] = None,
+    limit: Annotated[
+        int,
+        Query(description=f"Page size, clamped to {MAX_LIMIT}. Values above are not honoured."),
+    ] = DEFAULT_LIMIT,
+) -> list[ScheduleOut]:
     from arachne.scheduler.store import ScheduleStore
 
     store = ScheduleStore(context.settings.scheduler.state_path)
-    return [ScheduleOut(spec=row.spec.to_dict(), state=row.state.to_dict()) for row in store.load()]
+    records = [
+        ScheduleOut(spec=row.spec.to_dict(), state=row.state.to_dict()) for row in store.load()
+    ]
+    reject_unknown_query_params(request, frozenset())
+    page_cursor = cursor_or_400(cursor)
+    size = clamp_limit(limit, default=DEFAULT_LIMIT, maximum=MAX_LIMIT)
+    positions = {str(schedule.spec.get("id", "")): index for index, schedule in enumerate(records)}
+    page = paginate_sequence(
+        records,
+        limit=size,
+        key_of=lambda schedule: str(schedule.spec.get("id", "")),
+        id_of=lambda schedule: positions[str(schedule.spec.get("id", ""))],
+        cursor=page_cursor,
+    )
+    apply_page(response, request, page)
+    return page.items
 
 
 @api_router.post(
@@ -1362,6 +1623,42 @@ def _service_accounts(context: AppContext) -> Any:
 
 
 # --------------------------------------------------------------------------- helpers
+def _page_window(cursor: Cursor | None, sort_field: str, descending: bool) -> PageWindow:
+    """Turn a decoded cursor (or its absence) into the store's typed page window."""
+    if cursor is None:
+        return PageWindow(sort_key=sort_field, descending=descending)
+    return PageWindow(
+        sort_key=sort_field,
+        descending=descending,
+        boundary=(cursor.key, cursor.item_id),
+        backward=cursor.backward,
+    )
+
+
+def _forward_order(rows: Any, cursor: Cursor | None) -> tuple[Any, ...]:
+    """Restore the endpoint's forward order after a ``prev`` fetch (which reverses it)."""
+    ordered = tuple(rows)
+    return tuple(reversed(ordered)) if cursor is not None and cursor.backward else ordered
+
+
+def _scan_sort_key(sort_field: str) -> Any:
+    """The cursor key for a scan row: it must equal the SQL column the ordering uses."""
+    if sort_field == "status":
+        return lambda record: getattr(record.status, "value", record.status)
+    return lambda record: record.id
+
+
+def _finding_sort_key(sort_field: str) -> Any:
+    """The cursor key for a finding row, matching the column ``keyset`` orders by."""
+    if sort_field == "severity":
+        return lambda row: row.severity or ""
+    if sort_field == "status":
+        return lambda row: row.status
+    if sort_field == "title":
+        return lambda row: row.title
+    return lambda row: row.id
+
+
 def _include_unassigned(project: ProjectRecord) -> bool:
     """The default workspace also owns rows written before multi-tenancy (``project_id`` NULL)."""
     return project.slug == DEFAULT_PROJECT_SLUG

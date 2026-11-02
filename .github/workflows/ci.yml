@@ -79,6 +79,10 @@ jobs:
       # Every accepted skip has a reason and no quarantine entry is past its deadline
       # (REQ-QUAL-010/011).
       - run: python -m arachne.tools.skip_gate .
+      # The committed clients are what the generator produces from the live schema: a stale
+      # client is a diff this step fails on, not something a reviewer has to notice
+      # (REQ-UIX-001, REQ-UIX-003).
+      - run: python -m arachne.tools.sdkgen --check
 
   tests:
     name: tests (${{ matrix.python-version }})
