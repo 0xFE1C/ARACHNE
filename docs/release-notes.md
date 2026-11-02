@@ -86,11 +86,11 @@ corpora live in `src/arachne/templates/` and can be replaced by an operator.
 
 | What | Result |
 |---|---|
-| Tests | **4,023** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Tests | **4,061** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
 | Primary safety suite | **59 tests** in `tests/test_safety.py`; **259** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol and mobile fixtures with planted false-positive traps |
-| Strict type checking | clean under `mypy --strict` across the **357** Python modules in `src/` |
-| Lint | clean over `src/` and `tests/` |
+| Strict type checking | clean under `mypy --strict` across the **360** Python modules in `src/` |
+| Lint | clean over the whole repository (the badge's scope is the tree, not `src/` and `tests/`) |
 | Research coverage | **148/175 (84.6%)** of the corpus's numbered methods have an implementing check |
 
 Every figure here is generated rather than typed: `python -m arachne.tools.counts --check`

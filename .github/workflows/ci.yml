@@ -24,7 +24,7 @@ env:
 
 jobs:
   lint:
-    name: lint (ruff)
+    name: lint (ruff, whole repository)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +34,10 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - run: pip install -e ".[dev]"
-      - run: ruff check src tests
+      # The whole repository, not `src tests`: a gate that does not cover the tree is not a
+      # gate (REQ-QUAL-006). No path exclusions hide a violation.
+      - run: ruff check .
+      - run: ruff format --check .
 
   types:
     name: types (mypy --strict)
@@ -50,7 +53,7 @@ jobs:
       - run: mypy src
 
   docs:
-    name: documentation integrity (REQ-DOC-001, REQ-DOC-002)
+    name: documentation integrity (REQ-DOC-001, REQ-DOC-002, REQ-QUAL-014)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -71,14 +74,25 @@ jobs:
       - run: python -m arachne.tools.counts --check
       # The committed report schema is what the generator produces.
       - run: python -m arachne.tools.report_schema --check
+      # The shared preamble has one canonical text and 23 verbatim copies (REQ-QUAL-014).
+      - run: python -m arachne.tools.preamble_check .
+      # Every accepted skip has a reason and no quarantine entry is past its deadline
+      # (REQ-QUAL-010/011).
+      - run: python -m arachne.tools.skip_gate .
 
   tests:
     name: tests (${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    # A backstop for the asserted budget below: if the suite somehow overruns, the job dies
+    # rather than occupying a runner.
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.11", "3.12"]
+    env:
+      # The suite asserts its own wall clock: a run over 15 minutes fails (REQ-QUAL-007).
+      ARACHNE_SUITE_BUDGET: "900"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -87,7 +101,9 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - run: pip install -e ".[dev]"
-      - run: python -m pytest tests -m "not perf" -q
+      # One process, one total count, branch coverage enforced by [tool.coverage.report]
+      # fail_under (REQ-QUAL-006, REQ-QUAL-007, REQ-QUAL-011).
+      - run: python -m pytest tests -m "not perf" -q --cov --cov-report=term-missing
 
   migrations:
     name: migrations on a brand-new database

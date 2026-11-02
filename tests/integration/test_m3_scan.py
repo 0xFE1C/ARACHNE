@@ -26,6 +26,7 @@ Two runs, because they answer different questions:
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any
@@ -303,9 +304,23 @@ def _severities(analyses: MemoryAnalysisStore, scan_id: int) -> dict[str, int]:
 
 
 # --------------------------------------------------------------------------- the acceptance run
-async def test_m3_scan_detects_the_planted_vulnerabilities(lab: WebLab) -> None:
+@pytest.fixture(scope="module")
+def upload_scan(lab: WebLab) -> tuple[MemoryFindingStore, MemoryAnalysisStore, Any, Settings]:
+    """One upload-probe M3 scan, shared by the tests that read its result (runtime budget).
+
+    A full M3 crawl-and-checks run costs about twenty seconds and three of the four
+    acceptance tests read the *same* result, so it runs once. ``run_lab_scan`` is driven in
+    its own event loop and every test only reads the returned in-memory stores, so nothing
+    loop-bound is shared between tests.
+    """
+    return asyncio.run(run_lab_scan(lab, upload_probe=True))
+
+
+async def test_m3_scan_detects_the_planted_vulnerabilities(
+    upload_scan: tuple[MemoryFindingStore, MemoryAnalysisStore, Any, Settings],
+) -> None:
     """≥ 60% of the planted core set (DONE criterion 1)."""
-    findings, analyses, session, _settings = await run_lab_scan(lab, upload_probe=True)
+    findings, analyses, session, _settings = upload_scan
     assert session.status is ScanStatus.COMPLETED, session
     measurement = score(findings, analyses, session.scan_id or 0)
     print(f"\nM3 lab scan (upload probe on): {measurement.record()}")
@@ -326,9 +341,11 @@ async def test_default_tuning_holds_the_false_positive_rate(lab: WebLab) -> None
     assert measurement.candidates >= 10, "the scan should have raised the core findings"
 
 
-async def test_the_checks_step_ran_the_crawl_and_the_oracles(lab: WebLab) -> None:
+async def test_the_checks_step_ran_the_crawl_and_the_oracles(
+    upload_scan: tuple[MemoryFindingStore, MemoryAnalysisStore, Any, Settings],
+) -> None:
     """The step statistics prove the crawl and the checks actually executed (not skipped)."""
-    _findings, _analyses, session, _settings = await run_lab_scan(lab, upload_probe=True)
+    _findings, _analyses, session, _settings = upload_scan
     steps = _steps_of(session)
     checks_step = steps.get(ScanStep.CHECKS)
     assert checks_step is not None
@@ -339,9 +356,11 @@ async def test_the_checks_step_ran_the_crawl_and_the_oracles(lab: WebLab) -> Non
     assert stats.get("candidates", 0) >= 10
 
 
-async def test_every_candidate_carries_evidence_and_every_probe_is_audited(lab: WebLab) -> None:
+async def test_every_candidate_carries_evidence_and_every_probe_is_audited(
+    upload_scan: tuple[MemoryFindingStore, MemoryAnalysisStore, Any, Settings],
+) -> None:
     """F-02-08 and F-01-08: candidates cite request/response, and probes are audited."""
-    findings, _analyses, session, _settings = await run_lab_scan(lab, upload_probe=True)
+    findings, _analyses, session, _settings = upload_scan
     candidates = findings.list_candidates(session.scan_id or 0)
     assert candidates
     for record in candidates:

@@ -17,7 +17,10 @@ about.
 from __future__ import annotations
 
 import logging
+import os
+import time
 from collections.abc import AsyncIterator, Callable, Iterable, Iterator, Mapping
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +33,14 @@ from arachne.core.http import ScopedHttpClient
 from arachne.core.ratelimit import HostRateLimiter
 from arachne.core.safety import Scope, StaticResolver, UrlSafetyPolicy
 from arachne.core.target import ScanOptions, ScanRequest
+from arachne.tools.skip_gate import (
+    ALLOWLIST_PATH,
+    QUARANTINE_PATH,
+    check_quarantine,
+    is_skip_allowed,
+    load_allowlist,
+    load_quarantine,
+)
 
 #: A documentation-range address (RFC 5737) that is never private.
 PUBLIC_IP = "93.184.216.34"
@@ -258,3 +269,95 @@ def synthetic_report() -> object:
     from tests.helpers.report import synthetic_report as build
 
     return build()
+
+
+# --------------------------------------------------------------- quality gates
+# REQ-QUAL-010 (quarantine), REQ-QUAL-011 (skip allowlist) and REQ-QUAL-007's wall-clock
+# budget. Enforcement lives here so it applies to whatever subset is run, not only to the
+# full-suite job. The rules themselves are in the shipped tool (arachne.tools.skip_gate), so
+# the gate and the file format cannot drift.
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_BUDGET_ENV = "ARACHNE_SUITE_BUDGET"
+_SKIPPED: list[tuple[str, str]] = []
+_LAYER_SECONDS: dict[str, float] = {}
+_SESSION_START = 0.0
+
+
+def _skip_reason(report: pytest.TestReport | pytest.CollectReport) -> str:
+    longrepr = report.longrepr
+    if isinstance(longrepr, tuple) and len(longrepr) == 3:
+        return str(longrepr[2])
+    return str(longrepr)
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Fail fast on a quarantined test past its deadline, or a retry plugin."""
+    global _SESSION_START
+    _SESSION_START = time.monotonic()
+    if config.pluginmanager.hasplugin("rerunfailures"):
+        raise pytest.UsageError(
+            "pytest-rerunfailures is installed: retries are disabled (REQ-QUAL-010); a flake "
+            "is recorded in tests/quarantine.json, not papered over with a retry"
+        )
+    if config.getoption("--reruns", None) is not None:
+        raise pytest.UsageError("--reruns is set: retries are disabled (REQ-QUAL-010)")
+    try:
+        quarantine = load_quarantine(_REPO_ROOT)
+    except ValueError as exc:
+        raise pytest.UsageError(f"{QUARANTINE_PATH}: {exc}") from exc
+    expired = check_quarantine(quarantine, today=datetime.now(UTC).date())
+    if expired:
+        raise pytest.UsageError(
+            "quarantine deadline passed (REQ-QUAL-010): "
+            + "; ".join(violation.render() for violation in expired)
+        )
+
+
+def pytest_runtest_logreport(report: pytest.TestReport) -> None:
+    """Record skips and per-layer durations (REQ-QUAL-011, REQ-QUAL-007)."""
+    layer = "/".join(report.nodeid.split("/")[:2])
+    _LAYER_SECONDS[layer] = _LAYER_SECONDS.get(layer, 0.0) + report.duration
+    if report.skipped and report.when in {"setup", "call"}:
+        _SKIPPED.append((report.nodeid, _skip_reason(report)))
+
+
+def pytest_collectreport(report: pytest.CollectReport) -> None:
+    """A module-level ``skipif`` is reported here, not as a per-test skip."""
+    if report.skipped:
+        _SKIPPED.append((str(report.nodeid), _skip_reason(report)))
+
+
+def pytest_terminal_summary(terminalreporter: pytest.TerminalReporter) -> None:
+    """Report per-layer durations (REQ-QUAL-007)."""
+    if not _LAYER_SECONDS:
+        return
+    terminalreporter.write_sep("-", "per-layer durations")
+    for layer, seconds in sorted(_LAYER_SECONDS.items(), key=lambda item: -item[1]):
+        terminalreporter.write_line(f"{seconds:8.1f}s  {layer}")
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    """Fail the run on an unlisted skip, or on a wall clock over the budget (REQ-QUAL-007/011)."""
+    problems: list[str] = []
+    try:
+        allowlist = load_allowlist(_REPO_ROOT)
+    except ValueError as exc:
+        problems.append(f"{ALLOWLIST_PATH}: {exc}")
+        allowlist = []
+    for node_id, reason in _SKIPPED:
+        if not is_skip_allowed(node_id, allowlist):
+            problems.append(
+                f"unlisted skip: {node_id} — {reason} (add it to {ALLOWLIST_PATH} with a reason, "
+                "or remove the skip)"
+            )
+    budget = os.environ.get(_BUDGET_ENV)
+    if budget:
+        elapsed = time.monotonic() - _SESSION_START
+        if elapsed > float(budget):
+            problems.append(
+                f"suite wall clock {elapsed:.0f}s exceeds the {budget}s budget (REQ-QUAL-007)"
+            )
+    if problems:
+        print("\n".join(f"[quality gate] {problem}" for problem in problems))
+        session.exitstatus = 1

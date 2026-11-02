@@ -216,8 +216,7 @@ def test_every_m1_check_maps_to_a_real_research_method() -> None:
     from arachne.modules.coverage import default_research_dir, parse_research_methods
 
     research = default_research_dir()
-    if research is None:  # pragma: no cover - the corpus lives beside the code
-        pytest.skip("research corpus is not available in this checkout")
+    assert research is not None, "the research corpus ships beside the code (REQ-QUAL-011)"
     known = {method.ref for method in parse_research_methods(research)}
     for check in M1.checks:
         ref = check.metadata.research_ref

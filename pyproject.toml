@@ -38,6 +38,9 @@ dev = [
   "pytest>=8.2",
   "pytest-asyncio>=0.23",
   "pytest-cov>=5.0",
+  # A stuck test must fail the run, naming itself, instead of hanging the job
+  # (REQ-QUAL-007, REQ-QUAL-012).
+  "pytest-timeout>=2.3",
   "mypy>=1.10",
   "ruff>=0.5",
   "types-PyYAML>=6.0",
@@ -138,6 +141,11 @@ ignore = [
 # than a pinned absolute path, because the gate has to answer the same question an operator
 # would ask. The argv is a fixed list of literals with no shell.
 "src/arachne/tools/doccheck.py" = ["S607"]
+# The handoff gate asks the checkout's own `git` for commits and diffs and runs the quality
+# gates (`ruff`, `mypy`, `python -m pytest`) in fresh processes. Each argv is a literal list
+# and each program name is a literal — the same "operator's own tools" reasoning as
+# doccheck.py — so the partial-path rule is the wrong rule here.
+"src/arachne/tools/wp_check.py" = ["S607"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["arachne"]
@@ -176,8 +184,13 @@ minversion = "8.0"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-addopts = "-ra --strict-markers --strict-config"
+addopts = "-ra --strict-markers --strict-config --durations=25"
 filterwarnings = ["error::DeprecationWarning:arachne.*"]
+# Every test runs under a timeout (REQ-QUAL-012): the slowest legitimate test in the suite
+# is under 60 s, so 60 is the cap and a stuck test fails, naming itself, instead of hanging
+# the job. A genuinely slower test takes an explicit, reviewed `@pytest.mark.timeout(N)`.
+timeout = 60
+timeout_method = "signal"
 markers = [
   "integration: needs the docker lab fixture ",
   "lab: runs against the local vulnerable lab",
@@ -195,3 +208,8 @@ omit = ["src/arachne/templates/*"]
 [tool.coverage.report]
 show_missing = true
 exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "raise NotImplementedError"]
+# The branch-coverage floor (REQ-QUAL-011). The measured total at this commit is **82.95%**
+# (59,711 statements + 18,690 branches; 82.95% combined), so the floor is 82 — the measured
+# value rounded down to the report precision, which leaves a sub-point margin for a different
+# interpreter without opening a hole. It ratchets up, never down; lowering it needs an ADR.
+fail_under = 82

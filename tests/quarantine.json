@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "comment": "Quarantined tests. Each entry needs an owner, the date the flake was first seen and a deadline; the build fails when a deadline passes (tests/conftest.py). Retries are disabled: a flake is recorded, not papered over. Empty today.",
+  "entries": []
+}

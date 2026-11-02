@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "comment": "Every skip the suite is allowed to take, with the reason. A skip whose node id is not covered here fails the build (tests/conftest.py). Prefer resolving a skip over listing it.",
+  "allowed": [
+    {
+      "test": "tests/integration/test_ai_live_local.py",
+      "reason": "Optional live path: the module runs only when ARACHNE_LIVE_OLLAMA=1 and a local Ollama is listening, so the suite never depends on a model being installed (the honest form of 'test it if it is there')."
+    },
+    {
+      "test": "tests/integration/test_sdk_contract.py::test_the_generated_typescript_client_contract",
+      "reason": "Needs a node binary on PATH to execute the generated TypeScript client; the skip itself is asserted by test_the_typescript_test_skips_cleanly_when_node_is_absent."
+    }
+  ]
+}

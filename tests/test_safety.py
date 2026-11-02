@@ -49,6 +49,14 @@ from tests.conftest import PUBLIC_IP, TARGET_HOST, build_scan_request
 from tests.helpers.checks import make_step_context
 from tests.helpers.vault import make_vault
 
+#: A full-registry end-to-end scan against a mock transport makes hundreds of requests; the
+#: production 5/s per-host budget turns it into a multi-minute wait. Pacing is a production
+#: property with its own tests in this file (F-01-07), so the two end-to-end scans below lift
+#: the budget. No assertion changes; only the clock does.
+FAST_RATE_LIMIT = RateLimitSettings(
+    per_host_rate=1000.0, per_host_burst=1000, global_rate=1000.0, global_burst=1000
+)
+
 # --------------------------------------------------------------------------- secrets
 AWS_ACCESS_KEY = "AKIAIOSFODNN7EXAMPLE"
 AWS_SECRET_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
@@ -544,6 +552,7 @@ async def test_a_tls_certificate_secret_in_a_body_never_reaches_a_finding() -> N
         database_url="sqlite:///:memory:",
         log_level="CRITICAL",
         http=HttpSettings(retries=0, follow_redirects=False),
+        rate_limit=FAST_RATE_LIMIT,
     )
     sink = MemoryAuditSink()
     auditor = Auditor(sink, actor="pytest")
@@ -601,7 +610,9 @@ async def test_a_scan_with_osint_disabled_queries_no_third_party() -> None:
             Sentinel.urls.append(str(request.url))
             return httpx.Response(200, text="<html></html>", headers={"content-type": "text/html"})
 
-    settings = S3Settings(database_url="sqlite:///:memory:", log_level="CRITICAL")
+    settings = S3Settings(
+        database_url="sqlite:///:memory:", log_level="CRITICAL", rate_limit=FAST_RATE_LIMIT
+    )
     registry = ModuleRegistry.discover()
     handlers = build_handlers(settings=settings, registry=registry)
     sink = MemoryAuditSink()

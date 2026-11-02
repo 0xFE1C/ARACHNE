@@ -34,12 +34,18 @@ from arachne.modules.coverage import (
 
 RESEARCH = default_research_dir()
 
-pytestmark = pytest.mark.skipif(
-    RESEARCH is None, reason="the research corpus is not available in this checkout"
-)
-
 
 # ------------------------------------------------------------------ the universe
+def test_the_corpus_is_present_so_these_tests_run(tmp_path: Path) -> None:
+    """The module-level ``skipif`` that used to disable this module is gone (REQ-QUAL-011).
+
+    A gate that can disable itself is not a gate: the corpus ships with the repository, so a
+    missing one is an error (asserted below), never a reason to stop checking the drift.
+    """
+    assert RESEARCH is not None, "the research corpus must ship beside the code"
+    assert RESEARCH.is_dir()
+
+
 def test_the_corpus_has_the_175_methods_g_01_counts() -> None:
     methods = parse_research_methods(RESEARCH)  # type: ignore[arg-type]
     assert len(methods) == 175
@@ -288,6 +294,5 @@ def test_the_committed_matrix_is_current() -> None:
     is exactly the reminder a tracked metric should give.
     """
     committed = Path(__file__).resolve().parents[2] / "coverage_matrix.md"
-    if not committed.is_file():  # pragma: no cover - the file ships with the repo
-        pytest.skip("coverage_matrix.md is not present")
+    assert committed.is_file(), "coverage_matrix.md is a tracked artefact and must ship"
     assert committed.read_text(encoding="utf-8") == render_coverage_markdown(build_coverage())

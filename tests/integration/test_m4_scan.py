@@ -21,6 +21,7 @@ The numbers are recorded in ``docs/adr/120-stage-7-m4-misconfiguration-exposure.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -234,9 +235,24 @@ def score(findings: MemoryFindingStore, scan_id: int) -> Measurement:
 
 
 # --------------------------------------------------------------------------- the acceptance run
-async def test_m4_scan_detects_every_planted_exposure(lab: WebLab) -> None:
+@pytest.fixture(scope="module")
+def base_scan(
+    lab: WebLab,
+) -> tuple[MemoryFindingStore, MemoryAnalysisStore, Any, Settings, MemoryAuditSink]:
+    """One default-configuration M4 scan shared by the tests that read its result.
+
+    A full M4 scan costs about fifteen seconds and three acceptance tests read the *same*
+    result, so it runs once (runtime budget, REQ-QUAL-007). ``run_scan`` is driven in its own
+    event loop and the tests only read the returned in-memory stores.
+    """
+    return asyncio.run(run_scan(lab))
+
+
+async def test_m4_scan_detects_every_planted_exposure(
+    base_scan: tuple[MemoryFindingStore, MemoryAnalysisStore, Any, Settings, MemoryAuditSink],
+) -> None:
     """DONE criterion 1: the planted exposures are found, and the controls are not."""
-    findings, analyses, session, _settings, _sink = await run_scan(lab)
+    findings, analyses, session, _settings, _sink = base_scan
     assert session.status is ScanStatus.COMPLETED, session
     measurement = score(findings, session.scan_id or 0)
     print(f"\nM4 lab scan: {measurement.record()}")
@@ -246,9 +262,11 @@ async def test_m4_scan_detects_every_planted_exposure(lab: WebLab) -> None:
     assert analyses.list_analyses(session.scan_id or 0)
 
 
-async def test_every_m4_candidate_carries_request_evidence_and_an_artifact(lab: WebLab) -> None:
+async def test_every_m4_candidate_carries_request_evidence_and_an_artifact(
+    base_scan: tuple[MemoryFindingStore, MemoryAnalysisStore, Any, Settings, MemoryAuditSink],
+) -> None:
     """F-02-08: a candidate cites what was asked and what answered, plus machine facts."""
-    findings, _analyses, session, _settings, _sink = await run_scan(lab)
+    findings, _analyses, session, _settings, _sink = base_scan
     candidates = [
         record for record in findings.list_candidates(session.scan_id or 0) if record.module == "M4"
     ]
@@ -262,9 +280,12 @@ async def test_every_m4_candidate_carries_request_evidence_and_an_artifact(lab: 
         assert {"http_request", "http_response"} <= kinds, record.title
 
 
-async def test_opt_in_checks_are_inert_and_then_run_when_enabled(lab: WebLab) -> None:
+async def test_opt_in_checks_are_inert_and_then_run_when_enabled(
+    base_scan: tuple[MemoryFindingStore, MemoryAnalysisStore, Any, Settings, MemoryAuditSink],
+    lab: WebLab,
+) -> None:
     """DONE criterion 2: both switches gate their check, and the target sees nothing until on."""
-    findings, _analyses, session, settings, _sink = await run_scan(lab)
+    findings, _analyses, session, settings, _sink = base_scan
     assert session.status is ScanStatus.COMPLETED
     default_ids = {
         (record.check_key or "").split("/")[-1].split("@")[0]

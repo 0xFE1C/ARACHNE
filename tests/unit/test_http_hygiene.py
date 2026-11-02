@@ -20,7 +20,8 @@ HTTP_CLIENT_MODULE = "core/http.py"
 #: The only modules allowed to start a process (ADR-180, ADR-190.4). Each call shape is
 #: asserted: ``test_pdf_backend_process_call_is_fixed_argv_with_timeout``,
 #: ``test_plugin_installer_process_call_is_fixed_argv_with_timeout``,
-#: ``test_documentation_tools_call_fixed_argv_with_a_timeout``, and for the S27 fix
+#: ``test_documentation_tools_call_fixed_argv_with_a_timeout``,
+#: ``test_the_handoff_tool_calls_fixed_argv_with_a_timeout``, and for the S27 fix
 #: engine ``test_fix_safety.py::test_every_process_call_is_a_sequence_with_no_shell_and_a_timeout``
 #: (which additionally asserts that every argv[0] is a literal from the runner allowlist).
 SHELL_EXEMPT_MODULES = frozenset(
@@ -33,6 +34,10 @@ SHELL_EXEMPT_MODULES = frozenset(
         # about this repository, asked with a fixed argv.
         "tools/doccheck.py",
         "tools/counts.py",
+        # The handoff gate reads commits, diffs and exit codes with `git` and runs the quality
+        # gates (`ruff`, `mypy`, `pytest`) in a fresh process. Every program name is a literal
+        # (REQ-QUAL-013).
+        "tools/wp_check.py",
     }
 )
 
@@ -243,6 +248,44 @@ def test_documentation_tools_call_fixed_argv_with_a_timeout() -> None:
             keywords = {keyword.arg: keyword.value for keyword in call.keywords}
             assert "shell" not in keywords, "subprocess.run must not pass shell= at all"
             assert "timeout" in keywords, "subprocess.run must always set a timeout"
+
+
+def test_the_handoff_tool_calls_fixed_argv_with_a_timeout() -> None:
+    """The handoff gate's ``subprocess`` exemption, asserted (REQ-QUAL-013).
+
+    ``wp_check`` reads commits, diffs and exit codes and runs the quality gates. The safety
+    property is the same as the documentation tools': every call is a literal argv whose
+    ``argv[0]`` is a literal program name — ``git``, ``ruff``, ``mypy``, ``python`` — so no
+    value from the repository under inspection can name a program. The repository path and a
+    commit sha enter only as data arguments, ``shell`` is never passed and a timeout is set.
+    """
+    relative = "tools/wp_check.py"
+    path = SRC / relative
+    assert path.is_file(), f"{relative} is missing; drop its exemption"
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    run_calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "run"
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "subprocess"
+    ]
+    assert run_calls, f"{relative} no longer calls subprocess.run; drop its exemption"
+    for call in run_calls:
+        assert call.args, "subprocess.run must be given an argv"
+        argv = call.args[0]
+        assert isinstance(argv, ast.List), "argv must be a literal sequence, not a string"
+        head = argv.elts[0]
+        assert isinstance(head, ast.Constant) and isinstance(head.value, str), (
+            f"{relative}: argv[0] must be a literal program name"
+        )
+        literals = [element for element in argv.elts if isinstance(element, ast.Constant)]
+        assert len(literals) >= 3, f"{relative}: the argv must be a fixed template"
+        keywords = {keyword.arg: keyword.value for keyword in call.keywords}
+        assert "shell" not in keywords, "subprocess.run must not pass shell= at all"
+        assert "timeout" in keywords, "subprocess.run must always set a timeout"
 
 
 #: Call sites allowed to turn redaction off or raise the body cap for one client instance.
