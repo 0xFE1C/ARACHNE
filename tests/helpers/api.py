@@ -177,8 +177,14 @@ class ApiHarness:
         check_key: str = "M4/env-file-probe@1.0",
         asset: tuple[str, str] = ("url", "https://example.com/"),
         severity: str | None = None,
+        confidence: float = 0.7,
     ) -> int:
-        """Insert one finding row directly (so findings CRUD needs no full scan)."""
+        """Insert one finding row directly (so findings CRUD needs no full scan).
+
+        ``confidence`` is the analyzer score the report builder compares against its threshold:
+        a value below every sensible threshold is how a test plants an *unverified* candidate
+        (06-ui-ux.md §4.4's refused state).
+        """
         from arachne.core.results import CheckResult, Evidence
 
         record = self.services.store.get_scan(scan_id) if scan_id is not None else None
@@ -213,7 +219,7 @@ class ApiHarness:
                 title=title,
                 status="vulnerable",
                 detail="seeded by the API test harness",
-                confidence=0.7,
+                confidence=confidence,
                 evidence=(Evidence(kind="http_response", payload={"status_code": 200}),),
             ),
             check_id=check_ids.get(check_key),

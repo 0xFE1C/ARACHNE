@@ -1,112 +1,260 @@
 /* ARACHNE web UI — one small stylesheet, no build step (F-07-03, S12).
-   Dark, dense and legible; the UI is an operator tool, not a product page. */
+   Dense and legible; the UI is an operator tool, not a product page.
 
-:root {
-  --bg: #0f1419;
-  --panel: #171d26;
-  --panel-2: #1e2733;
-  --border: #2a3546;
-  --text: #d7dee8;
-  --muted: #8a97a8;
-  --accent: #4aa3ff;
-  --critical: #e5484d;
-  --high: #e8730c;
-  --medium: #d8a700;
-  --low: #4aa3ff;
-  --info: #6b7a90;
-  --ok: #35c07a;
-}
+   Every value here is a design token (REQ-UIX-004): the custom properties are generated into
+   static/tokens.css from tokens.json, which is also where the light and dark palettes and the
+   comfortable and compact densities live. There is deliberately no hexadecimal colour and no
+   absolute length in this file — `python -m arachne.api.tokens --check` fails the build if one
+   appears, because a raw value is a value that cannot follow a theme. */
 
 * { box-sizing: border-box; }
+
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font: 14px/1.5 ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+  background: var(--color-surface-0);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
 }
-a { color: var(--accent); text-decoration: none; }
-a:hover { text-decoration: underline; }
+
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { color: var(--color-accent-hover); text-decoration: underline; }
+
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
 header.top {
-  display: flex; align-items: center; gap: 1.25rem;
-  padding: 0.65rem 1rem; background: var(--panel); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--density-header-pad-y) var(--density-header-pad-x);
+  background: var(--color-surface-1);
+  border-bottom: var(--border-width) solid var(--color-border);
   position: sticky; top: 0; z-index: 10;
 }
-header.top .brand { font-weight: 700; letter-spacing: 0.08em; }
-header.top nav { display: flex; gap: 1rem; }
+header.top .brand { font-weight: var(--font-weight-bold); letter-spacing: 0.08em; }
+header.top nav { display: flex; flex-wrap: wrap; gap: var(--space-3); }
 header.top .spacer { flex: 1; }
 header.top form { margin: 0; }
-main { padding: 1rem; max-width: 1400px; margin: 0 auto; }
-h1 { font-size: 1.15rem; margin: 0.4rem 0 0.8rem; }
-h2 { font-size: 1rem; margin: 1.2rem 0 0.5rem; }
-h3 { font-size: 0.9rem; margin: 0.9rem 0 0.4rem; color: var(--muted); }
 
-.grid { display: grid; gap: 1rem; }
-.cols-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
-.panel {
-  background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 0.8rem 1rem;
+main {
+  padding: var(--density-shell-pad);
+  max-width: var(--layout-max-width);
+  margin-inline: auto;
 }
-.panel h2, .panel h3 { margin-top: 0; }
+
+h1 { font-size: var(--font-size-h1); line-height: var(--line-height-tight); margin-block: var(--space-1) var(--space-3); }
+h2 { font-size: var(--font-size-h2); line-height: var(--line-height-tight); margin-block: var(--space-5) var(--space-2); }
+h3 { font-size: var(--font-size-h3); margin-block: var(--space-3) var(--space-1); color: var(--color-text-secondary); }
+
+.grid { display: grid; gap: var(--density-row-gap); }
+.cols-2 { grid-template-columns: repeat(auto-fit, minmax(var(--layout-grid-min), 1fr)); }
+.panel {
+  background: var(--color-surface-1);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--density-panel-pad);
+  box-shadow: var(--shadow-1);
+}
+.panel h2, .panel h3 { margin-block-start: 0; }
 
 table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
-th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
-tr:hover td { background: var(--panel-2); }
+th, td {
+  text-align: start;
+  padding: var(--density-cell-pad-y) var(--density-cell-pad-x);
+  border-bottom: var(--border-width) solid var(--color-border);
+  vertical-align: top;
+}
+th {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+tbody tr { transition: background var(--duration-fast) var(--easing-standard); }
+tbody tr:hover td { background: var(--color-surface-2); }
 
 .badge {
-  display: inline-block; padding: 0.05rem 0.45rem; border-radius: 999px;
-  font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+  display: inline-block;
+  padding: var(--density-badge-pad-y) var(--density-badge-pad-x);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
 }
-.sev-critical { background: var(--critical); color: #fff; }
-.sev-high { background: var(--high); color: #140b00; }
-.sev-medium { background: var(--medium); color: #191200; }
-.sev-low { background: var(--low); color: #001322; }
-.sev-info { background: var(--info); color: #fff; }
-.sev-other { background: var(--panel-2); color: var(--muted); }
-.status { font-size: 0.78rem; color: var(--muted); }
-.status.running { color: var(--accent); }
-.status.completed { color: var(--ok); }
-.status.failed, .status.aborted { color: var(--critical); }
+.sev-critical { background: var(--color-critical); color: var(--color-severity-ink); }
+.sev-high { background: var(--color-high); color: var(--color-severity-ink); }
+.sev-medium { background: var(--color-medium); color: var(--color-severity-ink); }
+.sev-low { background: var(--color-low); color: var(--color-severity-ink); }
+.sev-info { background: var(--color-info); color: var(--color-severity-ink); }
+.sev-success { background: var(--color-success); color: var(--color-severity-ink); }
+.sev-warning { background: var(--color-warning); color: var(--color-severity-ink); }
+.sev-other { background: var(--color-surface-2); color: var(--color-text-secondary); }
 
-.counts span { margin-right: 0.6rem; }
-.muted { color: var(--muted); }
-.mono { font-family: inherit; }
-.small { font-size: 0.8rem; }
+.status { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
+.status.running { color: var(--color-accent); }
+.status.completed { color: var(--color-success); }
+.status.failed, .status.aborted { color: var(--color-critical); }
 
-form.stack { display: flex; flex-direction: column; gap: 0.5rem; max-width: 520px; }
-label { color: var(--muted); font-size: 0.82rem; }
-input[type="text"], input[type="password"], textarea, select {
-  width: 100%; padding: 0.4rem 0.5rem; background: var(--bg); color: var(--text);
-  border: 1px solid var(--border); border-radius: 4px; font: inherit;
+.counts span { margin-inline-end: var(--space-2); }
+.muted { color: var(--color-text-secondary); }
+.mono, code, kbd, pre { font-family: var(--font-family-mono); }
+.small { font-size: var(--font-size-xs); }
+
+form.stack { display: flex; flex-direction: column; gap: var(--space-2); max-width: var(--layout-login-width); }
+label { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+input[type="text"], input[type="password"], input[type="search"], textarea, select {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--density-control-pad-y) var(--density-control-pad-x);
+  background: var(--color-surface-0);
+  color: var(--color-text-primary);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font: inherit;
 }
 button, input[type="submit"] {
-  padding: 0.35rem 0.8rem; background: var(--panel-2); color: var(--text);
-  border: 1px solid var(--border); border-radius: 4px; font: inherit; cursor: pointer;
+  min-height: var(--target-min);
+  padding: var(--density-control-pad-y) var(--density-control-pad-x);
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--easing-standard);
 }
-button:hover { border-color: var(--accent); }
-button.primary { background: #15324f; border-color: #2b5f96; }
-button.danger { border-color: #6b2a2e; color: #ffb4b6; }
+button:hover { border-color: var(--color-accent); }
+button.primary { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-on-accent); }
+button.primary:hover { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+button.danger { border-color: var(--color-critical); color: var(--color-critical); }
+button:disabled, input:disabled, [aria-disabled="true"] {
+  background: var(--color-surface-0);
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+}
 .inline { display: inline; }
 
-details { border: 1px solid var(--border); border-radius: 5px; margin: 0.4rem 0; background: var(--panel); }
-details > summary { cursor: pointer; padding: 0.45rem 0.6rem; }
-details[open] > summary { border-bottom: 1px solid var(--border); }
-details .body { padding: 0.6rem; }
-pre {
-  background: #0b0f14; border: 1px solid var(--border); border-radius: 4px; padding: 0.6rem;
-  overflow-x: auto; font-size: 0.78rem; white-space: pre-wrap; word-break: break-word;
+/* A link that reads as a button (an action inside a state block, say). Same target size as a
+   real button so WCAG 2.5.8 holds for both. */
+.button {
+  display: inline-block;
+  min-height: var(--target-min);
+  padding: var(--density-control-pad-y) var(--density-control-pad-x);
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  text-align: center;
 }
-.error { color: #ffb4b6; }
-.ok { color: var(--ok); }
+.button:hover, .button:focus { border-color: var(--color-accent); text-decoration: none; }
+.button.primary, .button.primary:hover {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
 
-.trend { display: flex; align-items: flex-end; gap: 3px; height: 80px; }
-.trend .bar { width: 14px; background: var(--critical); border-radius: 2px 2px 0 0; position: relative; }
-.trend .bar.high { background: var(--high); }
-.trend .bar.medium { background: var(--medium); }
-.trend .bar.low { background: var(--low); }
-.trend .bar.info { background: var(--info); }
+details {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  margin-block: var(--space-1);
+  background: var(--color-surface-1);
+}
+details > summary { cursor: pointer; padding: var(--density-detail-pad); }
+details[open] > summary { border-bottom: var(--border-width) solid var(--color-border); }
+details .body { padding: var(--density-detail-pad); }
+pre {
+  background: var(--color-surface-0);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--density-detail-pad);
+  overflow-x: auto;
+  font-size: var(--font-size-xs);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.error { color: var(--color-critical); }
+.ok { color: var(--color-success); }
 
-.filters { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-end; margin-bottom: 0.6rem; }
+/* ---------------------------------------------------------------- state matrix (REQ-UIX-005)
+   The five states every screen renders: loading, empty, error, partial and refused
+   (06-ui-ux.md §4 and §5). The `data-state` attribute is the marker the template test asserts,
+   so a state cannot be "implemented" by a comment alone. */
+[data-state] { display: block; }
+.state {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-1);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-1);
+}
+.state[data-state="error"] { background: var(--color-danger-bg); border-color: var(--color-critical); }
+.state[data-state="empty"] { border-style: dashed; }
+.state .state-title { font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); margin-block: 0 var(--space-2); }
+.state .state-detail { color: var(--color-text-secondary); margin-block: 0 var(--space-3); }
+.state[data-state="error"] .state-title { color: var(--color-critical); }
+.state .next { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+
+.banner {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  padding: var(--density-detail-pad);
+  margin-block-end: var(--space-3);
+}
+.banner[data-state="partial"] { border-color: var(--color-warning); color: var(--color-warning); }
+.banner[data-state="refused"] { border-color: var(--color-info); color: var(--color-info); }
+.banner .banner-title { font-weight: var(--font-weight-bold); }
+
+.skeleton { display: flex; flex-direction: column; gap: var(--space-2); }
+.skeleton .line {
+  height: var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  animation: skeleton-pulse var(--duration-normal) var(--easing-standard) infinite alternate;
+}
+.skeleton .line.thin { height: var(--space-3); }
+.skeleton .line.thick { height: var(--space-6); }
+.skeleton .line.half { width: 50%; }
+.skeleton .line.third { width: 33%; }
+@keyframes skeleton-pulse { from { opacity: 1; } to { opacity: 0.45; } }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0ms; transition-duration: 0ms; }
+  .skeleton .line { animation: none; }
+}
+
+/* An htmx indicator: hidden until the request it belongs to is in flight, at which point htmx
+   adds `htmx-request` to it (hx-indicator). This is how the loading state is shown without a
+   line of hand-written script. */
+.indicator { display: none; }
+.indicator.htmx-request { display: block; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: flex-end; margin-block-end: var(--space-3); }
+.toolbar > div { display: flex; flex-direction: column; }
+.pagination { display: flex; gap: var(--space-2); align-items: center; margin-block-start: var(--space-3); }
+.read-only { color: var(--color-text-secondary); font-size: var(--font-size-xs); }
+
+.filters { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: flex-end; margin-block-end: var(--space-3); }
 .filters > div { display: flex; flex-direction: column; }
-.filters input, .filters select { width: 160px; }
+.filters input, .filters select { width: var(--layout-field-width); }
 
-.login { max-width: 420px; margin: 4rem auto; }
+.trend { display: flex; align-items: flex-end; gap: var(--space-1); height: var(--layout-chart-height); }
+.trend .bar {
+  width: var(--layout-chart-bar);
+  height: var(--bar-height, var(--space-1));
+  min-height: var(--space-1);
+  background: var(--color-critical);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.trend .bar.high { background: var(--color-high); }
+.trend .bar.medium { background: var(--color-medium); }
+.trend .bar.low { background: var(--color-low); }
+.trend .bar.info { background: var(--color-info); }
+
+.login { max-width: var(--layout-login-width); margin-block: var(--space-10) 0; margin-inline: auto; }

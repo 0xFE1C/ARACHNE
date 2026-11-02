@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Findings · ARACHNE{% endblock %}
+{% block content %}
+{#- §5 states: loading ✓, empty ✓, error ✓, partial ✓, refused ✓ (06-ui-ux.md §4.3).
+
+    WP-04 delivers the screen and its five states; the keyboard contract, bulk selection and the
+    60-second undo are WP-05's (REQ-UIX-006). The table is therefore read-only here, and the
+    §4.3 "Proof" column is left to WP-05 because the proof level lives in a verification record
+    this view has no source for yet. -#}
+<h1>Findings</h1>
+{% set filtered = filters.severity or filters.status or filters.module or filters.q %}
+
+<form class="filters" method="get" action="/ui/findings">
+  <div><label for="q">Search</label>
+    <input id="q" name="q" value="{{ filters.q }}" placeholder="id, asset, check…"></div>
+  <div><label for="severity">Severity</label>
+    <select id="severity" name="severity">
+      <option value="">all</option>
+      {% for severity in severities %}
+      <option value="{{ severity }}" {{ 'selected' if filters.severity == severity }}>{{ severity }}</option>
+      {% endfor %}
+      <option value="unanalysed" {{ 'selected' if filters.severity == 'unanalysed' }}>unanalysed</option>
+    </select></div>
+  <div><label for="status">State</label>
+    <select id="status" name="status">
+      {% for value in ("", "open", "verified", "fp", "merged") %}
+      <option value="{{ value }}" {{ 'selected' if filters.status == value }}>{{ value or "all" }}</option>
+      {% endfor %}
+    </select></div>
+  <div><label for="module">Module</label>
+    <input id="module" name="module" value="{{ filters.module }}" placeholder="m3"></div>
+  <div><button type="submit">Filter</button></div>
+  {% if filtered %}<div><a href="/ui/findings">Clear filters</a></div>{% endif %}
+</form>
+
+{% if state in ("loading", "error") %}
+  {{ ui.screen_state(state, endpoint="GET /api/v1/findings",
+      loading_label="Loading findings…",
+      error_title="The findings could not be loaded.",
+      error_detail="The filters are kept, so a retry re-runs the same query.",
+      retry_href="/ui/findings") }}
+{% elif empty %}
+  {% if filtered %}
+    {{ ui.empty_state("No findings match these filters.",
+        "Nothing in this project matches the filters above. Clearing them restores the unfiltered list.",
+        "/ui/findings", "Clear filters") }}
+  {% else %}
+    {{ ui.empty_state("No findings in this project yet.",
+        "A scan has either not run or found nothing. A dry run opens no socket and is the safe first step.",
+        "/ui/scans", "Run a scan") }}
+  {% endif %}
+{% else %}
+  {%- if refused %}
+  {{ ui.refused_banner("A viewer sees the findings but no decision control: checkboxes, the bulk bar and the review actions are absent rather than disabled, because an absent control is honest and a disabled one is a puzzle.") }}
+  {%- endif %}
+  {%- if partial %}
+  {{ ui.partial_banner("The total count is unavailable, so the footer reports how many rows are shown without a total. Paging still works.", retry_href="/ui/findings") }}
+  {%- endif %}
+  {#- §4.3 partial: no count → "Showing N"; with a count → "Showing N of M". -#}
+  <p class="muted small">
+    Showing {{ findings | length }}{% if total is not none %} of {{ total }}{% endif %} finding(s).
+    {% if filters.get("scan") %}Scan {{ filters.get("scan") }} only.{% endif %}
+  </p>
+  {% if findings %}
+  <table>
+    <thead>
+      <tr><th>Sev</th><th>Title</th><th>Asset</th><th>Check</th><th>State</th><th>Age</th></tr>
+    </thead>
+    <tbody>
+    {% for item in findings %}
+      {% set finding = item.finding %}
+      <tr>
+        <td>{{ ui.sev(finding.severity) }}</td>
+        <td><a href="/ui/findings/{{ item.finding_id }}">{{ finding.title }}</a></td>
+        <td class="mono small">{{ finding.asset.kind }} {{ finding.asset.value }}</td>
+        <td class="mono small">
+          {{ finding.check_id or finding.module or "—" }}
+          {%- if finding.cwe %} · {{ finding.cwe }}{% endif %}
+        </td>
+        <td>{{ finding.status }}</td>
+        <td class="muted small">{{ finding.created_at }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if next_href %}
+  <p class="pagination">
+    <a class="button" href="{{ next_href }}">Load more</a>
+    <span class="muted small">A cursor, not an offset: the next page starts exactly where this one ended.</span>
+  </p>
+  {% endif %}
+  {% else %}
+  {{ ui.empty_state("No findings match these filters.",
+      "Clearing the filters restores the unfiltered list.",
+      "/ui/findings", "Clear filters") }}
+  {% endif %}
+{% endif %}
+{% endblock %}

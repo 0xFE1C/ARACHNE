@@ -59,7 +59,8 @@ corpora live in `src/arachne/templates/` and can be replaced by an operator.
 **Operation**
 
 - A **CLI**, a **REST API** (74 documented operations, OpenAPI at `/docs`) and a **web UI**
-  (13 screens, server-rendered with progressive enhancement).
+  (14 screens, each with an explicit loading, empty, error, partial and refused state;
+  server-rendered with progressive enhancement and no build step).
 - Generated **Python and TypeScript API clients**, contract-tested against the live schema.
 - A **scheduler** with diff reporting, and **distributed scan agents** on a Postgres lease
   queue.
@@ -86,10 +87,10 @@ corpora live in `src/arachne/templates/` and can be replaced by an operator.
 
 | What | Result |
 |---|---|
-| Tests | **4,119** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Tests | **4,245** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
 | Primary safety suite | **59 tests** in `tests/test_safety.py`; **259** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol and mobile fixtures with planted false-positive traps |
-| Strict type checking | clean under `mypy --strict` across the **364** Python modules in `src/` |
+| Strict type checking | clean under `mypy --strict` across the **366** Python modules in `src/` |
 | Lint | clean over the whole repository (the badge's scope is the tree, not `src/` and `tests/`) |
 | Research coverage | **148/175 (84.6%)** of the corpus's numbered methods have an implementing check |
 

@@ -2,85 +2,121 @@
 {% import "_macros.html" as ui %}
 {% block title %}Scan {{ scan.id }} · ARACHNE{% endblock %}
 {% block content %}
+{#- §5 states: loading ✓, empty ✓, error ✓, partial ✓, refused ✓ (06-ui-ux.md §4.6). -#}
 <h1>Scan #{{ scan.id }} — {{ scan.target }}</h1>
+{% if empty or state in ("loading", "error") %}
+  {{ ui.screen_state("empty" if empty else state, endpoint="GET /api/v1/scans/" ~ scan.id,
+      loading_label="Loading the scan…",
+      empty_title="This dry run planned a scan and produced no findings.",
+      empty_detail="A dry run opens no socket and runs no check, so it has a plan and nothing else. Its plan is below; run the scan without the dry-run flag to produce findings.",
+      empty_primary_href="/ui/scans/" ~ scan.id,
+      empty_primary_label="Back to the plan",
+      error_title="This scan could not be loaded.",
+      retry_href="/ui/scans") }}
+{% else %}
+  {%- if refused %}
+  {{ ui.refused_banner("A scan the scope or authorization gate refuses is never recorded — the refusal happens at admission, before a scan row exists, and is written to the audit trail instead. If this scan ran and then failed, the failure is in its status below.") }}
+  {%- endif %}
+  {%- if partial %}
+  {{ ui.partial_banner("The findings section could not be read; the progress below is still live.", retry_href="/ui/scans/" ~ scan.id) }}
+  {%- endif %}
+  {%- if scan.status == "failed" %}
+  {{ ui.error_state("This scan failed.", detail="Its progress and any partial findings are still below. The failure reason is in the audit trail; nothing on this page changed it.") }}
+  {%- endif %}
 
-<div class="grid cols-2">
+  <div class="grid cols-2">
+    <section class="panel">
+      <h2>Status</h2>
+      <p>{{ ui.status_label(scan.status, scan.running) }}</p>
+      <p class="muted small">
+        engine {{ scan.engine }} · created {{ scan.created_at }}<br>
+        started {{ scan.started_at }} · finished {{ scan.finished_at }}
+      </p>
+      <p>{{ ui.counts(scan.counts, severities) }}</p>
+      <p>
+        <a href="/ui/scans/{{ scan.id }}/report">markdown report</a>
+        <a href="/ui/scans/{{ scan.id }}/attack-paths">attack paths</a>
+        <a href="/ui/findings?scan={{ scan.id }}">findings workspace</a>
+        {% if scan.running and principal.role != "viewer" %}
+        · <form class="inline" method="post" action="/ui/scans/{{ scan.id }}/stop"
+                hx-post="/ui/scans/{{ scan.id }}/stop" hx-swap="none">
+            <button class="danger" type="submit">Stop scan</button>
+          </form>
+        {% endif %}
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>Pipeline</h2>
+      <table>
+        <thead><tr><th>Step</th><th>Status</th><th>Attempts</th></tr></thead>
+        <tbody>
+        {% for step in steps %}
+          <tr>
+            <td>{{ step.step }}</td>
+            <td>{{ ui.status_label(step.status, false) }}
+              {% if step.error %}<div class="small error">{{ step.error }}</div>{% endif %}</td>
+            <td class="muted small">{{ step.attempts }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="3" class="muted">no steps recorded yet</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+
   <section class="panel">
-    <h2>Status</h2>
-    <p>{{ ui.status_label(scan.status, scan.running) }}</p>
-    <p class="muted small">
-      engine {{ scan.engine }} · created {{ scan.created_at }}<br>
-      started {{ scan.started_at }} · finished {{ scan.finished_at }}
+    <h2>Assets ({{ assets | length }})</h2>
+    {% if assets %}
+    <p class="small">
+      {% for asset in assets[:60] %}<span class="badge sev-other">{{ asset.kind }}</span> {{ asset.value }}{% if not loop.last %} · {% endif %}{% endfor %}
+      {% if assets | length > 60 %}<span class="muted">... {{ assets | length - 60 }} more</span>{% endif %}
     </p>
-    <p>{{ ui.counts(scan.counts, severities) }}</p>
-    <p>
-      <a href="/ui/scans/{{ scan.id }}/report">markdown report</a>
-      <a href="/ui/scans/{{ scan.id }}/attack-paths">attack paths</a>
-      {% if scan.running and principal.role != "viewer" %}
-      · <form class="inline" method="post" action="/ui/scans/{{ scan.id }}/stop"
-              hx-post="/ui/scans/{{ scan.id }}/stop" hx-swap="none">
-          <button class="danger" type="submit">Stop scan</button>
-        </form>
-      {% endif %}
-    </p>
+    {% else %}
+    <p class="muted">No assets recorded.</p>
+    {% endif %}
   </section>
 
-  <section class="panel">
-    <h2>Pipeline</h2>
-    <table>
-      <thead><tr><th>Step</th><th>Status</th><th>Attempts</th></tr></thead>
-      <tbody>
-      {% for step in steps %}
-        <tr>
-          <td>{{ step.step }}</td>
-          <td>{{ ui.status_label(step.status, false) }}
-            {% if step.error %}<div class="small error">{{ step.error }}</div>{% endif %}</td>
-          <td class="muted small">{{ step.attempts }}</td>
-        </tr>
-      {% else %}
-        <tr><td colspan="3" class="muted">no steps recorded yet</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </section>
-</div>
+  <h2>Findings</h2>
+  <form class="filters"
+        hx-get="/ui/scans/{{ scan.id }}/findings"
+        hx-target="#findings" hx-swap="innerHTML" hx-trigger="change, submit"
+        hx-indicator="#findings-loading">
+    <div><label for="f-module">Module</label>
+      <input id="f-module" name="module" value="{{ filters.module }}" placeholder="m4"></div>
+    <div><label for="f-severity">Severity</label>
+      <select id="f-severity" name="severity">
+        <option value="">any</option>
+        {% for severity in severities %}
+        <option value="{{ severity }}" {{ 'selected' if filters.severity == severity }}>{{ severity }}</option>
+        {% endfor %}
+        <option value="unanalysed" {{ 'selected' if filters.severity == 'unanalysed' }}>unanalysed</option>
+      </select></div>
+    <div><label for="f-cwe">CWE</label>
+      <input id="f-cwe" name="cwe" value="{{ filters.cwe }}" placeholder="CWE-200"></div>
+    <div><label for="f-asset">Asset</label>
+      <input id="f-asset" name="asset" value="{{ filters.asset }}" placeholder="example.com"></div>
+    <div><label for="f-q">Title contains</label>
+      <input id="f-q" name="q" value="{{ filters.q }}"></div>
+    <div><button type="submit">Filter</button></div>
+  </form>
 
-<section class="panel">
-  <h2>Assets ({{ assets | length }})</h2>
-  {% if assets %}
-  <p class="small">
-    {% for asset in assets[:60] %}<span class="badge sev-other">{{ asset.kind }}</span> {{ asset.value }}{% if not loop.last %} · {% endif %}{% endfor %}
-    {% if assets | length > 60 %}<span class="muted">… {{ assets | length - 60 }} more</span>{% endif %}
-  </p>
-  {% else %}
-  <p class="muted">No assets recorded.</p>
-  {% endif %}
-</section>
+  {#- The loading state, for real: htmx puts `htmx-request` on this element while the filter
+      request is in flight and the stylesheet reveals the skeleton. A server-rendered page has
+      no client to paint a skeleton *before* the HTML arrives, so an in-flight swap is where
+      this state genuinely exists in this interface. -#}
+  <div id="findings-loading" class="indicator">{{ ui.loading_state("Loading the findings…", 4) }}</div>
 
-<h2>Findings</h2>
-<form class="filters"
-      hx-get="/ui/scans/{{ scan.id }}/findings"
-      hx-target="#findings" hx-swap="innerHTML" hx-trigger="change, submit">
-  <div><label for="f-module">Module</label>
-    <input id="f-module" name="module" value="{{ filters.module }}" placeholder="m4"></div>
-  <div><label for="f-severity">Severity</label>
-    <select id="f-severity" name="severity">
-      <option value="">any</option>
-      {% for severity in severities %}
-      <option value="{{ severity }}" {{ 'selected' if filters.severity == severity }}>{{ severity }}</option>
-      {% endfor %}
-      <option value="unanalysed" {{ 'selected' if filters.severity == 'unanalysed' }}>unanalysed</option>
-    </select></div>
-  <div><label for="f-cwe">CWE</label>
-    <input id="f-cwe" name="cwe" value="{{ filters.cwe }}" placeholder="CWE-200"></div>
-  <div><label for="f-asset">Asset</label>
-    <input id="f-asset" name="asset" value="{{ filters.asset }}" placeholder="example.com"></div>
-  <div><label for="f-q">Title contains</label>
-    <input id="f-q" name="q" value="{{ filters.q }}"></div>
-  <div><button type="submit">Filter</button></div>
-</form>
-
-<div id="findings">
-  {% include "_findings.html" %}
-</div>
+  <div id="findings">
+    {% if partial %}
+      {{ ui.error_state("The findings for this scan could not be loaded.",
+          endpoint="GET /api/v1/scans/" ~ scan.id ~ "/findings",
+          detail="The filters are kept. Retrying only re-reads this section.",
+          retry_href="/ui/scans/" ~ scan.id) }}
+    {% else %}
+      {% include "_findings.html" %}
+    {% endif %}
+  </div>
+{% endif %}
 {% endblock %}

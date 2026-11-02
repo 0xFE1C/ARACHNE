@@ -1,9 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="en"{% if theme %} data-theme="{{ theme }}"{% endif %}{% if density %} data-density="{{ density }}"{% endif %}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}ARACHNE{% endblock %}</title>
+  {# design tokens are generated from tokens.json (REQ-UIX-004); app.css names them, never a raw value #}
+  <link rel="stylesheet" href="/static/tokens.css">
   <link rel="stylesheet" href="/static/app.css">
   <script src="/static/htmx.min.js" defer></script>
 </head>
@@ -11,8 +13,9 @@
 {% if principal is defined and principal %}
 <header class="top">
   <span class="brand">ARACHNE</span>
-  <nav>
+  <nav aria-label="Screens">
     <a href="/ui/">Dashboard</a>
+    <a href="/ui/findings">Findings</a>
     <a href="/ui/scans">Scans</a>
     <a href="/ui/posture">Posture</a>
     <a href="/ui/modules">Modules</a>
@@ -23,6 +26,17 @@
     <a href="/docs" target="_blank" rel="noopener">API</a>
   </nav>
   <span class="spacer"></span>
+  {# Theme and density persist per user (REQ-UIX-009) in the `arachne_theme` and
+     `arachne_density` cookies this form writes; each button submits only its own value, so no
+     script is needed to switch either one. #}
+  <form method="post" action="/ui/preferences" class="inline" aria-label="Display">
+    <input type="hidden" name="next" value="{{ current_path|default('/ui/') }}">
+    <button type="submit" name="theme" value="light" aria-pressed="{{ 'true' if theme == 'light' else 'false' }}">Light</button>
+    <button type="submit" name="theme" value="dark" aria-pressed="{{ 'true' if theme == 'dark' else 'false' }}">Dark</button>
+    <button type="submit" name="theme" value="system" aria-pressed="{{ 'true' if not theme else 'false' }}">System</button>
+    <button type="submit" name="density" value="comfortable" aria-pressed="{{ 'true' if density != 'compact' else 'false' }}">Comfortable</button>
+    <button type="submit" name="density" value="compact" aria-pressed="{{ 'true' if density == 'compact' else 'false' }}">Compact</button>
+  </form>
   <span class="muted small">{{ principal.label }} · {{ principal.role }}</span>
   <form method="post" action="/ui/logout" class="inline"><button type="submit">Sign out</button></form>
 </header>

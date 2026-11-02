@@ -2,51 +2,74 @@
 {% import "_macros.html" as ui %}
 {% block title %}Modules · ARACHNE{% endblock %}
 {% block content %}
+{#- §5 states: loading ✓, empty ✓, error ✓, partial ✓, refused ✓ (06-ui-ux.md §4.10).
+
+    §4.10 says an empty registry is "impossible while checks exist" and that a *load failure* is
+    an error. Both are implemented: the error state names the registry, and the empty state
+    covers a deployment that genuinely installs no module. -#}
 <h1>Modules &amp; configuration</h1>
+{% if empty or state in ("loading", "error") %}
+  {{ ui.screen_state("empty" if empty else state, endpoint="GET /api/v1/modules",
+      loading_label="Loading the check registry…",
+      empty_title="No modules are registered.",
+      empty_detail="A deployment with no check module can scan nothing. Install a module or check the plugin path, then reload.",
+      empty_primary_href="/ui/plugins",
+      empty_primary_label="Open plugins",
+      error_title="The check registry could not be loaded.",
+      error_detail="This is an error, not an empty state: the registry exists but could not be read, so no coverage claim can be made.",
+      retry_href="/ui/modules") }}
+{% else %}
+  {%- if refused %}
+  {{ ui.refused_banner("Module configuration is environment-driven (F-08-01), so this view is read-only for every role — it shows what this deployment is actually configured to do.") }}
+  {%- endif %}
+  {%- if partial %}
+  {{ ui.partial_banner("Some module metadata could not be read; those rows show version unknown rather than a version nobody verified.", retry_href="/ui/modules") }}
+  {%- endif %}
 
-<section class="panel">
-  <h2>Effective configuration</h2>
-  <p class="muted small">
-    Module configuration is environment-driven (F-08-01), so this view is read-only: it shows
-    what this deployment is actually configured to do.
-  </p>
-  <table>
-    <tbody>
-      <tr><th>Database</th><td>{{ config.database }}</td></tr>
-      <tr><th>Engine</th><td>{{ config.engine }}</td></tr>
-      <tr><th>Egress rate</th><td>{{ config.per_host_rate }}/s per host · {{ config.global_rate }}/s global</td></tr>
-      <tr><th>API rate</th><td>{{ config.api_rate }}/min</td></tr>
-      <tr><th>TLS required</th><td>{{ "yes" if config.tls_required else "no" }}</td></tr>
-      <tr><th>Scope hosts</th><td>{{ config.scope_hosts | join(", ") or "—" }}</td></tr>
-      <tr><th>Scope domains</th><td>{{ config.scope_domains | join(", ") or "—" }}</td></tr>
-      <tr><th>Webhooks</th><td>{{ config.webhooks | join(", ") or "none configured" }}</td></tr>
-    </tbody>
-  </table>
-</section>
+  <section class="panel">
+    <h2>Effective configuration</h2>
+    <p class="muted small">
+      Module configuration is environment-driven (F-08-01), so this view is read-only: it shows
+      what this deployment is actually configured to do.
+    </p>
+    <table>
+      <tbody>
+        <tr><th>Database</th><td>{{ config.database }}</td></tr>
+        <tr><th>Engine</th><td>{{ config.engine }}</td></tr>
+        <tr><th>Egress rate</th><td>{{ config.per_host_rate }}/s per host · {{ config.global_rate }}/s global</td></tr>
+        <tr><th>API rate</th><td>{{ config.api_rate }}/min</td></tr>
+        <tr><th>TLS required</th><td>{{ "yes" if config.tls_required else "no" }}</td></tr>
+        <tr><th>Scope hosts</th><td>{{ config.scope_hosts | join(", ") or "—" }}</td></tr>
+        <tr><th>Scope domains</th><td>{{ config.scope_domains | join(", ") or "—" }}</td></tr>
+        <tr><th>Webhooks</th><td>{{ config.webhooks | join(", ") or "none configured" }}</td></tr>
+      </tbody>
+    </table>
+  </section>
 
-{% for module in modules %}
-<section class="panel">
-  <h2>{{ module.id }} <span class="muted small">v{{ module.version }} · step {{ module.step }}</span></h2>
-  <table>
-    <thead>
-      <tr><th>Check</th><th>Title</th><th>Research</th><th>CWE</th><th>Flags</th><th>Ran</th></tr>
-    </thead>
-    <tbody>
-    {% for check in module.checks %}
-      <tr>
-        <td class="mono small">{{ check.id }} <span class="muted">v{{ check.version }}</span></td>
-        <td>{{ check.title }}</td>
-        <td class="muted small">{{ check.research_ref or "—" }}</td>
-        <td class="muted small">{{ check.cwe or "—" }}</td>
-        <td>
-          {% if check.active %}<span class="badge sev-high">active</span>{% endif %}
-          {% if check.opt_in %}<span class="badge sev-other">opt-in</span>{% endif %}
-        </td>
-        <td class="muted small">{{ "yes" if check.ran else "no" }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</section>
-{% endfor %}
+  {% for module in modules %}
+  <section class="panel">
+    <h2>{{ module.id }} <span class="muted small">v{{ module.version if module.version else "version unknown" }} · step {{ module.step }}</span></h2>
+    <table>
+      <thead>
+        <tr><th>Check</th><th>Title</th><th>Research</th><th>CWE</th><th>Flags</th><th>Ran</th></tr>
+      </thead>
+      <tbody>
+      {% for check in module.checks %}
+        <tr>
+          <td class="mono small">{{ check.id }} <span class="muted">v{{ check.version if check.version else "unknown" }}</span></td>
+          <td>{{ check.title }}</td>
+          <td class="muted small">{{ check.research_ref or "—" }}</td>
+          <td class="muted small">{{ check.cwe or "—" }}</td>
+          <td>
+            {% if check.active %}<span class="badge sev-high">active</span>{% endif %}
+            {% if check.opt_in %}<span class="badge sev-other">opt-in</span>{% endif %}
+          </td>
+          <td class="muted small">{{ "yes" if check.ran else "no" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endfor %}
+{% endif %}
 {% endblock %}

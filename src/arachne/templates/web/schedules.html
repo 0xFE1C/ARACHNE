@@ -1,10 +1,15 @@
 {% extends "base.html" %}
+{% import "_macros.html" as ui %}
 {% block title %}Schedules · ARACHNE{% endblock %}
 {% block content %}
+{#- §5 states: loading ✓, empty ✓, error ✓, partial ✓, refused ✓ (06-ui-ux.md §4.11). -#}
 <h1>Schedules</h1>
 
 <section class="panel">
   <h2>Register a recurring scan</h2>
+  {%- if refused %}
+  {{ ui.refused_banner("Creating, running or removing a schedule needs the scanner role. The list below stays readable.") }}
+  {%- endif %}
   <form class="stack" method="post" action="/ui/schedules"
         hx-post="/ui/schedules" hx-swap="none">
     <div><label for="id">Id (kebab-case)</label><input id="id" name="id" required></div>
@@ -23,37 +28,52 @@
   <p class="muted small">
     Running a schedule executes the real orchestrator; due schedules run from
     <code>arachne schedule run</code> (or the API).
+    <a href="/docs" target="_blank" rel="noopener">Cron syntax reference</a>
   </p>
 </section>
 
 <h2>Registered</h2>
-{% if schedules %}
-<table>
-  <thead><tr><th>Id</th><th>Cron</th><th>Enabled</th><th>Last run</th><th>Next run</th><th>Target</th><th>Controls</th></tr></thead>
-  <tbody>
-  {% for row in schedules %}
-    <tr>
-      <td>{{ row.spec.id }}</td>
-      <td class="mono small">{{ row.spec.cron }}</td>
-      <td>{{ "yes" if row.spec.enabled else "no" }}</td>
-      <td class="muted small">{{ row.state.last_run_at or "—" }}</td>
-      <td class="muted small">{{ row.state.next_run_at or "—" }}</td>
-      <td class="muted small">{{ row.spec.target }}</td>
-      <td>
-        <form class="inline" method="post" action="/ui/schedules/{{ row.spec.id }}/run"
-              hx-post="/ui/schedules/{{ row.spec.id }}/run" hx-swap="none">
-          <button type="submit">Run now</button>
-        </form>
-        <form class="inline" method="post" action="/ui/schedules/{{ row.spec.id }}/remove"
-              hx-post="/ui/schedules/{{ row.spec.id }}/remove" hx-swap="none">
-          <button class="danger" type="submit">Remove</button>
-        </form>
-      </td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
+{% if empty or state in ("loading", "error") %}
+  {{ ui.screen_state("empty" if empty else state, endpoint="scheduler state file",
+      loading_label="Loading the schedules…",
+      empty_title="No schedules.",
+      empty_detail="A schedule runs a stored target on a cron expression. Register one above, or from the command line.",
+      error_title="The schedules could not be read.",
+      retry_href="/ui/schedules") }}
 {% else %}
-<p class="muted">No schedules registered.</p>
+  {%- if partial %}
+  {{ ui.partial_banner("A schedule's last-run state could not be read, so its timestamps show as —.", retry_href="/ui/schedules") }}
+  {%- endif %}
+  {% if schedules %}
+  <table>
+    <thead><tr><th>Id</th><th>Cron</th><th>Enabled</th><th>Last run</th><th>Next run</th><th>Target</th><th>Controls</th></tr></thead>
+    <tbody>
+    {% for row in schedules %}
+      <tr>
+        <td>{{ row.spec.id }}</td>
+        <td class="mono small">{{ row.spec.cron }}</td>
+        <td>{{ "yes" if row.spec.enabled else "no" }}</td>
+        <td class="muted small">{{ row.state.last_run_at or "—" }}</td>
+        <td class="muted small">{{ row.state.next_run_at or "—" }}</td>
+        <td class="muted small">{{ row.spec.target }}</td>
+        <td>
+          <form class="inline" method="post" action="/ui/schedules/{{ row.spec.id }}/run"
+                hx-post="/ui/schedules/{{ row.spec.id }}/run" hx-swap="none">
+            <button type="submit">Run now</button>
+          </form>
+          <form class="inline" method="post" action="/ui/schedules/{{ row.spec.id }}/remove"
+                hx-post="/ui/schedules/{{ row.spec.id }}/remove" hx-swap="none">
+            <button class="danger" type="submit">Remove</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ ui.empty_state("No schedules.",
+      "A schedule runs a stored target on a cron expression. It is the difference between a scan you remember to run and an estate you keep watching.",
+      "/docs", "Cron syntax reference") }}
+  {% endif %}
 {% endif %}
 {% endblock %}

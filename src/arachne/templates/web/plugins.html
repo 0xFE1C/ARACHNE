@@ -1,75 +1,95 @@
 {% extends "base.html" %}
+{% import "_macros.html" as ui %}
 {% block title %}Plugins · ARACHNE{% endblock %}
 {% block content %}
+{#- §5 states: loading ✓, empty ✓, error ✓, partial ✓, refused ✓ (06-ui-ux.md §4.13). -#}
 <h1>Plugins</h1>
+{% if state in ("loading", "error") %}
+  {{ ui.screen_state(state, endpoint="installed plugin registry",
+      loading_label="Loading the plugin list…",
+      empty_title="No third-party plugins installed.",
+      empty_detail="A plugin adds a check module or a report format. Install one with `arachne plugin install <path|git-url>`.",
+      empty_primary_href="/docs",
+      empty_primary_label="Plugin SDK",
+      error_title="The plugin list could not be loaded.",
+      retry_href="/ui/plugins") }}
+{% else %}
+  <section class="panel"{% if empty %} data-state="empty"{% endif %}>
+    <h2>Installed</h2>
+    <p class="muted small">
+      Install with <code>arachne plugin install &lt;path|git-url&gt;</code>.
+      {% if not install_enabled %}
+        API installation is disabled (<code>ARACHNE_PLUGIN_INSTALL</code>); that is the default.
+      {% else %}
+        API installation is enabled for admins.
+      {% endif %}
+    </p>
+    {%- if refused %}
+    {{ ui.refused_banner("Installing a plugin needs the admin role. The installed list and the marketplace stay readable.") }}
+    {%- endif %}
+    {#- §4.13: a broken plugin is reported, not fatal — the rest of the page works. -#}
+    {%- if partial %}
+    {{ ui.partial_banner("At least one installed plugin failed to load, so the checks it would contribute are missing from the list below. The failure and the plugin it names are in the server log; every other part of this page works.") }}
+    {%- endif %}
 
-<section class="panel">
-  <h2>Installed</h2>
-  <p class="muted small">
-    Install with <code>arachne plugin install &lt;path|git-url&gt;</code>.
-    {% if not install_enabled %}
-      API installation is disabled (<code>ARACHNE_PLUGIN_INSTALL</code>); that is the default.
+    <h3>Check modules</h3>
+    {% if installed.checks %}
+    <table>
+      <thead><tr><th>Module</th><th>Title</th><th>Version</th><th>Origin</th><th>Checks</th></tr></thead>
+      <tbody>
+        {% for item in installed.checks %}
+        <tr>
+          <td>{{ item.module }}</td>
+          <td>{{ item.title }}</td>
+          <td class="muted small">{{ item.version }}</td>
+          <td class="mono small">{{ item.origin }}</td>
+          <td class="mono small">{{ item.checks | join(", ") }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
     {% else %}
-      API installation is enabled for admins.
+    <p class="muted">No third-party check modules installed.
+      <a href="/docs" target="_blank" rel="noopener">Plugin SDK</a></p>
     {% endif %}
-  </p>
 
-  <h3>Check modules</h3>
-  {% if installed.checks %}
-  <table>
-    <thead><tr><th>Module</th><th>Title</th><th>Version</th><th>Origin</th><th>Checks</th></tr></thead>
-    <tbody>
-      {% for item in installed.checks %}
-      <tr>
-        <td>{{ item.module }}</td>
-        <td>{{ item.title }}</td>
-        <td class="muted small">{{ item.version }}</td>
-        <td class="mono small">{{ item.origin }}</td>
-        <td class="mono small">{{ item.checks | join(", ") }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p class="muted">No third-party check modules installed.</p>
-  {% endif %}
+    <h3>Report formats</h3>
+    <table>
+      <thead><tr><th>Name</th><th>Media type</th><th>Binary</th><th>Origin</th></tr></thead>
+      <tbody>
+        {% for item in formats %}
+        <tr>
+          <td class="mono">{{ item.name }}</td>
+          <td class="muted small">{{ item.media_type }}</td>
+          <td>{{ "yes" if item.binary else "no" }}</td>
+          <td class="mono small">{{ item.origin }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
 
-  <h3>Report formats</h3>
-  <table>
-    <thead><tr><th>Name</th><th>Media type</th><th>Binary</th><th>Origin</th></tr></thead>
-    <tbody>
-      {% for item in formats %}
-      <tr>
-        <td class="mono">{{ item.name }}</td>
-        <td class="muted small">{{ item.media_type }}</td>
-        <td>{{ "yes" if item.binary else "no" }}</td>
-        <td class="mono small">{{ item.origin }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
-
-<section class="panel">
-  <h2>Marketplace <span class="muted small">v{{ marketplace_version or "—" }}</span></h2>
-  <table>
-    <thead><tr><th>Name</th><th>Kind</th><th>Version</th><th>Status</th><th>Source</th></tr></thead>
-    <tbody>
-      {% for item in marketplace %}
-      <tr>
-        <td>{{ item.name }}<div class="muted small">{{ item.description }}</div></td>
-        <td>{{ item.kind }}</td>
-        <td class="muted small">{{ item.version or "—" }}</td>
-        <td>{{ "installed" if item.installed else "available" }}
-            <span class="muted small">({{ "verified" if item.verified else "unverified" }})</span></td>
-        <td class="mono small">{{ item.source }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <p class="muted small">
-    The catalogue is a versioned data file (<code>ARACHNE_MARKETPLACE</code>); point it at your
-    own index to run the workflow air-gapped.
-  </p>
-</section>
+  <section class="panel">
+    <h2>Marketplace <span class="muted small">v{{ marketplace_version or "—" }}</span></h2>
+    <table>
+      <thead><tr><th>Name</th><th>Kind</th><th>Version</th><th>Status</th><th>Source</th></tr></thead>
+      <tbody>
+        {% for item in marketplace %}
+        <tr>
+          <td>{{ item.name }}<div class="muted small">{{ item.description }}</div></td>
+          <td>{{ item.kind }}</td>
+          <td class="muted small">{{ item.version or "—" }}</td>
+          <td>{{ "installed" if item.installed else "available" }}
+              <span class="muted small">({{ "verified" if item.verified else "unverified" }})</span></td>
+          <td class="mono small">{{ item.source }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="muted small">
+      The catalogue is a versioned data file (<code>ARACHNE_MARKETPLACE</code>); point it at your
+      own index to run the workflow air-gapped.
+    </p>
+  </section>
+{% endif %}
 {% endblock %}

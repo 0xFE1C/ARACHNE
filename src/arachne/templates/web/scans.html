@@ -2,6 +2,7 @@
 {% import "_macros.html" as ui %}
 {% block title %}Scans · ARACHNE{% endblock %}
 {% block content %}
+{#- §5 states: loading ✓, empty ✓, error ✓, partial ✓, refused ✓ (06-ui-ux.md §4.5). -#}
 <h1>Scans</h1>
 
 <section class="panel">
@@ -17,7 +18,7 @@
       </select>
     </div>
     <div>
-      <label for="definition">…or paste a target definition (JSON)</label>
+      <label for="definition">...or paste a target definition (JSON)</label>
       <textarea id="definition" name="definition" rows="4"
         placeholder='{"name": "lab", "targets": [{"kind": "url", "value": "https://example.com/"}], "attestation": {"attested_by": "you", "attested_at": "2026-10-01T00:00:00Z", "allowed_targets": ["example.com"]}}'></textarea>
     </div>
@@ -40,35 +41,61 @@
 </section>
 
 <h2>History</h2>
-{% if scans %}
-<table>
-  <thead>
-    <tr><th>Scan</th><th>Target</th><th>Status</th><th>Findings</th><th>Created</th><th>Controls</th></tr>
-  </thead>
-  <tbody>
-  {% for scan in scans %}
-    <tr>
-      <td><a href="/ui/scans/{{ scan.id }}">#{{ scan.id }}</a></td>
-      <td>{{ scan.target }}</td>
-      <td>{{ ui.status_label(scan.status, scan.running) }}</td>
-      <td>{{ ui.counts(scan.counts, severities) }}</td>
-      <td class="muted small">{{ scan.created_at }}</td>
-      <td>
-        {% if scan.running %}
-        <form class="inline" method="post" action="/ui/scans/{{ scan.id }}/stop"
-              hx-post="/ui/scans/{{ scan.id }}/stop" hx-swap="none">
-          <button class="danger" type="submit">Stop</button>
-        </form>
-        {% else %}
-        <a href="/ui/scans/{{ scan.id }}/report">report</a>
-        {% endif %}
-      </td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
+{% if empty or state in ("loading", "error") %}
+  {{ ui.screen_state("empty" if empty else state, endpoint="GET /api/v1/scans",
+      loading_label="Loading the scan history…",
+      empty_title="No scans yet.",
+      empty_detail="A dry run needs no target and opens no socket; a live scan needs an attestation that authorises the target.",
+      empty_primary_href="/ui/scans",
+      empty_primary_label="Dry run",
+      error_title="The scan history could not be loaded.",
+      retry_href="/ui/scans") }}
 {% else %}
-<p class="muted">No scans yet.</p>
+  {%- if refused %}
+  {{ ui.refused_banner("Read-only: starting or stopping a scan needs the scanner role. A scan the scope or authorization gate refuses never becomes a row here — the refusal happens at admission, is recorded in the audit trail, and nothing is scanned.") }}
+  {%- endif %}
+  {%- if partial %}
+  {{ ui.partial_banner("The live state of at least one scan could not be read, so its progress shows as state unknown.", retry_href="/ui/scans") }}
+  {%- endif %}
+  {% if scans %}
+  <table>
+    <thead>
+      <tr><th>Scan</th><th>Target</th><th>Status</th><th>Findings</th><th>Created</th><th>Controls</th></tr>
+    </thead>
+    <tbody>
+    {% for scan in scans %}
+      <tr>
+        <td><a href="/ui/scans/{{ scan.id }}">#{{ scan.id }}</a></td>
+        <td>{{ scan.target }}</td>
+        <td>
+          {%- if partial and scan.running %}
+          <a href="/ui/scans/{{ scan.id }}">state unknown</a>
+          {%- else %}
+          {{ ui.status_label(scan.status, scan.running) }}
+          {%- endif %}
+        </td>
+        <td>{{ ui.counts(scan.counts, severities) }}</td>
+        <td class="muted small">{{ scan.created_at }}</td>
+        <td>
+          {% if scan.running %}
+          <form class="inline" method="post" action="/ui/scans/{{ scan.id }}/stop"
+                hx-post="/ui/scans/{{ scan.id }}/stop" hx-swap="none">
+            <button class="danger" type="submit">Stop</button>
+          </form>
+          {% else %}
+          <a href="/ui/scans/{{ scan.id }}/report">report</a>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ ui.empty_state("No scans yet.",
+      "A dry run plans a scan and opens no socket.",
+      "/ui/scans", "Dry run",
+      "/ui/modules", "See what is detected") }}
+  {% endif %}
 {% endif %}
 
 <p class="muted small">

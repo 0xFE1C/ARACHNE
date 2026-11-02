@@ -26,26 +26,45 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import Annotated, Any
-from urllib.parse import parse_qs, quote
+from urllib.parse import parse_qs, quote, urlencode
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from arachne.api.auth import API_KEY_COOKIE, Principal, Role, identify
 from arachne.api.deps import ContextDep
+from arachne.api.pagination import build_page, clamp_limit, cursor_or_400
 from arachne.api.routes_api import _definition_from_payload, _scan_request, _visible
 from arachne.api.schemas import StartScanRequest
 from arachne.core.audit import AuditAction, AuditOutcome
 from arachne.core.config import SEVERITY_LEVELS
 from arachne.core.errors import ArachneError, ConfigurationError
+from arachne.core.logging import get_logger
+from arachne.data.keyset import PageWindow
 from arachne.data.project_store import DEFAULT_PROJECT_SLUG, ProjectRecord
 
 __all__ = ["ui_router"]
+
+_logger = get_logger("api.ui")
 
 ui_router = APIRouter(include_in_schema=False)
 
 #: Display order and colours of the severity ladder (most severe first).
 _SEVERITY_ORDER = tuple(reversed(SEVERITY_LEVELS))
+
+#: The two preference cookies (REQ-UIX-009). Written only by ``POST /ui/preferences`` and
+#: validated again on every read, so a hand-edited cookie cannot put an arbitrary string into
+#: the ``data-theme``/``data-density`` attributes.
+THEME_COOKIE = "arachne_theme"
+DENSITY_COOKIE = "arachne_density"
+_THEMES: tuple[str, ...] = ("light", "dark")
+_DENSITIES: tuple[str, ...] = ("comfortable", "compact")
+
+#: How many findings the workspace lists per page (the API's own default, REQ-UIX-001).
+_UI_PAGE_LIMIT = 50
+
+#: How long a display preference lasts in the browser (30 days).
+_PREFERENCE_MAX_AGE = 30 * 24 * 3600
 
 #: The detail shape a finding gets when the report DTO has no entry for it (a candidate the
 #: analyzer has not touched). Complete rather than empty, so the template's key access is
@@ -85,9 +104,61 @@ def _require_write(request: Request, principal: Principal, minimum: Role) -> Non
         )
 
 
-def _render(context: ContextDep, template: str, **values: Any) -> HTMLResponse:
+def _render(
+    context: ContextDep,
+    template: str,
+    *,
+    request: Request | None = None,
+    **values: Any,
+) -> HTMLResponse:
+    """Render a screen with the state-matrix and preference defaults filled in.
+
+    ``state``, ``partial`` and ``refused`` are the five-state matrix's inputs (REQ-UIX-005) and
+    ``theme``/``density`` are the persisted display preferences (REQ-UIX-009); every screen
+    template reads them, so defaulting them here is what keeps a route that forgets one from
+    failing under ``StrictUndefined`` instead of rendering the wrong state.
+    """
+    values.setdefault("state", "ready")
+    values.setdefault("empty", False)
+    values.setdefault("partial", False)
+    values.setdefault("refused", False)
+    values.setdefault("theme", _preference(request, THEME_COOKIE, _THEMES))
+    values.setdefault("density", _preference(request, DENSITY_COOKIE, _DENSITIES))
+    values.setdefault("current_path", request.url.path if request is not None else "/ui/")
     assert context.templates is not None  # built by create_app
     return HTMLResponse(context.templates.get_template(template).render(**values))
+
+
+def _preference(request: Request | None, name: str, allowed: tuple[str, ...]) -> str | None:
+    """The validated value of a display-preference cookie; ``None`` means "follow the system"."""
+    if request is None:
+        return None
+    raw = (request.cookies.get(name) or "").strip().lower()
+    return raw if raw in allowed else None
+
+
+def _read_only(principal: Principal) -> bool:
+    """True when the session cannot change anything, which is the §4 screens' ``refused`` state."""
+    return not principal.allows(Role.SCANNER)
+
+
+def _sso_missing_setting(context: ContextDep) -> str | None:
+    """The SSO setting that is absent while SSO is switched on (the sign-in screen's partial).
+
+    §4.1 asks the SSO button to name the missing setting when the IdP is misconfigured rather
+    than to disappear silently. The provider is only built from a *complete* configuration, so
+    this is the one place that can still say which value an operator has to set.
+    """
+    sso = context.settings.sso
+    if not sso.enabled:
+        return None
+    if not sso.issuer:
+        return "ARACHNE_SSO_ISSUER"
+    if not sso.client_id:
+        return "ARACHNE_SSO_CLIENT_ID"
+    if sso.client_secret is None:
+        return "ARACHNE_SSO_CLIENT_SECRET"
+    return None
 
 
 def _ui_project(request: Request, context: ContextDep, principal: Principal) -> ProjectRecord:
@@ -132,13 +203,17 @@ def login_page(
 ) -> Response:
     if identify(request, context.credentials) is not None:
         return RedirectResponse(next_path, status_code=303)
+    missing = _sso_missing_setting(context)
     return _render(
         context,
         "login.html",
+        request=request,
         next=next_path,
         error=None,
         keys_configured=context.credentials.enabled,
         sso_enabled=bool(context.oidc and context.oidc.configured),
+        partial=missing is not None,
+        sso_warning=missing,
     )
 
 
@@ -155,13 +230,17 @@ async def login(request: Request, context: ContextDep) -> Response:
             target="/ui/login",
             reason="invalid API key",
         )
+        missing = _sso_missing_setting(context)
         return _render(
             context,
             "login.html",
+            request=request,
             next=next_path,
             error="That API key was not accepted.",
             keys_configured=context.credentials.enabled,
             sso_enabled=bool(context.oidc and context.oidc.configured),
+            partial=missing is not None,
+            sso_warning=missing,
         )
     destination = next_path if next_path.startswith("/ui") else "/ui/"
     response = RedirectResponse(destination, status_code=303)
@@ -175,6 +254,49 @@ async def login(request: Request, context: ContextDep) -> Response:
         path="/",
     )
     return response
+
+
+@ui_router.post("/ui/preferences")
+async def set_preferences(request: Request) -> Response:
+    """Persist the display preferences per user (REQ-UIX-009).
+
+    Each button in the header submits only its own name, so one click changes one preference.
+    The value is validated against a closed vocabulary before it is stored, and the cookie is
+    ``SameSite=strict`` like the session cookie — a cross-site form post therefore carries no
+    session and cannot set a preference either. Nothing here is a state change to scanned data,
+    so there is no audit event and no ``HX-Request`` requirement: the effect is confined to the
+    caller's own browser.
+    """
+    form = await _form(request)
+    response = RedirectResponse(_same_origin(form.get("next") or "/ui/"), status_code=303)
+    theme = (form.get("theme") or "").strip().lower()
+    density = (form.get("density") or "").strip().lower()
+    if theme == "system":
+        response.delete_cookie(THEME_COOKIE, path="/")
+    elif theme in _THEMES:
+        response.set_cookie(
+            THEME_COOKIE,
+            theme,
+            max_age=_PREFERENCE_MAX_AGE,
+            httponly=True,
+            samesite="strict",
+            path="/",
+        )
+    if density in _DENSITIES:
+        response.set_cookie(
+            DENSITY_COOKIE,
+            density,
+            max_age=_PREFERENCE_MAX_AGE,
+            httponly=True,
+            samesite="strict",
+            path="/",
+        )
+    return response
+
+
+def _same_origin(next_path: str) -> str:
+    """Only ever redirect back into the interface (never an attacker-supplied URL)."""
+    return next_path if next_path.startswith("/ui") else "/ui/"
 
 
 @ui_router.post("/ui/logout")
@@ -195,20 +317,26 @@ def dashboard(request: Request, context: ContextDep) -> Response:
     principal = _principal_or_redirect(request, context)
     if isinstance(principal, RedirectResponse):
         return principal
-    project = _ui_project(request, context, principal)
-    records = context.services.store.list_scans(
-        limit=20,
-        project_id=project.id,
-        include_unassigned=project.slug == DEFAULT_PROJECT_SLUG,
-    )
-    counts = context.queries.severity_counts_for([record.id for record in records])
-    scans = [
-        _scan_view(record, counts.get(record.id, {}), context.runner.is_running(record.id))
-        for record in records
-    ]
-    trend = context.queries.scan_trend(
-        limit=15, project_id=project.id, include_unassigned=project.slug == DEFAULT_PROJECT_SLUG
-    )
+    try:
+        project = _ui_project(request, context, principal)
+        records = context.services.store.list_scans(
+            limit=20,
+            project_id=project.id,
+            include_unassigned=project.slug == DEFAULT_PROJECT_SLUG,
+        )
+        counts = context.queries.severity_counts_for([record.id for record in records])
+        scans = [
+            _scan_view(record, counts.get(record.id, {}), context.runner.is_running(record.id))
+            for record in records
+        ]
+        trend = context.queries.scan_trend(
+            limit=15, project_id=project.id, include_unassigned=project.slug == DEFAULT_PROJECT_SLUG
+        )
+    except Exception:  # a failing panel must not blank the page (§4.2 error, REQ-UIX-005)
+        _logger.exception("the overview could not be loaded")
+        return _render(
+            context, "dashboard.html", request=request, principal=principal, state="error"
+        )
     aggregate = dict.fromkeys(_SEVERITY_ORDER, 0)
     for scan in scans:
         for severity, value in scan["counts"].items():
@@ -217,6 +345,10 @@ def dashboard(request: Request, context: ContextDep) -> Response:
     return _render(
         context,
         "dashboard.html",
+        request=request,
+        state="ready",
+        empty=not records,
+        refused=_read_only(principal),
         principal=principal,
         scans=scans,
         aggregate=aggregate,
@@ -232,17 +364,35 @@ def scans_page(request: Request, context: ContextDep) -> Response:
     principal = _principal_or_redirect(request, context)
     if isinstance(principal, RedirectResponse):
         return principal
-    project = _ui_project(request, context, principal)
-    records = context.services.store.list_scans(
-        limit=50, project_id=project.id, include_unassigned=project.slug == DEFAULT_PROJECT_SLUG
-    )
-    counts = context.queries.severity_counts_for([record.id for record in records])
-    targets = context.services.target_store.list_targets(
-        limit=100, project_id=project.id, include_unassigned=project.slug == DEFAULT_PROJECT_SLUG
-    )
+    try:
+        project = _ui_project(request, context, principal)
+        records = context.services.store.list_scans(
+            limit=50, project_id=project.id, include_unassigned=project.slug == DEFAULT_PROJECT_SLUG
+        )
+        counts = context.queries.severity_counts_for([record.id for record in records])
+        targets = context.services.target_store.list_targets(
+            limit=100,
+            project_id=project.id,
+            include_unassigned=project.slug == DEFAULT_PROJECT_SLUG,
+        )
+    except Exception:  # §4.5 error: an error block, not a blank page
+        _logger.exception("the scan history could not be loaded")
+        return _render(
+            context,
+            "scans.html",
+            request=request,
+            principal=principal,
+            state="error",
+            targets=[],
+            severities=_SEVERITY_ORDER,
+        )
     return _render(
         context,
         "scans.html",
+        request=request,
+        state="ready",
+        empty=not records,
+        refused=_read_only(principal),
         principal=principal,
         project=project.to_dict(),
         scans=[
@@ -297,29 +447,43 @@ def scan_detail(request: Request, scan_id: int, context: ContextDep) -> Response
     project = _ui_project(request, context, principal)
     record = _require_visible_scan(context, scan_id, project)
     filters = _filters(request)
+    partial = False
+    try:
+        counts = context.queries.severity_counts(scan_id)
+        findings = _findings_view(context, scan_id, filters, _report_index(context, scan_id))
+        assets = [
+            {"kind": item.kind, "value": item.value}
+            for item in context.services.store.list_assets(scan_id)
+        ]
+    except Exception:
+        # §4.6 error: section-level. The status and the pipeline keep rendering (progress
+        # keeps polling), so a failed findings read is a partial page, never a blank one.
+        _logger.exception("the findings section of scan %s could not be loaded", scan_id)
+        counts, findings, assets, partial = {}, [], [], True
+    steps = [
+        {
+            "step": state.step.value,
+            "status": state.status.value,
+            "attempts": state.attempts,
+            "error": state.error,
+        }
+        for state in record.steps
+    ]
     return _render(
         context,
         "scan_detail.html",
+        request=request,
         principal=principal,
-        scan=_scan_view(
-            record, context.queries.severity_counts(scan_id), context.runner.is_running(scan_id)
-        ),
-        steps=[
-            {
-                "step": state.step.value,
-                "status": state.status.value,
-                "attempts": state.attempts,
-                "error": state.error,
-            }
-            for state in record.steps
-        ],
-        assets=[
-            {"kind": item.kind, "value": item.value}
-            for item in context.services.store.list_assets(scan_id)
-        ],
+        # §4.6 empty: a dry run has a plan and no findings, and says so explicitly.
+        empty=bool(record.plan.get("dry_run")),
+        partial=partial,
+        refused=_read_only(principal),
+        scan=_scan_view(record, counts, context.runner.is_running(scan_id)),
+        steps=steps,
+        assets=assets,
         severities=_SEVERITY_ORDER,
         filters=filters,
-        findings=_findings_view(context, scan_id, filters, _report_index(context, scan_id)),
+        findings=findings,
     )
 
 
@@ -335,6 +499,7 @@ def scan_findings_partial(request: Request, scan_id: int, context: ContextDep) -
     return _render(
         context,
         "_findings.html",
+        request=request,
         scan_id=scan_id,
         findings=_findings_view(context, scan_id, filters, _report_index(context, scan_id)),
         filters=filters,
@@ -349,16 +514,40 @@ def scan_report(request: Request, scan_id: int, context: ContextDep) -> Response
     if isinstance(principal, RedirectResponse):
         return principal
     project = _ui_project(request, context, principal)
-    _require_visible_scan(context, scan_id, project)
-    report = context.reports.build(scan_id)
-    from arachne.report import render_markdown
+    record = _require_visible_scan(context, scan_id, project)
+    if record.plan.get("dry_run"):
+        # §4.7 empty: a dry run produced no report yet.
+        return _render(
+            context,
+            "report_text.html",
+            request=request,
+            principal=principal,
+            empty=True,
+            scan_id=scan_id,
+        )
+    try:
+        report = context.reports.build(scan_id)
+        from arachne.report import render_markdown
 
+        body = render_markdown(report)
+    except Exception:  # §4.7 error: an error block, and the export stays unavailable
+        _logger.exception("the report for scan %s could not be rendered", scan_id)
+        return _render(
+            context,
+            "report_text.html",
+            request=request,
+            principal=principal,
+            state="error",
+            scan_id=scan_id,
+        )
     return _render(
         context,
         "report_text.html",
+        request=request,
         principal=principal,
+        refused=_read_only(principal),
         scan_id=scan_id,
-        body=render_markdown(report),
+        body=body,
     )
 
 
@@ -374,12 +563,27 @@ def scan_attack_paths(request: Request, scan_id: int, context: ContextDep) -> Re
     if isinstance(principal, RedirectResponse):
         return principal
     project = _ui_project(request, context, principal)
-    _require_visible_scan(context, scan_id, project)
+    record = _require_visible_scan(context, scan_id, project)
     from arachne.api.ui_visuals import attack_path_svg
 
-    report = context.reports.build(scan_id)
-    paths = [entry.model_dump(mode="json") for entry in report.attack_paths]
-    record = context.services.store.get_scan(scan_id)
+    try:
+        report = context.reports.build(scan_id)
+        paths = [entry.model_dump(mode="json") for entry in report.attack_paths]
+        graph = attack_path_svg(paths)
+    except Exception:  # §4.8 error: an error block, not a blank canvas
+        _logger.exception("the attack paths for scan %s could not be composed", scan_id)
+        return _render(
+            context,
+            "attack_paths.html",
+            request=request,
+            principal=principal,
+            state="error",
+            scan_id=scan_id,
+            # The header and the legend render before the state block, so the error render
+            # still needs the two values they read.
+            scan=_scan_view(record, {}, False),
+            paths=[],
+        )
     counts = context.queries.severity_counts(scan_id)
     scan = (
         _scan_view(record, counts, context.runner.is_running(scan_id))
@@ -389,11 +593,14 @@ def scan_attack_paths(request: Request, scan_id: int, context: ContextDep) -> Re
     return _render(
         context,
         "attack_paths.html",
+        request=request,
         principal=principal,
+        empty=not paths,
+        refused=_read_only(principal),
         scan_id=scan_id,
         scan=scan,
         paths=paths,
-        graph=attack_path_svg(paths),
+        graph=graph,
     )
 
 
@@ -415,30 +622,43 @@ def posture_page(request: Request, context: ContextDep) -> Response:
     from arachne.posture.estate import assemble_estate
     from arachne.posture.trend import estate_payload
 
-    project = _ui_project(request, context, principal)
-    include_default = project.slug == DEFAULT_PROJECT_SLUG
-    estate = assemble_estate(
-        context.services,
-        project_id=None if include_default else project.id,
-        name=project.name,
-        limit=15,
-    )
-    payload = estate_payload(estate)
+    try:
+        project = _ui_project(request, context, principal)
+        include_default = project.slug == DEFAULT_PROJECT_SLUG
+        estate = assemble_estate(
+            context.services,
+            project_id=None if include_default else project.id,
+            name=project.name,
+            limit=15,
+        )
+        payload = estate_payload(estate)
+    except Exception:  # §4.9 error: card-level, never a blank dashboard
+        _logger.exception("the posture dashboard could not be assembled")
+        return _render(context, "posture.html", request=request, principal=principal, state="error")
     coverage: list[dict[str, Any]] = []
     coverage_scan: int | None = None
+    partial = False
     if estate.points:
         newest = estate.points[-1].scan_id
         try:
             report = context.reports.build(newest)
-        except ArachneError:  # pragma: no cover - a scan that vanished mid-page
+        except Exception:
+            # §4.9 partial: the trend is intact, the newest scan's coverage is not. The other
+            # cards still render and the failure is stated rather than hidden.
+            _logger.exception("the coverage block of scan %s could not be read", newest)
             report = None
+            partial = True
         if report is not None and report.compliance:
             coverage_scan = newest
             coverage = [block.model_dump(mode="json") for block in report.compliance]
     return _render(
         context,
         "posture.html",
+        request=request,
         principal=principal,
+        empty=not estate.points,
+        partial=partial,
+        refused=_read_only(principal),
         project=project,
         severities=_SEVERITY_ORDER,
         estate=payload,
@@ -455,35 +675,45 @@ def modules_page(request: Request, context: ContextDep) -> Response:
     principal = _principal_or_redirect(request, context)
     if isinstance(principal, RedirectResponse):
         return principal
-    registry = context.services.registry
-    stored = {row.key for row in context.queries.list_checks()}
-    modules = []
-    for group in registry.groups:
-        modules.append(
-            {
-                "id": group.id,
-                "version": group.version,
-                "step": group.step.value,
-                "checks": [
-                    {
-                        "id": metadata.id,
-                        "title": metadata.title,
-                        "version": metadata.version,
-                        "research_ref": metadata.research_ref,
-                        "cwe": metadata.cwe,
-                        "active": metadata.requires_active_checks,
-                        "opt_in": not metadata.enabled_by_default,
-                        "ran": metadata.key in stored,
-                    }
-                    for metadata in group.metadata()
-                ],
-            }
-        )
+    try:
+        registry = context.services.registry
+        stored = {row.key for row in context.queries.list_checks()}
+        modules = []
+        for group in registry.groups:
+            modules.append(
+                {
+                    "id": group.id,
+                    "version": group.version,
+                    "step": group.step.value,
+                    "checks": [
+                        {
+                            "id": metadata.id,
+                            "title": metadata.title,
+                            "version": metadata.version,
+                            "research_ref": metadata.research_ref,
+                            "cwe": metadata.cwe,
+                            "active": metadata.requires_active_checks,
+                            "opt_in": not metadata.enabled_by_default,
+                            "ran": metadata.key in stored,
+                        }
+                        for metadata in group.metadata()
+                    ],
+                }
+            )
+    except Exception:
+        # §4.10 is explicit: a registry that cannot be read is an *error*, not an empty state,
+        # because an empty coverage screen would read as "this deployment detects nothing".
+        _logger.exception("the check registry could not be read")
+        return _render(context, "modules.html", request=request, principal=principal, state="error")
     settings = context.settings
     return _render(
         context,
         "modules.html",
+        request=request,
         principal=principal,
+        empty=not modules,
+        # §4.10 refused: this view read-only for every role — configuration is environment-driven.
+        refused=True,
         modules=modules,
         config={
             "database": settings.database_url,
@@ -502,21 +732,79 @@ def modules_page(request: Request, context: ContextDep) -> Response:
 # --------------------------------------------------------------------------- feeds
 @ui_router.get("/ui/feeds", response_class=HTMLResponse)
 def feeds_page(request: Request, context: ContextDep) -> Response:
-    """The CVE/EPSS ingestion page (F-09-03): status, imported artefacts, upload form."""
+    """The CVE/EPSS ingestion page (F-09-03): status and freshness, artefacts, upload form."""
     principal = _principal_or_redirect(request, context)
     if isinstance(principal, RedirectResponse):
         return principal
     services = context.services
+    try:
+        stats = services.feeds.stats()
+        rows = [record.to_dict() for record in services.feeds.list_feeds(limit=100)]
+    except Exception:  # §4.13 error
+        _logger.exception("the feed status could not be read")
+        return _render(context, "feeds.html", request=request, principal=principal, state="error")
+    total_feeds = sum(int(entry["feeds"]) for entry in stats["by_kind"].values())
     return _render(
         context,
         "feeds.html",
+        request=request,
         principal=principal,
-        stats=services.feeds.stats(),
-        feeds=[record.to_dict() for record in services.feeds.list_feeds(limit=100)],
+        empty=not total_feeds,
+        refused=_read_only(principal),
+        stats=stats,
+        feeds=rows,
+        freshness=_feed_freshness(context, rows),
         active_epss=services.feeds.effective_path("epss"),
         active_kev=services.feeds.effective_path("kev"),
         error=request.query_params.get("error"),
     )
+
+
+def _feed_freshness(context: ContextDep, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Per-kind freshness of the newest imported feed, against the configured SLA.
+
+    REQ-INTEL-006 asks the report to state feed freshness and to warn when a severity feed is
+    stale; §4.13 asks the same of this page. The age comes from the newest import of that kind,
+    and the SLA from ``intel.freshness_ttl`` — so the warning appears when the deployment's own
+    configuration says it should, not at a number hard-coded here.
+    """
+    now = datetime.now(UTC)
+    report: list[dict[str, Any]] = []
+    for kind in ("epss", "kev"):
+        sla = float(context.settings.intel.ttl_hours(kind))
+        newest: datetime | None = None
+        for row in rows:
+            if row.get("kind") != kind or not row.get("created_at"):
+                continue
+            try:
+                moment = datetime.fromisoformat(str(row["created_at"]))
+            except ValueError:  # pragma: no cover - the column is written by this module
+                continue
+            if newest is None or moment > newest:
+                newest = moment
+        if newest is None:
+            report.append(
+                {
+                    "kind": kind,
+                    "age_hours": None,
+                    "sla_hours": sla,
+                    "stale": False,
+                    "label": "shipped snapshot",
+                }
+            )
+            continue
+        age = round((now - newest).total_seconds() / 3600, 1)
+        stale = bool(sla) and age > sla
+        report.append(
+            {
+                "kind": kind,
+                "age_hours": age,
+                "sla_hours": sla,
+                "stale": stale,
+                "label": f"{age} h old" + (" — stale" if stale else ""),
+            }
+        )
+    return report
 
 
 @ui_router.post("/ui/feeds/import")
@@ -584,23 +872,37 @@ def quality_page(
     project = _ui_project(request, context, principal)
     show_all = (scope or "").strip().lower() == "all"
     store = getattr(context.services, "quality", None)
-    suppressions = (
-        store.list_suppressions(active_only=False, project_id=None if show_all else project.id)
-        if store is not None
-        else []
-    )
-    acceptances = (
-        store.list_acceptances(active_only=False, project_id=None if show_all else project.id)
-        if store is not None
-        else []
-    )
+    try:
+        suppressions = (
+            store.list_suppressions(active_only=False, project_id=None if show_all else project.id)
+            if store is not None
+            else []
+        )
+        acceptances = (
+            store.list_acceptances(active_only=False, project_id=None if show_all else project.id)
+            if store is not None
+            else []
+        )
+    except Exception:  # §4.12 error: a table error, not a blank page
+        _logger.exception("the quality decisions could not be read")
+        return _render(
+            context,
+            "quality.html",
+            request=request,
+            principal=principal,
+            project=project,
+            state="error",
+        )
     version = max((item.version for item in suppressions), default=0)
     return _render(
         context,
         "quality.html",
+        request=request,
         principal=principal,
         project=project,
         scope_all=show_all,
+        empty=not suppressions and not acceptances,
+        refused=_read_only(principal),
         suppressions=suppressions,
         acceptances=acceptances,
         version=version,
@@ -750,6 +1052,157 @@ async def mark_false_positive_ui(
     return RedirectResponse(request.headers.get("referer") or "/ui/scans", status_code=303)
 
 
+# --------------------------------------------------------------------------- findings workspace
+@ui_router.get("/ui/findings", response_class=HTMLResponse)
+def findings_page(request: Request, context: ContextDep) -> Response:
+    """Every finding in the project, filtered and cursor-paged (06-ui-ux.md §4.3).
+
+    Filters and the cursor are query parameters, per the URL contract in §2.2, so a filtered
+    view is shareable and the back button restores it. The page is read-only: the keyboard
+    contract, bulk selection and the 60-second undo are WP-05 (REQ-UIX-006).
+    """
+    principal = _principal_or_redirect(request, context)
+    if isinstance(principal, RedirectResponse):
+        return principal
+    project = _ui_project(request, context, principal)
+    filters = {
+        key: (request.query_params.get(key) or "").strip()
+        for key in ("severity", "status", "module", "q", "scan")
+    }
+    limit = clamp_limit(_positive_int(request.query_params.get("limit")), default=_UI_PAGE_LIMIT)
+    cursor = cursor_or_400(request.query_params.get("cursor"))
+    try:
+        rows = context.queries.finding_rows(
+            project_id=project.id,
+            include_unassigned=project.slug == DEFAULT_PROJECT_SLUG,
+            severity=filters["severity"] or None,
+            status=filters["status"] or None,
+            module=filters["module"] or None,
+            query=filters["q"] or None,
+            scan_id=int(filters["scan"]) if filters["scan"].isdigit() else None,
+            window=PageWindow(
+                sort_key="id",
+                descending=True,
+                boundary=None if cursor is None else (cursor.key, cursor.item_id),
+                backward=bool(cursor and cursor.backward),
+            ),
+            limit=limit + 1,
+        )
+    except Exception:  # §4.3 error: an error block with the filters kept, not a blank page
+        _logger.exception("the findings workspace could not be read")
+        return _render(
+            context,
+            "findings.html",
+            request=request,
+            principal=principal,
+            state="error",
+            filters=filters,
+            severities=_SEVERITY_ORDER,
+            findings=[],
+            total=None,
+            next_href=None,
+        )
+    page = build_page(
+        rows,
+        limit=limit,
+        key_of=lambda row: row.id,
+        id_of=lambda row: row.id,
+        cursor=cursor,
+        backward=bool(cursor and cursor.backward),
+    )
+    return _render(
+        context,
+        "findings.html",
+        request=request,
+        principal=principal,
+        empty=not page.items and not any(filters.values()),
+        # §4.3 partial: there is no cross-scan count source, so the footer reports the rows shown
+        # without a total. Paging is unaffected, and the banner says exactly which number is
+        # missing rather than leaving a reader to guess.
+        partial=True,
+        refused=_read_only(principal),
+        filters=filters,
+        severities=_SEVERITY_ORDER,
+        findings=[{"finding": row.to_dict(), "finding_id": row.id} for row in page.items],
+        total=None,
+        next_href=_findings_next_href(request, filters, page.next_cursor),
+    )
+
+
+def _findings_next_href(
+    request: Request, filters: dict[str, str], next_cursor: str | None
+) -> str | None:
+    """The "Load more" link: the same filters plus the cursor (an opaque token, §2.2)."""
+    if next_cursor is None:
+        return None
+    query = {key: value for key, value in filters.items() if value}
+    query["cursor"] = next_cursor
+    return f"/ui/findings?{urlencode(query)}"
+
+
+def _positive_int(raw: str | None) -> int | None:
+    text = (raw or "").strip()
+    return int(text) if text.isdigit() else None
+
+
+@ui_router.get("/ui/findings/{finding_id}", response_class=HTMLResponse)
+def finding_detail_page(request: Request, finding_id: int, context: ContextDep) -> Response:
+    """One finding, with its verification record (06-ui-ux.md §4.4).
+
+    A finding with no verification record is *not* hidden behind a 404: §4.4 asks it to render
+    with its severity forced to INFO and a banner, because "unverified" is the honest state of a
+    candidate the analyzer has not confirmed, not an error. "Verified" here means the report
+    carries the finding as a confirmed one: a candidate below the analyzer's confidence threshold
+    is an unverified candidate, and that is exactly the case the severity override exists for.
+    """
+    principal = _principal_or_redirect(request, context)
+    if isinstance(principal, RedirectResponse):
+        return principal
+    project = _ui_project(request, context, principal)
+    row = context.queries.finding_row(finding_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"finding {finding_id} does not exist")
+    record = context.services.store.get_scan(row.scan_id)
+    if record is None or not _visible(record.project_id, project):
+        raise HTTPException(status_code=404, detail=f"finding {finding_id} does not exist")
+    finding = row.to_dict()
+    try:
+        index = _report_index(context, row.scan_id)
+    except Exception:
+        _logger.exception("finding %s could not be read", finding_id)
+        return _render(
+            context,
+            "finding_detail.html",
+            request=request,
+            principal=principal,
+            state="error",
+            finding=finding,
+            detail=_EMPTY_DETAIL,
+            evidence=[],
+        )
+    detail = index.get(finding_id, _EMPTY_DETAIL)
+    # §4.4 partial: the verification record is intact and only the raw evidence failed.
+    partial = False
+    try:
+        evidence = list(context.queries.evidence_rows(finding_id))
+    except Exception:
+        _logger.exception("the evidence of finding %s could not be read", finding_id)
+        evidence, partial = [], True
+    verified = finding_id in index and not bool(detail.get("low_confidence"))
+    return _render(
+        context,
+        "finding_detail.html",
+        request=request,
+        principal=principal,
+        empty=not verified,
+        partial=partial,
+        refused=not verified,
+        finding=finding,
+        detail=detail,
+        evidence=evidence,
+    )
+
+
 # --------------------------------------------------------------------------- plugins
 @ui_router.get("/ui/plugins", response_class=HTMLResponse)
 def plugins_page(request: Request, context: ContextDep) -> Response:
@@ -761,13 +1214,36 @@ def plugins_page(request: Request, context: ContextDep) -> Response:
     from arachne.plugins.marketplace import load_marketplace
     from arachne.report import default_registry
 
-    catalogue = load_marketplace(context.settings.plugins.marketplace)
+    # §4.13: "a broken plugin renders as a row with its load error; the rest of the page works".
+    # Discovery raises a curated ConfigurationError naming the plugin, so a broken plugin is
+    # caught here: the page states that a plugin failed, the failure is in the server log, and
+    # the rest of the page — formats, marketplace, install switch — renders as usual.
+    plugin_error = False
+    try:
+        installed = installed_plugins()
+    except ConfigurationError:
+        _logger.exception("an installed plugin failed to load")
+        installed = {"checks": [], "report_formats": []}
+        plugin_error = True
+    try:
+        catalogue = load_marketplace(context.settings.plugins.marketplace)
+        formats = default_registry().summary()
+    except Exception:  # §4.13 error
+        _logger.exception("the plugin list could not be read")
+        return _render(context, "plugins.html", request=request, principal=principal, state="error")
     return _render(
         context,
         "plugins.html",
+        request=request,
         principal=principal,
-        installed=installed_plugins(),
-        formats=default_registry().summary(),
+        # §4.13's plugins-empty is the *Check modules* section, not the whole page: the report
+        # formats, the marketplace and the install switch are unaffected by it and stay up.
+        empty=not installed["checks"],
+        partial=plugin_error,
+        plugin_error=plugin_error,
+        refused=not principal.allows(Role.ADMIN),
+        installed=installed,
+        formats=formats,
         marketplace=catalogue.listing(),
         marketplace_version=catalogue.version,
         install_enabled=context.settings.plugins.allow_install,
@@ -782,11 +1258,20 @@ def schedules_page(request: Request, context: ContextDep) -> Response:
         return principal
     from arachne.scheduler.store import ScheduleStore
 
-    rows = ScheduleStore(context.settings.scheduler.state_path).load()
+    try:
+        rows = ScheduleStore(context.settings.scheduler.state_path).load()
+    except Exception:  # §4.11 error
+        _logger.exception("the schedules could not be read")
+        return _render(
+            context, "schedules.html", request=request, principal=principal, state="error"
+        )
     return _render(
         context,
         "schedules.html",
+        request=request,
         principal=principal,
+        empty=not rows,
+        refused=_read_only(principal),
         schedules=[{"spec": row.spec.to_dict(), "state": row.state.to_dict()} for row in rows],
     )
 
@@ -869,13 +1354,22 @@ def _report_index(context: ContextDep, scan_id: int) -> dict[int, dict[str, Any]
     The report viewer wants the *analysed* prose (narrative, resolved remediation, score,
     OWASP category) as well as the raw row. Building the report once and indexing it by the
     ``F-000042`` → ``42`` id keeps the page to one store read rather than one per finding.
+
+    ``low_confidence`` is read from the report's **split**, not from the finding's own field:
+    the builder puts a below-threshold finding in ``report.low_confidence`` and leaves the
+    field on the object at its default, so reading the field would report every finding as
+    confirmed — and the interface would then show an unverified candidate at its claimed
+    severity, which is the one thing §4.4 refuses.
     """
     try:
         report = context.reports.build(scan_id)
     except Exception:  # a scan with no analysable rows still renders its raw findings
         return {}
     index: dict[int, dict[str, Any]] = {}
-    for finding in (*report.findings, *report.low_confidence):
+    for confirmed, finding in [
+        *((True, item) for item in report.findings),
+        *((False, item) for item in report.low_confidence),
+    ]:
         try:
             db_id = int(finding.id.split("-", 1)[1])
         except (IndexError, ValueError):  # pragma: no cover - id format is ours
@@ -895,7 +1389,7 @@ def _report_index(context: ContextDep, scan_id: int) -> dict[int, dict[str, Any]
             "owasp": finding.classification.owasp_2025,
             "cwe": finding.classification.cwe,
             "cve": finding.classification.cve,
-            "low_confidence": finding.low_confidence,
+            "low_confidence": not confirmed,
         }
     return index
 

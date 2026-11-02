@@ -1,42 +1,110 @@
 {% extends "base.html" %}
+{% import "_macros.html" as ui %}
 {% block title %}Feeds · ARACHNE{% endblock %}
 {% block content %}
+{#- §5 states: loading ✓, empty ✓, error ✓, partial ✓, refused ✓ (06-ui-ux.md §4.13).
+
+    The import form is chrome, not state: §4.13's empty state *is* the prompt to import, so
+    hiding the form behind it would leave the operator to type the command by hand. The status
+    and the imported list are what the state governs. -#}
 <h1>CVE / EPSS feeds</h1>
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+{%- if refused %}
+{{ ui.refused_banner("Importing or deleting a feed needs the scanner role. The status and the imported list stay readable.") }}
+{%- endif %}
+{%- if partial %}
+{{ ui.partial_banner("One kind of feed could not be read; its row shows the last known counts rather than a guess.", retry_href="/ui/feeds") }}
+{%- endif %}
+{% if empty or state in ("loading", "error") %}
+  {{ ui.screen_state("empty" if empty else state, endpoint="GET /api/v1/feeds",
+      loading_label="Loading the feed status...",
+      empty_title="No feed data.",
+      empty_detail="Severity enrichment is degraded: findings still get a severity from CVSS, but EPSS and KEV signals are missing. Import a feed below, or point ARACHNE_EPSS_URL at the shipped snapshot.",
+      empty_primary_href="/docs",
+      empty_primary_label="Feed commands",
+      error_title="The feed status could not be loaded.",
+      retry_href="/ui/feeds") }}
+{% else %}
+  {#- §4.13 stale: a warning badge with the age and the SLA (REQ-INTEL-006). -#}
+  {% for item in freshness %}
+    {% if item.stale %}
+    <p class="banner" data-state="partial" role="status">
+      <span class="banner-title">Stale {{ item.kind }} feed.</span>
+      The newest {{ item.kind }} feed is {{ item.age_hours }} h old, past the {{ item.sla_hours }} h SLA, so this enrichment is degraded.
+      Import a fresh feed or lower <code>ARACHNE_INTEL_FRESHNESS_TTL</code>.
+    </p>
+    {% endif %}
+  {% endfor %}
 
-{% if error %}<p class="error">{{ error }}</p>{% endif %}
 
-<section class="panel">
-  <h2>Correlation status</h2>
-  <p class="muted small">Feeds directory: <code>{{ stats.directory }}</code></p>
+  <section class="panel">
+    <h2>Correlation status</h2>
+    <p class="muted small">Feeds directory: <code>{{ stats.directory }}</code></p>
+    <table>
+      <thead><tr><th>Kind</th><th>Feeds</th><th>Rows</th><th>Active artefact</th><th>Freshness</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>epss</td>
+          <td>{{ stats.by_kind.epss.feeds }}</td>
+          <td>{{ stats.by_kind.epss.entries }}</td>
+          <td class="mono small">{{ active_epss or "(shipped snapshot)" }}</td>
+          <td class="small">{{ freshness | selectattr("kind", "equalto", "epss") | map(attribute="label") | first or "—" }}</td>
+        </tr>
+        <tr>
+          <td>kev</td>
+          <td>{{ stats.by_kind.kev.feeds }}</td>
+          <td>{{ stats.by_kind.kev.entries }}</td>
+          <td class="mono small">{{ active_kev or "(shipped snapshot)" }}</td>
+          <td class="small">{{ freshness | selectattr("kind", "equalto", "kev") | map(attribute="label") | first or "—" }}</td>
+        </tr>
+        <tr>
+          <td>cve</td>
+          <td>{{ stats.by_kind.cve.feeds }}</td>
+          <td>{{ stats.by_kind.cve.entries }}</td>
+          <td class="mono small">—</td>
+          <td class="small">—</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="muted small">
+      The newest feed of a kind is used by the next scan automatically; ingestion never
+      contacts the network (F-09-03).
+    </p>
+  </section>
+
+  <h2>Imported</h2>
+  {% if feeds %}
   <table>
-    <thead><tr><th>Kind</th><th>Feeds</th><th>Rows</th><th>Active artefact</th></tr></thead>
+    <thead><tr><th>Id</th><th>Kind</th><th>Name</th><th>Version</th><th>Rows</th><th>Imported by</th><th>Artefact</th><th></th></tr></thead>
     <tbody>
+    {% for feed in feeds %}
       <tr>
-        <td>epss</td>
-        <td>{{ stats.by_kind.epss.feeds }}</td>
-        <td>{{ stats.by_kind.epss.entries }}</td>
-        <td class="mono small">{{ active_epss or "(shipped snapshot)" }}</td>
+        <td>{{ feed.id }}</td>
+        <td>{{ feed.kind }}</td>
+        <td>{{ feed.name }}</td>
+        <td class="muted small">{{ feed.version or "—" }}</td>
+        <td>{{ feed.record_count }}</td>
+        <td class="muted small">{{ feed.imported_by or "—" }}</td>
+        <td class="mono small">{{ feed.path }}</td>
+        <td>
+          <form class="inline" method="post" action="/ui/feeds/{{ feed.id }}/delete"
+                hx-post="/ui/feeds/{{ feed.id }}/delete" hx-swap="none">
+            <button class="danger" type="submit">Delete</button>
+          </form>
+        </td>
       </tr>
-      <tr>
-        <td>kev</td>
-        <td>{{ stats.by_kind.kev.feeds }}</td>
-        <td>{{ stats.by_kind.kev.entries }}</td>
-        <td class="mono small">{{ active_kev or "(shipped snapshot)" }}</td>
-      </tr>
-      <tr>
-        <td>cve</td>
-        <td>{{ stats.by_kind.cve.feeds }}</td>
-        <td>{{ stats.by_kind.cve.entries }}</td>
-        <td class="mono small">—</td>
-      </tr>
+    {% endfor %}
     </tbody>
   </table>
-  <p class="muted small">
-    The newest feed of a kind is used by the next scan automatically; ingestion never
-    contacts the network (F-09-03).
-  </p>
-</section>
+  {% else %}
+  {{ ui.empty_state("No feeds imported.",
+      "Scans use the shipped EPSS/KEV snapshot, so severity enrichment still works — importing your own feed simply makes it current.",
+      "/docs", "Feed commands") }}
+  {% endif %}
+{% endif %}
 
+{#- The import form is chrome rather than state: it is §4.13's next action, so it is present
+    while the status is empty, loading or failed too. -#}
 <section class="panel">
   <h2>Import a feed</h2>
   <form class="stack" method="post" action="/ui/feeds/import"
@@ -57,32 +125,4 @@
     Large feeds belong on the command line: <code>arachne feeds import &lt;file&gt;</code>
   </p>
 </section>
-
-<h2>Imported</h2>
-{% if feeds %}
-<table>
-  <thead><tr><th>Id</th><th>Kind</th><th>Name</th><th>Version</th><th>Rows</th><th>Imported by</th><th>Artefact</th><th></th></tr></thead>
-  <tbody>
-  {% for feed in feeds %}
-    <tr>
-      <td>{{ feed.id }}</td>
-      <td>{{ feed.kind }}</td>
-      <td>{{ feed.name }}</td>
-      <td class="muted small">{{ feed.version or "—" }}</td>
-      <td>{{ feed.record_count }}</td>
-      <td class="muted small">{{ feed.imported_by or "—" }}</td>
-      <td class="mono small">{{ feed.path }}</td>
-      <td>
-        <form class="inline" method="post" action="/ui/feeds/{{ feed.id }}/delete"
-              hx-post="/ui/feeds/{{ feed.id }}/delete" hx-swap="none">
-          <button class="danger" type="submit">Delete</button>
-        </form>
-      </td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<p class="muted">No feeds imported; scans use the shipped EPSS/KEV snapshot.</p>
-{% endif %}
 {% endblock %}

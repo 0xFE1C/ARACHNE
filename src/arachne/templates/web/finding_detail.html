@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}{{ finding.title }} · ARACHNE{% endblock %}
+{% block content %}
+{#- §5 states: loading ✓, empty ✓, error ✓, partial ✓, refused ✓ (06-ui-ux.md §4.4).
+
+    §4.4: "a finding always has content", so `empty` is the *verification panel* with no record
+    rather than a blank page, and `refused` is the unverified case (severity forced to INFO).
+    The header and the actions stay usable in every state, including `error`. -#}
+<nav class="muted small" aria-label="Breadcrumb">
+  <a href="/ui/findings">Findings</a> / {{ finding.title }}
+</nav>
+{% if state == "loading" %}
+  {{ ui.loading_state("Loading the finding...") }}
+{% else %}
+  <h1>
+    {%- if refused %}{{ ui.sev("info") }}{% else %}{{ ui.sev(finding.severity) }}{% endif %}
+    {{ finding.title }}
+  </h1>
+  {%- if refused %}
+  {{ ui.refused_banner("This finding is unverified, so its severity is shown as INFO: without a verification record the severity would be an assertion rather than a measurement (the proof ladder is the capability boundary).") }}
+  {%- endif %}
+  {%- if partial %}
+  {{ ui.partial_banner("The raw evidence could not be read. The verification record below is intact; the evidence pane offers a retry rather than showing a partial payload.") }}
+  {%- endif %}
+  <p class="muted small">
+    <code>{{ finding.asset.kind }} {{ finding.asset.value }}</code>
+    · {{ finding.module or "unknown" }}{% if finding.check_id %} / {{ finding.check_id }}{% endif %}
+    {%- if detail.cwe or finding.cwe %} · {{ detail.cwe or finding.cwe }}{% endif %}
+    {%- if detail.cve %} · {{ detail.cve }}{% endif %}
+    {%- if detail.owasp %} · {{ detail.owasp }}{% endif %}
+    · <a href="/ui/scans/{{ finding.scan_id }}">scan {{ finding.scan_id }}</a>
+  </p>
+
+  {% if state == "error" %}
+  {{ ui.screen_state("error", endpoint="GET /api/v1/findings/" ~ finding.id,
+      error_title="This finding could not be re-read.",
+      error_detail="The header and the actions above stay usable; nothing was changed.",
+      retry_href="/ui/findings/" ~ finding.id) }}
+  {% endif %}
+
+  <section class="panel">
+    <h2>Summary</h2>
+    {% if detail.description %}
+    <p>{{ detail.description }}</p>
+    {% else %}
+    <p class="muted">No analysed description for this finding yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Verification</h2>
+    {% if empty %}
+    <div class="state" data-state="empty" role="status">
+      <p class="state-title">No verification record</p>
+      <p class="state-detail">
+        This finding is unverified. It was recorded by a check that did not produce a
+        verification record, so nothing on this page claims the issue was confirmed.
+      </p>
+      <div class="next">
+        <a class="button" href="/ui/scans/{{ finding.scan_id }}">Open the scan</a>
+        <span class="muted small">A re-scan would produce a fresh verification record.</span>
+      </div>
+    </div>
+    {% else %}
+    <table>
+      <tbody>
+        <tr><th>Check</th><td class="mono small">{{ finding.check_id or "—" }}</td></tr>
+        <tr><th>Confidence</th><td>{{ finding.confidence if finding.confidence is not none else "—" }}</td></tr>
+        <tr><th>Research</th><td class="mono small">{{ finding.research_ref or "—" }}</td></tr>
+        {% if detail.cvss is not none %}
+        <tr><th>CVSS</th><td>{{ detail.cvss }}{% if detail.cvss_vector %} <code>{{ detail.cvss_vector }}</code>{% endif %}</td></tr>
+        {% endif %}
+        <tr><th>Status</th><td>{{ finding.status }}</td></tr>
+      </tbody>
+    </table>
+    <h3>Evidence ({{ evidence | length }})</h3>
+    {% if partial %}
+    {{ ui.error_state("The raw evidence could not be read.",
+        endpoint="GET /api/v1/evidence",
+        detail="The verification record above is unchanged.",
+        retry_href="/ui/findings/" ~ finding.id ~ "?evidence=retry",
+        retry_label="Retry evidence") }}
+    {% else %}
+    {% for record in evidence %}
+    <details>
+      <summary class="small">{{ record.kind }} · E{{ '%04d' % record.id }}
+        {% if record.sha256 %}<span class="muted">· sha256 {{ record.sha256[:12] }}...</span>{% endif %}
+      </summary>
+      <div class="body"><pre>{{ record.payload | tojson(indent=2) }}</pre></div>
+    </details>
+    {% else %}
+    <p class="muted small">No evidence rows recorded for this finding.</p>
+    {% endfor %}
+    {% endif %}
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Remediation</h2>
+    {% if detail.remediation %}
+    <p>{{ detail.remediation.summary }}</p>
+    {% if detail.remediation.steps %}
+    <ol>{% for step in detail.remediation.steps %}<li>{{ step }}</li>{% endfor %}</ol>
+    {% endif %}
+    {% if detail.remediation.verification %}
+    <p class="muted small">Verify the fix:</p>
+    <ul>{% for step in detail.remediation.verification %}<li>{{ step }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if detail.remediation.references %}
+    <p class="small">References:
+      {% for ref in detail.remediation.references %}<a href="{{ ref }}" target="_blank" rel="noopener">{{ ref }}</a>{% if not loop.last %} · {% endif %}{% endfor %}
+    </p>
+    {% endif %}
+    <p class="muted small">catalog entry <code>{{ detail.remediation.id }}</code> ({{ detail.remediation.source }})</p>
+    {% elif finding.remediation_id %}
+    <p class="muted">Catalog entry <code>{{ finding.remediation_id }}</code>.</p>
+    {% else %}
+    <p class="muted">No remediation entry for this check.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Review</h2>
+    <p class="muted small">
+      Marking a false positive feeds the per-check confidence tuner and writes the same feedback
+      row the API's <code>PATCH /findings/{id}</code> writes. Triage, suppression and risk
+      acceptance are in the workspace (REQ-UIX-006, WP-05).
+    </p>
+    <form hx-post="/ui/findings/{{ finding.id }}/fp" hx-swap="none" method="post">
+      <button type="submit">Mark false positive</button>
+    </form>
+  </section>
+{% endif %}
+{% endblock %}

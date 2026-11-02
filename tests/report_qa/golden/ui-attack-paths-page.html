@@ -4,14 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Attack paths · scan 1</title>
+  <link rel="stylesheet" href="/static/tokens.css">
   <link rel="stylesheet" href="/static/app.css">
   <script src="/static/htmx.min.js" defer></script>
 </head>
 <body>
 <header class="top">
   <span class="brand">ARACHNE</span>
-  <nav>
+  <nav aria-label="Screens">
     <a href="/ui/">Dashboard</a>
+    <a href="/ui/findings">Findings</a>
     <a href="/ui/scans">Scans</a>
     <a href="/ui/posture">Posture</a>
     <a href="/ui/modules">Modules</a>
@@ -22,6 +24,14 @@
     <a href="/docs" target="_blank" rel="noopener">API</a>
   </nav>
   <span class="spacer"></span>
+  <form method="post" action="/ui/preferences" class="inline" aria-label="Display">
+    <input type="hidden" name="next" value="/ui/scans/1/attack-paths">
+    <button type="submit" name="theme" value="light" aria-pressed="false">Light</button>
+    <button type="submit" name="theme" value="dark" aria-pressed="false">Dark</button>
+    <button type="submit" name="theme" value="system" aria-pressed="true">System</button>
+    <button type="submit" name="density" value="comfortable" aria-pressed="true">Comfortable</button>
+    <button type="submit" name="density" value="compact" aria-pressed="false">Compact</button>
+  </form>
   <span class="muted small"><PRINCIPAL></span>
   <form method="post" action="/ui/logout" class="inline"><button type="submit">Sign out</button></form>
 </header>
@@ -37,8 +47,10 @@
   candidate with the check that would confirm it named underneath. The thicker ring marks the
   cheapest breaking remediation — the single hop whose fix removes the most of the chain.
 </p>
-
-<p class="muted">No multi-step attack path was composed from this scan's verified findings.</p>
-</main>
+  <div class="state" data-state="empty" role="status">
+  <p class="state-title">No attack paths in this scan.</p>
+<p class="state-detail">No chain of verified findings reached the confidence threshold that would make it a path. Single findings are still in the findings tab.</p>  <div class="next">
+<a class="button primary" href="/ui/scans/1/findings">Open the findings</a>  </div>
+</div></main>
 </body>
 </html>

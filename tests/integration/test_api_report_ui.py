@@ -19,6 +19,7 @@ from pathlib import Path
 import pytest
 from tests.helpers.api import ADMIN_KEY, SCANNER_KEY, VIEWER_KEY, auth
 
+from arachne.api.auth import API_KEY_COOKIE
 from arachne.api.webhooks import WebhookNotifier, build_webhook_sender
 from arachne.core.audit import Auditor, MemoryAuditSink
 from arachne.core.config import OsintSettings, Settings, WebhookSettings
@@ -191,6 +192,229 @@ def test_a_viewer_cannot_post_a_ui_scan(live_harness) -> None:  # type: ignore[n
             follow_redirects=False,
         )
     assert response.status_code == 403
+
+
+# --------------------------------------------------- the state matrix on the live app
+# WP-04: the five states exist in the templates (tests/unit/test_ui_states.py renders all 70
+# cells). These tests are the other half — that the *routes* reach them from real data, which is
+# what makes "implemented" mean "reachable" rather than "present in a template".
+
+
+def test_the_overview_and_the_scan_list_render_their_empty_states(live_harness) -> None:  # type: ignore[no-untyped-def]
+    with live_harness.client() as client:
+        client.cookies.set(API_KEY_COOKIE, VIEWER_KEY)
+        page = client.get("/ui/")
+        assert page.status_code == 200
+        assert 'data-state="empty"' in page.text
+        assert "No scans yet." in page.text
+
+        scans = client.get("/ui/scans")
+        assert scans.status_code == 200
+        assert 'data-state="empty"' in scans.text
+        # §4.5: the empty state offers the next action, and the start form survives it.
+        assert "Start a scan" in scans.text
+        assert "Dry run" in scans.text
+
+
+def test_a_read_only_session_is_flagged_on_a_page_with_data(live_harness) -> None:  # type: ignore[no-untyped-def]
+    """§4.2/§4.5 refused: a viewer sees the page, marked read-only and told why."""
+    with live_harness.client() as client:
+        client.cookies.set(API_KEY_COOKIE, VIEWER_KEY)
+        live_harness.seed_scan()
+        overview = client.get("/ui/")
+        assert overview.status_code == 200
+        assert 'data-state="refused"' in overview.text
+
+        scans = client.get("/ui/scans")
+        assert scans.status_code == 200
+        assert 'data-state="refused"' in scans.text
+        # §4.5: a refusal at admission is audited and never becomes a scan row — said plainly
+        # rather than leaving an operator to wonder why the history is missing an entry.
+        assert "never becomes a row here" in scans.text
+
+
+def test_the_scan_detail_page_carries_a_working_loading_indicator(live_harness) -> None:  # type: ignore[no-untyped-def]
+    """`loading` as a real affordance: htmx adds ``htmx-request`` to this element while the
+    filter request is in flight, and the stylesheet reveals the skeleton."""
+    with live_harness.client() as client:
+        client.cookies.set(API_KEY_COOKIE, VIEWER_KEY)
+        scan_id = live_harness.seed_scan()
+        page = client.get(f"/ui/scans/{scan_id}")
+        assert page.status_code == 200, page.text
+        assert 'id="findings-loading"' in page.text
+        assert 'hx-indicator="#findings-loading"' in page.text
+        assert 'data-state="loading"' in page.text
+
+
+# --------------------------------------------------- the findings workspace (§4.3, §4.4)
+def test_the_findings_workspace_lists_filters_and_pages(live_harness) -> None:  # type: ignore[no-untyped-def]
+    with live_harness.client() as client:
+        client.cookies.set(API_KEY_COOKIE, VIEWER_KEY)
+        scan_id = live_harness.seed_scan()
+        live_harness.seed_finding(scan_id=scan_id, title="alpha finding", severity="high")
+        live_harness.seed_finding(scan_id=scan_id, title="beta finding", severity="low")
+
+        page = client.get("/ui/findings")
+        assert page.status_code == 200, page.text
+        assert "alpha finding" in page.text and "beta finding" in page.text
+        # §4.3 partial: the footer reports the rows shown without a total.
+        assert 'data-state="partial"' in page.text
+        assert "Showing 2 finding(s)." in page.text
+
+        # A filter is the server's filter, and only what it names comes back.
+        filtered = client.get("/ui/findings?severity=high")
+        assert filtered.status_code == 200
+        assert "alpha finding" in filtered.text
+        assert "beta finding" not in filtered.text
+
+        # §4.3 empty (filtered to nothing): the filters stay and clearing them is offered.
+        nothing = client.get("/ui/findings?severity=critical")
+        assert nothing.status_code == 200
+        assert 'data-state="empty"' in nothing.text
+        assert "No findings match these filters." in nothing.text
+        assert "Clear filters" in nothing.text
+
+
+def test_the_findings_workspace_pages_with_an_opaque_cursor(live_harness) -> None:  # type: ignore[no-untyped-def]
+    """§2.2/REQ-UIX-001: the workspace pages by cursor, and the token is not hand-built."""
+    with live_harness.client() as client:
+        client.cookies.set(API_KEY_COOKIE, VIEWER_KEY)
+        scan_id = live_harness.seed_scan()
+        for index in range(3):
+            live_harness.seed_finding(scan_id=scan_id, title=f"finding {index}")
+        first = client.get("/ui/findings?limit=2")
+        assert first.status_code == 200
+        assert "cursor=" in first.text
+        assert "Load more" in first.text
+        # The newest two rows, in the endpoint's total order (id descending).
+        assert "finding 2" in first.text and "finding 1" in first.text
+        assert "finding 0" not in first.text
+        # Following the link the page produced returns exactly the remaining row.
+        target = first.text.split('href="/ui/findings?', 1)[1].split('"', 1)[0]
+        rest = client.get(f"/ui/findings?{target.replace('&amp;', '&')}")
+        assert rest.status_code == 200
+        assert "finding 0" in rest.text
+        assert "finding 2" not in rest.text
+        # The last page has nothing after it, so the affordance disappears rather than lying.
+        assert "Load more" not in rest.text
+
+        # A malformed cursor is a 400 rather than a 500 (the codec is shared with the API).
+        broken = client.get("/ui/findings?cursor=not-a-cursor")
+        assert broken.status_code == 400
+
+
+def test_a_finding_detail_renders_an_unverified_finding_honestly(tmp_path: Path) -> None:
+    """§4.4 refused: an unverified finding is INFO with a banner, not a hidden 404.
+
+    "Verified" is the report's own verdict: a finding the report publishes as a confirmed one.
+    Lowering that bar in this harness is how a test plants the unverified case — it is a real
+    deployment setting (``report.min_confidence``), not a flag invented for the test.
+    """
+    from dataclasses import replace
+
+    from tests.helpers.api import make_api_harness
+
+    from arachne.core.config import ReportSettings
+
+    settings = replace(_m1_settings(tmp_path), report=ReportSettings(min_confidence=90))
+    harness = make_api_harness(tmp_path, settings=settings, pipeline=DEFAULT_PIPELINE)
+    try:
+        with harness.client() as client:
+            client.cookies.set(API_KEY_COOKIE, VIEWER_KEY)
+            finding_id = harness.seed_finding(title="unconfirmed candidate", severity="critical")
+            page = client.get(f"/ui/findings/{finding_id}")
+            assert page.status_code == 200, page.text
+            assert "unconfirmed candidate" in page.text
+            # The severity is forced to INFO: an unverified CRITICAL is not a CRITICAL.
+            assert "sev-info" in page.text
+            assert "sev-critical" not in page.text
+            assert 'data-state="refused"' in page.text
+            assert "No verification record" in page.text
+            # §4.4: the header and the actions stay usable in every state.
+            assert "Mark false positive" in page.text
+
+            missing = client.get("/ui/findings/999999")
+            assert missing.status_code == 404
+    finally:
+        harness.close()
+
+
+def test_a_verified_finding_keeps_its_own_severity(live_harness) -> None:  # type: ignore[no-untyped-def]
+    """The INFO override is a statement about evidence, not a blanket rule."""
+    with live_harness.client() as client:
+        client.cookies.set(API_KEY_COOKIE, VIEWER_KEY)
+        finding_id = live_harness.seed_finding(title="confirmed issue", severity="critical")
+        page = client.get(f"/ui/findings/{finding_id}")
+        assert page.status_code == 200, page.text
+        assert "sev-critical" in page.text
+        assert 'data-state="refused"' not in page.text
+
+
+def test_the_findings_screens_require_a_key(live_harness) -> None:  # type: ignore[no-untyped-def]
+    with live_harness.client() as client:
+        for path in ("/ui/findings", "/ui/findings/1"):
+            response = client.get(path, follow_redirects=False)
+            assert response.status_code == 303, path
+            assert response.headers["location"].startswith("/ui/login")
+
+
+# --------------------------------------------------- dark mode and density (REQ-UIX-009)
+def test_the_theme_and_density_preferences_persist_per_user(live_harness) -> None:  # type: ignore[no-untyped-def]
+    with live_harness.client() as client:
+        client.cookies.set(API_KEY_COOKIE, VIEWER_KEY)
+        # No preference yet: the page carries no theme attribute, so the OS preference wins.
+        page = client.get("/ui/")
+        assert "data-theme=" not in page.text
+        assert 'data-density="compact"' not in page.text
+
+        dark = client.post(
+            "/ui/preferences", data={"theme": "dark", "next": "/ui/"}, follow_redirects=False
+        )
+        assert dark.status_code == 303
+        assert dark.headers["location"] == "/ui/"
+        page = client.get("/ui/")
+        assert 'data-theme="dark"' in page.text
+        # The dark palette is the token file's, so the theme switch is token-driven: the
+        # stylesheet it links is the generated one and carries both palettes.
+        assert "/static/tokens.css" in page.text
+
+        compact = client.post(
+            "/ui/preferences", data={"density": "compact"}, follow_redirects=False
+        )
+        assert compact.status_code == 303
+        page = client.get("/ui/")
+        assert 'data-density="compact"' in page.text
+        assert 'data-theme="dark"' in page.text  # changing density did not clear the theme
+
+        system = client.post("/ui/preferences", data={"theme": "system"}, follow_redirects=False)
+        assert system.status_code == 303
+        assert "data-theme=" not in client.get("/ui/").text
+        # Clearing the theme left the density alone, which is what "one button, one preference"
+        # means.
+        assert 'data-density="compact"' in client.get("/ui/").text
+
+
+def test_the_preference_endpoint_refuses_a_value_outside_its_vocabulary(live_harness) -> None:  # type: ignore[no-untyped-def]
+    """A hand-edited cookie or form value cannot become a `data-theme` attribute."""
+    with live_harness.client() as client:
+        client.cookies.set(API_KEY_COOKIE, VIEWER_KEY)
+        client.post("/ui/preferences", data={"theme": "neon"}, follow_redirects=False)
+        page = client.get("/ui/")
+        assert "data-theme=" not in page.text
+        # A cookie set by hand is re-validated on read, not trusted.
+        client.cookies.set("arachne_theme", "neon; onload=alert(1)")
+        assert "data-theme=" not in client.get("/ui/").text
+
+
+def test_the_preference_endpoint_cannot_redirect_off_the_interface(live_harness) -> None:  # type: ignore[no-untyped-def]
+    with live_harness.client() as client:
+        response = client.post(
+            "/ui/preferences",
+            data={"theme": "dark", "next": "https://evil.example/steal"},
+            follow_redirects=False,
+        )
+        assert response.status_code == 303
+        assert response.headers["location"] == "/ui/"
 
 
 # --------------------------------------------------------------------------- webhook wire

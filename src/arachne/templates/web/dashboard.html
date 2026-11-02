@@ -2,60 +2,80 @@
 {% import "_macros.html" as ui %}
 {% block title %}Dashboard · ARACHNE{% endblock %}
 {% block content %}
+{#- §5 states: loading ✓, empty ✓, error ✓, partial ✓, refused ✓ (06-ui-ux.md §4.2). -#}
 <h1>Dashboard</h1>
-
-<div class="grid cols-2">
-  <section class="panel">
-    <h2>Open severity across the newest scans</h2>
-    <p class="counts">
-      {% for severity in severities %}
-        <span class="badge sev-{{ severity }}">{{ aggregate.get(severity, 0) }} {{ severity }}</span>
-      {% endfor %}
-    </p>
-    <p class="muted small">Confirmed findings only; a false-positive or merged row is excluded.</p>
-  </section>
-
-  <section class="panel">
-    <h2>Severity trend (oldest → newest)</h2>
-    {% if trend %}
-    <div class="trend" role="img" aria-label="severity counts per scan">
-      {% for point in trend %}
-        {% set height = ((point.total / trend_max) * 80) | round(0, 'ceil') | int %}
-        <div class="bar" style="height: {{ [height, 2] | max }}px"
-             title="scan {{ point.scan_id }} · {{ point.total }} finding(s): {{ point.counts }}"></div>
-      {% endfor %}
-    </div>
-    <p class="muted small">{{ trend | length }} scan(s); tallest bar = {{ trend_max }}.</p>
-    {% else %}
-    <p class="muted">No scans yet.</p>
-    {% endif %}
-  </section>
-</div>
-
-<h2>Recent scans</h2>
-{% if scans %}
-<table>
-  <thead>
-    <tr>
-      <th>Scan</th><th>Target</th><th>Status</th><th>Findings</th>
-      <th>Engine</th><th>Created</th><th></th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for scan in scans %}
-    <tr>
-      <td><a href="/ui/scans/{{ scan.id }}">#{{ scan.id }}</a></td>
-      <td>{{ scan.target }}</td>
-      <td>{{ ui.status_label(scan.status, scan.running) }}</td>
-      <td>{{ ui.counts(scan.counts, severities) }}</td>
-      <td class="muted small">{{ scan.engine }}</td>
-      <td class="muted small">{{ scan.created_at }}</td>
-      <td><a href="/ui/scans/{{ scan.id }}/report">report</a></td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
+{% if empty or state in ("loading", "error") %}
+  {{ ui.screen_state("empty" if empty else state, endpoint="GET /api/v1/scans?limit=5",
+      loading_label="Loading the overview…",
+      empty_title="No scans yet.",
+      empty_detail="A dry run needs no target and opens no socket, so it is the safe first step.",
+      empty_primary_href="/ui/scans",
+      empty_primary_label="Run a dry run",
+      empty_secondary_href="/ui/modules",
+      empty_secondary_label="See what is detected",
+      error_title="The overview could not be loaded.",
+      retry_href="/ui/") }}
 {% else %}
-<p class="muted">No scans yet. Start one from <a href="/ui/scans">Scans</a>.</p>
+  {#- refused: a viewer sees the page without the project switcher. -#}
+  {% if refused %}{{ ui.refused_banner("This key is read-only, so no scan can be started or stopped from here.") }}{% endif %}
+
+  <div class="grid cols-2">
+    <section class="panel">
+      <h2>Open severity across the newest scans</h2>
+      {#- partial: a metric that failed shows "—" with the reason, and the page does not blank. -#}
+      {% if partial %}{{ ui.partial_banner("The severity counts could not be read, so they show as —.", retry_href="/ui/") }}{% endif %}
+      <p class="counts">
+        {% for severity in severities %}
+          <span class="badge sev-{{ severity }}">{{ aggregate.get(severity, 0) if not partial else "—" }} {{ severity }}</span>
+        {% endfor %}
+      </p>
+      <p class="muted small">Confirmed findings only; a false-positive or merged row is excluded.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Severity trend (oldest → newest)</h2>
+      {% if trend %}
+      <div class="trend" role="img" aria-label="severity counts per scan">
+        {% for point in trend %}
+          {% set height = ((point.total / trend_max) * 100) | round(0, 'ceil') | int %}
+          <div class="bar" style="--bar-height: {{ [height, 3] | max }}%"
+               title="scan {{ point.scan_id }} · {{ point.total }} finding(s): {{ point.counts }}"></div>
+        {% endfor %}
+      </div>
+      <p class="muted small">{{ trend | length }} scan(s); tallest bar = {{ trend_max }}.</p>
+      {% else %}
+      <p class="muted">No scans yet.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <h2>Recent scans</h2>
+  {% if scans %}
+  <table>
+    <thead>
+      <tr>
+        <th>Scan</th><th>Target</th><th>Status</th><th>Findings</th>
+        <th>Engine</th><th>Created</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for scan in scans %}
+      <tr>
+        <td><a href="/ui/scans/{{ scan.id }}">#{{ scan.id }}</a></td>
+        <td>{{ scan.target }}</td>
+        <td>{{ ui.status_label(scan.status, scan.running) }}</td>
+        <td>{{ ui.counts(scan.counts, severities) }}</td>
+        <td class="muted small">{{ scan.engine }}</td>
+        <td class="muted small">{{ scan.created_at }}</td>
+        <td><a href="/ui/scans/{{ scan.id }}/report">report</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ ui.empty_state("No open findings in this project.",
+      "There is at least one scan, and none of its findings is open. Re-scanning re-checks the estate.",
+      "/ui/scans", "Re-scan") }}
+  {% endif %}
 {% endif %}
 {% endblock %}

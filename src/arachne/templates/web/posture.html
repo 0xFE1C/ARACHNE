@@ -2,142 +2,160 @@
 {% import "_macros.html" as ui %}
 {% block title %}Posture — {{ project.name }}{% endblock %}
 {% block content %}
+{#- §5 states: loading ✓, empty ✓, error ✓, partial ✓, refused ✓ (06-ui-ux.md §4.9). -#}
 <h1>Executive dashboard</h1>
-<p class="muted small">
-  Posture for <strong>{{ project.name }}</strong>, assembled from stored scans only — no scan runs
-  to render this page. Generated {{ estate.generated_at }}.
-</p>
+{% if empty or state in ("loading", "error") %}
+  {{ ui.screen_state("empty" if empty else state, endpoint="GET /api/v1/projects/{slug}",
+      loading_label="Loading the posture…",
+      empty_title="Posture tracking starts after your second scan.",
+      empty_detail="A trend needs two points to compare, so the first scan establishes the baseline.",
+      empty_primary_href="/ui/scans",
+      empty_primary_label="Run a scan",
+      error_title="The posture dashboard could not be loaded.",
+      retry_href="/ui/posture") }}
+{% else %}
+  <p class="muted small">
+    Posture for <strong>{{ project.name }}</strong>, assembled from stored scans only — no scan runs
+    to render this page. Generated {{ estate.generated_at }}.
+  </p>
+  {%- if refused %}
+  {{ ui.refused_banner("This key is read-only over the whole estate: nothing on this page can be changed from here.") }}
+  {%- endif %}
+  {%- if partial %}
+  {{ ui.partial_banner("The baseline is stale: it was generated " ~ estate.generated_at ~ ". Cards whose source could not be read are marked —.", retry_href="/ui/posture") }}
+  {%- endif %}
 
-<div class="grid cols-2">
+  <div class="grid cols-2">
+    <section class="panel">
+      <h2>Open severity across the newest scans</h2>
+      <p class="counts">
+        {% for severity in severities %}
+          <span class="badge sev-{{ severity }}">{{ estate.open.get(severity, 0) if not partial else "—" }} {{ severity }}</span>
+        {% endfor %}
+      </p>
+      <p class="muted small">
+        Confirmed findings only; a false-positive or merged row is excluded.
+        {{ estate.open_total }} open in total.
+      </p>
+      <h3>Fix-verification loop</h3>
+      <p class="muted small">
+        {{ estate.fix_loop.closed_by_verification }} closed by verification ·
+        {{ estate.fix_loop.reopened_regressions }} re-opened as regressions ·
+        {{ estate.fix_loop.still_open_verifications }} verified still open
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>Control coverage</h2>
+      {% if coverage_scan %}
+        {{ coverage_svg | safe }}
+        <p class="muted small">
+          Measured on scan {{ coverage_scan }} — coverage is a statement about a set of checks that
+          ran, so it is taken from one scan rather than averaged across scans that ran different
+          checks. <strong>unmapped</strong> is hatched: those controls no shipped check addresses.
+        </p>
+        <table>
+          <thead><tr><th>Framework</th><th>Controls</th><th>Mapped</th><th>Unmapped</th><th>Pass</th><th>Fail</th><th>Gap</th></tr></thead>
+          <tbody>
+          {% for row in coverage %}
+            <tr>
+              <td>{{ row.name }}{% if row.edition %} <span class="muted small">{{ row.edition }}</span>{% endif %}</td>
+              <td>{{ row.total_controls }}</td>
+              <td>{{ row.controls | length }}</td>
+              <td>{{ row.total_controls - (row.controls | length) }}</td>
+              <td>{{ row.controls | selectattr("status", "equalto", "pass") | list | length }}</td>
+              <td>{{ row.controls | selectattr("status", "equalto", "fail") | list | length }}</td>
+              <td>{{ row.controls | selectattr("status", "equalto", "gap") | list | length }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">No compliance framework is configured, or no scan has produced a
+          coverage block yet. Set <code>ARACHNE_REPORT_COMPLIANCE_FRAMEWORKS</code> and run a scan.</p>
+      {% endif %}
+    </section>
+  </div>
+
   <section class="panel">
-    <h2>Open severity across the newest scans</h2>
-    <p class="counts">
-      {% for severity in severities %}
-        <span class="badge sev-{{ severity }}">{{ estate.open.get(severity, 0) }} {{ severity }}</span>
-      {% endfor %}
-    </p>
-    <p class="muted small">
-      Confirmed findings only; a false-positive or merged row is excluded.
-      {{ estate.open_total }} open in total.
-    </p>
-    <h3>Fix-verification loop</h3>
-    <p class="muted small">
-      {{ estate.fix_loop.closed_by_verification }} closed by verification ·
-      {{ estate.fix_loop.reopened_regressions }} re-opened as regressions ·
-      {{ estate.fix_loop.still_open_verifications }} verified still open
-    </p>
+    <h2>Posture trend (oldest → newest)</h2>
+    {{ trend_svg | safe }}
   </section>
 
   <section class="panel">
-    <h2>Control coverage</h2>
-    {% if coverage_scan %}
-      {{ coverage_svg | safe }}
-      <p class="muted small">
-        Measured on scan {{ coverage_scan }} — coverage is a statement about a set of checks that
-        ran, so it is taken from one scan rather than averaged across scans that ran different
-        checks. <strong>unmapped</strong> is hatched: those controls no shipped check addresses.
-      </p>
+    <h2>Drift since the previous scan</h2>
+    {% if estate.drift %}
+    <table>
+      <thead><tr><th>Between</th><th>New</th><th>Fixed</th><th>Regressed</th><th>Recurring</th></tr></thead>
+      <tbody>
+      {% for period in estate.drift %}
+        <tr>
+          <td>scan {{ period.earlier_scan_id }} → {{ period.later_scan_id }}</td>
+          <td>{{ period.new }}</td>
+          <td>{{ period.fixed }}</td>
+          <td>{{ period.regressed }}</td>
+          <td>{{ period.recurring }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">Fewer than two scans, so there is no period to compare yet.</p>
+    {% endif %}
+  </section>
+
+  <div class="grid cols-2">
+    <section class="panel">
+      <h2>Estate inventory</h2>
+      {% if estate.inventory %}
       <table>
-        <thead><tr><th>Framework</th><th>Controls</th><th>Mapped</th><th>Unmapped</th><th>Pass</th><th>Fail</th><th>Gap</th></tr></thead>
+        <thead><tr><th>Service</th><th>Resources</th></tr></thead>
         <tbody>
-        {% for row in coverage %}
-          <tr>
-            <td>{{ row.name }}{% if row.edition %} <span class="muted small">{{ row.edition }}</span>{% endif %}</td>
-            <td>{{ row.total_controls }}</td>
-            <td>{{ row.controls | length }}</td>
-            <td>{{ row.total_controls - (row.controls | length) }}</td>
-            <td>{{ row.controls | selectattr("status", "equalto", "pass") | list | length }}</td>
-            <td>{{ row.controls | selectattr("status", "equalto", "fail") | list | length }}</td>
-            <td>{{ row.controls | selectattr("status", "equalto", "gap") | list | length }}</td>
-          </tr>
+        {% for service, count in estate.inventory.items() %}
+          <tr><td>{{ service }}</td><td>{{ count }}</td></tr>
         {% endfor %}
         </tbody>
       </table>
-    {% else %}
-      <p class="muted">No compliance framework is configured, or no scan has produced a
-        coverage block yet. Set <code>ARACHNE_REPORT_COMPLIANCE_FRAMEWORKS</code> and run a scan.</p>
-    {% endif %}
-  </section>
-</div>
+      {% else %}
+        <p class="muted">No cloud baseline has been imported
+          (<code>arachne posture</code> ... observe).</p>
+      {% endif %}
+    </section>
 
-<section class="panel">
-  <h2>Posture trend (oldest → newest)</h2>
-  {{ trend_svg | safe }}
-</section>
+    <section class="panel">
+      <h2>Watched scopes</h2>
+      {% if estate.watched_scopes %}
+      <table>
+        <thead><tr><th>Scope</th><th>Resources</th></tr></thead>
+        <tbody>
+        {% for scope in estate.watched_scopes %}
+          <tr><td><code>{{ scope.scope }}</code></td><td>{{ scope.resources }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <p class="muted">No scope is being watched for drift yet.</p>
+      {% endif %}
+    </section>
+  </div>
 
-<section class="panel">
-  <h2>Drift since the previous scan</h2>
-  {% if estate.drift %}
-  <table>
-    <thead><tr><th>Between</th><th>New</th><th>Fixed</th><th>Regressed</th><th>Recurring</th></tr></thead>
-    <tbody>
-    {% for period in estate.drift %}
-      <tr>
-        <td>scan {{ period.earlier_scan_id }} → {{ period.later_scan_id }}</td>
-        <td>{{ period.new }}</td>
-        <td>{{ period.fixed }}</td>
-        <td>{{ period.regressed }}</td>
-        <td>{{ period.recurring }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p class="muted">Fewer than two scans, so there is no period to compare yet.</p>
-  {% endif %}
-</section>
-
-<div class="grid cols-2">
   <section class="panel">
-    <h2>Estate inventory</h2>
-    {% if estate.inventory %}
+    <h2>Scans in this trend</h2>
     <table>
-      <thead><tr><th>Service</th><th>Resources</th></tr></thead>
+      <thead><tr><th>Scan</th><th>Target</th><th>Findings</th><th>Created</th></tr></thead>
       <tbody>
-      {% for service, count in estate.inventory.items() %}
-        <tr><td>{{ service }}</td><td>{{ count }}</td></tr>
+      {% for point in estate.scans %}
+        <tr>
+          <td><a href="/ui/scans/{{ point.scan_id }}">#{{ point.scan_id }}</a></td>
+          <td>{{ point.target }}</td>
+          <td>{{ ui.counts(point.counts, severities) }}</td>
+          <td class="muted small">{{ point.created_at }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="muted">No scans yet.</td></tr>
       {% endfor %}
       </tbody>
     </table>
-    {% else %}
-      <p class="muted">No cloud baseline has been imported
-        (<code>arachne posture</code> … observe).</p>
-    {% endif %}
   </section>
-
-  <section class="panel">
-    <h2>Watched scopes</h2>
-    {% if estate.watched_scopes %}
-    <table>
-      <thead><tr><th>Scope</th><th>Resources</th></tr></thead>
-      <tbody>
-      {% for scope in estate.watched_scopes %}
-        <tr><td><code>{{ scope.scope }}</code></td><td>{{ scope.resources }}</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-      <p class="muted">No scope is being watched for drift yet.</p>
-    {% endif %}
-  </section>
-</div>
-
-<section class="panel">
-  <h2>Scans in this trend</h2>
-  <table>
-    <thead><tr><th>Scan</th><th>Target</th><th>Findings</th><th>Created</th></tr></thead>
-    <tbody>
-    {% for point in estate.scans %}
-      <tr>
-        <td><a href="/ui/scans/{{ point.scan_id }}">#{{ point.scan_id }}</a></td>
-        <td>{{ point.target }}</td>
-        <td>{{ ui.counts(point.counts, severities) }}</td>
-        <td class="muted small">{{ point.created_at }}</td>
-      </tr>
-    {% else %}
-      <tr><td colspan="4" class="muted">No scans yet.</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</section>
+{% endif %}
 {% endblock %}
