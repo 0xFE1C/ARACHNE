@@ -1,9 +1,12 @@
+{#- The document's language is the resolved locale (REQ-UIX-008): `current_locale()` reads
+    `ARACHNE_LOCALE` (F-08-01) with `en` as the fallback, so a French deployment announces
+    `lang="fr"` and a screen reader uses French pronunciation rules. -#}
 <!doctype html>
-<html lang="en"{% if theme %} data-theme="{{ theme }}"{% endif %}{% if density %} data-density="{{ density }}"{% endif %}>
+<html lang="{{ current_locale() }}"{% if theme %} data-theme="{{ theme }}"{% endif %}{% if density %} data-density="{{ density }}"{% endif %}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}ARACHNE{% endblock %}</title>
+  <title>{% block title %}{{ t('ui.app.name') }}{% endblock %}</title>
   {# design tokens are generated from tokens.json (REQ-UIX-004); app.css names them, never a raw value #}
   <link rel="stylesheet" href="/static/tokens.css">
   <link rel="stylesheet" href="/static/app.css">
@@ -12,33 +15,33 @@
 <body>
 {% if principal is defined and principal %}
 <header class="top">
-  <span class="brand">ARACHNE</span>
-  <nav aria-label="Screens">
-    <a href="/ui/">Dashboard</a>
-    <a href="/ui/findings">Findings</a>
-    <a href="/ui/scans">Scans</a>
-    <a href="/ui/posture">Posture</a>
-    <a href="/ui/modules">Modules</a>
-    <a href="/ui/feeds">Feeds</a>
-    <a href="/ui/plugins">Plugins</a>
-    <a href="/ui/quality">Quality</a>
-    <a href="/ui/schedules">Schedules</a>
-    <a href="/docs" target="_blank" rel="noopener">API</a>
+  <span class="brand">{{ t('ui.app.name') }}</span>
+  <nav aria-label="{{ t('ui.nav.aria') }}">
+    <a href="/ui/">{{ t('ui.nav.dashboard') }}</a>
+    <a href="/ui/findings">{{ t('ui.nav.findings') }}</a>
+    <a href="/ui/scans">{{ t('ui.nav.scans') }}</a>
+    <a href="/ui/posture">{{ t('ui.nav.posture') }}</a>
+    <a href="/ui/modules">{{ t('ui.nav.modules') }}</a>
+    <a href="/ui/feeds">{{ t('ui.nav.feeds') }}</a>
+    <a href="/ui/plugins">{{ t('ui.nav.plugins') }}</a>
+    <a href="/ui/quality">{{ t('ui.nav.quality') }}</a>
+    <a href="/ui/schedules">{{ t('ui.nav.schedules') }}</a>
+    <a href="/docs" target="_blank" rel="noopener">{{ t('ui.nav.api') }}</a>
   </nav>
   <span class="spacer"></span>
   {# Theme and density persist per user (REQ-UIX-009) in the `arachne_theme` and
      `arachne_density` cookies this form writes; each button submits only its own value, so no
      script is needed to switch either one. #}
-  <form method="post" action="/ui/preferences" class="inline" aria-label="Display">
+  <form method="post" action="/ui/preferences" class="inline" aria-label="{{ t('ui.display.aria') }}">
     <input type="hidden" name="next" value="{{ current_path|default('/ui/') }}">
-    <button type="submit" name="theme" value="light" aria-pressed="{{ 'true' if theme == 'light' else 'false' }}">Light</button>
-    <button type="submit" name="theme" value="dark" aria-pressed="{{ 'true' if theme == 'dark' else 'false' }}">Dark</button>
-    <button type="submit" name="theme" value="system" aria-pressed="{{ 'true' if not theme else 'false' }}">System</button>
-    <button type="submit" name="density" value="comfortable" aria-pressed="{{ 'true' if density != 'compact' else 'false' }}">Comfortable</button>
-    <button type="submit" name="density" value="compact" aria-pressed="{{ 'true' if density == 'compact' else 'false' }}">Compact</button>
+    <button type="submit" name="theme" value="light" aria-pressed="{{ 'true' if theme == 'light' else 'false' }}">{{ t('ui.display.light') }}</button>
+    <button type="submit" name="theme" value="dark" aria-pressed="{{ 'true' if theme == 'dark' else 'false' }}">{{ t('ui.display.dark') }}</button>
+    <button type="submit" name="theme" value="system" aria-pressed="{{ 'true' if not theme else 'false' }}">{{ t('ui.display.system') }}</button>
+    <button type="submit" name="density" value="comfortable" aria-pressed="{{ 'true' if density != 'compact' else 'false' }}">{{ t('ui.display.comfortable') }}</button>
+    <button type="submit" name="density" value="compact" aria-pressed="{{ 'true' if density == 'compact' else 'false' }}">{{ t('ui.display.compact') }}</button>
   </form>
   <span class="muted small">{{ principal.label }} · {{ principal.role }}</span>
-  <form method="post" action="/ui/logout" class="inline"><button type="submit">Sign out</button></form>
+  <form method="post" action="/ui/logout" class="inline"><button type="submit">{{ t('ui.auth.sign_out') }}</button></form>
 </header>
 {% endif %}
 <main>

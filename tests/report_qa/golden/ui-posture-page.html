@@ -37,10 +37,7 @@
 </header>
 <main>
 <h1>Executive dashboard</h1>
-  <p class="muted small">
-    Posture for <strong>Default workspace</strong>, assembled from stored scans only — no scan runs
-    to render this page. Generated <TIMESTAMP>.
-  </p>  <p class="banner" data-state="refused" role="status">
+  <p class="muted small">Posture for Default workspace, assembled from stored scans only — no scan runs to render this page. Generated <TIMESTAMP>.</p>  <p class="banner" data-state="refused" role="status">
   <span class="banner-title">Read-only.</span> This key is read-only over the whole estate: nothing on this page can be changed from here.
 </p>
   <div class="grid cols-2">
@@ -67,8 +64,7 @@
 
     <section class="panel">
       <h2>Control coverage</h2>
-        <p class="muted">No compliance framework is configured, or no scan has produced a
-          coverage block yet. Set <code>ARACHNE_REPORT_COMPLIANCE_FRAMEWORKS</code> and run a scan.</p>
+        <p class="muted">No compliance framework is configured, or no scan has produced a coverage block yet. Set ARACHNE_REPORT_COMPLIANCE_FRAMEWORKS and run a scan.</p>
     </section>
   </div>
 
@@ -85,8 +81,7 @@
   <div class="grid cols-2">
     <section class="panel">
       <h2>Estate inventory</h2>
-        <p class="muted">No cloud baseline has been imported
-          (<code>arachne posture</code> ... observe).</p>
+        <p class="muted">No cloud baseline has been imported (arachne posture ... observe).</p>
     </section>
 
     <section class="panel">
@@ -98,7 +93,9 @@
   <section class="panel">
     <h2>Scans in this trend</h2>
     <table>
-      <thead><tr><th>Scan</th><th>Target</th><th>Findings</th><th>Created</th></tr></thead>
+      <thead>
+        <tr><th>Scan</th><th>Target</th><th>Findings</th><th>Created</th></tr>
+      </thead>
       <tbody>
         <tr>
           <td><a href="/ui/scans/1">#1</a></td>

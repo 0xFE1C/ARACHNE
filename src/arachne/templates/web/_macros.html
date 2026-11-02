@@ -1,24 +1,32 @@
-{#- Shared macros for the web UI (state matrix: REQ-UIX-005, 06-ui-ux.md §4/§5). -#}
+{#- Shared macros for the web UI (state matrix: REQ-UIX-005, 06-ui-ux.md §4/§5).
+
+    Every user-visible word here is a catalogue lookup (REQ-UIX-008): `t(key)` for a string and
+    `tp(key, count)` for its plural form. `python -m arachne.i18n.audit` fails the build on a
+    literal in this file, so the words can only come from `templates/i18n/<locale>.yaml`.
+
+    A macro that renders a sentence takes an optional override for it, so a screen can pass its
+    own catalogue key and the shared default is one lookup — never a second copy of the text. -#}
 
 {% macro sev(severity) -%}
   {%- set value = (severity or "")|lower -%}
-  <span class="badge sev-{{ value if value in ['critical','high','medium','low','info'] else 'other' }}">
-    {{- value or "unanalysed" -}}</span>
+  {%- set known = value in ['critical', 'high', 'medium', 'low', 'info'] -%}
+  <span class="badge sev-{{ value if known else 'other' }}">
+    {{- t('ui.severity.' ~ value) if known else t('ui.severity.unanalysed') -}}</span>
 {%- endmacro %}
 
 {% macro counts(counts, severities) -%}
   <span class="counts">
   {%- for severity in severities -%}
     {%- if counts.get(severity) -%}
-      <span class="badge sev-{{ severity }}">{{ counts.get(severity) }}</span>
+      <span class="badge sev-{{ severity }}">{{ counts.get(severity) | number }}</span>
     {%- endif -%}
   {%- endfor -%}
-  {%- if not counts.values()|sum -%}<span class="muted small">none</span>{%- endif -%}
+  {%- if not counts.values()|sum -%}<span class="muted small">{{ t('ui.common.none') }}</span>{%- endif -%}
   </span>
 {%- endmacro %}
 
 {% macro status_label(status, running) -%}
-  <span class="status {{ 'running' if running else status }}">{{ status }}{{ ' · running' if running }}</span>
+  <span class="status {{ 'running' if running else status }}">{{ t('ui.status.' ~ status) }}{{ t('ui.status.running_suffix') if running }}</span>
 {%- endmacro %}
 
 {% macro loading_state(label, rows=5) -%}
@@ -44,14 +52,14 @@
 
 {#- An error state names what failed and how to retry. It never carries a traceback or an
     exception's text (06-ui-ux.md §7): the route logs the detail and passes a sentence. -#}
-{% macro error_state(title, endpoint=None, detail=None, retry_href=None, retry_label="Retry") -%}
+{% macro error_state(title, endpoint=None, detail=None, retry_href=None, retry_label=None) -%}
 <div class="state" data-state="error" role="alert">
   <p class="state-title">{{ title }}</p>
   {% if detail %}<p class="state-detail">{{ detail }}</p>{% endif %}
-  {% if endpoint %}<p class="small">Failed reading <code>{{ endpoint }}</code>. The failure is in the server log.</p>{% endif %}
+  {% if endpoint %}<p class="small">{{ t('ui.state.failed_reading', endpoint=endpoint) }}</p>{% endif %}
   <div class="next">
-    {% if retry_href %}<a class="button" href="{{ retry_href }}">{{ retry_label }}</a>{% endif %}
-    <span class="muted small">Nothing on this page was changed.</span>
+    {% if retry_href %}<a class="button" href="{{ retry_href }}">{{ retry_label or t('ui.common.retry') }}</a>{% endif %}
+    <span class="muted small">{{ t('ui.state.nothing_changed') }}</span>
   </div>
 </div>
 {%- endmacro %}
@@ -59,27 +67,27 @@
 {#- partial: "some sections loaded, others failed" — the rest of the page still renders. -#}
 {% macro partial_banner(message, retry_href=None) -%}
 <p class="banner" data-state="partial" role="status">
-  <span class="banner-title">Partially loaded.</span> {{ message }}
-  {% if retry_href %} <a href="{{ retry_href }}">Retry the missing section</a>.{% endif %}
+  <span class="banner-title">{{ t('ui.state.partial_title') }}</span> {{ message }}
+  {% if retry_href %} <a href="{{ retry_href }}">{{ t('ui.state.partial_retry') }}</a>.{% endif %}
 </p>
 {%- endmacro %}
 
 {#- refused: an authorization or scope decision applies to this screen's actions. -#}
 {% macro refused_banner(message) -%}
 <p class="banner" data-state="refused" role="status">
-  <span class="banner-title">Read-only.</span> {{ message }}
+  <span class="banner-title">{{ t('ui.state.refused_title') }}</span> {{ message }}
 </p>
 {%- endmacro %}
 
 {#- The one dispatcher every screen uses for the three states that replace the content region.
     loading / empty / error are mutually exclusive with the loaded rendering; partial and
     refused are modifiers drawn on top of it (see the §5 matrix). -#}
-{% macro screen_state(state, endpoint=None, loading_label="Loading…", empty_title=None, empty_detail=None, empty_primary_href=None, empty_primary_label=None, empty_secondary_href=None, empty_secondary_label=None, error_title="This screen could not be loaded.", error_detail=None, retry_href=None) -%}
+{% macro screen_state(state, endpoint=None, loading_label=None, empty_title=None, empty_detail=None, empty_primary_href=None, empty_primary_label=None, empty_secondary_href=None, empty_secondary_label=None, error_title=None, error_detail=None, retry_href=None) -%}
   {%- if state == "loading" -%}
-    {{ loading_state(loading_label) }}
+    {{ loading_state(loading_label or t('ui.state.loading')) }}
   {%- elif state == "error" -%}
-    {{ error_state(error_title, endpoint=endpoint, detail=error_detail, retry_href=retry_href) }}
+    {{ error_state(error_title or t('ui.state.error_title'), endpoint=endpoint, detail=error_detail, retry_href=retry_href) }}
   {%- elif state == "empty" -%}
-    {{ empty_state(empty_title or "Nothing here yet.", empty_detail, empty_primary_href, empty_primary_label, empty_secondary_href, empty_secondary_label) }}
+    {{ empty_state(empty_title or t('ui.state.empty_title'), empty_detail, empty_primary_href, empty_primary_label, empty_secondary_href, empty_secondary_label) }}
   {%- endif -%}
 {%- endmacro %}

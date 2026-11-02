@@ -259,7 +259,9 @@ def test_the_findings_workspace_lists_filters_and_pages(live_harness) -> None:  
         assert "alpha finding" in page.text and "beta finding" in page.text
         # §4.3 partial: the footer reports the rows shown without a total.
         assert 'data-state="partial"' in page.text
-        assert "Showing 2 finding(s)." in page.text
+        # §4.3 partial: the footer reports the rows shown without a total. The count and its
+        # noun come from the catalogue's plural form (REQ-UIX-008).
+        assert "Showing 2 findings." in page.text
 
         # A filter is the server's filter, and only what it names comes back.
         filtered = client.get("/ui/findings?severity=high")

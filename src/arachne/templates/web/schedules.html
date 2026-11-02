@@ -1,69 +1,71 @@
 {% extends "base.html" %}
 {% import "_macros.html" as ui %}
-{% block title %}Schedules · ARACHNE{% endblock %}
+{% block title %}{{ t('ui.title.schedules') }}{% endblock %}
 {% block content %}
 {#- §5 states: loading ✓, empty ✓, error ✓, partial ✓, refused ✓ (06-ui-ux.md §4.11). -#}
-<h1>Schedules</h1>
+<h1>{{ t('ui.schedules.heading') }}</h1>
 
 <section class="panel">
-  <h2>Register a recurring scan</h2>
+  <h2>{{ t('ui.schedules.register_heading') }}</h2>
   {%- if refused %}
-  {{ ui.refused_banner("Creating, running or removing a schedule needs the scanner role. The list below stays readable.") }}
+  {{ ui.refused_banner(t('ui.schedules.refused')) }}
   {%- endif %}
   <form class="stack" method="post" action="/ui/schedules"
         hx-post="/ui/schedules" hx-swap="none">
-    <div><label for="id">Id (kebab-case)</label><input id="id" name="id" required></div>
-    <div><label for="target">Target fixture path</label><input id="target" name="target" required></div>
-    <div><label for="cron">Cron (minute hour day month weekday)</label>
+    <div><label for="id">{{ t('ui.schedules.id_label') }}</label><input id="id" name="id" required></div>
+    <div><label for="target">{{ t('ui.schedules.target_label') }}</label><input id="target" name="target" required></div>
+    <div><label for="cron">{{ t('ui.schedules.cron_label') }}</label>
       <input id="cron" name="cron" value="0 3 * * *" required></div>
-    <div><label for="engine">Engine</label>
+    <div><label for="engine">{{ t('ui.table.engine') }}</label>
       <select id="engine" name="engine">
-        <option value="">fixture default</option>
-        <option value="heuristic">heuristic</option>
-        <option value="hybrid">hybrid</option>
+        <option value="">{{ t('ui.scans.fixture_default') }}</option>
+        {% for engine in ("heuristic", "hybrid") %}
+        <option value="{{ engine }}">{{ engine }}</option>
+        {% endfor %}
       </select></div>
-    <label><input type="checkbox" name="active_checks"> active checks</label>
-    <button class="primary" type="submit">Add schedule</button>
+    <label><input type="checkbox" name="active_checks"> {{ t('ui.scans.active_checks') }}</label>
+    <button class="primary" type="submit">{{ t('ui.schedules.add') }}</button>
   </form>
   <p class="muted small">
-    Running a schedule executes the real orchestrator; due schedules run from
-    <code>arachne schedule run</code> (or the API).
-    <a href="/docs" target="_blank" rel="noopener">Cron syntax reference</a>
+    {{ t('ui.schedules.note') }}
+    <a href="/docs" target="_blank" rel="noopener">{{ t('ui.schedules.cron_reference') }}</a>
   </p>
 </section>
 
-<h2>Registered</h2>
+<h2>{{ t('ui.schedules.registered') }}</h2>
 {% if empty or state in ("loading", "error") %}
-  {{ ui.screen_state("empty" if empty else state, endpoint="scheduler state file",
-      loading_label="Loading the schedules…",
-      empty_title="No schedules.",
-      empty_detail="A schedule runs a stored target on a cron expression. Register one above, or from the command line.",
-      error_title="The schedules could not be read.",
+  {{ ui.screen_state("empty" if empty else state, endpoint=t('ui.schedules.endpoint'),
+      loading_label=t('ui.schedules.loading'),
+      empty_title=t('ui.schedules.empty_title'),
+      empty_detail=t('ui.schedules.empty_detail'),
+      error_title=t('ui.schedules.error_title'),
       retry_href="/ui/schedules") }}
 {% else %}
   {%- if partial %}
-  {{ ui.partial_banner("A schedule's last-run state could not be read, so its timestamps show as —.", retry_href="/ui/schedules") }}
+  {{ ui.partial_banner(t('ui.schedules.partial'), retry_href="/ui/schedules") }}
   {%- endif %}
   {% if schedules %}
   <table>
-    <thead><tr><th>Id</th><th>Cron</th><th>Enabled</th><th>Last run</th><th>Next run</th><th>Target</th><th>Controls</th></tr></thead>
+    <thead>
+      <tr><th>{{ t('ui.table.id') }}</th><th>{{ t('ui.table.cron') }}</th><th>{{ t('ui.table.enabled') }}</th><th>{{ t('ui.table.last_run') }}</th><th>{{ t('ui.table.next_run') }}</th><th>{{ t('ui.table.target') }}</th><th>{{ t('ui.table.controls') }}</th></tr>
+    </thead>
     <tbody>
     {% for row in schedules %}
       <tr>
         <td>{{ row.spec.id }}</td>
         <td class="mono small">{{ row.spec.cron }}</td>
-        <td>{{ "yes" if row.spec.enabled else "no" }}</td>
-        <td class="muted small">{{ row.state.last_run_at or "—" }}</td>
-        <td class="muted small">{{ row.state.next_run_at or "—" }}</td>
+        <td>{{ t('ui.common.yes') if row.spec.enabled else t('ui.common.no') }}</td>
+        <td class="muted small">{{ (row.state.last_run_at | datetime) or "—" }}</td>
+        <td class="muted small">{{ (row.state.next_run_at | datetime) or "—" }}</td>
         <td class="muted small">{{ row.spec.target }}</td>
         <td>
           <form class="inline" method="post" action="/ui/schedules/{{ row.spec.id }}/run"
                 hx-post="/ui/schedules/{{ row.spec.id }}/run" hx-swap="none">
-            <button type="submit">Run now</button>
+            <button type="submit">{{ t('ui.schedules.run_now') }}</button>
           </form>
           <form class="inline" method="post" action="/ui/schedules/{{ row.spec.id }}/remove"
                 hx-post="/ui/schedules/{{ row.spec.id }}/remove" hx-swap="none">
-            <button class="danger" type="submit">Remove</button>
+            <button class="danger" type="submit">{{ t('ui.schedules.remove') }}</button>
           </form>
         </td>
       </tr>
@@ -71,9 +73,9 @@
     </tbody>
   </table>
   {% else %}
-  {{ ui.empty_state("No schedules.",
-      "A schedule runs a stored target on a cron expression. It is the difference between a scan you remember to run and an estate you keep watching.",
-      "/docs", "Cron syntax reference") }}
+  {{ ui.empty_state(t('ui.schedules.empty_title'),
+      t('ui.schedules.empty_fallback'),
+      "/docs", t('ui.schedules.cron_reference')) }}
   {% endif %}
 {% endif %}
 {% endblock %}

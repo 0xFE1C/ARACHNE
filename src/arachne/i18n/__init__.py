@@ -18,17 +18,20 @@ Public surface:
 
 Scope note — honest about what is and is not externalized today:
 
-* **Externalized now** (English values byte-identical, so no test changes behaviour): the
-  Markdown renderer's section titles (executive summary, scope, asset inventory,
-  low-confidence observations, appendix) and three per-finding labels (evidence,
-  description, remediation) — the ``report.*`` keys in ``templates/i18n/en.yaml``.
+* **Externalized now**: the Markdown renderer's section titles (executive summary, scope, asset
+  inventory, low-confidence observations, appendix) and three per-finding labels (evidence,
+  description, remediation) — the ``report.*`` keys; **and, since WP-06, every user-visible
+  string of the web interface** — the ``ui.*`` keys (REQ-UIX-008). The interface's strings are
+  reached through the two Jinja globals ``t(key, **params)`` and ``tp(key, count, **params)``
+  and the ``| number`` / ``| datetime`` filters, so no template carries a literal and
+  pluralisation and date/number formatting are the catalogue's, not the template's.
 * **Still inline** (deliberately not rewired — a mechanical pass, not a correctness one):
   everything else. The HTML and PDF renderers keep their own headings; the Markdown renderer
   still writes "Verification of fix", "Provenance", "Classification", the severity labels and
   the per-row table text inline; the JSON renderer emits schema keys; the analyzer narrative
   and executive-summary prose live in their own corpora (``templates/narrative/``,
-  ``templates/report/executive-summary.yaml``); and CLI/API/web text is untouched. Those are
-  the natural next entries for the English catalogue, one renderer at a time.
+  ``templates/report/executive-summary.yaml``); and CLI/API exception text is untouched. Those
+  are the natural next entries for the English catalogue, one renderer at a time.
 """
 
 from __future__ import annotations
@@ -37,9 +40,11 @@ from arachne.i18n.catalog import (
     DEFAULT_I18N_DIR,
     DEFAULT_LOCALE,
     LOCALE_ENV_VAR,
+    PLURAL_FORMS,
     Translator,
     load_catalog,
     parse_catalog,
+    plural_form,
     resolve_locale,
 )
 
@@ -47,10 +52,15 @@ __all__ = [
     "DEFAULT_I18N_DIR",
     "DEFAULT_LOCALE",
     "LOCALE_ENV_VAR",
+    "PLURAL_FORMS",
     "Translator",
+    "format_datetime",
+    "format_number",
     "get_translator",
     "load_catalog",
     "parse_catalog",
+    "plural_form",
+    "pluralize",
     "reset_translator",
     "resolve_locale",
     "set_translator",
@@ -84,7 +94,22 @@ def translate(key: str, /, *, locale: str | None = None, **params: object) -> st
     """Look up ``key`` in ``locale`` (default: the resolved process locale).
 
     ``locale`` overrides ``ARACHNE_LOCALE`` for this call. An unknown key returns the key
-    itself with ``**params`` interpolated; a locale without a catalogue falls back to
-    English. Never raises on a scan/report path.
+    itself with ``**params`` interpolated (and logs a warning); a locale without a catalogue
+    falls back to English. Never raises on a scan/report path.
     """
     return get_translator().translate(key, locale=locale, **params)
+
+
+def pluralize(key: str, count: float, /, *, locale: str | None = None, **params: object) -> str:
+    """The plural form of ``key`` for ``count`` (``<key>.one`` / ``<key>.other``)."""
+    return get_translator().pluralize(key, count, locale=locale, **params)
+
+
+def format_number(value: object, decimals: int = 0, /, *, locale: str | None = None) -> str:
+    """``value`` with the catalogue's group and decimal separators."""
+    return get_translator().format_number(value, decimals, locale=locale)
+
+
+def format_datetime(value: object, /, *, locale: str | None = None) -> str:
+    """``value`` in the catalogue's date/time form, always with its zone."""
+    return get_translator().format_datetime(value, locale=locale)

@@ -203,3 +203,176 @@ def test_the_french_catalogue_is_a_real_file_of_the_expected_shape() -> None:
     assert "locale: fr" in text
     parsed = load_catalog("fr")
     assert parsed["report.severity.critical"] == "Critique"
+
+
+# ---------------------------------------------------------- WP-06: the UI (REQ-UIX-008)
+#: Every key whose English and French values are identical, with the value as a comment. Each
+#: one is a cognate, an acronym, a machine example or an identifier — the words a French
+#: security team also writes in English — so an entry here is a *decision*, and a value that
+#: joins this set without a line here is a translation somebody forgot.
+IDENTICAL_BY_DESIGN: dict[str, str] = {
+    "i18n.timezone.utc": "UTC",
+    "report.finding.classification": "Classification",
+    "report.finding.description": "Description",
+    "report.finding.provenance": "Provenance",
+    "ui.app.name": "ARACHNE",
+    "ui.detail.cvss": "CVSS",
+    "ui.detail.evidence_ref": "E{number}",
+    "ui.detail.sha256": "sha256",
+    "ui.display.compact": "Compact",
+    "ui.feeds.document_label": "Document",
+    "ui.feeds.name_placeholder": "epss-2026-10-29",
+    "ui.filter.asset_placeholder": "example.com",
+    "ui.filter.cwe": "CWE",
+    "ui.filter.cwe_placeholder": "CWE-200",
+    "ui.filter.module": "Module",
+    "ui.filter.module_placeholder": "m3",
+    "ui.findings.confidence_abbrev": "conf",
+    "ui.modules.api_rate_value": "{rate}/min",
+    "ui.modules.heading": "Modules & configuration",
+    "ui.modules.version_short": "v{version}",
+    "ui.modules.webhooks": "Webhooks",
+    "ui.nav.api": "API",
+    "ui.nav.modules": "Modules",
+    "ui.nav.posture": "Posture",
+    "ui.quality.asset_pattern_placeholder": "https://app.example/*",
+    "ui.quality.check_id_placeholder": "m3.xss-oracle",
+    "ui.report.json": "JSON",
+    "ui.scan.pipeline_heading": "Pipeline",
+    "ui.table.artefact": "Artefact",
+    "ui.table.cron": "Cron",
+    "ui.table.cwe": "CWE",
+    "ui.table.id": "Id",
+    "ui.table.justification": "Justification",
+    "ui.table.module": "Module",
+    "ui.table.service": "Service",
+    "ui.table.source": "Source",
+    "ui.table.version": "Version",
+    "ui.title.finding": "{title} · ARACHNE",
+    "ui.title.modules": "Modules · ARACHNE",
+    "ui.title.posture": "Posture — {project}",
+    "ui.workspace.bulkbar_aria": "Triage",
+    "ui.workspace.owner_placeholder": "jane.operator@example.com",
+    "ui.workspace.undo_chord": "⌘Z",
+}
+
+
+def test_a_missing_key_renders_the_key_and_logs_a_warning(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """REQ-UIX-008: "a missing translation renders the key and logs a warning"."""
+    import logging
+
+    from arachne.i18n import Translator
+
+    with caplog.at_level(logging.WARNING, logger="arachne.i18n"):
+        rendered = Translator().translate("ui.no.such.key")
+    assert rendered == "ui.no.such.key"
+    assert any("ui.no.such.key" in record.getMessage() for record in caplog.records)
+    # A key that exists logs nothing: the warning has to mean something.
+    caplog.clear()
+    with caplog.at_level(logging.WARNING, logger="arachne.i18n"):
+        assert Translator().translate("ui.login.heading") == "ARACHNE sign in"
+    assert not caplog.records
+
+
+def test_only_the_pinned_values_are_identical_across_the_two_locales() -> None:
+    """The one list of values that may stay English in French, and nothing else."""
+    english = load_catalog("en")
+    french = load_catalog("fr")
+    identical = {key for key in english if english[key] == french.get(key)}
+    assert identical == set(IDENTICAL_BY_DESIGN), sorted(identical ^ set(IDENTICAL_BY_DESIGN))
+    for key, value in IDENTICAL_BY_DESIGN.items():
+        assert english[key] == value, (key, english[key])
+
+
+def test_every_ui_value_is_non_empty_and_stays_a_string() -> None:
+    for locale in ("en", "fr"):
+        for key, value in load_catalog(locale).items():
+            if key.startswith(("ui.", "i18n.")):
+                assert isinstance(value, str) and value.strip(), (locale, key)
+
+
+def test_the_plural_rule_follows_the_locale() -> None:
+    """French counts zero as singular; English does not. This is a rule, not a translation."""
+    from arachne.i18n import Translator, plural_form
+
+    assert plural_form("en", 0) == "other"
+    assert plural_form("en", 1) == "one"
+    assert plural_form("fr", 0) == "one"
+    assert plural_form("fr", 1) == "one"
+    assert plural_form("fr", 2) == "other"
+    translator = Translator()
+    assert translator.pluralize("ui.common.findings", 0, locale="fr") == "0 constat"
+    assert translator.pluralize("ui.common.findings", 0, locale="en") == "0 findings"
+    assert translator.pluralize("ui.common.findings", 1) == "1 finding"
+
+
+def test_numbers_and_dates_come_from_the_catalogue() -> None:
+    """§10: "Dates and numbers use the locale formatter", and both are catalogue-driven."""
+    from arachne.i18n import Translator
+
+    translator = Translator()
+    assert translator.format_number(1234567) == "1,234,567"
+    assert translator.format_number(1234567, locale="fr") == "1\u202f234\u202f567"
+    assert translator.format_number(3.0, 1) == "3.0"
+    assert translator.format_number(3.0, 1, locale="fr") == "3,0"
+    # A timestamp always carries its zone (§10), in both locales.
+    assert translator.format_datetime("2026-11-01T12:00:00+00:00") == "1 Nov 2026, 12:00 UTC"
+    assert translator.format_datetime("2026-11-01T12:00:00+00:00", locale="fr") == (
+        "1 nov. 2026 à 12:00 UTC"
+    )
+    # A value that is not a date is passed through rather than raising on a render path.
+    assert translator.format_datetime("not a date") == "not a date"
+    assert translator.format_datetime(None) == ""
+    assert translator.format_number("not a number") == "not a number"
+
+
+def test_every_closed_vocabulary_a_template_builds_a_key_from_is_translated() -> None:
+    """The half of REQ-UIX-008 a static scan of the templates cannot see."""
+    from arachne.i18n.audit import _has_key, _vocabulary_prefixes, referenced_keys
+
+    _, prefixes = referenced_keys()
+    vocabularies = _vocabulary_prefixes()
+    assert prefixes, "no dynamic key prefix found — did the templates change shape?"
+    for prefix in prefixes:
+        assert prefix in vocabularies, f"{prefix!r} has no declared vocabulary"
+        for value in vocabularies[prefix]:
+            for locale in ("en", "fr"):
+                assert _has_key(load_catalog(locale), f"{prefix}{value}"), (locale, prefix, value)
+
+
+def test_no_template_carries_a_user_visible_literal() -> None:
+    """REQ-UIX-008's first acceptance criterion, as the audit enforces it in CI."""
+    from arachne.i18n import audit as i18n_audit
+
+    findings = i18n_audit.audit()
+    assert findings == [], "\n".join(str(item) for item in findings)
+    assert len(i18n_audit.template_sources()) == 18
+
+
+def test_the_template_audit_is_not_vacuous() -> None:
+    """A gate nobody has seen fail is not a gate: every rule is driven over a plant."""
+    from arachne.i18n import audit as i18n_audit
+
+    assert i18n_audit.self_test() == []
+    findings, keys, prefixes = i18n_audit.scan_template(
+        Path("planted.html"),
+        '<h1>Sign in</h1>\n<p aria-label="Display controls"></p>\n'
+        '<p>{{ "a phrase in English" }}</p>\n'
+        "<p>{{ t('ui.planted.' ~ kind) }}</p>",
+    )
+    assert {item.rule for item in findings} == {"T1", "T2", "T3"}
+    assert prefixes == {"ui.planted."}
+    assert not keys
+
+
+def test_the_template_audit_notices_a_key_that_exists_in_no_catalogue() -> None:
+    from arachne.i18n import audit as i18n_audit
+
+    findings, keys, _ = i18n_audit.scan_template(
+        Path("planted.html"), "{{ t('ui.not.in.any.catalogue') }}"
+    )
+    assert findings == []
+    assert keys == {"ui.not.in.any.catalogue"}
+    assert "ui.not.in.any.catalogue" not in load_catalog("en")

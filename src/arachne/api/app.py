@@ -64,6 +64,7 @@ from arachne.core.errors import (
 )
 from arachne.core.logging import get_logger
 from arachne.core.metrics import CONTENT_TYPE, REGISTRY, render_metrics, status_class
+from arachne.i18n import format_datetime, format_number, pluralize, resolve_locale, translate
 
 __all__ = ["create_app"]
 
@@ -101,6 +102,20 @@ def _build_templates(settings: Settings) -> Any:
     environment.globals.update(
         api_version=__version__,
         api_key_header=API_KEY_HEADER,
+        # The interface's whole string surface (REQ-UIX-008): `t` is the catalogue lookup and
+        # `tp` its plural form, so a template can put words on screen without holding one.
+        # A missing key renders as its own dotted name and logs a warning; the i18n audit
+        # (`python -m arachne.i18n.audit`) fails the build before that can ship.
+        t=translate,
+        tp=pluralize,
+        # The document's `lang` (REQ-UIX-007 3.1.1): resolved per render, so a deployment that
+        # sets ARACHNE_LOCALE announces the language its strings are actually in.
+        current_locale=resolve_locale,
+    )
+    environment.filters.update(
+        # Locale-aware number grouping and date/time rendering (`06-ui-ux.md` §10).
+        number=format_number,
+        datetime=format_datetime,
     )
     return environment
 

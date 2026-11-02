@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% import "_macros.html" as ui %}
-{% block title %}Findings · ARACHNE{% endblock %}
+{% block title %}{{ t('ui.title.findings') }}{% endblock %}
 {% block content %}
 {#- §5 states: loading ✓, empty ✓, error ✓, partial ✓, refused ✓ (06-ui-ux.md §4.3).
 
@@ -8,30 +8,30 @@
     restores it), and the workspace itself — which lives in ``_workspace.html`` because a bulk
     action replaces exactly that region with it. The filters stay *outside* the swapped region,
     which is §4.3's loading rule: the header stays interactive while the rows load. -#}
-<h1>Findings</h1>
+<h1>{{ t('ui.findings.heading') }}</h1>
 
 <form class="filters" method="get" action="/ui/findings">
-  <div><label for="q">Search</label>
-    <input id="q" name="q" value="{{ filters.q }}" placeholder="id, asset, check..."
+  <div><label for="q">{{ t('ui.filter.search') }}</label>
+    <input id="q" name="q" value="{{ filters.q }}" placeholder="{{ t('ui.filter.search_placeholder') }}"
            data-search-input></div>
-  <div><label for="severity">Severity</label>
+  <div><label for="severity">{{ t('ui.filter.severity') }}</label>
     <select id="severity" name="severity">
-      <option value="">all</option>
+      <option value="">{{ t('ui.filter.all') }}</option>
       {% for severity in severities %}
-      <option value="{{ severity }}" {{ 'selected' if filters.severity == severity }}>{{ severity }}</option>
+      <option value="{{ severity }}" {{ 'selected' if filters.severity == severity }}>{{ t('ui.severity.' ~ severity) }}</option>
       {% endfor %}
-      <option value="unanalysed" {{ 'selected' if filters.severity == 'unanalysed' }}>unanalysed</option>
+      <option value="unanalysed" {{ 'selected' if filters.severity == 'unanalysed' }}>{{ t('ui.severity.unanalysed') }}</option>
     </select></div>
-  <div><label for="status">State</label>
+  <div><label for="status">{{ t('ui.filter.state') }}</label>
     <select id="status" name="status">
       {% for value in ("", "open", "verified", "fp", "merged") %}
-      <option value="{{ value }}" {{ 'selected' if filters.status == value }}>{{ value or "all" }}</option>
+      <option value="{{ value }}" {{ 'selected' if filters.status == value }}>{{ t('ui.status.' ~ value) if value else t('ui.filter.all') }}</option>
       {% endfor %}
     </select></div>
-  <div><label for="module">Module</label>
-    <input id="module" name="module" value="{{ filters.module }}" placeholder="m3"></div>
-  <div><button type="submit">Filter</button></div>
-  {% if filtered %}<div><a href="/ui/findings">Clear filters</a></div>{% endif %}
+  <div><label for="module">{{ t('ui.filter.module') }}</label>
+    <input id="module" name="module" value="{{ filters.module }}" placeholder="{{ t('ui.filter.module_placeholder') }}"></div>
+  <div><button type="submit">{{ t('ui.filter.filter') }}</button></div>
+  {% if filtered %}<div><a href="/ui/findings">{{ t('ui.common.clear_filters') }}</a></div>{% endif %}
 </form>
 
 {% include "_workspace.html" %}

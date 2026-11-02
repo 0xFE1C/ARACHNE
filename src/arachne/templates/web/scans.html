@@ -1,66 +1,65 @@
 {% extends "base.html" %}
 {% import "_macros.html" as ui %}
-{% block title %}Scans · ARACHNE{% endblock %}
+{% block title %}{{ t('ui.title.scans') }}{% endblock %}
 {% block content %}
 {#- §5 states: loading ✓, empty ✓, error ✓, partial ✓, refused ✓ (06-ui-ux.md §4.5). -#}
-<h1>Scans</h1>
+<h1>{{ t('ui.scans.heading') }}</h1>
 
 <section class="panel">
-  <h2>Start a scan</h2>
+  <h2>{{ t('ui.scans.start_heading') }}</h2>
   <form class="stack" method="post" action="/ui/scans" hx-post="/ui/scans" hx-swap="none">
     <div>
-      <label for="target_id">Stored target</label>
+      <label for="target_id">{{ t('ui.scans.stored_target') }}</label>
       <select id="target_id" name="target_id">
-        <option value="">— choose a stored target —</option>
+        <option value="">{{ t('ui.scans.choose_target') }}</option>
         {% for target in targets %}
         <option value="{{ target.id }}">#{{ target.id }} · {{ target.name }}</option>
         {% endfor %}
       </select>
     </div>
     <div>
-      <label for="definition">...or paste a target definition (JSON)</label>
+      <label for="definition">{{ t('ui.scans.paste_definition') }}</label>
       <textarea id="definition" name="definition" rows="4"
         placeholder='{"name": "lab", "targets": [{"kind": "url", "value": "https://example.com/"}], "attestation": {"attested_by": "you", "attested_at": "2026-10-01T00:00:00Z", "allowed_targets": ["example.com"]}}'></textarea>
     </div>
     <div>
-      <label for="engine">Engine</label>
+      <label for="engine">{{ t('ui.scans.engine') }}</label>
       <select id="engine" name="engine">
-        <option value="">fixture default</option>
-        <option value="heuristic">heuristic</option>
-        <option value="hybrid">hybrid</option>
-        <option value="ai">ai</option>
+        <option value="">{{ t('ui.scans.fixture_default') }}</option>
+        {#- Engine names are the API's own vocabulary, so they are rendered from the list
+            rather than written out as three labels (REQ-UIX-008). -#}
+        {% for engine in ("heuristic", "hybrid", "ai") %}
+        <option value="{{ engine }}">{{ engine }}</option>
+        {% endfor %}
       </select>
     </div>
-    <label><input type="checkbox" name="active_checks"> active checks (attestation must authorize)</label>
-    <button class="primary" type="submit">Start scan</button>
+    <label><input type="checkbox" name="active_checks"> {{ t('ui.scans.active_checks') }}</label>
+    <button class="primary" type="submit">{{ t('ui.scans.start') }}</button>
   </form>
-  <p class="muted small">
-    The scan is admitted, then runs in the background; this page reloads on the new scan.
-    A live scan needs a complete attestation — the same gate the CLI enforces (F-01-09).
-  </p>
+  <p class="muted small">{{ t('ui.scans.admission_note') }}</p>
 </section>
 
-<h2>History</h2>
+<h2>{{ t('ui.scans.history') }}</h2>
 {% if empty or state in ("loading", "error") %}
   {{ ui.screen_state("empty" if empty else state, endpoint="GET /api/v1/scans",
-      loading_label="Loading the scan history…",
-      empty_title="No scans yet.",
-      empty_detail="A dry run needs no target and opens no socket; a live scan needs an attestation that authorises the target.",
+      loading_label=t('ui.scans.loading'),
+      empty_title=t('ui.scans.empty_title'),
+      empty_detail=t('ui.scans.empty_detail'),
       empty_primary_href="/ui/scans",
-      empty_primary_label="Dry run",
-      error_title="The scan history could not be loaded.",
+      empty_primary_label=t('ui.common.dry_run'),
+      error_title=t('ui.scans.error_title'),
       retry_href="/ui/scans") }}
 {% else %}
   {%- if refused %}
-  {{ ui.refused_banner("Read-only: starting or stopping a scan needs the scanner role. A scan the scope or authorization gate refuses never becomes a row here — the refusal happens at admission, is recorded in the audit trail, and nothing is scanned.") }}
+  {{ ui.refused_banner(t('ui.scans.refused')) }}
   {%- endif %}
   {%- if partial %}
-  {{ ui.partial_banner("The live state of at least one scan could not be read, so its progress shows as state unknown.", retry_href="/ui/scans") }}
+  {{ ui.partial_banner(t('ui.scans.partial'), retry_href="/ui/scans") }}
   {%- endif %}
   {% if scans %}
   <table>
     <thead>
-      <tr><th>Scan</th><th>Target</th><th>Status</th><th>Findings</th><th>Created</th><th>Controls</th></tr>
+      <tr><th>{{ t('ui.table.scan') }}</th><th>{{ t('ui.table.target') }}</th><th>{{ t('ui.table.status') }}</th><th>{{ t('ui.table.findings') }}</th><th>{{ t('ui.table.created') }}</th><th>{{ t('ui.table.controls') }}</th></tr>
     </thead>
     <tbody>
     {% for scan in scans %}
@@ -69,21 +68,21 @@
         <td>{{ scan.target }}</td>
         <td>
           {%- if partial and scan.running %}
-          <a href="/ui/scans/{{ scan.id }}">state unknown</a>
+          <a href="/ui/scans/{{ scan.id }}">{{ t('ui.scans.state_unknown') }}</a>
           {%- else %}
           {{ ui.status_label(scan.status, scan.running) }}
           {%- endif %}
         </td>
         <td>{{ ui.counts(scan.counts, severities) }}</td>
-        <td class="muted small">{{ scan.created_at }}</td>
+        <td class="muted small">{{ scan.created_at | datetime }}</td>
         <td>
           {% if scan.running %}
           <form class="inline" method="post" action="/ui/scans/{{ scan.id }}/stop"
                 hx-post="/ui/scans/{{ scan.id }}/stop" hx-swap="none">
-            <button class="danger" type="submit">Stop</button>
+            <button class="danger" type="submit">{{ t('ui.scans.stop') }}</button>
           </form>
           {% else %}
-          <a href="/ui/scans/{{ scan.id }}/report">report</a>
+          <a href="/ui/scans/{{ scan.id }}/report">{{ t('ui.common.report') }}</a>
           {% endif %}
         </td>
       </tr>
@@ -91,14 +90,14 @@
     </tbody>
   </table>
   {% else %}
-  {{ ui.empty_state("No scans yet.",
-      "A dry run plans a scan and opens no socket.",
-      "/ui/scans", "Dry run",
-      "/ui/modules", "See what is detected") }}
+  {{ ui.empty_state(t('ui.scans.empty_title'),
+      t('ui.scans.dry_run_detail'),
+      "/ui/scans", t('ui.common.dry_run'),
+      "/ui/modules", t('ui.scans.see_detected')) }}
   {% endif %}
 {% endif %}
 
 <p class="muted small">
-  Recurring scans live under <a href="/ui/schedules">Schedules</a>.
+  {{ t('ui.scans.schedules_lead') }} <a href="/ui/schedules">{{ t('ui.nav.schedules') }}</a>.
 </p>
 {% endblock %}

@@ -35,7 +35,7 @@
 
 {% if error %}
 <p class="banner" data-state="error" role="alert">
-  <span class="banner-title">Nothing was changed.</span> {{ error }}
+  <span class="banner-title">{{ t('ui.workspace.changed_nothing') }}</span> {{ error }}
 </p>
 {% endif %}
 {% if notice %}
@@ -44,26 +44,26 @@
 
 {% if state in ("loading", "error") %}
   {{ ui.screen_state(state, endpoint="GET /api/v1/findings",
-      loading_label="Loading findings...",
-      error_title="The findings could not be loaded.",
-      error_detail="The filters are kept, so a retry re-runs the same query.",
+      loading_label=t('ui.workspace.loading'),
+      error_title=t('ui.workspace.error_title'),
+      error_detail=t('ui.workspace.error_detail'),
       retry_href="/ui/findings") }}
 {% elif empty %}
   {% if filtered %}
-    {{ ui.empty_state("No findings match these filters.",
-        "Nothing in this project matches the filters above. Clearing them restores the unfiltered list.",
-        "/ui/findings", "Clear filters") }}
+    {{ ui.empty_state(t('ui.workspace.empty_filtered_title'),
+        t('ui.workspace.empty_filtered_detail'),
+        "/ui/findings", t('ui.common.clear_filters')) }}
   {% else %}
-    {{ ui.empty_state("No findings in this project yet.",
-        "A scan has either not run or found nothing. A dry run opens no socket and is the safe first step.",
-        "/ui/scans", "Run a scan") }}
+    {{ ui.empty_state(t('ui.workspace.empty_project_title'),
+        t('ui.workspace.empty_project_detail'),
+        "/ui/scans", t('ui.workspace.empty_project_action')) }}
   {% endif %}
 {% else %}
   {%- if refused %}
-  {{ ui.refused_banner("A viewer sees the findings but no decision control: the checkboxes, the bulk bar and the review actions are absent rather than disabled, because an absent control is honest and a disabled one is a puzzle.") }}
+  {{ ui.refused_banner(t('ui.workspace.refused')) }}
   {%- endif %}
   {%- if partial %}
-  {{ ui.partial_banner("The total count is unavailable, so the footer reports how many rows are shown without a total. Paging still works.", retry_href="/ui/findings") }}
+  {{ ui.partial_banner(t('ui.workspace.partial'), retry_href="/ui/findings") }}
   {%- endif %}
 
   {% if undo %}
@@ -73,38 +73,35 @@
         hx-target="#workspace" hx-swap="outerHTML">
     {{ system_fields(filters, cursor, limit, selected, focused_id, scroll) }}
     <input type="hidden" name="token" value="{{ undo.token }}">
-    <span class="toast-text">{{ undo.count }} finding(s) {{ undo.label }}.</span>
-    <button type="submit" class="button" data-undo>Undo <kbd>⌘Z</kbd></button>
-    <span class="muted small">Available for 60 seconds.</span>
+    <span class="toast-text">{{ tp('ui.workspace.notice.' ~ undo.action, undo.count) }}</span>
+    <button type="submit" class="button" data-undo>{{ t('ui.workspace.undo_button') }} <kbd>{{ t('ui.workspace.undo_chord') }}</kbd></button>
+    <span class="muted small">{{ t('ui.workspace.undo_available') }}</span>
   </form>
   {% endif %}
 
   <form id="triage-form" method="post" hx-post="/ui/findings/actions"
         hx-target="#workspace" hx-swap="outerHTML">
     {{ system_fields(filters, cursor, limit, selected, focused_id, scroll) }}
-    <p class="bulkbar" role="group" aria-label="Triage">
+    <p class="bulkbar" role="group" aria-label="{{ t('ui.workspace.bulkbar_aria') }}">
       {% if can_write %}
-      <span class="muted small" data-selection-count role="status" aria-live="polite">{{ selected | length }} selected</span>
-      <button type="submit" data-action="triage">Mark triaged</button>
-      <button type="button" data-open-drawer="suppress">Suppress…</button>
-      <button type="button" data-open-drawer="accept">Accept risk…</button>
+      <span class="muted small" data-selection-count role="status" aria-live="polite">{{ tp('ui.common.selected', selected | length) }}</span>
+      <button type="submit" data-action="triage">{{ t('ui.workspace.mark_triaged') }}</button>
+      <button type="button" data-open-drawer="suppress">{{ t('ui.workspace.suppress_button') }}</button>
+      <button type="button" data-open-drawer="accept">{{ t('ui.workspace.accept_button') }}</button>
       {% else %}
-      <span class="muted small">Read-only session: triage needs the scanner role.</span>
+      <span class="muted small">{{ t('ui.workspace.read_only_session') }}</span>
       {% endif %}
-      <button type="button" data-open-sheet>Shortcuts (?)</button>
+      <button type="button" data-open-sheet>{{ t('ui.workspace.shortcuts_button') }}</button>
     </p>
 
     {% if findings %}
     <table class="findings">
-      <caption class="visually-hidden">
-        Findings in this project. J and K move, X selects, Shift+X selects a range, T triages,
-        S suppresses, A accepts the risk, Enter opens the detail.
-      </caption>
+      <caption class="visually-hidden">{{ t('ui.workspace.caption') }}</caption>
       <thead>
         <tr>
-          {% if can_write %}<th scope="col"><span class="visually-hidden">Select</span></th>{% endif %}
-          <th scope="col">Sev</th><th scope="col">Title</th><th scope="col">Asset</th>
-          <th scope="col">Check</th><th scope="col">State</th><th scope="col">Age</th>
+          {% if can_write %}<th scope="col"><span class="visually-hidden">{{ t('ui.workspace.select_column') }}</span></th>{% endif %}
+          <th scope="col">{{ t('ui.table.sev') }}</th><th scope="col">{{ t('ui.table.title') }}</th><th scope="col">{{ t('ui.table.asset') }}</th>
+          <th scope="col">{{ t('ui.table.check') }}</th><th scope="col">{{ t('ui.table.state') }}</th><th scope="col">{{ t('ui.table.age') }}</th>
         </tr>
       </thead>
       <tbody data-rows>
@@ -117,7 +114,7 @@
             Selection is expressed by the checkbox itself — the control that owns the state, with
             an accessible name per row — and by ``data-selected`` for the styling. Deliberately
             not ``aria-selected``: that belongs on a row inside a grid/treegrid, and this is a
-            native table; WP-06's audit is where the grid role (if wanted) belongs. -#}
+            native table. -#}
         {% set is_focus = (focused_id == item.finding_id) or (focused_id is none and loop.first) %}
         <tr class="row"
             data-row-id="{{ item.finding_id }}"
@@ -129,7 +126,7 @@
           <td class="select">
             <input type="checkbox" name="finding_ids" value="{{ item.finding_id }}"
                    data-row-check
-                   aria-label="Select {{ finding.title }}"
+                   aria-label="{{ t('ui.workspace.select_row', title=finding.title) }}"
                    {{ 'checked' if item.finding_id in selected }}>
           </td>
           {% endif %}
@@ -143,8 +140,8 @@
             {{ finding.check_id or finding.module or "—" }}
             {%- if finding.cwe %} · {{ finding.cwe }}{% endif %}
           </td>
-          <td>{{ finding.status }}</td>
-          <td class="muted small">{{ finding.created_at }}</td>
+          <td>{{ t('ui.status.' ~ finding.status) }}</td>
+          <td class="muted small">{{ finding.created_at | datetime }}</td>
         </tr>
       {% endfor %}
       </tbody>
@@ -152,19 +149,23 @@
     {% else %}
     {#- Not the project's empty state (that is the branch above): this page listed nothing, which
         means the filters — or a cursor that walked past the end — excluded everything. -#}
-    {{ ui.empty_state("No findings match these filters.",
-        "Clearing the filters restores the unfiltered list.",
-        "/ui/findings", "Clear filters") }}
+    {{ ui.empty_state(t('ui.workspace.empty_filtered_title'),
+        t('ui.workspace.empty_rows_detail'),
+        "/ui/findings", t('ui.common.clear_filters')) }}
     {% endif %}
 
     <p class="muted small">
-      Showing {{ findings | length }}{% if total is not none %} of {{ total }}{% endif %} finding(s).
-      {% if filters.get("scan") %}Scan {{ filters.get("scan") }} only.{% endif %}
+      {%- if total is not none -%}
+      {{ t('ui.workspace.showing_full', shown=findings | length | number, total=total | number) }}
+      {%- else -%}
+      {{ t('ui.workspace.showing_partial', shown=findings | length | number) }}
+      {%- endif %}
+      {% if filters.get("scan") %} {{ t('ui.workspace.scan_only', scan=filters.get("scan")) }}{% endif %}
     </p>
     {% if next_href %}
     <p class="pagination">
-      <a class="button" href="{{ next_href }}">Load more</a>
-      <span class="muted small">A cursor, not an offset: the next page starts exactly where this one ended.</span>
+      <a class="button" href="{{ next_href }}">{{ t('ui.common.load_more') }}</a>
+      <span class="muted small">{{ t('ui.workspace.cursor_note') }}</span>
     </p>
     {% endif %}
 
@@ -177,56 +178,50 @@
         key with an error nobody can see. ``workspace.js`` enables the fields of the drawer it
         opens; the first render is already the closed state. -#}
     <section class="drawer" data-drawer="suppress" hidden aria-labelledby="suppress-title">
-      <h2 id="suppress-title">Suppress the selected findings</h2>
-      <p class="muted small">
-        A suppression is attributed, versioned, commented and audited, so the decision can always
-        be reviewed and revoked. It is never a silent hide.
-      </p>
-      <label for="suppress-reason">Reason (required)</label>
+      <h2 id="suppress-title">{{ t('ui.workspace.suppress_heading') }}</h2>
+      <p class="muted small">{{ t('ui.workspace.suppress_note') }}</p>
+      <label for="suppress-reason">{{ t('ui.workspace.reason_label') }}</label>
       <textarea id="suppress-reason" name="reason" rows="3" minlength="8" required disabled
                 data-drawer-first
-                placeholder="Why is this not a finding worth acting on?"></textarea>
+                placeholder="{{ t('ui.workspace.reason_placeholder') }}"></textarea>
       <div class="drawer-actions">
-        <button type="submit" data-action="suppress" disabled>Suppress</button>
-        <button type="button" data-close-drawer>Cancel</button>
+        <button type="submit" data-action="suppress" disabled>{{ t('ui.workspace.suppress_submit') }}</button>
+        <button type="button" data-close-drawer>{{ t('ui.workspace.cancel') }}</button>
       </div>
     </section>
 
     <section class="drawer" data-drawer="accept" hidden aria-labelledby="accept-title">
-      <h2 id="accept-title">Accept the risk on the selected findings</h2>
-      <p class="muted small">
-        An acceptance names an accountable owner and expires. The finding re-opens on its own when
-        the expiry passes.
-      </p>
-      <label for="accept-owner">Owner (required)</label>
+      <h2 id="accept-title">{{ t('ui.workspace.accept_heading') }}</h2>
+      <p class="muted small">{{ t('ui.workspace.accept_note') }}</p>
+      <label for="accept-owner">{{ t('ui.workspace.owner_label') }}</label>
       <input id="accept-owner" name="owner" minlength="2" required disabled data-drawer-first
-             placeholder="jane.operator@example.com">
-      <label for="accept-justification">Justification (required)</label>
+             placeholder="{{ t('ui.workspace.owner_placeholder') }}">
+      <label for="accept-justification">{{ t('ui.workspace.justification_label') }}</label>
       <textarea id="accept-justification" name="justification" rows="3" minlength="12" required
                 disabled
-                placeholder="Why is this risk acceptable, and until when?"></textarea>
-      <label for="accept-days">Expires in days (required)</label>
+                placeholder="{{ t('ui.workspace.justification_placeholder') }}"></textarea>
+      <label for="accept-days">{{ t('ui.workspace.expires_label') }}</label>
       <input id="accept-days" name="ttl_days" type="number" min="1" max="3650" value="30" required
              disabled>
       <div class="drawer-actions">
-        <button type="submit" data-action="accept" disabled>Accept risk</button>
-        <button type="button" data-close-drawer>Cancel</button>
+        <button type="submit" data-action="accept" disabled>{{ t('ui.workspace.accept_submit') }}</button>
+        <button type="button" data-close-drawer>{{ t('ui.workspace.cancel') }}</button>
       </div>
     </section>
     {% endif %}
   </form>
 
   <dialog id="shortcut-sheet" data-shortcut-sheet aria-labelledby="shortcut-sheet-title">
-    <h2 id="shortcut-sheet-title">Keyboard shortcuts</h2>
-    <p class="muted small">The workspace is keyboard-first: every action below is reachable without a mouse.</p>
+    <h2 id="shortcut-sheet-title">{{ t('ui.workspace.sheet_heading') }}</h2>
+    <p class="muted small">{{ t('ui.workspace.sheet_note') }}</p>
     <table>
       <tbody>
       {% for shortcut in shortcuts %}
-        <tr><td><kbd>{{ shortcut.chord }}</kbd></td><td>{{ shortcut.label }}</td></tr>
+        <tr><td><kbd>{{ shortcut.chord }}</kbd></td><td>{{ t('ui.workspace.shortcut.' ~ shortcut.action) }}</td></tr>
       {% endfor %}
       </tbody>
     </table>
-    <button type="button" data-close-sheet>Close (Esc)</button>
+    <button type="button" data-close-sheet>{{ t('ui.workspace.sheet_close') }}</button>
   </dialog>
 {% endif %}
 </div>

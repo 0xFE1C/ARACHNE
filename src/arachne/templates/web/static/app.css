@@ -5,7 +5,14 @@
    static/tokens.css from tokens.json, which is also where the light and dark palettes and the
    comfortable and compact densities live. There is deliberately no hexadecimal colour and no
    absolute length in this file — `python -m arachne.api.tokens --check` fails the build if one
-   appears, because a raw value is a value that cannot follow a theme. */
+   appears, because a raw value is a value that cannot follow a theme.
+
+   The one length that is not a custom property is the `em` in the media queries at the end of
+   the file: a media query cannot read a custom property, so `@media (max-width: 48em)` names
+   the §9 breakpoint as a multiple of the reader's own font size. `em` is relative, which is why
+   the raw-value rule covers absolute lengths and not this — a breakpoint that grows with the
+   reader's text size is what 1.4.10 asks for. `tests/unit/test_design_tokens.py` pins those
+   numbers against tokens.json's `--breakpoint-*` group. */
 
 * { box-sizing: border-box; }
 
@@ -50,7 +57,10 @@ h2 { font-size: var(--font-size-h2); line-height: var(--line-height-tight); marg
 h3 { font-size: var(--font-size-h3); margin-block: var(--space-3) var(--space-1); color: var(--color-text-secondary); }
 
 .grid { display: grid; gap: var(--density-row-gap); }
-.cols-2 { grid-template-columns: repeat(auto-fit, minmax(var(--layout-grid-min), 1fr)); }
+/* `min(…, 100%)` is load-bearing: without it the track is at least `--layout-grid-min` wide, so
+   a 320-CSS-pixel viewport (WCAG 1.4.10) scrolls sideways to show one column. With it the column
+   shrinks to whatever the reader's window allows. */
+.cols-2 { grid-template-columns: repeat(auto-fit, minmax(min(var(--layout-grid-min), 100%), 1fr)); }
 .panel {
   background: var(--color-surface-1);
   border: var(--border-width) solid var(--color-border);
@@ -66,6 +76,9 @@ th, td {
   padding: var(--density-cell-pad-y) var(--density-cell-pad-x);
   border-bottom: var(--border-width) solid var(--color-border);
   vertical-align: top;
+  /* A check id or a payload hash has no space to break at; without this the table sets the
+     page's minimum width and 1.4.10's 320-pixel reflow fails on one long identifier. */
+  overflow-wrap: anywhere;
 }
 th {
   color: var(--color-text-secondary);
@@ -114,7 +127,11 @@ input[type="text"], input[type="password"], input[type="search"], textarea, sele
   padding: var(--density-control-pad-y) var(--density-control-pad-x);
   background: var(--color-surface-0);
   color: var(--color-text-primary);
-  border: var(--border-width) solid var(--color-border);
+  /* `--color-control-border`, not `--color-border`: a field's fill is the same near-white as
+     the panel it sits on, so the border is the only thing that says "this is a control", and
+     WCAG 1.4.11 asks a component boundary for 3:1. The dividers keep the specification's
+     lighter `--color-border`, which is a decorative rule rather than a component boundary. */
+  border: var(--border-width) solid var(--color-control-border);
   border-radius: var(--radius-sm);
   font: inherit;
 }
@@ -123,7 +140,7 @@ button, input[type="submit"] {
   padding: var(--density-control-pad-y) var(--density-control-pad-x);
   background: var(--color-surface-2);
   color: var(--color-text-primary);
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--color-control-border);
   border-radius: var(--radius-sm);
   font: inherit;
   cursor: pointer;
@@ -348,4 +365,28 @@ dialog[data-shortcut-sheet] kbd {
   border-radius: var(--radius-sm);
   padding: 0 var(--space-1);
   background: var(--color-surface-0);
+}
+
+/* ------------------------------------------------------------------ responsive (06-ui-ux.md §9)
+
+   The layout is single-column and wraps by construction (see `.cols-2`'s `min(…, 100%)` and
+   `header.top`'s `flex-wrap`), so 1.4.10's 320-pixel reflow holds without a breakpoint. These
+   queries add what §9 asks for on top of that: a table scrolls inside its panel rather than
+   widening the page, and the workspace's action bar stays reachable while the list is read.
+   They cannot read a custom property (CSS forbids `var()` in a media feature), so the numbers
+   are `em` — relative to the reader's own text size, which is the point — and pinned against
+   tokens.json's `--breakpoint-*` group by tests/unit/test_design_tokens.py. */
+
+@media (max-width: 64em) {
+  /* §9's 1024-CSS-pixel breakpoint: the two-column sections become one. */
+  .cols-2 { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 48em) {
+  /* §9's 768-CSS-pixel breakpoint: a table that needs two dimensions scrolls inside its panel,
+     so the page itself never scrolls sideways. 1.4.10 permits that for content whose meaning is
+     two-dimensional — a data table — and forbids it for everything else. */
+  .panel { overflow-x: auto; }
+  .filters input, .filters select { width: 100%; }
+  .bulkbar { position: sticky; inset-block-end: 0; z-index: 5; background: var(--color-surface-1); }
 }

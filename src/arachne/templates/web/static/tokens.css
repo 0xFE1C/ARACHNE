@@ -54,10 +54,15 @@
   --layout-chart-height: 80px;
   --layout-chart-bar: 14px;
   --layout-checkbox-column: 32px;
+  --breakpoint-sm: 48em;
+  --breakpoint-md: 64em;
+  --breakpoint-lg: 80em;
+  --breakpoint-xl: 90em;
   --color-surface-0: #FFFFFF;
   --color-surface-1: #F7F8FA;
   --color-surface-2: #EEF0F4;
   --color-border: #D8DCE3;
+  --color-control-border: #7A8291;
   --color-text-primary: #12161D;
   --color-text-secondary: #4A5260;
   --color-text-disabled: #8A93A3;
@@ -94,6 +99,7 @@
   --color-surface-1: #141821;
   --color-surface-2: #1E2430;
   --color-border: #2B3240;
+  --color-control-border: #6B7484;
   --color-text-primary: #E8EBF0;
   --color-text-secondary: #A3ADBE;
   --color-text-disabled: #5C6677;
@@ -119,6 +125,7 @@
     --color-surface-1: #141821;
     --color-surface-2: #1E2430;
     --color-border: #2B3240;
+    --color-control-border: #6B7484;
     --color-text-primary: #E8EBF0;
     --color-text-secondary: #A3ADBE;
     --color-text-disabled: #5C6677;

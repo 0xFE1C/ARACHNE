@@ -1,5 +1,5 @@
 {% import "_macros.html" as ui %}
-<p class="muted small">{{ findings | length }} finding(s) after filters.</p>
+<p class="muted small">{{ tp('ui.findings.after_filters', findings | length) }}</p>
 {% for item in findings %}
   {% set finding = item.finding %}
   {% set detail = item.detail %}
@@ -8,72 +8,67 @@
       {{ ui.sev(finding.severity) }}
       <strong>{{ finding.title }}</strong>
       <span class="muted small">
-        · {{ finding.module or "unknown" }}{% if finding.check_id %} / {{ finding.check_id }}{% endif %}
+        · {{ finding.module or t('ui.common.unknown') }}{% if finding.check_id %} / {{ finding.check_id }}{% endif %}
         {% if detail.cwe or finding.cwe %} · {{ detail.cwe or finding.cwe }}{% endif %}
         {% if detail.cve %} · {{ detail.cve }}{% endif %}
         · {{ finding.asset.kind }} {{ finding.asset.value }}
-        {% if finding.confidence is not none %} · conf {{ finding.confidence }}</span>{% endif %}
-      {% if detail.low_confidence %}<span class="badge sev-other">low-confidence</span>{% endif %}
-      {% if finding.status not in ("open",) %}<span class="badge sev-other">{{ finding.status }}</span>{% endif %}
+        {% if finding.confidence is not none %} · {{ t('ui.findings.confidence_abbrev') }} {{ finding.confidence }}{% endif %}</span>
+      {% if detail.low_confidence %}<span class="badge sev-other">{{ t('ui.findings.low_confidence') }}</span>{% endif %}
+      {% if finding.status not in ("open",) %}<span class="badge sev-other">{{ t('ui.status.' ~ finding.status) }}</span>{% endif %}
     </summary>
     <div class="body">
       {% if detail.description %}<p>{{ detail.description }}</p>
       {% elif finding.title %}<p>{{ finding.title }}</p>{% endif %}
 
       <p class="muted small">
-        research {{ finding.research_ref or "—" }}
-        {% if detail.cvss is not none %} · CVSS {{ detail.cvss }}{% endif %}
+        {{ t('ui.findings.research') }} {{ finding.research_ref or "—" }}
+        {% if detail.cvss is not none %} · {{ t('ui.detail.cvss') }} {{ detail.cvss }}{% endif %}
         {% if detail.cvss_vector %} <code>{{ detail.cvss_vector }}</code>{% endif %}
         {% if detail.owasp %} · {{ detail.owasp }}{% endif %}
-        · first seen {{ finding.created_at }}
+        · {{ t('ui.findings.first_seen') }} {{ finding.created_at | datetime }}
       </p>
 
       {% if detail.remediation %}
-      <h3>Remediation — {{ detail.remediation.summary }}</h3>
+      <h3>{{ t('ui.detail.remediation') }} — {{ detail.remediation.summary }}</h3>
       {% if detail.remediation.steps %}
       <ol>{% for step in detail.remediation.steps %}<li>{{ step }}</li>{% endfor %}</ol>
       {% endif %}
       {% if detail.remediation.verification %}
-      <p class="muted small">Verify the fix:</p>
+      <p class="muted small">{{ t('ui.findings.verify_fix') }}</p>
       <ul>{% for step in detail.remediation.verification %}<li>{{ step }}</li>{% endfor %}</ul>
       {% endif %}
       {% if detail.remediation.references %}
-      <p class="small">References:
+      <p class="small">{{ t('ui.findings.references') }}
         {% for ref in detail.remediation.references %}<a href="{{ ref }}" target="_blank" rel="noopener">{{ ref }}</a>{% if not loop.last %} · {% endif %}{% endfor %}
       </p>
       {% endif %}
-      <p class="muted small">catalog entry <code>{{ detail.remediation.id }}</code> ({{ detail.remediation.source }})</p>
+      <p class="muted small">{{ t('ui.findings.catalog_source', id=detail.remediation.id, source=detail.remediation.source) }}</p>
       {% elif finding.remediation_id %}
-      <h3>Remediation</h3>
-      <p class="muted">catalog entry <code>{{ finding.remediation_id }}</code></p>
+      <h3>{{ t('ui.detail.remediation') }}</h3>
+      <p class="muted">{{ t('ui.findings.catalog_id', id=finding.remediation_id) }}</p>
       {% endif %}
 
       {% if finding.status in ("open", "verified") %}
-      <h3>Review</h3>
-      <p class="muted small">
-        Marking a false positive feeds the per-check confidence tuner and writes the same
-        feedback row the API's <code>PATCH /findings/{id}</code> writes (S21). Use the
-        <a href="/ui/quality">Quality</a> page for a rule that covers many findings, or for a
-        risk acceptance with an owner and an expiry.
-      </p>
+      <h3>{{ t('ui.findings.review') }}</h3>
+      <p class="muted small">{{ t('ui.findings.review_note') }}</p>
       <form hx-post="/ui/findings/{{ item.finding_id }}/fp" hx-swap="none" method="post">
-        <button type="submit">Mark false positive</button>
+        <button type="submit">{{ t('ui.detail.mark_fp') }}</button>
       </form>
       {% endif %}
 
-      <h3>Evidence ({{ item.evidence | length }})</h3>
+      <h3>{{ t('ui.findings.evidence_heading', count=item.evidence | length | number) }}</h3>
       {% for record in item.evidence %}
       <details>
-        <summary class="small">{{ record.kind }} · E{{ '%04d' % record.id }}
-          {% if record.sha256 %}<span class="muted">· sha256 {{ record.sha256[:12] }}…</span>{% endif %}
+        <summary class="small">{{ record.kind }} · {{ t('ui.detail.evidence_ref', number='%04d' % record.id) }}
+          {% if record.sha256 %}<span class="muted">· {{ t('ui.detail.sha256') }} {{ record.sha256[:12] }}...</span>{% endif %}
         </summary>
         <div class="body"><pre>{{ record.payload | tojson(indent=2) }}</pre></div>
       </details>
       {% else %}
-      <p class="muted small">No evidence rows.</p>
+      <p class="muted small">{{ t('ui.findings.no_evidence') }}</p>
       {% endfor %}
     </div>
   </details>
 {% else %}
-<p class="muted">No findings match these filters.</p>
+<p class="muted">{{ t('ui.findings.no_match') }}</p>
 {% endfor %}

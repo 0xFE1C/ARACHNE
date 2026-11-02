@@ -69,6 +69,7 @@ from arachne.core.errors import ArachneError, ConfigurationError
 from arachne.core.logging import get_logger
 from arachne.data.keyset import PageWindow
 from arachne.data.project_store import DEFAULT_PROJECT_SLUG, ProjectRecord
+from arachne.i18n import format_number, pluralize, translate
 
 __all__ = ["ui_router"]
 
@@ -263,7 +264,7 @@ async def login(request: Request, context: ContextDep) -> Response:
             "login.html",
             request=request,
             next=next_path,
-            error="That API key was not accepted.",
+            error=translate("ui.login.rejected"),
             keys_configured=context.credentials.enabled,
             sso_enabled=bool(context.oidc and context.oidc.configured),
             partial=missing is not None,
@@ -816,7 +817,7 @@ def _feed_freshness(context: ContextDep, rows: list[dict[str, Any]]) -> list[dic
                     "age_hours": None,
                     "sla_hours": sla,
                     "stale": False,
-                    "label": "shipped snapshot",
+                    "label": translate("ui.feeds.shipped_snapshot_label"),
                 }
             )
             continue
@@ -828,7 +829,12 @@ def _feed_freshness(context: ContextDep, rows: list[dict[str, Any]]) -> list[dic
                 "age_hours": age,
                 "sla_hours": sla,
                 "stale": stale,
-                "label": f"{age} h old" + (" — stale" if stale else ""),
+                # The age label is a catalogue string (REQ-UIX-008): "3 h old" and its French
+                # "3 h — périmé" are one key apart, and the number is formatted for the locale.
+                "label": translate(
+                    "ui.feeds.age_stale_label" if stale else "ui.feeds.age_label",
+                    age=format_number(age, 1),
+                ),
             }
         )
     return report
@@ -948,7 +954,9 @@ async def add_suppression_ui(request: Request, context: ContextDep) -> Response:
     _require_write(request, principal, Role.SCANNER)
     store = getattr(context.services, "quality", None)
     if store is None:
-        return RedirectResponse("/ui/quality?error=no+quality+store", status_code=303)
+        return RedirectResponse(
+            f"/ui/quality?error={quote(translate('ui.quality.error_no_store'))}", status_code=303
+        )
     project = _ui_project(request, context, principal)
     form = await _form(request)
     finding_id = (form.get("finding_id") or "").strip()
@@ -994,7 +1002,9 @@ async def add_acceptance_ui(request: Request, context: ContextDep) -> Response:
     _require_write(request, principal, Role.SCANNER)
     store = getattr(context.services, "quality", None)
     if store is None:
-        return RedirectResponse("/ui/quality?error=no+quality+store", status_code=303)
+        return RedirectResponse(
+            f"/ui/quality?error={quote(translate('ui.quality.error_no_store'))}", status_code=303
+        )
     project = _ui_project(request, context, principal)
     form = await _form(request)
     finding_id = (form.get("finding_id") or "").strip()
@@ -1326,12 +1336,10 @@ async def findings_action(request: Request, context: ContextDep) -> Response:
         try:
             _require_finding(context, finding_id, project)
         except HTTPException:
-            return _refuse(
-                "One of the selected findings is not in this project, so nothing was changed."
-            )
+            return _refuse(translate("ui.workspace.bulk_error_not_in_project"))
         row = context.queries.finding_row(finding_id)
         if row is None:
-            return _refuse("One of the selected findings no longer exists, so nothing was changed.")
+            return _refuse(translate("ui.workspace.bulk_error_deleted"))
         rows.append(row)
 
     targets: list[UndoTarget] = []
@@ -1366,8 +1374,13 @@ async def findings_action(request: Request, context: ContextDep) -> Response:
         selected=selected,
         focused_id=focused_id,
         scroll=scroll,
-        notice=f"{len(targets)} finding(s) {action.label}.",
-        undo={"token": token, "label": action.label, "count": len(targets)},
+        notice=pluralize(f"ui.workspace.notice.{action.action}", len(targets)),
+        undo={
+            "token": token,
+            "label": action.label,
+            "count": len(targets),
+            "action": action.action,
+        },
     )
 
 
@@ -1504,9 +1517,11 @@ async def findings_undo(request: Request, context: ContextDep) -> Response:
     except (UndoWindowClosedError, UndoUnavailableError) as exc:
         return _refuse(str(exc))
     restored, skipped = _restore(context, principal, project, record)
-    notice = f"Undone: {restored} finding(s) restored."
+    # Both halves of the undo report are catalogue strings (REQ-UIX-008): the count picks the
+    # plural form, and the "some rows had moved on" clause is its own sentence.
+    notice = pluralize("ui.workspace.undone", restored)
     if skipped:
-        notice += f" {skipped} had changed again since, so it was left as it is."
+        notice += " " + pluralize("ui.workspace.undone_skipped", skipped)
     return _render_workspace(
         request,
         context,

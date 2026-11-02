@@ -43,6 +43,13 @@ _VOLATILE: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:\+00:00|Z)?"), "<TIMESTAMP>"),
     # A UTC datetime rendered by Python's repr (``2026-10-31 12:00:00+00:00``).
     (re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?\+\d{2}:\d{2}"), "<TIMESTAMP>"),
+    # A timestamp the interface formatted for the reader (WP-06, REQ-UIX-008): the catalogue's
+    # date pattern renders ``2 Nov 2026, 10:58 UTC``. Anchored on the zone so it cannot swallow
+    # ordinary prose.
+    (
+        re.compile(r"\d{1,2} [A-Za-z]{3,4}\.? \d{4}, \d{2}:\d{2} [A-Z]{2,5}"),
+        "<TIMESTAMP>",
+    ),
     # The signed-in operator label in the header (``label · role``). Anchored on the role so
     # this cannot swallow the many other ``muted small`` spans the pages use for content.
     (

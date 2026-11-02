@@ -22,9 +22,11 @@ parameter and can never reach into an object graph.
 
 from __future__ import annotations
 
+import logging
 import os
 import re
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
+from datetime import UTC, datetime
 from importlib.resources import files
 from pathlib import Path
 from typing import Any, Final
@@ -37,11 +39,15 @@ __all__ = [
     "DEFAULT_I18N_DIR",
     "DEFAULT_LOCALE",
     "LOCALE_ENV_VAR",
+    "PLURAL_FORMS",
     "Translator",
     "load_catalog",
     "parse_catalog",
+    "plural_form",
     "resolve_locale",
 ]
+
+_LOGGER: Final = logging.getLogger("arachne.i18n")
 
 #: The locale used when nothing else is configured, and the fallback for every other locale.
 DEFAULT_LOCALE: Final = "en"
@@ -62,6 +68,68 @@ def resolve_locale(explicit: str | None = None) -> str:
     if explicit is not None and explicit.strip():
         return explicit.strip()
     return os.environ.get(LOCALE_ENV_VAR, "").strip() or DEFAULT_LOCALE
+
+
+#: The plural categories a catalogue may carry. This is the CLDR **cardinal** subset the shipped
+#: languages need; a locale's rule below maps a count onto one of these, and the catalogue holds
+#: ``<key>.one`` / ``<key>.other``.
+PLURAL_FORMS: Final[tuple[str, ...]] = ("one", "other")
+
+#: The plural rule per locale (CLDR cardinal). A locale with no entry uses :func:`_default_plural`.
+#: English is "exactly one"; French counts zero as singular ("0 constat", not "0 constats"), which
+#: is the rule a French-speaking operator expects and the reason this is a table, not ``n == 1``.
+_PLURAL_RULES: Final[Mapping[str, Callable[[float], str]]] = {
+    "en": lambda count: "one" if count == 1 else "other",
+    "fr": lambda count: "one" if int(count) in (0, 1) else "other",
+}
+
+
+def _default_plural(count: float) -> str:
+    return "one" if count == 1 else "other"
+
+
+def plural_form(locale: str, count: float) -> str:
+    """The plural category ``count`` falls into in ``locale`` (one of :data:`PLURAL_FORMS`)."""
+    rule = _PLURAL_RULES.get((locale or DEFAULT_LOCALE).split("-")[0].split("_")[0].lower())
+    return (rule or _default_plural)(count)
+
+
+#: How a catalogue names a number separator. The catalogue cannot carry the character itself —
+#: the French group separator is a narrow no-break space, and ``parse_catalog`` refuses a value
+#: that is blank once stripped — so it carries the **name** of the glyph and the glyph lives
+#: here, once, with the rest of the formatting rules.
+_NUMBER_GLYPHS: Final[Mapping[str, str]] = {
+    "comma": ",",
+    "point": ".",
+    "space": " ",
+    "nbsp": "\u00a0",
+    "narrow_nbsp": "\u202f",
+}
+
+
+def _separator(catalog: Mapping[str, str], key: str, default: str) -> str:
+    """The glyph a catalogue names for ``key`` (see :data:`_NUMBER_GLYPHS`)."""
+    return _NUMBER_GLYPHS.get(catalog.get(key, default), _NUMBER_GLYPHS[default])
+
+
+# --------------------------------------------------------------------------- locale formatting
+def _as_datetime(value: object) -> datetime | None:
+    """``value`` as an aware UTC datetime, or ``None`` when it is not a date at all.
+
+    An ISO-8601 string is what the API, the stores and the DTOs carry, so that is the shape this
+    accepts; a naive datetime is read as UTC because every timestamp ARACHNE records is.
+    """
+    moment: datetime | None = None
+    if isinstance(value, datetime):
+        moment = value
+    elif isinstance(value, str) and value.strip():
+        try:
+            moment = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if moment is None:
+        return None
+    return moment.astimezone(UTC) if moment.tzinfo is not None else moment.replace(tzinfo=UTC)
 
 
 def parse_catalog(data: Any, *, source: str = "<memory>") -> dict[str, str]:
@@ -175,11 +243,92 @@ class Translator:
 
         Resolution: the requested locale, then the fallback (English), then the key itself;
         the result always has ``**params`` interpolated and is never an exception.
+
+        A key found in **neither** catalogue is a defect — it renders as its own dotted name —
+        so it is logged at WARNING (REQ-UIX-008: "renders the key and logs a warning"). The
+        lookup still returns a string: this sits on a scan/report path, where raising would turn
+        a missing word into a failed scan.
         """
         target = resolve_locale(locale)
         text = self._catalog(target).get(key)
         if text is None and target != self._fallback_locale:
             text = self._catalog(self._fallback_locale).get(key)
         if text is None:
+            _LOGGER.warning("missing translation for %r (locale %s)", key, target)
             text = key
         return interpolate(text, params)
+
+    def pluralize(
+        self, key: str, count: float, /, *, locale: str | None = None, **params: object
+    ) -> str:
+        """The plural form of ``key`` for ``count``: ``<key>.one`` / ``<key>.other``.
+
+        A catalogue carrying only ``<key>.other`` serves every count, so a language with one
+        plural form needs no ``.one`` entry; a key with neither is logged and rendered like any
+        other missing key. ``count`` is interpolated as ``{count}``.
+        """
+        target = resolve_locale(locale)
+        form = plural_form(target, count)
+        text = self._catalog(target).get(f"{key}.{form}")
+        if text is None:
+            text = self._catalog(target).get(f"{key}.other")
+        if text is None and target != self._fallback_locale:
+            text = self._catalog(self._fallback_locale).get(
+                f"{key}.{plural_form(self._fallback_locale, count)}"
+            )
+        if text is None and target != self._fallback_locale:
+            text = self._catalog(self._fallback_locale).get(f"{key}.other")
+        if text is None:
+            _LOGGER.warning("missing plural translation for %r (locale %s)", key, target)
+            text = key
+        return interpolate(text, {"count": count, **params})
+
+    def format_number(
+        self, value: object, decimals: int = 0, /, *, locale: str | None = None
+    ) -> str:
+        """``value`` grouped and decimal-separated the way ``locale`` writes numbers.
+
+        The separators come from the catalogue (``i18n.number.thousands`` /
+        ``i18n.number.decimal``), which is what makes this the catalogue's formatting rather
+        than a hard-coded anglo convention. A non-numeric value is returned unchanged, so a
+        template can format a field it is not sure about without a guard.
+        """
+        target = resolve_locale(locale)
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            try:
+                numeric = float(str(value))
+            except (TypeError, ValueError):
+                return str(value)
+        else:
+            numeric = float(value)
+        catalog = self._catalog(target)
+        grouped = f"{numeric:,.{decimals}f}"
+        return (
+            grouped.replace(",", "\x00")
+            .replace(".", _separator(catalog, "i18n.number.decimal", "point"))
+            .replace("\x00", _separator(catalog, "i18n.number.thousands", "comma"))
+        )
+
+    def format_datetime(self, value: object, /, *, locale: str | None = None) -> str:
+        """``value`` (a datetime or an ISO-8601 string) in ``locale``'s date/time form.
+
+        The pattern and the month names come from the catalogue, and every rendering carries its
+        zone (``06-ui-ux.md`` §10: "timestamps are always shown with a timezone"). A value that
+        is not a date is returned unchanged rather than raising on a render path.
+        """
+        target = resolve_locale(locale)
+        moment = _as_datetime(value)
+        if moment is None:
+            return "" if value is None else str(value)
+        catalog = self._catalog(target)
+        pattern = catalog.get("i18n.datetime.pattern", "{day} {month} {year}, {time} {zone}")
+        return interpolate(
+            pattern,
+            {
+                "day": str(moment.day),
+                "month": catalog.get(f"i18n.month.{moment.month}", str(moment.month)),
+                "year": str(moment.year),
+                "time": f"{moment.hour:02d}:{moment.minute:02d}",
+                "zone": catalog.get("i18n.timezone.utc", "UTC"),
+            },
+        )

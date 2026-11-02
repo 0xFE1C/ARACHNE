@@ -1,42 +1,37 @@
 {% extends "base.html" %}
 {% import "_macros.html" as ui %}
-{% block title %}Attack paths · scan {{ scan_id }}{% endblock %}
+{% block title %}{{ t('ui.title.attack_paths', id=scan_id) }}{% endblock %}
 {% block content %}
 {#- §5 states: loading ✓, empty ✓, error ✓, partial ✓, refused ✓ (06-ui-ux.md §4.8). -#}
-<h1>Attack paths — <a href="/ui/scans/{{ scan_id }}">scan {{ scan_id }}</a></h1>
+<h1>{{ t('ui.attack_paths.heading') }} — <a href="/ui/scans/{{ scan_id }}">{{ t('ui.detail.scan_link', id=scan_id) }}</a></h1>
 <p class="muted small">
   {{ scan.target }} · {{ ui.status_label(scan.status, scan.running) }} ·
-  {{ paths | length }} composed chain(s)
+  {{ tp('ui.attack_paths.chains', paths | length) }}
 </p>
-<p class="muted small">
-  Each chain is the set of findings on one asset read in kill-chain order: a
-  <strong>filled</strong> node is a hop the analyzer verified, a <strong>hollow</strong> node is a
-  candidate with the check that would confirm it named underneath. The thicker ring marks the
-  cheapest breaking remediation — the single hop whose fix removes the most of the chain.
-</p>
+<p class="muted small">{{ t('ui.attack_paths.explainer') }}</p>
 {% if empty or state in ("loading", "error") %}
   {{ ui.screen_state("empty" if empty else state, endpoint="GET /api/v1/scans/" ~ scan_id,
-      loading_label="Composing the attack paths...",
-      empty_title="No attack paths in this scan.",
-      empty_detail="No chain of verified findings reached the confidence threshold that would make it a path. Single findings are still in the findings tab.",
+      loading_label=t('ui.attack_paths.loading'),
+      empty_title=t('ui.attack_paths.empty_title'),
+      empty_detail=t('ui.attack_paths.empty_detail'),
       empty_primary_href="/ui/scans/" ~ scan_id ~ "/findings",
-      empty_primary_label="Open the findings",
-      error_title="The attack-path graph could not be drawn.",
+      empty_primary_label=t('ui.common.open_findings'),
+      error_title=t('ui.attack_paths.error_title'),
       retry_href="/ui/scans/" ~ scan_id ~ "/attack-paths") }}
   {%- if state == "error" %}
   <p class="muted small">
-    The underlying findings are unaffected and remain reachable from the
-    <a href="/ui/scans/{{ scan_id }}/findings">findings tab</a>.
+    {{ t('ui.attack_paths.error_lead') }}
+    <a href="/ui/scans/{{ scan_id }}/findings">{{ t('ui.attack_paths.findings_tab') }}</a>.
   </p>
   {%- endif %}
 {% else %}
   {%- if refused %}
-  {{ ui.refused_banner("A viewer may read this graph. Exporting it needs the same role that may read it.") }}
+  {{ ui.refused_banner(t('ui.attack_paths.refused')) }}
   {%- endif %}
 
   {% if paths %}
   {%- if partial %}
-  {{ ui.partial_banner("At least one hop could not be resolved. A path with a missing hop is labelled incomplete below rather than truncated — a silently shortened chain would overstate what was verified.") }}
+  {{ ui.partial_banner(t('ui.attack_paths.partial')) }}
   {%- endif %}
   <section class="panel">
     {{ graph | safe }}
@@ -47,34 +42,35 @@
     <h2>{{ path.id }} — <code>{{ path.asset }}</code></h2>
     <p>
       {{ ui.sev(path.severity) }}
-      {% if path.fully_verified %}<span class="muted small">fully verified</span>
-      {% else %}<span class="badge sev-warning">incomplete</span> <span class="muted small">some hops are candidates</span>{% endif %}
+      {% if path.fully_verified %}<span class="muted small">{{ t('ui.attack_paths.fully_verified') }}</span>
+      {% else %}<span class="badge sev-warning">{{ t('ui.attack_paths.incomplete') }}</span> <span class="muted small">{{ t('ui.attack_paths.some_candidates') }}</span>{% endif %}
       {% if path.business_severity %}
-      <span class="muted small"> · tier {{ path.criticality }} → business impact {{ path.business_severity }}</span>
+      <span class="muted small">{{ t('ui.attack_paths.business_impact', tier=path.criticality, impact=path.business_severity) }}</span>
       {% endif %}
     </p>
     {% if path.cheapest_break %}
-    <p class="muted small">Cheapest break: {{ path.cheapest_break }}
-      {%- if path.cheapest_finding_id %} ({{ path.cheapest_finding_id }}){% endif %}</p>
+    <p class="muted small">{{ t('ui.attack_paths.cheapest', what=path.cheapest_break) }}{% if path.cheapest_finding_id %} ({{ path.cheapest_finding_id }}){% endif %}</p>
     {% endif %}
     <table>
-      <thead><tr><th>Hop</th><th>Stage</th><th>Check</th><th>Asset</th><th>Severity</th><th>Verified</th><th>Evidence</th></tr></thead>
+      <thead>
+        <tr><th>{{ t('ui.table.hop') }}</th><th>{{ t('ui.table.stage') }}</th><th>{{ t('ui.table.check') }}</th><th>{{ t('ui.table.asset') }}</th><th>{{ t('ui.table.severity') }}</th><th>{{ t('ui.table.verified') }}</th><th>{{ t('ui.table.evidence') }}</th></tr>
+      </thead>
       <tbody>
       {% for hop in path.hops %}
         <tr>
           <td>
             {%- if hop.finding_id %}{{ hop.finding_id }}
-            {%- else %}<span class="muted small">unknown</span>{% endif %}
+            {%- else %}<span class="muted small">{{ t('ui.common.unknown') }}</span>{% endif %}
           </td>
           <td>{{ hop.stage }}</td>
           <td><code>{{ hop.check_id }}</code></td>
           <td><code>{{ hop.asset }}</code></td>
           <td>{{ ui.sev(hop.severity) }}</td>
           <td>
-            {% if hop.verified %}yes
-            {% else %}<span class="muted small">candidate — verify with <code>{{ hop.verifying_check or "a fresh scan" }}</code></span>{% endif %}
+            {% if hop.verified %}{{ t('ui.common.yes') }}
+            {% else %}<span class="muted small">{{ t('ui.attack_paths.candidate', check=hop.verifying_check or t('ui.attack_paths.fresh_scan')) }}</span>{% endif %}
           </td>
-          <td class="muted small">{{ hop.evidence_refs | join(", ") or "unknown" }}</td>
+          <td class="muted small">{{ hop.evidence_refs | join(", ") or t('ui.common.unknown') }}</td>
         </tr>
       {% endfor %}
       </tbody>
@@ -82,9 +78,9 @@
   </section>
   {% endfor %}
   {% else %}
-  {{ ui.empty_state("No attack paths in this scan.",
-      "No chain of findings met the confidence threshold for a path. Single findings are in the findings tab.",
-      "/ui/scans/" ~ scan_id ~ "/findings", "Open the findings") }}
+  {{ ui.empty_state(t('ui.attack_paths.empty_title'),
+      t('ui.attack_paths.empty_detail_short'),
+      "/ui/scans/" ~ scan_id ~ "/findings", t('ui.common.open_findings')) }}
   {% endif %}
 {% endif %}
 {% endblock %}

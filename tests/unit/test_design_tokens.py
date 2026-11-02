@@ -175,6 +175,47 @@ def test_a_jinja_interpolated_unit_is_caught() -> None:
     assert [item.value for item in found] == ["px"]
 
 
+# ---------------------------------------------------------------- the §9 breakpoints (WP-06)
+#: The width at which a stylesheet may switch layout, as (media-query value, token).
+#: A media feature cannot read a custom property (CSS forbids ``var()`` there), so ``app.css``
+#: writes the number as ``em`` and ``tokens.json`` carries it as a token; this test keeps the
+#: two from drifting, which is the whole reason the number is written twice.
+_BREAKPOINT_TOKEN: dict[str, str] = {
+    "48em": "--breakpoint-sm",
+    "64em": "--breakpoint-md",
+    "80em": "--breakpoint-lg",
+    "90em": "--breakpoint-xl",
+}
+
+
+def test_every_media_query_breakpoint_is_a_declared_token() -> None:
+    """A width query that names a number nobody declared is a layout decision with no review."""
+    data = tk.load_tokens()
+    css = (tk.tokens_path().parent / "static" / "app.css").read_text(encoding="utf-8")
+    widths = set(re.findall(r"@media\s*\(max-width:\s*([0-9.]+em)\)", css))
+    assert widths, "no width media query in app.css — the §9 breakpoints are not implemented"
+    for width in widths:
+        assert width in _BREAKPOINT_TOKEN, f"undeclared breakpoint {width}"
+        assert data["base"][_BREAKPOINT_TOKEN[width]] == width
+
+
+def test_the_reflow_breakpoints_are_the_specified_ones() -> None:
+    """§9's 1024 and 768 CSS pixels, and the two wider stops it also names."""
+    data = tk.load_tokens()
+    assert {name: data["base"][name] for name in _BREAKPOINT_TOKEN.values()} == {
+        "--breakpoint-sm": "48em",
+        "--breakpoint-md": "64em",
+        "--breakpoint-lg": "80em",
+        "--breakpoint-xl": "90em",
+    }
+
+
+def test_a_grid_track_can_shrink_below_its_minimum() -> None:
+    """1.4.10: ``minmax(--layout-grid-min, 1fr)`` alone cannot reflow at 320 CSS pixels."""
+    css = (tk.tokens_path().parent / "static" / "app.css").read_text(encoding="utf-8")
+    assert "minmax(min(var(--layout-grid-min), 100%), 1fr)" in css
+
+
 # ---------------------------------------------------------------- the contrast check
 def test_every_declared_pair_passes_wcag_aa_in_both_themes() -> None:
     results = tk.contrast_report()

@@ -75,7 +75,7 @@ def test_a_bulk_triage_writes_one_audit_event_per_finding_and_one_undo(
         assert response.status_code == 200, response.text
         # §4.3: the fragment is the workspace, so htmx swaps exactly that region.
         assert "data-workspace-root" in response.text
-        assert "3 finding(s) triaged." in response.text
+        assert "3 findings triaged." in response.text
         assert "data-undo-toast" in response.text
         assert _token(response.text)
 
@@ -105,7 +105,7 @@ def test_undo_restores_the_prior_state_rather_than_re_running_the_action(
         token = _token(acted.text)
         restored = client.post("/ui/findings/undo", data={"token": token}, headers=HTMX)
         assert restored.status_code == 200, restored.text
-        assert "Undone: 3 finding(s) restored." in restored.text
+        assert "Undone: 3 findings restored." in restored.text
 
     assert [harness.context.queries.finding_row(item).status for item in identifiers] == [
         "fp",
@@ -134,7 +134,7 @@ def test_a_row_changed_again_after_the_batch_is_left_alone_and_reported(
         token = _token(acted.text)
         harness.context.queries.set_finding_status(identifiers[0], "merged")
         restored = client.post("/ui/findings/undo", data={"token": token}, headers=HTMX)
-        assert "Undone: 1 finding(s) restored." in restored.text
+        assert "Undone: 1 finding restored." in restored.text
         assert "1 had changed again since" in restored.text
 
     assert harness.context.queries.finding_row(identifiers[0]).status == "merged"
@@ -157,7 +157,7 @@ def test_the_undo_window_closes_after_sixty_seconds(harness: ApiHarness, monkeyp
         later = ws.now_utc() + __import__("datetime").timedelta(seconds=59)
         monkeypatch.setattr(routes_ui, "now_utc", lambda: later)
         still_open = client.post("/ui/findings/undo", data={"token": token}, headers=HTMX)
-        assert "Undone: 1 finding(s) restored." in still_open.text
+        assert "Undone: 1 finding restored." in still_open.text
 
         second = client.post(
             "/ui/findings/actions",
@@ -226,7 +226,7 @@ def test_a_bulk_suppression_is_attributed_commented_and_audited_per_finding(
             },
             headers=HTMX,
         )
-        assert "3 finding(s) suppressed." in response.text
+        assert "3 findings suppressed." in response.text
         token = _token(response.text)
 
         rules = harness.context.services.quality.list_suppressions(active_only=True)
@@ -235,7 +235,7 @@ def test_a_bulk_suppression_is_attributed_commented_and_audited_per_finding(
         assert all(rule.actor == "scanner" for rule in rules)
 
         undone = client.post("/ui/findings/undo", data={"token": token}, headers=HTMX)
-        assert "Undone: 3 finding(s) restored." in undone.text
+        assert "Undone: 3 findings restored." in undone.text
 
     # Undo *revokes* the rules rather than deleting them: the prior state (no active rule) is
     # back, and the record of the decision survives — which is what an audit trail is for.
@@ -293,7 +293,7 @@ def test_a_risk_acceptance_needs_an_owner_and_an_expiry(harness: ApiHarness) -> 
             },
             headers=HTMX,
         )
-        assert "1 finding(s) risk accepted." in accepted.text
+        assert "1 finding risk accepted." in accepted.text
         token = _token(accepted.text)
         accepted_rows = harness.context.services.quality.list_acceptances(finding_id=identifiers[0])
         assert len(accepted_rows) == 1
@@ -448,7 +448,8 @@ def test_the_detail_screen_carries_the_selection_back_to_the_list(harness: ApiHa
         assert back.startswith("/ui/findings?"), back
         assert "sel=1%2C3" in back or "sel=1,3" in back
         assert "scroll=420" in back
-        assert "2\n  selected finding(s)" in detail.text or "2 selected finding(s)" in detail.text
+        # The count and its noun come from the catalogue's plural form (REQ-UIX-008).
+        assert "2 selected findings" in detail.text
 
         returned = client.get(back.replace("&amp;", "&"))
         assert returned.status_code == 200

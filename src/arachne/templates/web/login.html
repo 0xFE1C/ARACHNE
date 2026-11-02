@@ -1,51 +1,47 @@
 {% extends "base.html" %}
 {% import "_macros.html" as ui %}
-{% block title %}Login · ARACHNE{% endblock %}
+{% block title %}{{ t('ui.title.login') }}{% endblock %}
 {% block content %}
-{#- §5 states: loading ✓, empty n/a, error ✓, partial ✓, refused n/a (06-ui-ux.md §4.1). -#}
+{#- §5 states: loading ✓, empty n/a, error ✓, partial ✓, refused n/a (06-ui-ux.md §4.1).
+
+    The heading is rendered in every state (including the error one): a page whose content
+    region was replaced still has to tell a screen-reader user what screen they are on
+    (WCAG 2.4.6 / 1.3.1). -#}
+<h1>{{ t('ui.login.heading') }}</h1>
 {% if state == "error" %}
   {{ ui.screen_state("error", endpoint="POST /ui/login",
-      error_title="The sign-in page could not be loaded.",
-      error_detail="The service did not answer. Nothing was submitted and no key was checked.",
+      error_title=t('ui.login.error_title'),
+      error_detail=t('ui.login.error_detail'),
       retry_href="/ui/login") }}
 {% else %}
 <div class="login panel"{% if state == "loading" %} data-state="loading" aria-busy="true"{% endif %}>
-  <h1>ARACHNE sign in</h1>
   {% if not keys_configured and not sso_enabled %}
   {#- error (closed API): matches the deny-by-default reality. -#}
-  <p class="error" role="alert">
-    No API keys are configured and single sign-on is disabled on this deployment, so the
-    interface is closed. Set <code>ARACHNE_API_KEYS</code> (or
-    <code>ARACHNE_API_KEYS_FILE</code>), or configure an OIDC IdP
-    (<code>ARACHNE_SSO_*</code>), and restart.
-  </p>
+  <p class="error" role="alert">{{ t('ui.login.closed') }}</p>
   {% else %}
   {#- partial: SSO is switched on but incomplete; the API key still works. -#}
-  {% if partial %}{{ ui.partial_banner("Single sign-on is enabled but incomplete: " ~ (sso_warning | default("a required setting")) ~ " is not set, so the SSO button is withheld until it is. Signing in with an API key still works.") }}{% endif %}
+  {% if partial %}{{ ui.partial_banner(t('ui.login.sso_partial', setting=sso_warning | default(t('ui.login.sso_setting_fallback')))) }}{% endif %}
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
   {% if sso_enabled %}
-  <p><a class="button primary" href="/api/v1/auth/sso/login?next={{ next | urlencode }}">Sign in with SSO</a></p>
+  <p><a class="button primary" href="/api/v1/auth/sso/login?next={{ next | urlencode }}">{{ t('ui.login.sso_button') }}</a></p>
   {% endif %}
   {% if keys_configured %}
-  {% if sso_enabled %}<p class="muted small">or use an API key</p>{% endif %}
+  {% if sso_enabled %}<p class="muted small">{{ t('ui.login.or_api_key') }}</p>{% endif %}
   <form class="stack" method="post" action="/ui/login">
     <input type="hidden" name="next" value="{{ next }}">
     <div>
-      <label for="key">API key</label>
-      <input id="key" name="key" type="password" autocomplete="off"{% if not sso_enabled %} autofocus{% endif %} required>
+      <label for="key">{{ t('ui.login.api_key_label') }}</label>
+      <input id="key" name="key" type="password" autocomplete="current-password"{% if not sso_enabled %} autofocus{% endif %} required>
     </div>
     {#- loading: the submit button is disabled and busy; the form is not cleared. -#}
-    <button class="primary" type="submit"{% if state == "loading" %} disabled aria-busy="true"{% endif %}>{{ "Signing in…" if state == "loading" else "Sign in" }}</button>
+    <button class="primary" type="submit"{% if state == "loading" %} disabled aria-busy="true"{% endif %}>{{ t('ui.login.submitting') if state == "loading" else t('ui.login.submit') }}</button>
   </form>
-  <p class="muted small">
-    The key is the same one machine clients send in the <code>{{ api_key_header }}</code>
-    header. It is stored in an HttpOnly cookie for this browser only.
-  </p>
+  <p class="muted small">{{ t('ui.login.key_note', header=api_key_header) }}</p>
   {% endif %}
   {% endif %}
   <p class="muted small">
-    ARACHNE is a defensive scanner. Scan only what you are authorized to test.
-    <a href="/docs" target="_blank" rel="noopener">Security policy</a>
+    {{ t('ui.login.defensive_note') }}
+    <a href="/docs" target="_blank" rel="noopener">{{ t('ui.login.security_policy') }}</a>
   </p>
 </div>
 {% endif %}
