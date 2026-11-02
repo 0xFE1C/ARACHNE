@@ -29,6 +29,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+from arachne.api.workspace import MAX_BULK_FINDINGS, shortcut_sheet
+
 __all__ = ["SCREENS", "SCREEN_STATES", "ScreenSpec", "matrix"]
 
 #: The five states, in the specification's column order.
@@ -195,9 +197,26 @@ def _findings_context() -> dict[str, Any]:
         "findings": [_finding_item()],
         "total": 1,
         "severities": SEVERITIES,
-        "filters": {"severity": "", "status": "", "module": "", "q": ""},
+        "filters": {"severity": "", "status": "", "module": "", "q": "", "scan": ""},
+        "filtered": False,
+        "cursor": "",
+        "limit": "50",
         "next_href": None,
         "project": _project(),
+        # The workspace's own inputs (REQ-UIX-006). The matrix renders the *loaded* page, so it
+        # renders the writable, unselected one; the empty and refused cells come from the state
+        # flags the matrix test sets on top of this.
+        "can_write": True,
+        "selected": (),
+        "focused_id": None,
+        "scroll": 0,
+        "shortcuts": shortcut_sheet(),
+        "bulk_limit": MAX_BULK_FINDINGS,
+        "detail_query": "",
+        "notice": None,
+        "notice_kind": "ok",
+        "undo": None,
+        "error": None,
     }
 
 
@@ -206,6 +225,11 @@ def _finding_detail_context() -> dict[str, Any]:
         "finding": _finding_row(),
         "detail": _finding_item()["detail"],
         "evidence": _finding_item()["evidence"],
+        # §4.4's way back, and the two lower panels the detail screen gained in WP-05.
+        "list_href": "/ui/findings",
+        "selection_count": 0,
+        "authorization": (),
+        "history": (),
     }
 
 

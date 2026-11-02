@@ -8,8 +8,14 @@
     rather than a blank page, and `refused` is the unverified case (severity forced to INFO).
     The header and the actions stay usable in every state, including `error`. -#}
 <nav class="muted small" aria-label="Breadcrumb">
-  <a href="/ui/findings">Findings</a> / {{ finding.title }}
+  <a href="{{ list_href }}" data-back-to-list>Findings</a> / {{ finding.title }}
 </nav>
+{% if selection_count %}
+<p class="muted small">
+  Esc &mdash; or the breadcrumb &mdash; returns to the workspace with your {{ selection_count }}
+  selected finding(s) and scroll position still there.
+</p>
+{% endif %}
 {% if state == "loading" %}
   {{ ui.loading_state("Loading the finding...") }}
 {% else %}
@@ -121,15 +127,76 @@
   </section>
 
   <section class="panel">
+    <h2>Authorization</h2>
+    {% if authorization %}
+    <table>
+      <tbody>
+      {% for item in authorization %}
+        <tr>
+          <th>Owner</th>
+          <td>{{ item.owner }}</td>
+        </tr>
+        <tr><th>Justification</th><td>{{ item.justification }}</td></tr>
+        <tr><th>Expires</th><td>{{ item.expires_at }}
+            {% if item.revoked_at %}<span class="muted">· withdrawn {{ item.revoked_at }}</span>
+            {% elif item.active %}<span class="muted">· in force</span>
+            {% else %}<span class="muted">· expired</span>{% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">
+      No risk acceptance covers this finding. An acceptance names an accountable owner and
+      expires; the finding re-opens on its own when the expiry passes.
+    </p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>History{% if history %} ({{ history | length }}){% endif %}</h2>
+    {% if history is none %}
+    {{ ui.partial_banner("The audit trail for this finding could not be read. The decision that was taken is unchanged; this is the record of it that is missing.", retry_href=list_href) }}
+    {% elif history %}
+    <table>
+      <thead><tr><th scope="col">When</th><th scope="col">Decision</th><th scope="col">Actor</th></tr></thead>
+      <tbody>
+      {% for item in history %}
+        <tr>
+          <td class="muted small">{{ item.ts }}</td>
+          <td class="mono small">{{ item.action }}
+            {%- if item.detail.get("status") %} · {{ item.detail.get("status") }}{% endif %}
+            {%- if item.detail.get("undo") %} · undo{% endif %}
+            {%- if item.detail.get("change") %} · {{ item.detail.get("change") }}{% endif %}
+          </td>
+          <td class="small">{{ item.actor or item.detail.get("actor") or "—" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">
+      No decision has been recorded against this finding yet. Triaging, suppressing or accepting
+      it in the workspace writes an audited line here.
+    </p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
     <h2>Review</h2>
     <p class="muted small">
       Marking a false positive feeds the per-check confidence tuner and writes the same feedback
       row the API's <code>PATCH /findings/{id}</code> writes. Triage, suppression and risk
-      acceptance are in the workspace (REQ-UIX-006, WP-05).
+      acceptance live in the workspace, where they are keyboard-first and undoable for 60
+      seconds.
     </p>
     <form hx-post="/ui/findings/{{ finding.id }}/fp" hx-swap="none" method="post">
       <button type="submit">Mark false positive</button>
     </form>
+    <p class="small">
+      <a href="{{ list_href }}">Open this finding in the workspace</a>
+      <span class="muted small">— selected, and with the row you came from focused.</span>
+    </p>
   </section>
 {% endif %}
 {% endblock %}
+{% block scripts %}<script src="/static/workspace.js" defer></script>{% endblock %}

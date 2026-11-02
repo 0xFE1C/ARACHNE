@@ -1,0 +1,232 @@
+{#- The triage workspace body (§4.3, REQ-UIX-006). Rendered twice: as part of findings.html, and
+    on its own as the htmx fragment that replaces ``#workspace`` after a bulk action or an undo.
+    One template, two entry points — that is what keeps the swapped fragment and the full page
+    from drifting apart.
+
+    Everything here is server-rendered: the filters are the server's, the rows are the server's
+    page, and the selection/focus the browser keeps travel back as form fields so the response
+    can render them again (which is how "Esc returns with the same selection" is a round trip and
+    not a promise). ``workspace.js`` adds the keyboard layer on top; without it, every control
+    on this page still works with a mouse and a Tab key. -#}
+{% import "_macros.html" as ui %}
+
+{% macro system_fields(filters, cursor, limit, selected, focused_id, scroll) -%}
+  <input type="hidden" name="severity" value="{{ filters.severity }}">
+  <input type="hidden" name="status" value="{{ filters.status }}">
+  <input type="hidden" name="module" value="{{ filters.module }}">
+  <input type="hidden" name="q" value="{{ filters.q }}">
+  <input type="hidden" name="scan" value="{{ filters.scan }}">
+  <input type="hidden" name="cursor" value="{{ cursor or '' }}">
+  <input type="hidden" name="limit" value="{{ limit }}">
+  <input type="hidden" name="sel" value="{{ selected | join(',') }}" data-workspace="sel">
+  <input type="hidden" name="focus" value="{{ focused_id or '' }}" data-workspace="focus">
+  <input type="hidden" name="scroll" value="{{ scroll }}" data-workspace="scroll">
+  {#- One ``action`` field, set by the button that was pressed (workspace.js) so the POST body
+      carries exactly one value. The drawers' submit buttons are the same mechanism. -#}
+  <input type="hidden" name="action" value="triage" data-workspace="action">
+{%- endmacro %}
+
+<div id="workspace"
+     data-workspace-root
+     data-can-write="{{ 'true' if can_write else 'false' }}"
+     data-selected="{{ selected | join(',') }}"
+     data-focused="{{ focused_id or '' }}"
+     data-scroll="{{ scroll }}">
+
+{% if error %}
+<p class="banner" data-state="error" role="alert">
+  <span class="banner-title">Nothing was changed.</span> {{ error }}
+</p>
+{% endif %}
+{% if notice %}
+<p class="banner" data-state="notice" role="status" aria-live="polite">{{ notice }}</p>
+{% endif %}
+
+{% if state in ("loading", "error") %}
+  {{ ui.screen_state(state, endpoint="GET /api/v1/findings",
+      loading_label="Loading findings...",
+      error_title="The findings could not be loaded.",
+      error_detail="The filters are kept, so a retry re-runs the same query.",
+      retry_href="/ui/findings") }}
+{% elif empty %}
+  {% if filtered %}
+    {{ ui.empty_state("No findings match these filters.",
+        "Nothing in this project matches the filters above. Clearing them restores the unfiltered list.",
+        "/ui/findings", "Clear filters") }}
+  {% else %}
+    {{ ui.empty_state("No findings in this project yet.",
+        "A scan has either not run or found nothing. A dry run opens no socket and is the safe first step.",
+        "/ui/scans", "Run a scan") }}
+  {% endif %}
+{% else %}
+  {%- if refused %}
+  {{ ui.refused_banner("A viewer sees the findings but no decision control: the checkboxes, the bulk bar and the review actions are absent rather than disabled, because an absent control is honest and a disabled one is a puzzle.") }}
+  {%- endif %}
+  {%- if partial %}
+  {{ ui.partial_banner("The total count is unavailable, so the footer reports how many rows are shown without a total. Paging still works.", retry_href="/ui/findings") }}
+  {%- endif %}
+
+  {% if undo %}
+  {#- §4.3 undo contract: a toast naming the batch, one button, a 60-second window. It is its own
+      form because a form cannot nest in the triage form. -#}
+  <form class="toast" data-undo-toast method="post" hx-post="/ui/findings/undo"
+        hx-target="#workspace" hx-swap="outerHTML">
+    {{ system_fields(filters, cursor, limit, selected, focused_id, scroll) }}
+    <input type="hidden" name="token" value="{{ undo.token }}">
+    <span class="toast-text">{{ undo.count }} finding(s) {{ undo.label }}.</span>
+    <button type="submit" class="button" data-undo>Undo <kbd>⌘Z</kbd></button>
+    <span class="muted small">Available for 60 seconds.</span>
+  </form>
+  {% endif %}
+
+  <form id="triage-form" method="post" hx-post="/ui/findings/actions"
+        hx-target="#workspace" hx-swap="outerHTML">
+    {{ system_fields(filters, cursor, limit, selected, focused_id, scroll) }}
+    <p class="bulkbar" role="group" aria-label="Triage">
+      {% if can_write %}
+      <span class="muted small" data-selection-count role="status" aria-live="polite">{{ selected | length }} selected</span>
+      <button type="submit" data-action="triage">Mark triaged</button>
+      <button type="button" data-open-drawer="suppress">Suppress…</button>
+      <button type="button" data-open-drawer="accept">Accept risk…</button>
+      {% else %}
+      <span class="muted small">Read-only session: triage needs the scanner role.</span>
+      {% endif %}
+      <button type="button" data-open-sheet>Shortcuts (?)</button>
+    </p>
+
+    {% if findings %}
+    <table class="findings">
+      <caption class="visually-hidden">
+        Findings in this project. J and K move, X selects, Shift+X selects a range, T triages,
+        S suppresses, A accepts the risk, Enter opens the detail.
+      </caption>
+      <thead>
+        <tr>
+          {% if can_write %}<th scope="col"><span class="visually-hidden">Select</span></th>{% endif %}
+          <th scope="col">Sev</th><th scope="col">Title</th><th scope="col">Asset</th>
+          <th scope="col">Check</th><th scope="col">State</th><th scope="col">Age</th>
+        </tr>
+      </thead>
+      <tbody data-rows>
+      {% for item in findings %}
+        {% set finding = item.finding %}
+        {#- A roving tabindex: exactly one row is tabbable. The focused row carries
+            ``aria-current`` and ``data-focused`` so the focus ring survives the htmx swap
+            (workspace.js re-applies it from the state the server just rendered).
+
+            Selection is expressed by the checkbox itself — the control that owns the state, with
+            an accessible name per row — and by ``data-selected`` for the styling. Deliberately
+            not ``aria-selected``: that belongs on a row inside a grid/treegrid, and this is a
+            native table; WP-06's audit is where the grid role (if wanted) belongs. -#}
+        {% set is_focus = (focused_id == item.finding_id) or (focused_id is none and loop.first) %}
+        <tr class="row"
+            data-row-id="{{ item.finding_id }}"
+            data-focused="{{ 'true' if focused_id == item.finding_id else 'false' }}"
+            data-selected="{{ 'true' if item.finding_id in selected else 'false' }}"
+            tabindex="{{ 0 if is_focus else -1 }}"
+            {% if focused_id == item.finding_id %}aria-current="true"{% endif %}>
+          {% if can_write %}
+          <td class="select">
+            <input type="checkbox" name="finding_ids" value="{{ item.finding_id }}"
+                   data-row-check
+                   aria-label="Select {{ finding.title }}"
+                   {{ 'checked' if item.finding_id in selected }}>
+          </td>
+          {% endif %}
+          <td>{{ ui.sev(finding.severity) }}</td>
+          <td>
+            <a href="/ui/findings/{{ item.finding_id }}{% if detail_query %}?{{ detail_query }}&amp;focus={{ item.finding_id }}{% else %}?focus={{ item.finding_id }}{% endif %}"
+               data-row-open>{{ finding.title }}</a>
+          </td>
+          <td class="mono small">{{ finding.asset.kind }} {{ finding.asset.value }}</td>
+          <td class="mono small">
+            {{ finding.check_id or finding.module or "—" }}
+            {%- if finding.cwe %} · {{ finding.cwe }}{% endif %}
+          </td>
+          <td>{{ finding.status }}</td>
+          <td class="muted small">{{ finding.created_at }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    {#- Not the project's empty state (that is the branch above): this page listed nothing, which
+        means the filters — or a cursor that walked past the end — excluded everything. -#}
+    {{ ui.empty_state("No findings match these filters.",
+        "Clearing the filters restores the unfiltered list.",
+        "/ui/findings", "Clear filters") }}
+    {% endif %}
+
+    <p class="muted small">
+      Showing {{ findings | length }}{% if total is not none %} of {{ total }}{% endif %} finding(s).
+      {% if filters.get("scan") %}Scan {{ filters.get("scan") }} only.{% endif %}
+    </p>
+    {% if next_href %}
+    <p class="pagination">
+      <a class="button" href="{{ next_href }}">Load more</a>
+      <span class="muted small">A cursor, not an offset: the next page starts exactly where this one ended.</span>
+    </p>
+    {% endif %}
+
+    {% if can_write %}
+    {#- §4.3: S opens a drawer that requires a reason, A one that requires an expiry. Neither is a
+        one-click hide, and the server refuses the request outright without them.
+
+        Both drawers render closed *and* inert: a `display: none` field is still a candidate for
+        constraint validation, so a live `required` attribute in a closed drawer would block the T
+        key with an error nobody can see. ``workspace.js`` enables the fields of the drawer it
+        opens; the first render is already the closed state. -#}
+    <section class="drawer" data-drawer="suppress" hidden aria-labelledby="suppress-title">
+      <h2 id="suppress-title">Suppress the selected findings</h2>
+      <p class="muted small">
+        A suppression is attributed, versioned, commented and audited, so the decision can always
+        be reviewed and revoked. It is never a silent hide.
+      </p>
+      <label for="suppress-reason">Reason (required)</label>
+      <textarea id="suppress-reason" name="reason" rows="3" minlength="8" required disabled
+                data-drawer-first
+                placeholder="Why is this not a finding worth acting on?"></textarea>
+      <div class="drawer-actions">
+        <button type="submit" data-action="suppress" disabled>Suppress</button>
+        <button type="button" data-close-drawer>Cancel</button>
+      </div>
+    </section>
+
+    <section class="drawer" data-drawer="accept" hidden aria-labelledby="accept-title">
+      <h2 id="accept-title">Accept the risk on the selected findings</h2>
+      <p class="muted small">
+        An acceptance names an accountable owner and expires. The finding re-opens on its own when
+        the expiry passes.
+      </p>
+      <label for="accept-owner">Owner (required)</label>
+      <input id="accept-owner" name="owner" minlength="2" required disabled data-drawer-first
+             placeholder="jane.operator@example.com">
+      <label for="accept-justification">Justification (required)</label>
+      <textarea id="accept-justification" name="justification" rows="3" minlength="12" required
+                disabled
+                placeholder="Why is this risk acceptable, and until when?"></textarea>
+      <label for="accept-days">Expires in days (required)</label>
+      <input id="accept-days" name="ttl_days" type="number" min="1" max="3650" value="30" required
+             disabled>
+      <div class="drawer-actions">
+        <button type="submit" data-action="accept" disabled>Accept risk</button>
+        <button type="button" data-close-drawer>Cancel</button>
+      </div>
+    </section>
+    {% endif %}
+  </form>
+
+  <dialog id="shortcut-sheet" data-shortcut-sheet aria-labelledby="shortcut-sheet-title">
+    <h2 id="shortcut-sheet-title">Keyboard shortcuts</h2>
+    <p class="muted small">The workspace is keyboard-first: every action below is reachable without a mouse.</p>
+    <table>
+      <tbody>
+      {% for shortcut in shortcuts %}
+        <tr><td><kbd>{{ shortcut.chord }}</kbd></td><td>{{ shortcut.label }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <button type="button" data-close-sheet>Close (Esc)</button>
+  </dialog>
+{% endif %}
+</div>

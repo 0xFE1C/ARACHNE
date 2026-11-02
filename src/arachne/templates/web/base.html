@@ -44,5 +44,6 @@
 <main>
 {% block content %}{% endblock %}
 </main>
-</body>
+{# Per-screen script hook: htmx is loaded above, and a screen that needs behaviour of its own
+   (the triage workspace's keyboard layer) pulls it in here rather than inlining it. #}{% block scripts %}{% endblock %}</body>
 </html>

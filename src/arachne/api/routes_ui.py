@@ -24,7 +24,9 @@ Three rules keep the UI a *view* and never a dependency of the scanner:
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+import secrets
+from collections.abc import Mapping
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 from urllib.parse import parse_qs, quote, urlencode
 
@@ -33,9 +35,34 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from arachne.api.auth import API_KEY_COOKIE, Principal, Role, identify
 from arachne.api.deps import ContextDep
-from arachne.api.pagination import build_page, clamp_limit, cursor_or_400
-from arachne.api.routes_api import _definition_from_payload, _scan_request, _visible
+from arachne.api.filters import FINDING_FILTER_FIELDS
+from arachne.api.pagination import (
+    build_page,
+    clamp_limit,
+    cursor_or_400,
+    reject_unknown_query_params,
+)
+from arachne.api.routes_api import (
+    _definition_from_payload,
+    _require_finding,
+    _scan_request,
+    _visible,
+)
 from arachne.api.schemas import StartScanRequest
+from arachne.api.workspace import (
+    MAX_BULK_FINDINGS,
+    TRIAGE_STATUS,
+    BulkAction,
+    UndoRecord,
+    UndoTarget,
+    UndoUnavailableError,
+    UndoWindowClosedError,
+    new_undo_record,
+    now_utc,
+    parse_bulk_action,
+    shortcut_sheet,
+    store_for,
+)
 from arachne.core.audit import AuditAction, AuditOutcome
 from arachne.core.config import SEVERITY_LEVELS
 from arachne.core.errors import ArachneError, ConfigurationError
@@ -1053,91 +1080,501 @@ async def mark_false_positive_ui(
 
 
 # --------------------------------------------------------------------------- findings workspace
+#: The workspace's own query fields, on top of the API's finding filters and pagination
+#: contract. ``sel``/``focus``/``scroll`` are the client state §4.4 requires to survive a trip
+#: to the detail screen and back; keeping them in the URL (rather than only in a script's
+#: memory) is what makes "Esc returns with the same selection" assertable.
+_WORKSPACE_STATE_PARAMS = frozenset({"sel", "focus", "scroll"})
+
+#: The filter fields the workspace form submits, in one place (the form, the links and the
+#: bulk POST all speak the same vocabulary).
+_WORKSPACE_FILTER_KEYS = ("severity", "status", "module", "q", "scan")
+
+
+def _filters_from(values: Mapping[str, str]) -> dict[str, str]:
+    return {key: (values.get(key) or "").strip() for key in _WORKSPACE_FILTER_KEYS}
+
+
+def _parse_selection(raw: str | None) -> tuple[int, ...]:
+    """The ids the URL says are selected. Unparseable parts are dropped, never trusted."""
+    ids: list[int] = []
+    for chunk in (raw or "").split(","):
+        text = chunk.strip()
+        if text.isdigit() and int(text) >= 1 and int(text) not in ids:
+            ids.append(int(text))
+    return tuple(ids[:MAX_BULK_FINDINGS])
+
+
+def _workspace_query(
+    filters: Mapping[str, str],
+    *,
+    selected: tuple[int, ...] = (),
+    focused_id: int | None = None,
+    scroll: int = 0,
+    cursor: str | None = None,
+) -> str:
+    """The workspace's own query string — filters, pagination and the three state fields."""
+    query: dict[str, str] = {key: value for key, value in filters.items() if value}
+    if cursor:
+        query["cursor"] = cursor
+    if selected:
+        query["sel"] = ",".join(str(item) for item in selected)
+    if focused_id:
+        query["focus"] = str(focused_id)
+    if scroll:
+        query["scroll"] = str(scroll)
+    return urlencode(query)
+
+
+def _workspace_values(
+    request: Request,
+    context: ContextDep,
+    principal: Principal,
+    project: ProjectRecord,
+    *,
+    filters: dict[str, str],
+    cursor_raw: str | None,
+    selected: tuple[int, ...],
+    focused_id: int | None,
+    scroll: int,
+    limit_raw: str | None = None,
+    notice: str | None = None,
+    notice_kind: str = "ok",
+    error: str | None = None,
+    undo: dict[str, Any] | None = None,
+    state: str = "ready",
+) -> dict[str, Any]:
+    """Everything the workspace renders from — the page and the htmx fragment both use this.
+
+    One builder is what keeps the swapped fragment and the full page from drifting: the fragment
+    is this same render with a different template name. That is also why the page size, the cursor
+    and the filters travel back in the form: a bulk action must not silently re-page the view the
+    operator was working in.
+    """
+    limit = clamp_limit(_positive_int(limit_raw), default=_UI_PAGE_LIMIT)
+    cursor = cursor_or_400(cursor_raw)
+    can_write = principal.allows(Role.SCANNER)
+    findings: list[dict[str, Any]] = []
+    next_cursor: str | None = None
+    if state == "ready":
+        try:
+            rows = context.queries.finding_rows(
+                project_id=project.id,
+                include_unassigned=project.slug == DEFAULT_PROJECT_SLUG,
+                severity=filters["severity"] or None,
+                status=filters["status"] or None,
+                module=filters["module"] or None,
+                query=filters["q"] or None,
+                scan_id=int(filters["scan"]) if filters["scan"].isdigit() else None,
+                window=PageWindow(
+                    sort_key="id",
+                    descending=True,
+                    boundary=None if cursor is None else (cursor.key, cursor.item_id),
+                    backward=bool(cursor and cursor.backward),
+                ),
+                limit=limit + 1,
+            )
+        except Exception:  # §4.3 error: an error block with the filters kept, not a blank page
+            _logger.exception("the findings workspace could not be read")
+            state = "error"
+        else:
+            page = build_page(
+                rows,
+                limit=limit,
+                key_of=lambda row: row.id,
+                id_of=lambda row: row.id,
+                cursor=cursor,
+                backward=bool(cursor and cursor.backward),
+            )
+            findings = [{"finding": row.to_dict(), "finding_id": row.id} for row in page.items]
+            next_cursor = page.next_cursor
+    filtered = any(filters.values())
+    return {
+        "state": state,
+        "error": error,
+        "notice": notice,
+        "notice_kind": notice_kind,
+        "undo": undo,
+        "filters": filters,
+        "filtered": filtered,
+        "cursor": cursor_raw or "",
+        "limit": str(limit),
+        "severities": _SEVERITY_ORDER,
+        "findings": findings,
+        "total": None,
+        "can_write": can_write,
+        "selected": selected,
+        "focused_id": focused_id,
+        "scroll": scroll,
+        "shortcuts": shortcut_sheet(),
+        "bulk_limit": MAX_BULK_FINDINGS,
+        # §4.3's two empty states: nothing in the project at all, or nothing matching the filters
+        # (the template picks the copy from ``filtered``, and offers "clear filters" for the
+        # second). §4.3 partial: no cross-scan count source exists, so the footer reports the rows
+        # shown without a total. Paging and filtering are unaffected.
+        "partial": state == "ready",
+        "empty": state == "ready" and not findings,
+        "refused": not can_write,
+        "next_href": (
+            "/ui/findings?"
+            + _workspace_query(
+                filters, selected=selected, focused_id=focused_id, scroll=scroll, cursor=next_cursor
+            )
+            if next_cursor
+            else None
+        ),
+        "detail_query": _workspace_query(
+            filters, selected=selected, scroll=scroll
+        ),  # the row links add their own `focus=`
+        "project": project,
+    }
+
+
+def _render_workspace(
+    request: Request,
+    context: ContextDep,
+    principal: Principal,
+    project: ProjectRecord,
+    **values: Any,
+) -> HTMLResponse:
+    """The workspace fragment alone — what htmx swaps into ``#workspace`` (§4.3)."""
+    return _render(
+        context,
+        "_workspace.html",
+        request=request,
+        principal=principal,
+        **_workspace_values(request, context, principal, project, **values),
+    )
+
+
 @ui_router.get("/ui/findings", response_class=HTMLResponse)
 def findings_page(request: Request, context: ContextDep) -> Response:
-    """Every finding in the project, filtered and cursor-paged (06-ui-ux.md §4.3).
+    """Every finding in the project, filtered, paged and triaged from the keyboard (§4.3).
 
-    Filters and the cursor are query parameters, per the URL contract in §2.2, so a filtered
-    view is shareable and the back button restores it. The page is read-only: the keyboard
-    contract, bulk selection and the 60-second undo are WP-05 (REQ-UIX-006).
+    Filtering is the server's (REQ-UIX-002's guard is the same one the API uses, so a typo in a
+    filter name is a 400 naming the field rather than a silently unfiltered list), and the
+    cursor is WP-03's codec. Selection and focus travel in the URL so §4.4's "Esc returns to the
+    list with the same scroll position and selection" is a round trip the server renders, not a
+    promise a script makes.
     """
     principal = _principal_or_redirect(request, context)
     if isinstance(principal, RedirectResponse):
         return principal
     project = _ui_project(request, context, principal)
-    filters = {
-        key: (request.query_params.get(key) or "").strip()
-        for key in ("severity", "status", "module", "q", "scan")
-    }
-    limit = clamp_limit(_positive_int(request.query_params.get("limit")), default=_UI_PAGE_LIMIT)
-    cursor = cursor_or_400(request.query_params.get("cursor"))
-    try:
-        rows = context.queries.finding_rows(
-            project_id=project.id,
-            include_unassigned=project.slug == DEFAULT_PROJECT_SLUG,
-            severity=filters["severity"] or None,
-            status=filters["status"] or None,
-            module=filters["module"] or None,
-            query=filters["q"] or None,
-            scan_id=int(filters["scan"]) if filters["scan"].isdigit() else None,
-            window=PageWindow(
-                sort_key="id",
-                descending=True,
-                boundary=None if cursor is None else (cursor.key, cursor.item_id),
-                backward=bool(cursor and cursor.backward),
-            ),
-            limit=limit + 1,
-        )
-    except Exception:  # §4.3 error: an error block with the filters kept, not a blank page
-        _logger.exception("the findings workspace could not be read")
-        return _render(
-            context,
-            "findings.html",
-            request=request,
-            principal=principal,
-            state="error",
-            filters=filters,
-            severities=_SEVERITY_ORDER,
-            findings=[],
-            total=None,
-            next_href=None,
-        )
-    page = build_page(
-        rows,
-        limit=limit,
-        key_of=lambda row: row.id,
-        id_of=lambda row: row.id,
-        cursor=cursor,
-        backward=bool(cursor and cursor.backward),
-    )
+    reject_unknown_query_params(request, FINDING_FILTER_FIELDS | _WORKSPACE_STATE_PARAMS)
     return _render(
         context,
         "findings.html",
         request=request,
         principal=principal,
-        empty=not page.items and not any(filters.values()),
-        # §4.3 partial: there is no cross-scan count source, so the footer reports the rows shown
-        # without a total. Paging is unaffected, and the banner says exactly which number is
-        # missing rather than leaving a reader to guess.
-        partial=True,
-        refused=_read_only(principal),
-        filters=filters,
-        severities=_SEVERITY_ORDER,
-        findings=[{"finding": row.to_dict(), "finding_id": row.id} for row in page.items],
-        total=None,
-        next_href=_findings_next_href(request, filters, page.next_cursor),
+        **_workspace_values(
+            request,
+            context,
+            principal,
+            project,
+            filters=_filters_from(request.query_params),
+            cursor_raw=request.query_params.get("cursor"),
+            limit_raw=request.query_params.get("limit"),
+            selected=_parse_selection(request.query_params.get("sel")),
+            focused_id=_positive_int(request.query_params.get("focus")),
+            scroll=_positive_int(request.query_params.get("scroll")) or 0,
+        ),
     )
 
 
-def _findings_next_href(
-    request: Request, filters: dict[str, str], next_cursor: str | None
-) -> str | None:
-    """The "Load more" link: the same filters plus the cursor (an opaque token, §2.2)."""
-    if next_cursor is None:
+@ui_router.post("/ui/findings/actions")
+async def findings_action(request: Request, context: ContextDep) -> Response:
+    """The bulk verb: one action, one undo record, one audit event per finding (§4.3).
+
+    Every id is validated against the caller's tenant *before* anything is written, so a
+    half-applied batch cannot exist. The request is refused outright when it names no finding or
+    when a suppression carries no reason — §4.3's "an absent control is honest", applied to the
+    API side of the same rule.
+    """
+    principal = _principal_or_redirect(request, context)
+    if isinstance(principal, RedirectResponse):
+        return principal
+    _require_write(request, principal, Role.SCANNER)
+    project = _ui_project(request, context, principal)
+    form = await _form(request)
+    filters = _filters_from(form)
+    selected = _parse_selection(form.get("sel"))
+    focused_id = _positive_int(form.get("focus"))
+    scroll = _positive_int(form.get("scroll")) or 0
+
+    def _refuse(message: str) -> Response:
+        return _render_workspace(
+            request,
+            context,
+            principal,
+            project,
+            filters=filters,
+            cursor_raw=form.get("cursor"),
+            limit_raw=form.get("limit"),
+            selected=selected,
+            focused_id=focused_id,
+            scroll=scroll,
+            error=message,
+        )
+
+    try:
+        action = parse_bulk_action(form)
+    except ConfigurationError as exc:
+        return _refuse(str(exc))
+    rows: list[Any] = []
+    for finding_id in action.finding_ids:
+        try:
+            _require_finding(context, finding_id, project)
+        except HTTPException:
+            return _refuse(
+                "One of the selected findings is not in this project, so nothing was changed."
+            )
+        row = context.queries.finding_row(finding_id)
+        if row is None:
+            return _refuse("One of the selected findings no longer exists, so nothing was changed.")
+        rows.append(row)
+
+    targets: list[UndoTarget] = []
+    try:
+        if action.action == "triage":
+            targets = _apply_triage(context, principal, rows, action)
+        elif action.action == "suppress":
+            targets = _apply_suppression(context, principal, project, rows, action)
+        else:
+            targets = _apply_acceptance(context, principal, project, rows, action)
+    except ConfigurationError as exc:
+        return _refuse(str(exc))
+    token = secrets.token_urlsafe(18)
+    store_for(context).put(
+        new_undo_record(
+            token=token,
+            actor=principal.label,
+            project_id=project.id,
+            action=action.action,
+            label=action.label,
+            targets=tuple(targets),
+        )
+    )
+    return _render_workspace(
+        request,
+        context,
+        principal,
+        project,
+        filters=filters,
+        cursor_raw=form.get("cursor"),
+        limit_raw=form.get("limit"),
+        selected=selected,
+        focused_id=focused_id,
+        scroll=scroll,
+        notice=f"{len(targets)} finding(s) {action.label}.",
+        undo={"token": token, "label": action.label, "count": len(targets)},
+    )
+
+
+def _apply_triage(
+    context: ContextDep, principal: Principal, rows: list[Any], action: BulkAction
+) -> list[UndoTarget]:
+    """Set the status, remembering what each row had — that memory *is* the undo."""
+    targets: list[UndoTarget] = []
+    for row in rows:
+        prior = row.status
+        updated = context.queries.set_finding_status(row.id, action.status)
+        if updated is None:  # deleted between the validation pass and now
+            continue
+        context.auditor.with_actor(principal.actor).record(
+            AuditAction.FINDING_REVIEWED,
+            scan_id=updated.scan_id,
+            target=f"finding:{row.id}",
+            meta={
+                "status": action.status,
+                "triaged": True,
+                "prior_status": prior,
+                "actor": principal.label,
+                "identity": principal.actor,
+                "bulk": True,
+            },
+        )
+        targets.append(UndoTarget(finding_id=row.id, kind="status", prior=prior))
+    return targets
+
+
+def _apply_suppression(
+    context: ContextDep,
+    principal: Principal,
+    project: ProjectRecord,
+    rows: list[Any],
+    action: BulkAction,
+) -> list[UndoTarget]:
+    """Record one attributed, reason-carrying suppression per finding (REQ-QUAL-002).
+
+    The store writes the ``suppression.changed`` audit event per rule, which is why a bulk
+    suppression is N events and never one untraceable batch.
+    """
+    from arachne.quality.suppressions import Suppression
+
+    store = getattr(context.services, "quality", None)
+    if store is None:
+        raise ConfigurationError("no quality store is configured, so nothing can be suppressed")
+    targets: list[UndoTarget] = []
+    for row in rows:
+        rule = store.add_suppression(
+            Suppression(
+                kind="finding",
+                finding_id=row.id,
+                reason=action.reason,
+                actor=principal.label,
+            ),
+            project_id=project.id,
+        )
+        targets.append(UndoTarget(finding_id=row.id, kind="suppression", created_id=rule.id))
+    return targets
+
+
+def _apply_acceptance(
+    context: ContextDep,
+    principal: Principal,
+    project: ProjectRecord,
+    rows: list[Any],
+    action: BulkAction,
+) -> list[UndoTarget]:
+    """Record one risk acceptance per finding, each with an owner and a future expiry."""
+    from arachne.quality.acceptance import RiskAcceptance
+
+    store = getattr(context.services, "quality", None)
+    if store is None:
+        raise ConfigurationError("no quality store is configured, so no risk can be accepted")
+    expires_at = datetime.now(UTC) + timedelta(days=action.ttl_days)
+    targets: list[UndoTarget] = []
+    for row in rows:
+        acceptance = store.add_acceptance(
+            RiskAcceptance(
+                finding_id=row.id,
+                owner=action.owner,
+                justification=action.justification,
+                expires_at=expires_at,
+                actor=principal.label,
+            ),
+            project_id=project.id,
+        )
+        targets.append(UndoTarget(finding_id=row.id, kind="acceptance", created_id=acceptance.id))
+    return targets
+
+
+@ui_router.post("/ui/findings/undo")
+async def findings_undo(request: Request, context: ContextDep) -> Response:
+    """Undo the last bulk action: put the prior state back, and audit the restoration.
+
+    Undo *restores*; it does not re-run (§4.3, the WP-05 pitfall). A row whose state has been
+    changed again since the action is left alone and reported as skipped, because restoring it
+    would be a new change wearing undo's clothes.
+    """
+    principal = _principal_or_redirect(request, context)
+    if isinstance(principal, RedirectResponse):
+        return principal
+    _require_write(request, principal, Role.SCANNER)
+    project = _ui_project(request, context, principal)
+    form = await _form(request)
+    filters = _filters_from(form)
+    selected = _parse_selection(form.get("sel"))
+    focused_id = _positive_int(form.get("focus"))
+    scroll = _positive_int(form.get("scroll")) or 0
+
+    def _refuse(message: str) -> Response:
+        return _render_workspace(
+            request,
+            context,
+            principal,
+            project,
+            filters=filters,
+            cursor_raw=form.get("cursor"),
+            limit_raw=form.get("limit"),
+            selected=selected,
+            focused_id=focused_id,
+            scroll=scroll,
+            error=message,
+        )
+
+    try:
+        record = store_for(context).consume(
+            (form.get("token") or "").strip(),
+            actor=principal.label,
+            project_id=project.id,
+            now=now_utc(),
+        )
+    except (UndoWindowClosedError, UndoUnavailableError) as exc:
+        return _refuse(str(exc))
+    restored, skipped = _restore(context, principal, project, record)
+    notice = f"Undone: {restored} finding(s) restored."
+    if skipped:
+        notice += f" {skipped} had changed again since, so it was left as it is."
+    return _render_workspace(
+        request,
+        context,
+        principal,
+        project,
+        filters=filters,
+        cursor_raw=form.get("cursor"),
+        limit_raw=form.get("limit"),
+        selected=selected,
+        focused_id=focused_id,
+        scroll=scroll,
+        notice=notice,
+    )
+
+
+def _restore(
+    context: ContextDep, principal: Principal, project: ProjectRecord, record: UndoRecord
+) -> tuple[int, int]:
+    """Apply one undo record's inverse operations. Returns ``(restored, skipped)``."""
+    store = getattr(context.services, "quality", None)
+    restored = skipped = 0
+    for target in record.targets:
+        row = context.queries.finding_row(target.finding_id)
+        # The record was built for this tenant, but it is re-checked here: an undo is a write,
+        # and every write in this interface re-resolves the row's tenant rather than trusting a
+        # token. A row that has since vanished (or been rehomed) is skipped, not resurrected.
+        if row is None or not _visible(_scan_project(context, target.finding_id), project):
+            skipped += 1
+            continue
+        if target.kind == "status" and target.prior is not None:
+            if record.action == "triage" and row.status != TRIAGE_STATUS:
+                # Somebody decided again after the batch; that decision wins.
+                skipped += 1
+                continue
+            context.queries.set_finding_status(target.finding_id, target.prior)
+            context.auditor.with_actor(principal.actor).record(
+                AuditAction.FINDING_REVIEWED,
+                scan_id=row.scan_id,
+                target=f"finding:{target.finding_id}",
+                meta={
+                    "status": target.prior,
+                    "restored_status": target.prior,
+                    "undo": True,
+                    "undo_of": record.action,
+                    "actor": principal.label,
+                    "identity": principal.actor,
+                },
+            )
+            restored += 1
+        elif target.kind == "suppression" and store is not None and target.created_id is not None:
+            # Revoked, never re-created: undo puts the prior state back rather than replaying.
+            store.revoke_suppression(target.created_id, actor=principal.label)
+            restored += 1
+        elif target.kind == "acceptance" and store is not None and target.created_id is not None:
+            store.revoke_acceptance(target.created_id, actor=principal.label)
+            restored += 1
+        else:
+            skipped += 1
+    return restored, skipped
+
+
+def _scan_project(context: ContextDep, finding_id: int) -> int | None:
+    """The tenant of the finding's scan (``None`` for a pre-S14 unassigned one)."""
+    scan_id = context.queries.finding_scan_id(finding_id)
+    if scan_id is None:
         return None
-    query = {key: value for key, value in filters.items() if value}
-    query["cursor"] = next_cursor
-    return f"/ui/findings?{urlencode(query)}"
+    record = context.services.store.get_scan(scan_id)
+    return None if record is None else record.project_id
 
 
 def _positive_int(raw: str | None) -> int | None:
@@ -1159,6 +1596,9 @@ def finding_detail_page(request: Request, finding_id: int, context: ContextDep) 
     if isinstance(principal, RedirectResponse):
         return principal
     project = _ui_project(request, context, principal)
+    reject_unknown_query_params(
+        request, FINDING_FILTER_FIELDS | _WORKSPACE_STATE_PARAMS | {"evidence"}
+    )
     row = context.queries.finding_row(finding_id)
     if row is None:
         raise HTTPException(status_code=404, detail=f"finding {finding_id} does not exist")
@@ -1166,6 +1606,15 @@ def finding_detail_page(request: Request, finding_id: int, context: ContextDep) 
     if record is None or not _visible(record.project_id, project):
         raise HTTPException(status_code=404, detail=f"finding {finding_id} does not exist")
     finding = row.to_dict()
+    selected = _parse_selection(request.query_params.get("sel"))
+    # §4.4: Esc returns to the list *with the same scroll position and selection*, so the way
+    # back is a link that carries both — plus the focus it should land on (the row you opened).
+    back_query = _workspace_query(
+        _filters_from(request.query_params),
+        selected=selected,
+        focused_id=finding_id,
+        scroll=_positive_int(request.query_params.get("scroll")) or 0,
+    )
     try:
         index = _report_index(context, row.scan_id)
     except Exception:
@@ -1179,6 +1628,10 @@ def finding_detail_page(request: Request, finding_id: int, context: ContextDep) 
             finding=finding,
             detail=_EMPTY_DETAIL,
             evidence=[],
+            list_href=f"/ui/findings?{back_query}",
+            selection_count=len(selected),
+            authorization=(),
+            history=None,
         )
     detail = index.get(finding_id, _EMPTY_DETAIL)
     # §4.4 partial: the verification record is intact and only the raw evidence failed.
@@ -1188,6 +1641,13 @@ def finding_detail_page(request: Request, finding_id: int, context: ContextDep) 
     except Exception:
         _logger.exception("the evidence of finding %s could not be read", finding_id)
         evidence, partial = [], True
+    # §4.4's two lower panels. ``authorization`` is the risk acceptance in force on this finding
+    # (the quality store is the same one the workspace writes to); ``history`` is the finding's
+    # own audit trail, read from the durable log — ``None`` when that read failed (partial).
+    authorization = _finding_authorization(context, project, finding_id)
+    history = _finding_history(context, finding_id, row.scan_id)
+    if history is None:
+        partial = True
     verified = finding_id in index and not bool(detail.get("low_confidence"))
     return _render(
         context,
@@ -1200,7 +1660,65 @@ def finding_detail_page(request: Request, finding_id: int, context: ContextDep) 
         finding=finding,
         detail=detail,
         evidence=evidence,
+        list_href=f"/ui/findings?{back_query}",
+        selection_count=len(selected),
+        authorization=authorization,
+        history=history,
     )
+
+
+def _finding_authorization(
+    context: ContextDep, project: ProjectRecord, finding_id: int
+) -> tuple[Any, ...]:
+    """The risk acceptances recorded against this finding (§4.4's Authorization row)."""
+    store = getattr(context.services, "quality", None)
+    if store is None:
+        return ()
+    try:
+        return tuple(
+            store.list_acceptances(finding_id=finding_id, active_only=False, project_id=project.id)
+        )
+    except Exception:  # §4.4 partial: a panel-level failure, the header stays usable
+        _logger.exception("the authorizations of finding %s could not be read", finding_id)
+        return ()
+
+
+def _finding_history(
+    context: ContextDep, finding_id: int, scan_id: int
+) -> tuple[dict[str, Any], ...] | None:
+    """This finding's own audit events, newest first (§4.4's History panel).
+
+    Read from the durable ``audit_log`` the deployment's audit chain writes, filtered to the
+    events whose target *is* this finding — so the panel shows the decisions taken on it (a
+    triage, a suppression, an acceptance, an undo) and not the scan's thousands of probe lines.
+    ``None`` means the read failed, which the panel reports as a partial rather than as "no
+    history" (those are different claims).
+    """
+    from arachne.data.report_store import SqlAuditReader
+
+    try:
+        records = SqlAuditReader(context.services.session_factory).events_for_scan(scan_id)
+    except Exception:
+        _logger.exception("the history of finding %s could not be read", finding_id)
+        return None
+    target = f"finding:{finding_id}"
+    rows: list[dict[str, Any]] = []
+    for record in reversed(records):
+        meta = dict(record.meta)
+        if (record.target or meta.get("target")) != target:
+            continue
+        nested = meta.get("meta")
+        detail = dict(nested) if isinstance(nested, dict) else {}
+        rows.append(
+            {
+                "ts": record.ts.isoformat() if record.ts else None,
+                "action": record.action,
+                "outcome": record.outcome,
+                "actor": meta.get("actor"),
+                "detail": detail,
+            }
+        )
+    return tuple(rows[:20])
 
 
 # --------------------------------------------------------------------------- plugins

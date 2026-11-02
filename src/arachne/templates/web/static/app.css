@@ -258,3 +258,94 @@ pre {
 .trend .bar.info { background: var(--color-info); }
 
 .login { max-width: var(--layout-login-width); margin-block: var(--space-10) 0; margin-inline: auto; }
+
+/* ---------------------------------------------------------------- triage workspace (REQ-UIX-006)
+   §4.3's screen. Focus management *is* the feature, so three things are explicit here: the
+   focused row is visible without relying on the browser's own ring (a roving `tabindex` means
+   the ring can be off-screen while the current row is not), the ring itself is token-driven, and
+   the target size of every control is pinned to `--target-min` (WCAG 2.5.8). */
+.visually-hidden {
+  position: absolute;
+  width: var(--border-width);
+  height: var(--border-width);
+  margin: calc(-1 * var(--border-width));
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.bulkbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--density-detail-pad);
+  margin-block: 0 var(--space-2);
+  background: var(--color-surface-1);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  position: sticky;
+  inset-block-start: var(--density-header-pad-y);
+  z-index: 5;
+}
+.bulkbar button { min-height: var(--target-min); }
+
+/* The roving focus: exactly one row is tabbable, and it says so in three ways — the ring (from
+   `:focus-visible`), the `aria-current` attribute, and this background. The background matters
+   because after an htmx swap the browser has not re-focused yet, and "where am I?" must still be
+   answerable. */
+.findings tr.row { cursor: default; }
+.findings tr.row:focus { outline: none; }
+.findings tr.row:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: calc(-1 * var(--focus-ring-offset));
+}
+.findings tr.row[aria-current="true"] td { background: var(--color-surface-2); }
+.findings tr.row[data-selected="true"] td { background: var(--color-selected-bg); }
+.findings tr.row[data-focused="true"] .select { box-shadow: inset var(--focus-ring-width) 0 0 var(--color-focus); }
+.findings .select { width: var(--layout-checkbox-column); }
+.findings input[type="checkbox"] { width: var(--control-height); height: var(--control-height); }
+
+.drawer {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-1);
+  box-shadow: var(--shadow-2);
+  padding: var(--density-panel-pad);
+  margin-block-start: var(--space-3);
+}
+.drawer h2 { margin-block-start: 0; }
+.drawer .drawer-actions { display: flex; gap: var(--space-2); margin-block-start: var(--space-3); }
+
+.toast {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--density-detail-pad);
+  margin-block-end: var(--space-3);
+  border: var(--border-width) solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+}
+.toast .toast-text { font-weight: var(--font-weight-bold); }
+.banner[data-state="notice"] { border-color: var(--color-success); }
+
+dialog[data-shortcut-sheet] {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-1);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-2);
+  padding: var(--density-panel-pad);
+  max-width: var(--layout-login-width);
+}
+dialog[data-shortcut-sheet] table { margin-block-end: var(--space-3); }
+dialog[data-shortcut-sheet] kbd {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-1);
+  background: var(--color-surface-0);
+}

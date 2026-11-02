@@ -9,6 +9,10 @@
     {
       "test": "tests/integration/test_sdk_contract.py::test_the_generated_typescript_client_contract",
       "reason": "Needs a node binary on PATH to execute the generated TypeScript client; the skip itself is asserted by test_the_typescript_test_skips_cleanly_when_node_is_absent."
+    },
+    {
+      "test": "tests/integration/test_ui_triage_usability.py",
+      "reason": "Needs a node binary on PATH to execute the shipped static/workspace.js — the keyboard model itself, not a copy of it — and to time the scripted 20-finding triage. The skip is asserted by test_the_script_test_skips_cleanly_when_node_is_absent."
     }
   ]
 }
