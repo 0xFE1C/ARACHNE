@@ -1,0 +1,20 @@
+{
+  "framework": "LLM",
+  "version": "2025",
+  "title": "OWASP Top 10 for LLM Applications",
+  "source": "https://genai.owasp.org/llm-top-10/",
+  "id_pattern": "^LLM(?:10|0[1-9]):2025$",
+  "notes": "The ten 2025 items; the controlled id form is LLM<N>:2025.",
+  "items": [
+    {"id": "LLM01:2025", "number": 1, "title": "Prompt Injection"},
+    {"id": "LLM02:2025", "number": 2, "title": "Sensitive Information Disclosure"},
+    {"id": "LLM03:2025", "number": 3, "title": "Supply Chain"},
+    {"id": "LLM04:2025", "number": 4, "title": "Data and Model Poisoning"},
+    {"id": "LLM05:2025", "number": 5, "title": "Improper Output Handling"},
+    {"id": "LLM06:2025", "number": 6, "title": "Excessive Agency"},
+    {"id": "LLM07:2025", "number": 7, "title": "System Prompt Leakage"},
+    {"id": "LLM08:2025", "number": 8, "title": "Vector and Embedding Weaknesses"},
+    {"id": "LLM09:2025", "number": 9, "title": "Misinformation"},
+    {"id": "LLM10:2025", "number": 10, "title": "Unbounded Consumption"}
+  ]
+}

@@ -76,6 +76,13 @@ class JwtAudit(WebCheck, Module):
             "live brute-force and no key material is used."
         ),
         research_ref="ch03#20",
+        framework=(
+            "WSTG-SESS-01",
+            "WSTG-SESS-04",
+            "WSTG-CRYP-04",
+            "API2:2023",
+            "CWE-347",
+        ),
         cwe="CWE-347",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -222,6 +229,7 @@ class OAuthFlowAudit(WebCheck, Module):
             "replayed."
         ),
         research_ref="ch03#21",
+        framework=("WSTG-ATHN-04", "API2:2023", "CWE-601"),
         cwe="CWE-601",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -328,6 +336,7 @@ class SamlAudit(WebCheck, Module):
             "identity and no valid signature; nothing is forged."
         ),
         research_ref="ch03#22",
+        framework=("WSTG-ATHN-04", "API2:2023", "CWE-347"),
         cwe="CWE-347",
         target_kinds=(TargetKind.URL,),
         severity_hint="critical",

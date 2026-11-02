@@ -1,0 +1,20 @@
+{
+  "framework": "OWASP API Security Top 10",
+  "version": "2023",
+  "title": "OWASP API Security Top 10",
+  "source": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
+  "id_pattern": "^API(?:10|[1-9]):2023$",
+  "notes": "The ten 2023 items. The controlled id form is API<N>:2023 so a mapping names the edition it was written against; a future edition is a new pinned file, not a silent reinterpretation.",
+  "items": [
+    {"id": "API1:2023", "number": 1, "title": "Broken Object Level Authorization"},
+    {"id": "API2:2023", "number": 2, "title": "Broken Authentication"},
+    {"id": "API3:2023", "number": 3, "title": "Broken Object Property Level Authorization"},
+    {"id": "API4:2023", "number": 4, "title": "Unrestricted Resource Consumption"},
+    {"id": "API5:2023", "number": 5, "title": "Broken Function Level Authorization"},
+    {"id": "API6:2023", "number": 6, "title": "Unrestricted Access to Sensitive Business Flows"},
+    {"id": "API7:2023", "number": 7, "title": "Server Side Request Forgery"},
+    {"id": "API8:2023", "number": 8, "title": "Security Misconfiguration"},
+    {"id": "API9:2023", "number": 9, "title": "Improper Inventory Management"},
+    {"id": "API10:2023", "number": 10, "title": "Unsafe Consumption of APIs"}
+  ]
+}

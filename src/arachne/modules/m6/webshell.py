@@ -194,6 +194,7 @@ class WebshellYara(Module):
         module="M6",
         name="webshell-yara",
         research_ref="ch06#24",
+        framework=("WSTG-INFO-05", "CWE-506"),
         cwe="CWE-506",
         target_kinds=(
             TargetKind.URL,

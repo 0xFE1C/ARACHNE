@@ -44,6 +44,7 @@ class Collecting(Module):
         description="Yields canned results for the checks-engine tests.",
         research_ref="ch01#3",
         target_kinds=(TargetKind.DOMAIN,),
+        framework=("CWE-200",),
         estimated_requests=1,
     )
     results: tuple[CheckResult, ...] = ()
@@ -133,6 +134,7 @@ async def test_active_checks_need_both_switches() -> None:
                 description="An active check for the switch test.",
                 research_ref="ch01#4",
                 target_kinds=(TargetKind.DOMAIN,),
+                framework=("CWE-200",),
                 type="active",
                 requires_active_checks=True,
                 estimated_requests=1,
@@ -234,6 +236,7 @@ async def test_a_skipped_result_is_counted_separately() -> None:
                 description="A check that always reports itself not run.",
                 research_ref="ch01#6",
                 target_kinds=(TargetKind.DOMAIN,),
+                framework=("CWE-200",),
                 estimated_requests=1,
             ),
             "run": lambda self, ctx: _skip(ctx),

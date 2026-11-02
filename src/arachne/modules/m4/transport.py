@@ -98,6 +98,12 @@ class SecurityHeaderReview(UrlCheck, Module):
             "because the gap is an origin-wide configuration decision."
         ),
         research_ref="ch04#16",
+        framework=(
+            "WSTG-CONF-07",
+            "WSTG-CLNT-09",
+            "API8:2023",
+            "CWE-693",
+        ),
         cwe="CWE-693",
         target_kinds=(TargetKind.URL,),
         severity_hint="low",
@@ -182,6 +188,7 @@ class CookieFlagAudit(UrlCheck, Module):
             "and whether the cookie was set over plaintext HTTP."
         ),
         research_ref="ch04#18",
+        framework=("WSTG-SESS-02", "WSTG-SESS-09", "CWE-614"),
         cwe="CWE-614",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -261,6 +268,7 @@ class CorsConfigReview(UrlCheck, Module):
             "with credentials each carry their own weight. GET only."
         ),
         research_ref="ch04#19",
+        framework=("WSTG-CLNT-07", "CWE-942"),
         cwe="CWE-942",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -395,6 +403,7 @@ class TlsConfigReview(UrlCheck, Module):
             "one."
         ),
         research_ref="ch04#17",
+        framework=("WSTG-CRYP-01", "WSTG-ATHN-01", "CWE-326"),
         cwe="CWE-326",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -495,6 +504,7 @@ class EmailAuthReview(UrlCheck, Module):
             "provider is selected (safe defaults, F-02-09)."
         ),
         research_ref="ch04#20",
+        framework=("WSTG-CONF-02", "CWE-290"),
         cwe="CWE-290",
         target_kinds=(TargetKind.URL, TargetKind.DOMAIN),
         severity_hint="medium",

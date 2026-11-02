@@ -74,6 +74,7 @@ class BucketEnumerator(EndpointCheck, Module):
             "Non-destructive: GET only, no object writes."
         ),
         research_ref="ch05#2",
+        framework=("WSTG-CONF-11", "CWE-732"),
         cwe="CWE-732",
         target_kinds=(TargetKind.CLOUD, TargetKind.URL, TargetKind.DOMAIN),
         severity_hint="high",
@@ -218,6 +219,7 @@ class LeakedCloudKeys(RepoCheck, Module):
             "default (ARACHNE_M5_VALIDATE_CLOUD_KEYS) and uses only a configured key."
         ),
         research_ref="ch05#3",
+        framework=("WSTG-INFO-05", "CWE-798"),
         cwe="CWE-798",
         target_kinds=(TargetKind.GIT, TargetKind.CLOUD, TargetKind.URL),
         severity_hint="high",
@@ -349,6 +351,7 @@ class ImdsSsrf(UrlCheck, Module):
             "evidence."
         ),
         research_ref="ch05#4",
+        framework=("WSTG-INPV-19", "API7:2023", "CWE-918"),
         cwe="CWE-918",
         target_kinds=(TargetKind.URL,),
         severity_hint="critical",
@@ -463,6 +466,7 @@ class AzureMiAudit(UrlCheck, Module):
             "active-checks gate; it reports token *presence*, never the token value."
         ),
         research_ref="ch05#5",
+        framework=("WSTG-INPV-19", "API7:2023", "CWE-918"),
         cwe="CWE-918",
         target_kinds=(TargetKind.URL,),
         severity_hint="critical",
@@ -563,6 +567,7 @@ class GcpSaKeys(RepoCheck, Module):
             "token issuance."
         ),
         research_ref="ch05#6",
+        framework=("WSTG-INFO-05", "CWE-798"),
         cwe="CWE-798",
         target_kinds=(TargetKind.GIT, TargetKind.CLOUD, TargetKind.URL),
         severity_hint="high",
@@ -643,6 +648,7 @@ class IamReview(RepoCheck, Module):
             "static review only."
         ),
         research_ref="ch05#1",
+        framework=("WSTG-ATHZ-03", "API5:2023", "CWE-269"),
         cwe="CWE-269",
         target_kinds=(TargetKind.GIT, TargetKind.CLOUD),
         severity_hint="high",

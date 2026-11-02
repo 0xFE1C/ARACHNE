@@ -84,6 +84,13 @@ class AuthSessionAudit(WebCheck, Module):
             "real credential. Session fixation and logout invalidation are out of scope."
         ),
         research_ref="ch03#19",
+        framework=(
+            "WSTG-IDNT-04",
+            "WSTG-ATHN-01",
+            "WSTG-ATHN-04",
+            "API2:2023",
+            "CWE-287",
+        ),
         cwe="CWE-287",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -259,6 +266,7 @@ class IdorOracle(WebCheck, Module):
             "Read-only: only GET requests are sent."
         ),
         research_ref="ch03#18",
+        framework=("WSTG-ATHZ-04", "API1:2023", "CWE-639"),
         cwe="CWE-639",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -408,6 +416,7 @@ class CsrfAudit(WebCheck, Module):
             "payload and submits no form."
         ),
         research_ref="ch03#4",
+        framework=("WSTG-SESS-05", "WSTG-BUSL-02", "CWE-352"),
         cwe="CWE-352",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",

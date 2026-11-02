@@ -115,6 +115,7 @@ class VerboseErrors(UrlCheck, Module):
             "page is rejected by comparison, so a styled 404 is never reported."
         ),
         research_ref="ch04#6",
+        framework=("WSTG-ERRH-01", "WSTG-ERRH-02", "CWE-209"),
         cwe="CWE-209",
         target_kinds=(TargetKind.URL,),
         severity_hint="low",
@@ -255,6 +256,7 @@ class ActuatorExposure(UrlCheck, Module):
             "enough on its own unless it exposes status detail."
         ),
         research_ref="ch04#8",
+        framework=("WSTG-CONF-05", "CWE-497"),
         cwe="CWE-497",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -379,6 +381,7 @@ class DatastoreSurface(UrlCheck, Module):
             "document, a database-name array, a Solr response header), never a generic page."
         ),
         research_ref="ch04#12",
+        framework=("WSTG-CONF-01", "WSTG-CONF-05", "CWE-668"),
         cwe="CWE-668",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -521,6 +524,7 @@ class RobotsSitemap(UrlCheck, Module):
             "is information, not a finding."
         ),
         research_ref="ch04#23",
+        framework=("WSTG-INFO-03", "CWE-200"),
         cwe="CWE-200",
         target_kinds=(TargetKind.URL,),
         severity_hint="low",
@@ -662,6 +666,7 @@ class WordpressSurface(UrlCheck, Module):
             "only' answer, never by sending a POST body."
         ),
         research_ref="ch04#27",
+        framework=("WSTG-INFO-08", "WSTG-IDNT-04", "CWE-200"),
         cwe="CWE-200",
         target_kinds=(TargetKind.URL,),
         severity_hint="low",
@@ -758,6 +763,7 @@ class AliasTraversal(UrlCheck, Module):
             "merely echoes the name is never a finding. Read-only GETs only."
         ),
         research_ref="ch04#30",
+        framework=("WSTG-ATHZ-01", "CWE-22"),
         cwe="CWE-22",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",

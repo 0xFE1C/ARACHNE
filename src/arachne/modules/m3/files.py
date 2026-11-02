@@ -88,6 +88,7 @@ class TraversalOracle(WebCheck, Module):
             "Read-only: no path is written and nothing sensitive is read."
         ),
         research_ref="ch03#11",
+        framework=("WSTG-ATHZ-01", "CWE-22"),
         cwe="CWE-22",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -223,6 +224,7 @@ class UploadAudit(WebCheck, Module):
             "the target; with the knob off the check reports itself skipped and sends nothing."
         ),
         research_ref="ch03#10",
+        framework=("WSTG-BUSL-08", "WSTG-BUSL-09", "CWE-434"),
         cwe="CWE-434",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",

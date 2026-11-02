@@ -79,9 +79,21 @@ def test_module_subcommands_have_help(flag: str) -> None:
 
 def test_coverage_is_reachable_both_ways() -> None:
     nested = runner.invoke(app, ["module", "coverage", "--json"])
-    top_level = runner.invoke(app, ["coverage", "--json"])
+    top_level = runner.invoke(app, ["coverage", "matrix", "--json"])
     assert nested.exit_code == 0 and top_level.exit_code == 0
     assert json.loads(nested.output)["total"] == json.loads(top_level.output)["total"]
+
+
+def test_the_ledger_is_a_coverage_subcommand() -> None:
+    """``arachne coverage ledger --format json`` is REQ-DET-001's command shape."""
+    result = runner.invoke(app, ["coverage", "ledger", "--format", "json"])
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["checks"]
+    # The group offers help, and both spellings of the matrix command still work.
+    assert runner.invoke(app, ["coverage", "--help"]).exit_code == 0
+    assert runner.invoke(app, ["coverage", "matrix", "--help"]).exit_code == 0
+    assert runner.invoke(app, ["coverage", "ledger", "--help"]).exit_code == 0
 
 
 def test_the_registry_the_cli_uses_is_the_installed_one() -> None:

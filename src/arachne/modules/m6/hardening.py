@@ -88,6 +88,7 @@ class TemplateScan(Module):
             "a matcher — no templating engine, no code execution, GET only."
         ),
         research_ref="ch06#3",
+        framework=("WSTG-INFO-05", "CWE-200"),
         cwe="CWE-200",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -295,6 +296,7 @@ class ExploitMatch(Module):
             "performed."
         ),
         research_ref="ch06#5",
+        framework=("WSTG-CONF-01", "CWE-1104"),
         cwe="CWE-1104",
         target_kinds=(TargetKind.URL, TargetKind.DOMAIN, TargetKind.IP),
         severity_hint="high",
@@ -462,6 +464,7 @@ class CredentialHunt(Module):
             "a masked fingerprint — never a raw value (research ch06#17). GET only."
         ),
         research_ref="ch06#17",
+        framework=("WSTG-INFO-05", "CWE-798"),
         cwe="CWE-798",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",

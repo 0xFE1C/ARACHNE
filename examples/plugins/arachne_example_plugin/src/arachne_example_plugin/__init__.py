@@ -52,6 +52,10 @@ class ExampleVersionBanner(Module):
             "banner. Read-only: it never changes state and never submits a payload."
         ),
         research_ref="ch04#7",
+        # REQ-DET-002: a check that declares no framework item is refused at registration, so
+        # the worked example names the WSTG item its evidence bears on (CONF-05, admin/debug
+        # interface enumeration) alongside its CWE.
+        framework=("WSTG-CONF-05", "CWE-489"),
         cwe="CWE-489",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",

@@ -6,7 +6,7 @@ the numbered methods in `docs/research/`.
 
 - research corpus: `docs/research`
 - source roots: `src/arachne/modules`
-- references found: **152**
+- references found: **155**
 - coverage: **148/175 (84.6%)**
 
 ## Summary
@@ -216,7 +216,7 @@ the numbered methods in `docs/research/`.
 | 12 | Honeypot and decoy deployment | no | — |
 | 13 | Autonomous agentic exploitation | no | — |
 | 14 | GenAI application attack-surface mapping | yes | `attack-surface-genai` |
-| 15 | LLM prompt-injection surface mapping | yes | `attack-surface-genai` |
+| 15 | LLM prompt-injection surface mapping | yes | `attack-surface-genai`, `mcp-oauth-metadata`, `mcp-session-auth`, `mcp-token-audience` |
 | 16 | Local privilege-escalation discovery | yes | `lpe-discovery` |
 | 17 | Credential store hunting | yes | `credential-hunt` |
 | 18 | Sigma hunt-rule evaluation | yes | `sigma-hunt-rules` |

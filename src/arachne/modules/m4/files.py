@@ -90,6 +90,7 @@ class EnvFileProbe(UrlCheck, Module):
             "values themselves are redacted at capture time and never reach the check."
         ),
         research_ref="ch04#1",
+        framework=("WSTG-CONF-04", "CWE-200"),
         cwe="CWE-200",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -186,6 +187,7 @@ class VcsExposure(UrlCheck, Module):
             "does not download objects or reconstruct history."
         ),
         research_ref="ch04#2",
+        framework=("WSTG-CONF-03", "WSTG-CONF-04", "CWE-538"),
         cwe="CWE-538",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -285,6 +287,7 @@ class BackupFileHunt(UrlCheck, Module):
             "binary by nature."
         ),
         research_ref="ch04#3",
+        framework=("WSTG-CONF-04", "CWE-530"),
         cwe="CWE-530",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -396,6 +399,7 @@ class SourceMapExposure(UrlCheck, Module):
             "detected are reported by name, never by value."
         ),
         research_ref="ch04#4",
+        framework=("WSTG-CONF-04", "CWE-540"),
         cwe="CWE-540",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -501,6 +505,7 @@ class KeyExposure(UrlCheck, Module):
             "non-HTML content type. The key's contents never enter evidence."
         ),
         research_ref="ch04#15",
+        framework=("WSTG-CONF-04", "CWE-321"),
         cwe="CWE-321",
         target_kinds=(TargetKind.URL,),
         severity_hint="critical",

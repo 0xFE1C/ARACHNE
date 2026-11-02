@@ -93,6 +93,7 @@ class ApiDocExposure(UrlCheck, Module):
             "coverage instead of guessing them from a wordlist."
         ),
         research_ref="ch04#5",
+        framework=("WSTG-INFO-06", "API9:2023", "CWE-200"),
         cwe="CWE-200",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -201,6 +202,7 @@ class DebugEndpoints(UrlCheck, Module):
             "download alone."
         ),
         research_ref="ch04#7",
+        framework=("WSTG-CONF-05", "CWE-489"),
         cwe="CWE-489",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -300,6 +302,7 @@ class DirectoryListing(UrlCheck, Module):
             "inventory."
         ),
         research_ref="ch04#9",
+        framework=("WSTG-CONF-02", "API8:2023", "CWE-548"),
         cwe="CWE-548",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -391,6 +394,7 @@ class DashboardExposure(UrlCheck, Module):
             "login form; the credential attempt itself belongs to m4.default-credentials."
         ),
         research_ref="ch04#11",
+        framework=("WSTG-CONF-05", "CWE-284"),
         cwe="CWE-284",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -511,6 +515,7 @@ class HiddenEndpointHunt(UrlCheck, Module):
             "exposure rather than every route the application owns."
         ),
         research_ref="ch04#24",
+        framework=("WSTG-CONF-05", "WSTG-INFO-06", "CWE-200"),
         cwe="CWE-200",
         target_kinds=(TargetKind.URL,),
         severity_hint="low",
@@ -614,6 +619,7 @@ class StagingExposure(UrlCheck, Module):
             "reported from the page the crawl already fetched."
         ),
         research_ref="ch04#25",
+        framework=("WSTG-CONF-02", "CWE-1188"),
         cwe="CWE-1188",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -721,6 +727,7 @@ class WebdavVerbs(UrlCheck, Module):
             "is uploaded, renamed or deleted."
         ),
         research_ref="ch04#21",
+        framework=("WSTG-CONF-06", "WSTG-INPV-03", "CWE-650"),
         cwe="CWE-650",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",

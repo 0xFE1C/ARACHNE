@@ -137,6 +137,7 @@ class HostDiscovery(NetworkCheck, Module):
             "ICMP still answers TCP), and records every live host in the asset inventory."
         ),
         research_ref="ch02#1-4",
+        framework=("WSTG-CONF-01",),
         target_kinds=target_kinds_for_network_probes(),
         severity_hint="info",
         type="active",
@@ -280,6 +281,7 @@ class PortScan(NetworkCheck, Module):
             "permitted and the pure-Python connect scanner otherwise."
         ),
         research_ref="ch02#4-7",
+        framework=("WSTG-CONF-01",),
         target_kinds=(*target_kinds_for_network_probes(), TargetKind.URL),
         severity_hint="info",
         type="active",
@@ -410,6 +412,7 @@ class OsFingerprint(NetworkCheck, Module):
             "Best-effort by design: no probe battery and no raw-socket spoofing."
         ),
         research_ref="ch02#8",
+        framework=("WSTG-CONF-01",),
         target_kinds=target_kinds_for_network_probes(),
         severity_hint="info",
         type="active",
@@ -503,6 +506,7 @@ class ServiceFingerprint(NetworkCheck, Module):
             "correlation consumes."
         ),
         research_ref="ch02#9-10",
+        framework=("WSTG-CONF-01",),
         target_kinds=(*target_kinds_for_network_probes(), TargetKind.URL),
         severity_hint="info",
         type="active",

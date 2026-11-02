@@ -1655,6 +1655,42 @@ checks:
     target_kinds: [url]
     estimated_requests: 4
 
+  # ---------------------------------------------------------------- M6 MCP family (WP-07, REQ-DET-005)
+  # The read-only MCP security family: three anonymous GETs at the published well-known
+  # documents and the MCP endpoint. All L1, all default-on (opt-out-able), all GET-only.
+  - module: M6
+    name: mcp-token-audience
+    version: "1.0"
+    title: "MCP protected-resource metadata declares no token audience"
+    description: "Reads the MCP server's protected-resource metadata (RFC 9728) with one anonymous GET and reports it when it publishes no `resource` identifier. Without one the server cannot bind an access token to its own audience, which is the token-passthrough condition the MCP Security Best Practices forbid. Read-only: the published document is parsed, and no token is ever presented."
+    research_ref: ch06#15
+    proof: L1
+    cwe: CWE-287
+    target_kinds: [url]
+    estimated_requests: 1
+
+  - module: M6
+    name: mcp-session-auth
+    version: "1.0"
+    title: MCP endpoint authenticates with a session
+    description: "Sends one anonymous GET to the MCP endpoint and reports it when the endpoint answers without any authentication challenge while issuing a session identifier (an `Mcp-Session-Id` header or a session cookie). The MCP Security Best Practices say a server MUST NOT use sessions for authentication. Read-only: no credential is sent and nothing is written; the check only reads the challenge the server sent."
+    research_ref: ch06#15
+    proof: L1
+    cwe: CWE-306
+    target_kinds: [url]
+    estimated_requests: 1
+
+  - module: M6
+    name: mcp-oauth-metadata
+    version: "1.0"
+    title: MCP OAuth metadata advertises an unsafe discovery target
+    description: "Reads the MCP server's protected-resource and authorization-server metadata with two anonymous GETs and reports an advertised issuer or authorization server that is not HTTPS or that points into a private, loopback or link-local range — the unvalidated-discovery SSRF surface the MCP Security Best Practices warn about. Read-only: the advertised URLs are parsed, never fetched — following one would be the SSRF the check reports."
+    research_ref: ch06#15
+    proof: L1
+    cwe: CWE-918
+    target_kinds: [url]
+    estimated_requests: 2
+
   # ---------------------------------------------------------------- S15 proof ladder (area PROOF)
   # The L2 out-of-band variants and the attested L3/L4 proofs (S15, area PROOF).
   # Every row is opt-in: an L2+ declaration can never be enabled by default

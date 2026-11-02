@@ -70,6 +70,7 @@ from arachne.core.logging import get_logger
 from arachne.data.keyset import PageWindow
 from arachne.data.project_store import DEFAULT_PROJECT_SLUG, ProjectRecord
 from arachne.i18n import format_number, pluralize, translate
+from arachne.modules.coverage import build_ledger
 
 __all__ = ["ui_router"]
 
@@ -720,6 +721,7 @@ def modules_page(request: Request, context: ContextDep) -> Response:
                             "version": metadata.version,
                             "research_ref": metadata.research_ref,
                             "cwe": metadata.cwe,
+                            "framework": ", ".join(metadata.framework) or "—",
                             "active": metadata.requires_active_checks,
                             "opt_in": not metadata.enabled_by_default,
                             "ran": metadata.key in stored,
@@ -728,6 +730,18 @@ def modules_page(request: Request, context: ContextDep) -> Response:
                     ],
                 }
             )
+        # §4.10: "This screen is the coverage ledger rendered ... It has no separate data
+        # source, so it can never disagree with the JSON." The ledger is built from the same
+        # registry object this view already read (no second query), by the same function the
+        # CLI and the committed artefact use.
+        ledger = build_ledger(registry)
+        coverage = {
+            "checks": ledger.check_count,
+            "wstg": ledger.wstg_counts(),
+            "api": ledger.api_counts(),
+            "cwe_only": len(ledger.cwe_only),
+            "generated_at": ledger.generated_at,
+        }
     except Exception:
         # §4.10 is explicit: a registry that cannot be read is an *error*, not an empty state,
         # because an empty coverage screen would read as "this deployment detects nothing".
@@ -743,6 +757,7 @@ def modules_page(request: Request, context: ContextDep) -> Response:
         # §4.10 refused: this view read-only for every role — configuration is environment-driven.
         refused=True,
         modules=modules,
+        coverage=coverage,
         config={
             "database": settings.database_url,
             "per_host_rate": settings.rate_limit.per_host_rate,

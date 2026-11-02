@@ -54,6 +54,7 @@ class JsAssetScan(Module):
             "referenced assets and hardcoded credentials (reported masked)."
         ),
         research_ref="ch01#26",
+        framework=("WSTG-INFO-06", "CWE-200"),
         cwe="CWE-200",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -250,6 +251,7 @@ class InternetDbTriage(Module):
             "CPE fingerprints and known CVEs, before any active service scan."
         ),
         research_ref="ch01#5",
+        framework=("WSTG-CONF-01", "CWE-1035"),
         cwe="CWE-1035",
         target_kinds=(TargetKind.IP, TargetKind.CIDR),
         severity_hint="medium",

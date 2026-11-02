@@ -31,11 +31,13 @@ from arachne.core.planner import MODULE_STEP, ScanStep
 from arachne.core.proof import require_proof_consistency
 from arachne.core.target import ModuleSelection
 from arachne.modules.base import CheckMetadata, Module
+from arachne.modules.framework_map import validate_items
 
 __all__ = [
     "ENTRY_POINT_GROUP",
     "ModuleGroup",
     "ModuleRegistry",
+    "require_framework_mapping",
 ]
 
 #: Entry-point group a third-party plugin registers its module groups under (F-09-01).
@@ -114,6 +116,7 @@ def _as_dict(metadata: CheckMetadata) -> dict[str, Any]:
         "title": metadata.title,
         "description": metadata.description,
         "research_ref": metadata.research_ref,
+        "framework": list(metadata.framework),
         "cwe": metadata.cwe,
         "cve": metadata.cve,
         "severity_hint": metadata.severity_hint,
@@ -157,6 +160,7 @@ class ModuleRegistry:
         seen: set[str] = set()
         for check in group.checks:
             check_id = check.metadata.id
+            require_framework_mapping(check.metadata)
             if check_id in self._by_id or check_id in seen:
                 msg = f"check id {check_id!r} is registered twice"
                 raise ConfigurationError(msg)
@@ -328,6 +332,27 @@ def _builtin_groups() -> list[ModuleGroup]:
     from arachne.modules.m6 import M6
 
     return [M1, M2, M3, M4, M5, M6]
+
+
+def require_framework_mapping(metadata: CheckMetadata) -> None:
+    """Refuse a check that declares no framework item, or a malformed one (REQ-DET-002).
+
+    An unmapped check is invisible to every buyer, auditor and coverage report, so the
+    registry refuses to register one. The malformed-id half is normally caught earlier, when
+    the :class:`~arachne.modules.base.CheckMetadata` is constructed; it is re-checked here so
+    a metadata object that bypassed construction (a hand-crafted or mutated one) still cannot
+    register a bad id. Both messages name the check and the offending item.
+    """
+    if not metadata.framework:
+        msg = (
+            f"check {metadata.id!r} declares no framework mapping: every check must name at "
+            "least one WSTG, API Top 10, CWE, ATT&CK, LLM or ASI item (REQ-DET-002)"
+        )
+        raise ConfigurationError(msg)
+    problems = validate_items(metadata.framework)
+    if problems:
+        msg = f"check {metadata.id!r} has an invalid framework mapping: " + "; ".join(problems)
+        raise ConfigurationError(msg)
 
 
 def _merge_by_module(groups: Sequence[ModuleGroup]) -> list[ModuleGroup]:

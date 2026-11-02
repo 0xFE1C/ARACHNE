@@ -16,26 +16,49 @@ Two deliberate properties:
   G-01 means. Default roots are the *implemented* module sources, so a row in the planning
   catalogue that no check implements does not inflate the number; ``include_templates`` adds
   the data files when a caller wants the "planned" view as well.
+
+The second half of this module is the **framework coverage ledger** (REQ-DET-001): one record
+per registered check — its identity, proof level, target kinds, framework mapping and the date
+it was last verified — plus the WSTG per-id states (REQ-DET-003) and the API Top 10 tally
+(REQ-DET-005). Unlike the matrix it does *not* grep: it reads ``ModuleRegistry``, because the
+mapping is now a validated metadata field and the registry is the whole truth.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from arachne.core.errors import ConfigurationError
+from arachne.modules.framework_map import (
+    api_top10_coverage,
+    framework_versions,
+    sorted_items,
+    wstg_coverage,
+)
+
+if TYPE_CHECKING:  # a registry is imported lazily: this module must stay importable alone
+    from arachne.modules.registry import ModuleRegistry
 
 __all__ = [
+    "LEDGER_VERSION",
     "ChapterCoverage",
+    "CoverageLedger",
     "CoverageReport",
+    "LedgerRecord",
     "MethodCoverage",
     "RefHit",
     "ResearchMethod",
     "build_coverage",
+    "build_ledger",
+    "check_ledger",
+    "default_ledger_paths",
     "default_research_dir",
     "default_source_roots",
     "expand_ref",
@@ -43,6 +66,8 @@ __all__ = [
     "parse_research_methods",
     "render_coverage_markdown",
     "render_coverage_text",
+    "render_ledger_json",
+    "render_ledger_markdown",
     "scan_sources_for_refs",
     "write_coverage_markdown",
 ]
@@ -476,3 +501,322 @@ def hits_by_check(hits: Sequence[RefHit]) -> Mapping[str, tuple[str, ...]]:
         if hit.check_id:
             out.setdefault(hit.check_id, []).append(hit.ref)
     return {key: tuple(sorted(set(value))) for key, value in out.items()}
+
+
+# =========================================================================== coverage ledger
+#: The ledger's own schema version. Bump it when a record's shape changes.
+LEDGER_VERSION = "1.0"
+
+#: The registry catalogue version the ledger was generated from (`ModuleRegistry.catalog`).
+REGISTRY_VERSION = "registry-1.0"
+
+#: Committed artefacts, relative to the repository root (`.spec/ledgers/`, architecture §3).
+LEDGER_JSON = ".spec/ledgers/coverage-ledger.json"
+LEDGER_MARKDOWN = ".spec/ledgers/coverage-ledger.md"
+
+_LAST_VERIFIED_NOTE = (
+    "last_verified is the date the corpus was last exercised by the test suite: the ledger is "
+    "regenerated after a full suite run, and every registered check is run by it. A per-check "
+    "date arrives with the verification-record store (REQ-PROOF-*). It is committed content, "
+    "not a wall-clock read, so --check is byte-stable."
+)
+
+
+@dataclass(frozen=True, slots=True)
+class LedgerRecord:
+    """One registered check, as the ledger states it (REQ-DET-001)."""
+
+    id: str
+    module: str
+    title: str
+    proof: str
+    target_kinds: tuple[str, ...]
+    framework: tuple[str, ...]
+    last_verified: str
+    cwe: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "module": self.module,
+            "title": self.title,
+            "proof": self.proof,
+            "target_kinds": list(self.target_kinds),
+            "framework": list(self.framework),
+            "last_verified": self.last_verified,
+            "cwe": self.cwe,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class CoverageLedger:
+    """The whole ledger: header, per-check records and the framework tallies."""
+
+    generated_at: str
+    records: tuple[LedgerRecord, ...]
+    wstg_items: tuple[dict[str, Any], ...]
+    api_items: tuple[dict[str, Any], ...]
+    registry_digest: str
+    framework_versions: Mapping[str, str] = field(default_factory=dict)
+    registry_version: str = REGISTRY_VERSION
+    ledger_version: str = LEDGER_VERSION
+
+    # ------------------------------------------------------------------ tallies
+    @property
+    def check_count(self) -> int:
+        return len(self.records)
+
+    @property
+    def cwe_only(self) -> tuple[str, ...]:
+        """Checks whose whole mapping is a CWE — the REQ-DET-002 burn-down metric."""
+        return tuple(
+            record.id
+            for record in self.records
+            if record.framework and all(item.startswith("CWE-") for item in record.framework)
+        )
+
+    def wstg_counts(self) -> dict[str, int]:
+        states = [str(item["state"]) for item in self.wstg_items]
+        return {
+            "mapped": states.count("mapped"),
+            "out_of_scope": states.count("out_of_scope"),
+            "gap": states.count("gap"),
+            "total": len(states),
+            "in_scope": states.count("mapped") + states.count("gap"),
+        }
+
+    def api_counts(self) -> dict[str, int]:
+        return {
+            "mapped": sum(1 for item in self.api_items if item["state"] == "mapped"),
+            "total": len(self.api_items),
+        }
+
+    # ------------------------------------------------------------------ rendering
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "ledger_version": self.ledger_version,
+            "generated_at": self.generated_at,
+            "registry_version": self.registry_version,
+            "registry_digest": self.registry_digest,
+            "framework_versions": dict(self.framework_versions),
+            "last_verified_note": _LAST_VERIFIED_NOTE,
+            "totals": {
+                "checks": self.check_count,
+                "cwe_only_checks": len(self.cwe_only),
+            },
+            "wstg": self.wstg_counts(),
+            "api_top10": self.api_counts(),
+            "checks": [record.to_dict() for record in self.records],
+            "wstg_items": [dict(item) for item in self.wstg_items],
+        }
+
+    def to_json(self) -> str:
+        return render_ledger_json(self)
+
+
+def registry_digest(registry: ModuleRegistry) -> str:
+    """A stable digest of the registry's content: ``id@version`` for every check."""
+    joined = "\n".join(
+        sorted(f"{metadata.id}@{metadata.version}" for metadata in registry.metadata())
+    )
+    return "sha256:" + hashlib.sha256(joined.encode("utf-8")).hexdigest()
+
+
+def build_ledger(
+    registry: ModuleRegistry | None = None,
+    *,
+    generated_at: str | None = None,
+) -> CoverageLedger:
+    """Generate the ledger from the registry (REQ-DET-001).
+
+    The only non-derived input is ``generated_at``, which is also the per-check
+    ``last_verified`` date. ``--check`` supplies the committed value, so the generated bytes
+    are a pure function of the registry plus that one date and a byte comparison is a real
+    gate rather than a "usually stable" one.
+    """
+    if registry is None:
+        from arachne.modules.registry import ModuleRegistry
+
+        registry = ModuleRegistry.discover()
+    date = generated_at if generated_at is not None else datetime.now(UTC).date().isoformat()
+
+    by_item: dict[str, list[str]] = {}
+    records: list[LedgerRecord] = []
+    for metadata in registry.metadata():
+        items = sorted_items(metadata.framework)
+        for item in items:
+            by_item.setdefault(item, []).append(metadata.id)
+        records.append(
+            LedgerRecord(
+                id=metadata.id,
+                module=metadata.module,
+                title=metadata.title,
+                proof=metadata.proof.value,
+                target_kinds=tuple(kind.value for kind in metadata.target_kinds),
+                framework=items,
+                last_verified=date,
+                cwe=metadata.cwe,
+            )
+        )
+
+    wstg_items = tuple(
+        {
+            "id": state.id,
+            "state": state.state,
+            "title": state.item.title,
+            "checks": list(state.checks),
+            **({"reason": state.item.reason} if state.item.reason else {}),
+        }
+        for state in wstg_coverage(by_item)
+    )
+    api_items = tuple(
+        {
+            "id": state.id,
+            "state": state.state,
+            "title": state.item.title,
+            "checks": list(state.checks),
+        }
+        for state in api_top10_coverage(by_item)
+    )
+    return CoverageLedger(
+        generated_at=date,
+        records=tuple(records),
+        wstg_items=wstg_items,
+        api_items=api_items,
+        registry_digest=registry_digest(registry),
+        framework_versions=framework_versions(),
+    )
+
+
+def render_ledger_json(ledger: CoverageLedger) -> str:
+    """The committed JSON ledger (sorted, two-space indented, trailing newline)."""
+    return json.dumps(ledger.to_dict(), indent=2, sort_keys=False) + "\n"
+
+
+def render_ledger_markdown(ledger: CoverageLedger) -> str:
+    """The committed Markdown ledger: the same data, readable in a diff."""
+    wstg = ledger.wstg_counts()
+    api = ledger.api_counts()
+    versions = ", ".join(f"{name} {version}" for name, version in ledger.framework_versions.items())
+    lines = [
+        "# ARACHNE coverage ledger (REQ-DET-001)",
+        "",
+        "Generated by `arachne coverage ledger --write`. Do not edit by hand: CI runs",
+        "`python -m arachne.tools.ledger --check` and fails when this file drifts from",
+        "`ModuleRegistry`.",
+        "",
+        f"- ledger version: **{ledger.ledger_version}**",
+        f"- generated: **{ledger.generated_at}**",
+        f"- registry: `{ledger.registry_version}` (`{ledger.registry_digest}`)",
+        f"- framework versions: {versions}",
+        f"- checks: **{ledger.check_count}**; checks mapped only to a CWE: "
+        f"**{len(ledger.cwe_only)}**",
+        f"- WSTG v4.2: **{wstg['mapped']}/{wstg['total']} mapped**, "
+        f"{wstg['in_scope']} in scope, {wstg['out_of_scope']} out of scope, {wstg['gap']} gap",
+        f"- OWASP API Top 10 (2023): **{api['mapped']}/{api['total']} mapped**",
+        "",
+        "## Checks",
+        "",
+        "| Check | Module | Proof | Targets | Framework items | Last verified |",
+        "|---|---|---|---|---|---|",
+    ]
+    for record in ledger.records:
+        lines.append(
+            f"| `{record.id}` | {record.module} | {record.proof} | "
+            f"{', '.join(record.target_kinds)} | {', '.join(record.framework)} | "
+            f"{record.last_verified} |"
+        )
+    lines += [
+        "",
+        "## WSTG v4.2 — all 97 test IDs",
+        "",
+        "Every id is in exactly one state: `mapped` (a check names it), `out_of_scope` (with a",
+        "reason) or `gap` (a work item).",
+        "",
+        "| WSTG id | State | Checks | Test |",
+        "|---|---|---|---|",
+    ]
+    for item in ledger.wstg_items:
+        checks = ", ".join(f"`{check}`" for check in item["checks"]) or "—"
+        reason = f" — {item['reason']}" if item.get("reason") else ""
+        lines.append(f"| `{item['id']}` | {item['state']} | {checks} | {item['title']}{reason} |")
+    lines += [
+        "",
+        "## OWASP API Security Top 10 (2023)",
+        "",
+        "| API id | State | Checks | Item |",
+        "|---|---|---|---|",
+    ]
+    for item in ledger.api_items:
+        checks = ", ".join(f"`{check}`" for check in item["checks"]) or "—"
+        lines.append(f"| `{item['id']}` | {item['state']} | {checks} | {item['title']} |")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def default_ledger_paths(root: str | Path | None = None) -> tuple[Path, Path]:
+    """The committed ledger paths: ``(json, markdown)`` under the repository root."""
+    base = Path(root).expanduser() if root is not None else _repo_root()
+    return base / LEDGER_JSON, base / LEDGER_MARKDOWN
+
+
+def _repo_root() -> Path:
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / "pyproject.toml").is_file():
+            return parent
+    return here.parents[1]
+
+
+def check_ledger(
+    json_path: str | Path | None = None,
+    markdown_path: str | Path | None = None,
+    *,
+    registry: ModuleRegistry | None = None,
+) -> tuple[bool, tuple[str, ...]]:
+    """Compare the committed ledger with generated output (REQ-DET-001's CI gate).
+
+    Returns ``(ok, differences)``. The committed ``generated_at`` is fed back into the
+    generator, so the bytes are comparable; every difference names the check id it concerns,
+    which is what makes "you added a check and forgot to regenerate" a readable failure.
+    """
+    default_json, default_markdown = default_ledger_paths()
+    json_target = Path(json_path) if json_path is not None else default_json
+    markdown_target = Path(markdown_path) if markdown_path is not None else default_markdown
+
+    if not json_target.is_file():
+        return False, (f"the committed ledger {json_target} does not exist",)
+    committed = json.loads(json_target.read_text(encoding="utf-8"))
+    generated_at = str(committed.get("generated_at", "")) or None
+    ledger = build_ledger(registry, generated_at=generated_at)
+
+    differences: list[str] = []
+    generated = ledger.to_dict()
+    if committed != generated:
+        differences.extend(_record_differences(committed.get("checks"), generated["checks"]))
+        for key in sorted(set(committed) | set(generated)):
+            if key == "checks":
+                continue
+            if committed.get(key) != generated.get(key):
+                differences.append(f"ledger field {key!r} differs from the registry")
+    if markdown_target.is_file():
+        if markdown_target.read_text(encoding="utf-8") != render_ledger_markdown(ledger):
+            differences.append(f"the committed markdown ledger {markdown_target.name} differs")
+    else:
+        differences.append(f"the committed markdown ledger {markdown_target} does not exist")
+    return (not differences), tuple(differences)
+
+
+def _record_differences(committed: Any, generated: list[dict[str, Any]]) -> list[str]:
+    """Name each check that is missing, extra or changed between two record sets."""
+    old = {str(record["id"]): record for record in committed or () if isinstance(record, Mapping)}
+    new = {record["id"]: record for record in generated}
+    differences: list[str] = []
+    for check_id in sorted(set(old) - set(new)):
+        differences.append(f"check {check_id!r} is in the committed ledger but not registered")
+    for check_id in sorted(set(new) - set(old)):
+        differences.append(f"check {check_id!r} is registered but missing from the ledger")
+    for check_id in sorted(set(old) & set(new)):
+        if old[check_id] != new[check_id]:
+            differences.append(f"check {check_id!r} changed since the ledger was generated")
+    return differences

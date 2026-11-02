@@ -186,6 +186,7 @@ class SqliOobProbe(WebCheck, Module):
             "the proof, and it is matched single-use to this finding. Opt-in (L2)."
         ),
         research_ref="ch03#1",
+        framework=("WSTG-INPV-05", "CWE-89"),
         proof=ProofLevel.L2,
         cwe="CWE-89",
         target_kinds=(TargetKind.URL,),
@@ -307,6 +308,7 @@ class XxeOobProbe(WebCheck, Module):
             "callback service — never at a file, a credential, or a third party. Opt-in (L2)."
         ),
         research_ref="ch03#7",
+        framework=("WSTG-INPV-07", "CWE-611"),
         proof=ProofLevel.L2,
         cwe="CWE-611",
         target_kinds=(TargetKind.URL,),
@@ -439,6 +441,7 @@ class CmdiOobProbe(WebCheck, Module):
             "ladder's single allowlisted command; nothing else is ever sent. Opt-in (L2)."
         ),
         research_ref="ch03#8",
+        framework=("WSTG-INPV-12", "CWE-78"),
         proof=ProofLevel.L2,
         cwe="CWE-78",
         target_kinds=(TargetKind.URL,),
@@ -558,6 +561,7 @@ class SstiOobProbe(WebCheck, Module):
             "token reference — no built-ins, no attribute chains. Opt-in (L2)."
         ),
         research_ref="ch03#6",
+        framework=("WSTG-INPV-08", "WSTG-INPV-18", "CWE-1336"),
         proof=ProofLevel.L2,
         cwe="CWE-1336",
         target_kinds=(TargetKind.URL,),
@@ -679,6 +683,7 @@ class RceEchoProof(WebCheck, Module):
             "attestation that authorizes state changes (L3)."
         ),
         research_ref="ch03#8",
+        framework=("WSTG-INPV-12", "CWE-78"),
         proof=ProofLevel.L3,
         cwe="CWE-78",
         target_kinds=(TargetKind.URL,),
@@ -790,6 +795,7 @@ class StateMarkerProof(WebCheck, Module):
             "AND an attestation that authorizes state changes (L4)."
         ),
         research_ref="ch03#1",
+        framework=("WSTG-INPV-05", "CWE-89"),
         proof=ProofLevel.L4,
         cwe="CWE-89",
         target_kinds=(TargetKind.URL,),

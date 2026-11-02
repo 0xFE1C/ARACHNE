@@ -127,6 +127,7 @@ class WebSocketUpgradeAuth(WebCheck, Module):
             "without a credential means the connection is never authenticated."
         ),
         research_ref="ch03#33",
+        framework=("WSTG-CLNT-10", "API2:2023", "CWE-306"),
         cwe="CWE-306",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -260,6 +261,7 @@ class WebSocketInjection(WebCheck, Module):
             "syntax and exactly one message per endpoint. Off unless ARACHNE_WEB_WS_PROBE=true."
         ),
         research_ref="ch03#33",
+        framework=("WSTG-CLNT-10", "CWE-1385"),
         cwe="CWE-1385",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",

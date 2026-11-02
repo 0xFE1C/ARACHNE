@@ -69,6 +69,7 @@ class FirebaseRules(EndpointCheck, Module):
             "target or an ``endpoint:<url>``; GET only, never a write."
         ),
         research_ref="ch05#7",
+        framework=("WSTG-CONF-11", "CWE-284"),
         cwe="CWE-284",
         target_kinds=(TargetKind.CLOUD, TargetKind.URL),
         severity_hint="high",
@@ -160,6 +161,7 @@ class SupabaseRls(EndpointCheck, Module):
             "anonymous role (research ch05#8). GET only; no row is written."
         ),
         research_ref="ch05#8",
+        framework=("WSTG-CONF-11", "API1:2023", "CWE-284"),
         cwe="CWE-284",
         target_kinds=(TargetKind.CLOUD, TargetKind.URL),
         severity_hint="high",
@@ -266,6 +268,7 @@ class TfstateExposure(EndpointCheck, RepoCheck, Module):
             "the cluster cannot drift apart (REQ-POSTURE-002/005)."
         ),
         research_ref="ch05#11-12",
+        framework=("WSTG-CONF-04", "CWE-312"),
         cwe="CWE-312",
         target_kinds=(TargetKind.CLOUD, TargetKind.URL, TargetKind.GIT),
         severity_hint="high",
@@ -458,6 +461,7 @@ class K8sExposure(EndpointCheck, Module):
             "binding grants cluster admin). GET only."
         ),
         research_ref="ch05#13-14",
+        framework=("WSTG-CONF-05", "CWE-306"),
         cwe="CWE-306",
         target_kinds=(TargetKind.CLOUD, TargetKind.URL, TargetKind.IP),
         severity_hint="critical",
@@ -563,6 +567,7 @@ class RegistryScan(EndpointCheck, Module):
             "configured and ARACHNE_M5_REGISTRY_SCAN is enabled. GET only."
         ),
         research_ref="ch05#15",
+        framework=("WSTG-CONF-05", "CWE-1104"),
         cwe="CWE-1104",
         target_kinds=(TargetKind.CLOUD, TargetKind.URL),
         severity_hint="medium",
@@ -641,6 +646,7 @@ class DockerSocket(EndpointCheck, RepoCheck, Module):
             "and object lists; no container is created and no mount is attempted."
         ),
         research_ref="ch05#16",
+        framework=("WSTG-CONF-05", "CWE-306"),
         cwe="CWE-306",
         target_kinds=(TargetKind.CLOUD, TargetKind.URL),
         severity_hint="critical",

@@ -71,6 +71,7 @@ class DnsTxtMining(Module):
             "resolver and flags missing or unenforced mail authentication."
         ),
         research_ref="ch01#25",
+        framework=("WSTG-INFO-10", "CWE-200"),
         cwe="CWE-200",
         target_kinds=_DOMAIN_KINDS,
         severity_hint="low",
@@ -222,6 +223,7 @@ class FaviconHash(Module):
             "importable) and matches it against a table of known default/vendor favicons."
         ),
         research_ref="ch01#23",
+        framework=("WSTG-INFO-08", "CWE-200"),
         cwe="CWE-200",
         target_kinds=(*_DOMAIN_KINDS, TargetKind.URL),
         severity_hint="low",
@@ -358,6 +360,7 @@ class BucketHunt(Module):
             "(research ch01#30)."
         ),
         research_ref="ch01#30",
+        framework=("WSTG-CONF-11", "CWE-284"),
         cwe="CWE-284",
         target_kinds=_DOMAIN_KINDS,
         severity_hint="medium",
@@ -515,6 +518,7 @@ class DocMetadata(Module):
             "metadata (author, software, hostnames, GPS) that the publisher left in place."
         ),
         research_ref="ch01#22",
+        framework=("WSTG-INFO-05", "CWE-200"),
         cwe="CWE-200",
         target_kinds=(TargetKind.URL,),
         severity_hint="low",

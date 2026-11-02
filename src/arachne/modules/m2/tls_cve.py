@@ -67,6 +67,7 @@ class TlsDeepScan(NetworkCheck, Module):
             "and suites are reported with the handshake that accepted them."
         ),
         research_ref="ch02#14",
+        framework=("WSTG-CRYP-01", "CWE-327"),
         cwe="CWE-327",
         target_kinds=_NETWORK_KINDS,
         severity_hint="medium",
@@ -212,6 +213,7 @@ class CveCorrelate(NetworkCheck, Module):
             "has configured a key. Sends nothing to the target."
         ),
         research_ref="ch02#29",
+        framework=("WSTG-CONF-01", "CWE-1035"),
         cwe="CWE-1035",
         target_kinds=_NETWORK_KINDS,
         severity_hint="high",

@@ -647,6 +647,12 @@ class WebLab:
     #: The text messages the WebSocket fixtures received, in order (``/ws`` relays them; the
     #: probe's inert marker showing up here is the fixture's own record of the relay).
     ws_messages: list[str] = field(default_factory=list)
+    #: ------------------------------------------------------------------ WP-07 MCP family
+    #: When set, the three MCP routes serve a *conformant* server instead of the planted one:
+    #: protected-resource metadata with a `resource`, an HTTPS public issuer, and an endpoint
+    #: that answers 401 with a bearer challenge. That is the false-positive trap the MCP
+    #: checks must stay silent on.
+    mcp_conformant: bool = False
 
     def session_user(self, token: str | None) -> str | None:
         return self.sessions.get(token or "") if token else None
@@ -1669,6 +1675,76 @@ class _Handler(BaseHTTPRequestHandler):
             content_type="text/plain; charset=utf-8",
         )
 
+    # ------------------------------------------------------------------ M6 MCP family (WP-07)
+    def _mcp_protected_resource(self, query: dict[str, list[str]]) -> None:
+        """RFC 9728 metadata: misconfigured (no audience, loopback issuer) or conformant."""
+        if self.lab.mcp_conformant:
+            self._respond(
+                200,
+                json.dumps(
+                    {
+                        "resource": "https://mcp.example.test",
+                        "authorization_servers": ["https://auth.example.test"],
+                    }
+                ),
+                content_type="application/json",
+                cookies=(),
+            )
+            return
+        self._respond(
+            200,
+            json.dumps(
+                {
+                    # No `resource`: the server cannot bind a token to its own audience.
+                    "authorization_servers": [f"http://127.0.0.1:{self.lab.port}/auth"],
+                    "bearer_methods_supported": ["header"],
+                }
+            ),
+            content_type="application/json",
+            cookies=(),
+        )
+
+    def _mcp_auth_server(self, query: dict[str, list[str]]) -> None:
+        """RFC 8414 metadata: a non-HTTPS, loopback issuer (misconfigured) or a public one."""
+        if self.lab.mcp_conformant:
+            self._respond(
+                200,
+                json.dumps({"issuer": "https://auth.example.test"}),
+                content_type="application/json",
+                cookies=(),
+            )
+            return
+        self._respond(
+            200,
+            json.dumps({"issuer": f"http://127.0.0.1:{self.lab.port}/auth"}),
+            content_type="application/json",
+            cookies=(),
+        )
+
+    def _mcp_endpoint(self, query: dict[str, list[str]]) -> None:
+        """The MCP endpoint: session-authenticated (misconfigured) or bearer-challenged."""
+        if self.lab.mcp_conformant:
+            self._respond(
+                401,
+                json.dumps({"error": "invalid_token"}),
+                content_type="application/json",
+                headers={
+                    "WWW-Authenticate": (
+                        "Bearer resource_metadata="
+                        f'"http://127.0.0.1:{self.lab.port}/.well-known/oauth-protected-resource"'
+                    )
+                },
+                cookies=(),
+            )
+            return
+        self._respond(
+            200,
+            json.dumps({"jsonrpc": "2.0", "result": {"tools": ["search"]}}),
+            content_type="application/json",
+            headers={"Mcp-Session-Id": secrets.token_hex(8)},
+            cookies=(f"session={secrets.token_hex(8)}; path=/",),
+        )
+
     # ------------------------------------------------------------------ S19 authenticated area
     def _auth_cookie(self) -> str | None:
         """The session token from the request's Cookie header (``AUTH_SID=<token>``)."""
@@ -1962,6 +2038,10 @@ _Handler._ROUTES = {
     "/safe-shell.php": _Handler._safe_shell,
     "/v1/chat/completions": _Handler._llm_endpoint,
     "/assistant/system-prompt.txt": _Handler._system_prompt,
+    # ------------------------------------------------------------------ M6 MCP family (WP-07)
+    "/.well-known/oauth-protected-resource": _Handler._mcp_protected_resource,
+    "/.well-known/oauth-authorization-server": _Handler._mcp_auth_server,
+    "/mcp": _Handler._mcp_endpoint,
 }
 _Handler._POST_ROUTES = {
     "/upload": _Handler._upload,
@@ -2042,12 +2122,17 @@ def _read_ws_frame(stream: Any) -> tuple[int, bytes] | None:
 
 
 @contextmanager
-def start_web_lab(*, callback_base: str | None = None) -> Iterator[WebLab]:
+def start_web_lab(
+    *, callback_base: str | None = None, mcp_conformant: bool = False
+) -> Iterator[WebLab]:
     """Start the lab on loopback and yield its handle; tear it down on exit.
 
     ``callback_base`` is ARACHNE's OOB callback service (S15): when set, the simulated
     execution monitor of the blind command sink phones hits home to it. The sinks whose
     payload carries the callback URL (SQLi, XXE, SSTI, SSRF) need no configuration.
+
+    ``mcp_conformant`` flips the three MCP routes to a conformant server (WP-07): the decoy the
+    MCP check family must stay silent on.
     """
     import sqlite3
 
@@ -2062,6 +2147,7 @@ def start_web_lab(*, callback_base: str | None = None) -> Iterator[WebLab]:
         callback_base=callback_base,
         poc_db=db,
         db_lock=threading.Lock(),
+        mcp_conformant=mcp_conformant,
     )
     handler = type("_BoundHandler", (_Handler,), {"lab": lab})
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)

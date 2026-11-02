@@ -74,6 +74,9 @@ jobs:
       - run: python -m arachne.tools.counts --check
       # The committed report schema is what the generator produces.
       - run: python -m arachne.tools.report_schema --check
+      # The committed coverage ledger is what the registry generates: a check added without
+      # regenerating fails here, naming the check id (REQ-DET-001, G3 clause 1).
+      - run: python -m arachne.tools.ledger --check
       # The shared preamble has one canonical text and 23 verbatim copies (REQ-QUAL-014).
       - run: python -m arachne.tools.preamble_check .
       # Every accepted skip has a reason and no quarantine entry is past its deadline

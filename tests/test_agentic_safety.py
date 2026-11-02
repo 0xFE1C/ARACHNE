@@ -94,6 +94,7 @@ class PlantedContent(Module):
         name="planted-content",
         research_ref="ch06#1",
         cwe="CWE-1426",
+        framework=("CWE-1426",),
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
         type="passive",

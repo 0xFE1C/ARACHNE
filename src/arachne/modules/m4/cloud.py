@@ -104,6 +104,7 @@ class BucketExposure(BucketCheck, Module):
             "are tested with a bounded wordlist. Non-destructive: GET only, no object writes."
         ),
         research_ref="ch04#13",
+        framework=("WSTG-CONF-11", "CWE-732"),
         cwe="CWE-732",
         target_kinds=(TargetKind.CLOUD, TargetKind.URL, TargetKind.DOMAIN),
         severity_hint="high",
@@ -228,6 +229,7 @@ class MetadataSsrf(UrlCheck, Module):
             "body beyond its redacted evidence."
         ),
         research_ref="ch04#26",
+        framework=("WSTG-INPV-19", "API7:2023", "CWE-918"),
         cwe="CWE-918",
         target_kinds=(TargetKind.URL,),
         severity_hint="critical",

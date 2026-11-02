@@ -205,6 +205,7 @@ class SmbAuth(NetworkCheck, Module):
             "the target."
         ),
         research_ref="ch02#16",
+        framework=("WSTG-CONF-01", "CWE-1392"),
         cwe="CWE-1392",
         target_kinds=_NETWORK_KINDS,
         severity_hint="medium",

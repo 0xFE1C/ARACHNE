@@ -57,13 +57,14 @@ def test_bundled_catalogue_covers_every_module_and_is_versioned() -> None:
     assert all(check.version and check.research_ref for check in catalog.checks)
     # Every row declares its proof level (S15). The original checks are L1 — 129 of them,
     # plus S18's three opt-in intel checks, S19's two credentialed M3 checks, S23's
-    # continuous cloud-posture check and S29's eight L1 depth rows = 144; the seven L2+ rows
-    # are opt-in, and only rce-echo/state-marker demand the state-change attestation.
+    # continuous cloud-posture check and S29's eight L1 depth rows = 144; WP-07's three
+    # read-only MCP checks bring it to 147. The seven L2+ rows are opt-in, and only
+    # rce-echo/state-marker demand the state-change attestation.
     # (S29's tenth depth row, m1.mobile-artifact, declares L0 — it is the one check that
     # contacts nothing at all — so it is in neither list and is pinned here explicitly.)
     originals = [check for check in catalog.checks if check.proof.value == "L1"]
     ladder = [check for check in catalog.checks if check.proof.value in {"L2", "L3", "L4"}]
-    assert len(originals) == 144
+    assert len(originals) == 147
     assert {check.name for check in catalog.checks if check.proof.value == "L0"} == {
         "mobile-artifact"
     }

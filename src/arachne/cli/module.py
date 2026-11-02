@@ -22,16 +22,28 @@ import typer
 
 from arachne.modules.coverage import (
     build_coverage,
+    build_ledger,
+    check_ledger,
+    default_ledger_paths,
     render_coverage_text,
+    render_ledger_json,
+    render_ledger_markdown,
     write_coverage_markdown,
 )
 from arachne.modules.registry import ModuleGroup, ModuleRegistry
 
-__all__ = ["coverage_command", "module_app", "render_module_list"]
+__all__ = ["coverage_app", "coverage_command", "module_app", "render_module_list"]
 
 module_app = typer.Typer(
     name="module",
     help="Inspect the installed detection modules and checks (F-02-10, F-07-01).",
+    no_args_is_help=True,
+)
+
+#: ``arachne coverage`` — the G-01 research-method matrix and the framework ledger.
+coverage_app = typer.Typer(
+    name="coverage",
+    help="Coverage reporting: the research-method matrix and the framework coverage ledger.",
     no_args_is_help=True,
 )
 
@@ -146,3 +158,62 @@ def coverage_command(
         typer.echo(report.to_json())
         return
     typer.echo(render_coverage_text(report))
+
+
+# ``arachne coverage matrix`` is the same command as ``arachne module coverage``: one
+# implementation, two spellings (the roadmap's G-01 name and the inventory's neighbourhood).
+coverage_app.command("matrix")(coverage_command)
+
+
+@coverage_app.command("ledger")
+def coverage_ledger(
+    output_format: Annotated[
+        str, typer.Option("--format", help="Output format: json (default) or markdown.")
+    ] = "json",
+    write: Annotated[
+        Path | None,
+        typer.Option("--write", help="Write the ledger to this path instead of stdout."),
+    ] = None,
+    check: Annotated[
+        bool,
+        typer.Option("--check", help="Fail when the committed ledger differs from the registry."),
+    ] = False,
+    generated_at: Annotated[
+        str | None,
+        typer.Option("--generated-at", help="Override the ledger's generation date (YYYY-MM-DD)."),
+    ] = None,
+) -> None:
+    """Emit the framework coverage ledger generated from the check registry (REQ-DET-001).
+
+    One record per registered check — id, module, title, proof level, target kinds, framework
+    items and last-verified date — plus the WSTG per-id states and the API Top 10 tally.
+    ``--check`` is the CI gate: it regenerates from the committed date and compares bytes,
+    naming every check id that moved.
+    """
+    if check:
+        ok, differences = check_ledger(*default_ledger_paths())
+        if not ok:
+            for difference in differences:
+                typer.echo(f"error: {difference}", err=True)
+            typer.echo(
+                "error: the coverage ledger is stale; run `arachne coverage ledger --write`",
+                err=True,
+            )
+            raise typer.Exit(code=1)
+        typer.echo("the committed coverage ledger is up to date")
+        return
+
+    ledger = build_ledger(generated_at=generated_at)
+    if output_format not in {"json", "markdown"}:
+        typer.echo(f"error: unknown format {output_format!r} (expected json or markdown)", err=True)
+        raise typer.Exit(code=2)
+    payload = (
+        render_ledger_json(ledger) if output_format == "json" else render_ledger_markdown(ledger)
+    )
+    if write is not None:
+        target = Path(write).expanduser()
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(payload, encoding="utf-8")
+        typer.echo(f"wrote {target}")
+        return
+    typer.echo(payload, nl=False)

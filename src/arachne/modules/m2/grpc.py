@@ -490,6 +490,7 @@ class GrpcPlaintext(NetworkCheck, _GrpcProbe, Module):
             "every gRPC call and its metadata travel unencrypted."
         ),
         research_ref="ch02#12",
+        framework=("WSTG-CRYP-03", "CWE-319"),
         cwe="CWE-319",
         target_kinds=target_kinds_for_network_probes(),
         severity_hint="medium",
@@ -566,6 +567,7 @@ class GrpcReflection(NetworkCheck, _GrpcProbe, Module):
             "field names and method signatures — to any client that asks."
         ),
         research_ref="ch02#9-10",
+        framework=("WSTG-INFO-06", "API9:2023", "CWE-200"),
         cwe="CWE-200",
         target_kinds=target_kinds_for_network_probes(),
         severity_hint="medium",
@@ -665,6 +667,7 @@ class GrpcMetadataLeak(NetworkCheck, _GrpcProbe, Module):
             "metadata leaks credentials into its responses."
         ),
         research_ref="ch02#12",
+        framework=("WSTG-CRYP-03", "CWE-522"),
         cwe="CWE-522",
         target_kinds=target_kinds_for_network_probes(),
         severity_hint="medium",

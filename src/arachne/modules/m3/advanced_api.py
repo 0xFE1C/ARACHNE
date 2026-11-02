@@ -77,6 +77,7 @@ class MassAssignmentAudit(WebCheck, Module):
             "and no durable state is created."
         ),
         research_ref="ch03#26",
+        framework=("API3:2023", "CWE-915"),
         cwe="CWE-915",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -184,6 +185,12 @@ class PrototypePollution(WebCheck, Module):
             "never attempts to chain the pollution to a sink."
         ),
         research_ref="ch03#27",
+        framework=(
+            "WSTG-INPV-11",
+            "WSTG-CLNT-06",
+            "API3:2023",
+            "CWE-1321",
+        ),
         cwe="CWE-1321",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -282,6 +289,7 @@ class GraphQLAudit(WebCheck, Module):
             "probe."
         ),
         research_ref="ch03#32",
+        framework=("WSTG-APIT-01", "API9:2023", "CWE-200"),
         cwe="CWE-200",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -379,6 +387,7 @@ class WebSocketAudit(WebCheck, Module):
             "and no message is injected."
         ),
         research_ref="ch03#33",
+        framework=("WSTG-CLNT-10", "CWE-1385"),
         cwe="CWE-1385",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -482,6 +491,13 @@ class BusinessLogicAudit(WebCheck, Module):
             "no state is modified."
         ),
         research_ref="ch03#30",
+        framework=(
+            "WSTG-BUSL-01",
+            "WSTG-BUSL-03",
+            "WSTG-BUSL-06",
+            "API6:2023",
+            "CWE-840",
+        ),
         cwe="CWE-840",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",

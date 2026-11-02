@@ -88,6 +88,7 @@ class SqliOracle(WebCheck, Module):
             "extracted or modified."
         ),
         research_ref="ch03#1",
+        framework=("WSTG-INPV-05", "CWE-89"),
         cwe="CWE-89",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",

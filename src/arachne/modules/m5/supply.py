@@ -66,6 +66,7 @@ class ImageHistorySecrets(RepoCheck, Module):
             "secrets that were 'removed'). Values are masked; nothing is pulled or built."
         ),
         research_ref="ch05#17",
+        framework=("WSTG-INFO-05", "CWE-798"),
         cwe="CWE-798",
         target_kinds=(TargetKind.GIT, TargetKind.CLOUD),
         severity_hint="high",
@@ -171,6 +172,7 @@ class CicdAudit(RepoCheck, Module):
             "mutable ref. Read-only: it parses files and never runs a workflow."
         ),
         research_ref="ch05#23",
+        framework=("WSTG-CONF-02", "CWE-78"),
         cwe="CWE-78",
         target_kinds=(TargetKind.GIT, TargetKind.CLOUD),
         severity_hint="high",
@@ -247,6 +249,7 @@ class DepConfusion(RepoCheck, Module):
             "execution at install time. Offline by default; nothing is registered."
         ),
         research_ref="ch05#24",
+        framework=("WSTG-CONF-02", "API10:2023", "CWE-427"),
         cwe="CWE-427",
         target_kinds=(TargetKind.GIT, TargetKind.CLOUD),
         severity_hint="medium",
@@ -325,6 +328,7 @@ class SbomReview(RepoCheck, Module):
             "is installed or executed."
         ),
         research_ref="ch05#25",
+        framework=("WSTG-CONF-02", "API10:2023", "CWE-1104"),
         cwe="CWE-1104",
         target_kinds=(TargetKind.GIT, TargetKind.CLOUD),
         severity_hint="high",

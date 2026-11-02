@@ -44,6 +44,7 @@ from arachne.modules.m6.exposure import CveEpssCorrelation, LpeDiscovery
 from arachne.modules.m6.genai import AttackSurfaceGenai
 from arachne.modules.m6.hardening import CredentialHunt, ExploitMatch, TemplateScan
 from arachne.modules.m6.hunting import AdAttackPath, DeceptionListeners, SigmaHuntRules
+from arachne.modules.m6.mcp import MCP_CHECKS
 from arachne.modules.m6.secrets import CiSecretLeak, SecretScanAtScale
 from arachne.modules.m6.webshell import WebshellYara
 from arachne.modules.registry import ModuleGroup
@@ -51,8 +52,8 @@ from arachne.modules.registry import ModuleGroup
 __all__ = ["M6", "M6_CHECKS"]
 
 #: Every M6 check, in run order: the read-only artifact scans first (they cost nothing and make
-#: the default posture useful), then the served-surface scan, then the estate correlations, then
-#: the log-hunting check, then the two opt-in checks last.
+#: the default posture useful), then the served-surface scans (including the MCP family), then
+#: the estate correlations, then the log-hunting check, then the two opt-in checks last.
 M6_CHECKS: tuple[type[Module], ...] = (
     SecretScanAtScale,
     CiSecretLeak,
@@ -60,6 +61,7 @@ M6_CHECKS: tuple[type[Module], ...] = (
     LpeDiscovery,
     WebshellYara,
     AttackSurfaceGenai,
+    *MCP_CHECKS,
     SigmaHuntRules,
     DeceptionListeners,
     AdAttackPath,

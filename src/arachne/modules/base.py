@@ -40,6 +40,7 @@ from arachne.core.errors import ConfigurationError
 from arachne.core.proof import ProofLevel, metadata_proof_problems
 from arachne.core.results import CheckResult
 from arachne.core.target import TargetKind
+from arachne.modules.framework_map import validate_items
 
 if TYPE_CHECKING:  # a type-only cycle: context.py imports this module for Asset/Module
     from arachne.modules.context import CheckContext
@@ -94,6 +95,12 @@ class CheckMetadata:
     target_kinds: tuple[TargetKind, ...] = ()
     cwe: str | None = None
     cve: str | None = None
+    #: Every framework item this check's evidence bears on (REQ-DET-002): ``WSTG-*``,
+    #: ``API<N>:2023``, ``CWE-*``, ``ATT&CK-T*``, ``LLM<N>:2025`` or ``ASI<N>:2026``. The
+    #: registry refuses a check that declares none, so a check with no mapping is
+    #: unrepresentable once registered. A check that sets :attr:`cwe` must list it here
+    #: too, so the ledger's per-check list is the whole mapping and not a partial view.
+    framework: tuple[str, ...] = ()
     severity_hint: SeverityHint = "info"
     type: CheckType = "passive"
     safe: bool = True
@@ -135,6 +142,16 @@ class CheckMetadata:
             problems.append(f"cwe {self.cwe!r} is not CWE-NNN")
         if self.cve is not None and not _CVE.match(self.cve):
             problems.append(f"cve {self.cve!r} is not CVE-YYYY-NNNN")
+        # REQ-DET-002: an id outside the pinned framework snapshot is refused here, at
+        # construction, with the offending id in the message. An empty mapping is legal at
+        # this level (a test fixture or a catalogue probe may build one) and is refused by
+        # the registry, which is where "every registered check is mapped" is enforced.
+        problems.extend(validate_items(self.framework))
+        if self.cwe is not None and self.framework and self.cwe not in self.framework:
+            problems.append(
+                f"cwe {self.cwe!r} is not in framework {list(self.framework)!r}: the "
+                "mapping must list every framework item, including the CWE"
+            )
         if not self.target_kinds:
             problems.append("target_kinds is empty: the check could never run")
         unknown = sorted({kind.value for kind in self.target_kinds} - {k.value for k in TargetKind})

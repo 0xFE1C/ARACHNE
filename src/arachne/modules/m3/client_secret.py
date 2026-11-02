@@ -107,6 +107,7 @@ class ClientSecretVerify(WebCheck, Module):
             "Opt-in (L2)."
         ),
         research_ref="ch03#3",
+        framework=("WSTG-CLNT-02", "CWE-522"),
         proof=ProofLevel.L2,
         cwe="CWE-522",
         target_kinds=(TargetKind.URL,),

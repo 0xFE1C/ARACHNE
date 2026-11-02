@@ -69,6 +69,7 @@ class OtProtocolProbe(NetworkCheck, Module):
             "write job, no PLC memory access, and no DNP3 link reset. Opt-in."
         ),
         research_ref="ch02#27",
+        framework=("WSTG-CONF-01", "CWE-306"),
         cwe="CWE-306",
         target_kinds=target_kinds_for_network_probes(),
         severity_hint="critical",

@@ -72,6 +72,7 @@ class SstiOracle(WebCheck, Module):
             "library. Arithmetic only: no built-ins, no file access, no code execution."
         ),
         research_ref="ch03#6",
+        framework=("WSTG-INPV-08", "WSTG-INPV-18", "CWE-1336"),
         cwe="CWE-1336",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -237,6 +238,7 @@ class XxeOracle(WebCheck, Module):
             "entity never points at a credential file and nothing is exfiltrated."
         ),
         research_ref="ch03#7",
+        framework=("WSTG-INPV-07", "CWE-611"),
         cwe="CWE-611",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -357,6 +359,7 @@ class CmdInjectionOracle(WebCheck, Module):
             "is the fallback for a blind sink. Nothing is read, written or exfiltrated."
         ),
         research_ref="ch03#8",
+        framework=("WSTG-INPV-12", "CWE-78"),
         cwe="CWE-78",
         target_kinds=(TargetKind.URL,),
         severity_hint="critical",
@@ -465,6 +468,7 @@ class DeserializationAudit(WebCheck, Module):
             "is deserialized for effect."
         ),
         research_ref="ch03#9",
+        framework=("WSTG-INPV-11", "CWE-502"),
         cwe="CWE-502",
         target_kinds=(TargetKind.URL,),
         severity_hint="critical",

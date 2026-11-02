@@ -81,6 +81,7 @@ class SnmpEnum(NetworkCheck, Module):
             "check's opt-in."
         ),
         research_ref="ch02#15",
+        framework=("WSTG-CONF-01", "CWE-306"),
         cwe="CWE-306",
         target_kinds=target_kinds_for_network_probes(),
         severity_hint="high",
@@ -211,6 +212,7 @@ class DnsActive(NetworkCheck, Module):
             "it is."
         ),
         research_ref="ch02#28",
+        framework=("WSTG-INFO-10", "CWE-200"),
         cwe="CWE-200",
         target_kinds=(TargetKind.DOMAIN, TargetKind.DOMAIN_PATTERN),
         severity_hint="medium",
@@ -367,6 +369,7 @@ class IcsProbe(NetworkCheck, Module):
             "design and their endpoints are the most sensitive in an estate."
         ),
         research_ref="ch02#27",
+        framework=("WSTG-CONF-01", "CWE-306"),
         cwe="CWE-306",
         target_kinds=target_kinds_for_network_probes(),
         severity_hint="critical",

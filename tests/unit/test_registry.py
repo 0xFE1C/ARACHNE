@@ -40,6 +40,9 @@ def make_metadata(check_id: str, **overrides: object) -> CheckMetadata:
         "description": f"A test check named {name}.",
         "research_ref": "ch02#1",
         "target_kinds": (TargetKind.DOMAIN,),
+        # REQ-DET-002: the registry refuses an unmapped check, so every synthetic check names
+        # one framework item.
+        "framework": ("CWE-200",),
     }
     return CheckMetadata(**{**base, **overrides})  # type: ignore[arg-type]
 
@@ -81,8 +84,10 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # cloud-config posture check (m5.cloud-posture) -> 142. S29 adds the depth-expansion
     # family: two opt-in M3 GraphQL probes, two opt-in M3 WebSocket probes, one opt-in L2 M3
     # client-secret check, three default-on M2 gRPC/HTTP-2 posture checks, one opt-in M2
-    # OT/ICS protocol probe and one opt-in M1 mobile-artifact check -> 152.
-    assert len(registry.checks()) == 152
+    # OT/ICS protocol probe and one opt-in M1 mobile-artifact check -> 152. WP-07 adds the
+    # read-only MCP family to M6 (token-audience, session-auth, oauth-metadata), all
+    # default-on L1 GET-only checks -> 155.
+    assert len(registry.checks()) == 155
     # M1's code-secret-mining, M2's SNMP and ICS checks, M4's metadata-ssrf and
     # default-credentials checks, M3's ssrf-probe, M5's imds-ssrf / azure-mi-audit and
     # M6's deception-listeners / ad-attack-path, S13's m1.bucket-hunt, S15's six
@@ -213,7 +218,7 @@ def test_a_plugin_extends_an_existing_module(monkeypatch) -> None:  # type: igno
     )
     registry = ModuleRegistry.discover()
     assert registry.module_ids() == ("M1", "M2", "M3", "M4", "M5", "M6")
-    assert len(registry.checks()) == 153
+    assert len(registry.checks()) == 156
     assert registry.group("M1").origin == "builtin+extra"  # type: ignore[union-attr]
 
 

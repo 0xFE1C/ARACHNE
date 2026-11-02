@@ -1,0 +1,10 @@
+{
+  "framework": "CWE",
+  "version": "2025",
+  "title": "Common Weakness Enumeration",
+  "source": "https://cwe.mitre.org/",
+  "id_pattern": "^CWE-\\d{1,5}$",
+  "range": {"min": 1, "max": 1500},
+  "notes": "CWE numbers are open-ended, so the pinned artefact is a version and an inclusive numeric bound rather than an item list: 'CWE-99999' is refused as outside the range. The bound is generous enough for the CWE Top 25 (2025) snapshot the rest of the specification references (the highest id in the tree is CWE-1426).",
+  "items": []
+}

@@ -63,6 +63,7 @@ class UserEnumeration(UrlCheck, Module):
             "observable, it never guesses a credential."
         ),
         research_ref="ch04#28",
+        framework=("WSTG-IDNT-04", "CWE-204"),
         cwe="CWE-204",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -202,6 +203,7 @@ class UnauthApiAudit(UrlCheck, Module):
             "working and is not reported. GET only."
         ),
         research_ref="ch04#29",
+        framework=("WSTG-ATHZ-02", "API5:2023", "CWE-306"),
         cwe="CWE-306",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -293,6 +295,7 @@ class DefaultCredentials(UrlCheck, Module):
             "existence; it never sprays or guesses."
         ),
         research_ref="ch04#10",
+        framework=("WSTG-ATHN-02", "CWE-1392"),
         cwe="CWE-1392",
         target_kinds=(TargetKind.URL,),
         severity_hint="critical",

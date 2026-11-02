@@ -1,0 +1,10 @@
+{
+  "framework": "ATT&CK",
+  "version": "v20",
+  "title": "MITRE ATT&CK Enterprise",
+  "source": "https://attack.mitre.org/versions/v20/",
+  "id_pattern": "^ATT&CK-T\\d{4}(?:\\.\\d{3})?$",
+  "range": {"min": 1000, "max": 1699},
+  "notes": "A technique id is ATT&CK-T<NNNN> with an optional .<NNN> sub-technique (REQ-DET-002). Only the shape and the technique-number band are pinned: the ledger's ATT&CK figure counts what a check names, and the purple replay catalogue (templates/purple/attck-map.yaml) remains the only other place a technique appears. A short id such as ATT&CK-T123 is refused.",
+  "items": []
+}

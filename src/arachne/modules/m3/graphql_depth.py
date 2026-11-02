@@ -303,6 +303,7 @@ class GraphQLDepthAbuse(WebCheck, Module):
             "meta-field __typename, so no document content is requested; no mutation is sent."
         ),
         research_ref="ch03#32",
+        framework=("WSTG-APIT-01", "API4:2023", "CWE-770"),
         cwe="CWE-770",
         target_kinds=(TargetKind.URL,),
         severity_hint="low",
@@ -460,6 +461,7 @@ class GraphQLResolverAuth(WebCheck, Module):
             "is selected, so no document content is requested."
         ),
         research_ref="ch03#32",
+        framework=("WSTG-APIT-01", "API5:2023", "CWE-862"),
         cwe="CWE-862",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",

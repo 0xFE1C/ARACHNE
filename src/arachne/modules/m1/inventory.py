@@ -65,6 +65,7 @@ class CtLookup(Module):
             "hostnames its SANs expose."
         ),
         research_ref="ch01#8",
+        framework=("WSTG-INFO-04",),
         target_kinds=_DOMAIN_KINDS,
         severity_hint="info",
         type="passive",
@@ -153,6 +154,7 @@ class PassiveDns(Module):
             "servers the declared name has ever resolved to."
         ),
         research_ref="ch01#11",
+        framework=("WSTG-INFO-04",),
         target_kinds=_DOMAIN_KINDS,
         severity_hint="info",
         type="passive",
@@ -240,6 +242,7 @@ class SubdomainPassive(Module):
             "(certificate transparency, passive DNS, web archives) into one host set."
         ),
         research_ref="ch01#13",
+        framework=("WSTG-INFO-04",),
         target_kinds=_DOMAIN_KINDS,
         severity_hint="info",
         type="passive",
@@ -342,6 +345,7 @@ class WebArchiveHarvest(Module):
             "sensitive-path table."
         ),
         research_ref="ch01#14-16",
+        framework=("WSTG-INFO-01", "CWE-200"),
         cwe="CWE-200",
         # Domain-scoped on purpose: a URL target already belongs to a declared host, so
         # letting the check run against both would harvest the same archive twice and raise

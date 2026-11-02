@@ -55,6 +55,7 @@ class SubdomainTakeover(WebCheck, Module):
             "into a fingerprint service raises the confidence. Nothing is claimed or registered."
         ),
         research_ref="ch03#34",
+        framework=("WSTG-CONF-10", "CWE-350"),
         cwe="CWE-350",
         target_kinds=(TargetKind.URL, TargetKind.DOMAIN, TargetKind.DOMAIN_PATTERN),
         severity_hint="high",

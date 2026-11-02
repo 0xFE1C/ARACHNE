@@ -287,6 +287,7 @@ def _modules_context() -> dict[str, Any]:
                         "version": "1.0",
                         "research_ref": "ch03#1",
                         "cwe": "CWE-89",
+                        "framework": "WSTG-INPV-05, API1:2023, CWE-89",
                         "active": False,
                         "opt_in": False,
                         "ran": True,
@@ -294,6 +295,15 @@ def _modules_context() -> dict[str, Any]:
                 ],
             }
         ],
+        # §4.10: the Modules screen *is* the coverage ledger, so its minimum context carries
+        # the same tally the route passes from build_ledger().
+        "coverage": {
+            "checks": 1,
+            "wstg": {"mapped": 1, "out_of_scope": 0, "gap": 96, "total": 97, "in_scope": 97},
+            "api": {"mapped": 1, "total": 10},
+            "cwe_only": 0,
+            "generated_at": "2026-11-02",
+        },
         "config": {
             "database": "sqlite:///arachne.db",
             "per_host_rate": 5,

@@ -200,6 +200,7 @@ strings:
   ui.table.research: "Research"
   ui.table.cwe: "CWE"
   ui.table.flags: "Flags"
+  ui.table.framework: "Framework"
   ui.table.ran: "Ran"
   ui.table.when: "When"
   ui.table.decision: "Decision"
@@ -549,6 +550,14 @@ strings:
   ui.modules.version_short: "v{version}"
   ui.modules.flag_active: "active"
   ui.modules.flag_opt_in: "opt-in"
+  ui.modules.coverage_heading: "Coverage ledger"
+  ui.modules.coverage_note: "Generated from the check registry by the same command that writes the committed ledger, so this screen cannot disagree with the JSON."
+  ui.modules.coverage_checks: "Registered checks"
+  ui.modules.coverage_wstg_label: "WSTG v4.2 coverage"
+  ui.modules.coverage_api_label: "API Top 10 (2023) coverage"
+  ui.modules.coverage_mapped_value: "{mapped} of {total} mapped"
+  ui.modules.coverage_cwe_only: "Checks mapped only to a CWE"
+  ui.modules.coverage_generated: "Generated"
 
   # ---- posture (§4.9) -------------------------------------------------------------------
   ui.title.posture: "Posture — {project}"

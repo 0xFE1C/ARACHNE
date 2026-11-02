@@ -81,6 +81,7 @@ class SsrfProbe(WebCheck, Module):
             "the active-checks opt-in. No internal address or credential is ever targeted."
         ),
         research_ref="ch03#5",
+        framework=("WSTG-INPV-19", "API7:2023", "CWE-918"),
         cwe="CWE-918",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -220,6 +221,7 @@ class RequestSmugglingOracle(WebCheck, Module):
             "request; it confirms surface, not exploitation."
         ),
         research_ref="ch03#16",
+        framework=("WSTG-INPV-15", "CWE-444"),
         cwe="CWE-444",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -311,6 +313,7 @@ class CachePoisonAudit(WebCheck, Module):
             "injects live script content into a cache."
         ),
         research_ref="ch03#17",
+        framework=("WSTG-INPV-14", "WSTG-INPV-15", "CWE-444"),
         cwe="CWE-444",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -408,6 +411,7 @@ class HppOracle(WebCheck, Module):
             "per parameter; nothing is modified."
         ),
         research_ref="ch03#25",
+        framework=("WSTG-INPV-04", "CWE-235"),
         cwe="CWE-235",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -514,6 +518,7 @@ class RaceOracle(WebCheck, Module):
             "found)."
         ),
         research_ref="ch03#29",
+        framework=("WSTG-BUSL-04", "WSTG-BUSL-05", "CWE-362"),
         cwe="CWE-362",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",

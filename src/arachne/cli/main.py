@@ -42,7 +42,7 @@ from arachne.cli.fuzz import app as fuzz_app
 from arachne.cli.iac import app as iac_app
 from arachne.cli.integrity import integrity_app, verify_chain_command
 from arachne.cli.intel import intel_app
-from arachne.cli.module import coverage_command, module_app
+from arachne.cli.module import coverage_app, module_app
 from arachne.cli.observability import metrics_command
 from arachne.cli.packs import packs_app
 from arachne.cli.plugin import plugin_app
@@ -140,10 +140,10 @@ app.command("report", help="Render a stored scan as a Markdown or JSON report (F
 )
 # `coverage` is registered twice on purpose: as `arachne module coverage` (next to the
 # inventory it belongs to) and as top-level `arachne coverage`, which is the name the
-# roadmap's G-01 asks for.
-app.command("coverage", help="Report research-method coverage of the checks (G-01).")(
-    coverage_command
-)
+# roadmap's G-01 asks for. Since WP-07 the top-level form is a command group: `coverage
+# matrix` is the G-01 research-method matrix, `coverage ledger` is the generated framework
+# coverage ledger (REQ-DET-001).
+app.add_typer(coverage_app, name="coverage")
 app.command("serve", help="Serve the REST API and web UI (F-07-02/03, F-08-02).")(serve_command)
 app.command(
     "agent",

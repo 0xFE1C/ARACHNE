@@ -87,6 +87,7 @@ class SmbEnum(NetworkCheck, Module):
             "signing requirements and anonymous access; never authenticates with a credential."
         ),
         research_ref="ch02#16",
+        framework=("WSTG-CONF-01", "CWE-200"),
         cwe="CWE-200",
         target_kinds=_NETWORK_KINDS,
         severity_hint="high",
@@ -219,6 +220,7 @@ class NfsEnum(NetworkCheck, Module):
             "offered and to whom. No filesystem is mounted and no file is read."
         ),
         research_ref="ch02#17",
+        framework=("WSTG-CONF-01", "CWE-284"),
         cwe="CWE-284",
         target_kinds=_NETWORK_KINDS,
         severity_hint="high",
@@ -355,6 +357,7 @@ class LdapEnum(NetworkCheck, Module):
             "can be enumerated by any network client, which is the finding."
         ),
         research_ref="ch02#18",
+        framework=("WSTG-CONF-01", "CWE-287"),
         cwe="CWE-287",
         target_kinds=_NETWORK_KINDS,
         severity_hint="high",
@@ -464,6 +467,7 @@ class KerberosEnum(NetworkCheck, Module):
             "produce the lockout event it is meant to warn about."
         ),
         research_ref="ch02#19",
+        framework=("WSTG-CONF-01", "CWE-200"),
         cwe="CWE-200",
         target_kinds=_NETWORK_KINDS,
         severity_hint="medium",

@@ -96,6 +96,12 @@ class AuthenticatedSurface(WebCheck, Module):
             "it never handles the credential itself."
         ),
         research_ref="ch03#19",
+        framework=(
+            "WSTG-CONF-05",
+            "WSTG-ATHZ-02",
+            "API9:2023",
+            "CWE-284",
+        ),
         cwe="CWE-284",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -216,6 +222,7 @@ class SessionLogout(WebCheck, Module):
             "application advertise; never guesses a path."
         ),
         research_ref="ch03#19",
+        framework=("WSTG-SESS-06", "CWE-613"),
         cwe="CWE-613",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",

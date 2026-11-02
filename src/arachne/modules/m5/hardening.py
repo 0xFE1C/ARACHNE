@@ -70,6 +70,7 @@ class ServerlessFunctions(UrlCheck, Module):
             "a 401/403 challenge is the hardened answer. GET only; nothing is invoked."
         ),
         research_ref="ch05#9",
+        framework=("WSTG-CONF-05", "API5:2023", "CWE-284"),
         cwe="CWE-284",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -167,6 +168,7 @@ class ManagedDatastores(UrlCheck, Module):
             "MongoDB Atlas/Compass) answering with its metadata (research ch05#20). GET only."
         ),
         research_ref="ch05#20",
+        framework=("WSTG-CONF-01", "CWE-668"),
         cwe="CWE-668",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -261,6 +263,7 @@ class SearchPlatformExposure(UrlCheck, Module):
             "finding; a 401/403 is the hardened answer. GET only, read-only."
         ),
         research_ref="ch05#21",
+        framework=("WSTG-CONF-05", "CWE-668"),
         cwe="CWE-668",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",

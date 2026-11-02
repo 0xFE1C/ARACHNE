@@ -196,6 +196,7 @@ class MobileArtifactScan(Module):
             "no network request at all, and nothing is executed, decompiled or unpacked."
         ),
         research_ref="ch01#26",
+        framework=("WSTG-INFO-05", "CWE-798"),
         cwe="CWE-798",
         target_kinds=(TargetKind.ARTIFACT,),
         severity_hint="medium",

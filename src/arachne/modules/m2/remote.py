@@ -88,6 +88,7 @@ class SshEnum(NetworkCheck, Module):
             "3DES) as findings and feeds the version to the CVE correlation."
         ),
         research_ref="ch02#24",
+        framework=("WSTG-CONF-01",),
         target_kinds=_NETWORK_KINDS,
         severity_hint="medium",
         type="active",
@@ -243,6 +244,7 @@ class SmtpEnum(NetworkCheck, Module):
             "existence, never a delivery or an authentication attempt."
         ),
         research_ref="ch02#20",
+        framework=("WSTG-CONF-01",),
         target_kinds=_NETWORK_KINDS,
         severity_hint="medium",
         type="active",
@@ -369,6 +371,7 @@ class RdpVncDetect(NetworkCheck, Module):
             "reported as findings; no credential is ever submitted."
         ),
         research_ref="ch02#25",
+        framework=("WSTG-CONF-01",),
         target_kinds=_NETWORK_KINDS,
         severity_hint="high",
         type="active",

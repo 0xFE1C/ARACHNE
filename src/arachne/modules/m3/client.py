@@ -72,6 +72,7 @@ class XssOracle(WebCheck, Module):
             "stage."
         ),
         research_ref="ch03#3",
+        framework=("WSTG-INPV-01", "WSTG-CLNT-03", "CWE-79"),
         cwe="CWE-79",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",

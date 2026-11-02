@@ -286,6 +286,7 @@ class HttpFingerprint(NetworkCheck, Module):
             "product version is raised as a low-confidence candidate for the CVE correlation."
         ),
         research_ref="ch02#12",
+        framework=("WSTG-INFO-02", "WSTG-INFO-09", "CWE-200"),
         cwe="CWE-200",
         target_kinds=_HTTP_KINDS,
         severity_hint="low",
@@ -426,6 +427,7 @@ class FaviconHash(NetworkCheck, Module):
             "same-favicon pivot an OSINT correlation is built on."
         ),
         research_ref="ch02#13",
+        framework=("WSTG-INFO-08", "CWE-200"),
         cwe="CWE-200",
         target_kinds=_HTTP_KINDS,
         severity_hint="info",
@@ -559,6 +561,7 @@ class FtpAnonymous(NetworkCheck, Module):
             "uploaded, downloaded or deleted."
         ),
         research_ref="ch02#21",
+        framework=("WSTG-CONF-01", "CWE-287"),
         cwe="CWE-287",
         target_kinds=_NETWORK_KINDS,
         severity_hint="high",
@@ -693,6 +696,7 @@ class SsdpDiscovery(NetworkCheck, Module):
             "requires ARACHNE_NET_ALLOW_UDP in addition to this check's active-check opt-in."
         ),
         research_ref="ch02#26",
+        framework=("WSTG-CONF-01", "CWE-200"),
         cwe="CWE-200",
         target_kinds=_NETWORK_KINDS,
         severity_hint="medium",
@@ -822,6 +826,7 @@ class LegacyServices(NetworkCheck, Module):
             "cleartext-management exposure."
         ),
         research_ref="ch04#22",
+        framework=("WSTG-CONF-01", "CWE-521"),
         cwe="CWE-521",
         target_kinds=_NETWORK_KINDS,
         severity_hint="high",

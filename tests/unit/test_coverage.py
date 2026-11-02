@@ -245,7 +245,7 @@ def test_the_json_view_round_trips() -> None:
 
 # ------------------------------------------------------------------ CLI
 def test_cli_reports_the_matrix() -> None:
-    result = CliRunner().invoke(app, ["coverage"])
+    result = CliRunner().invoke(app, ["coverage", "matrix"])
     assert result.exit_code == 0, result.output
     assert "coverage matrix" in result.output
     assert "148/175" in result.output
@@ -255,21 +255,21 @@ def test_cli_reports_the_matrix() -> None:
 def test_cli_reports_the_matrix_as_json() -> None:
     import json
 
-    result = CliRunner().invoke(app, ["coverage", "--json"])
+    result = CliRunner().invoke(app, ["coverage", "matrix", "--json"])
     assert result.exit_code == 0, result.output
     assert json.loads(result.output)["total"] == 175
 
 
 def test_cli_writes_the_markdown_matrix(tmp_path: Path) -> None:
     target = tmp_path / "coverage_matrix.md"
-    result = CliRunner().invoke(app, ["coverage", "--write", str(target)])
+    result = CliRunner().invoke(app, ["coverage", "matrix", "--write", str(target)])
     assert result.exit_code == 0, result.output
     assert f"wrote {target}" in result.output
     assert "coverage matrix" in target.read_text(encoding="utf-8")
 
 
 def test_cli_can_count_the_planning_catalogue_too() -> None:
-    result = CliRunner().invoke(app, ["coverage", "--include-templates", "--json"])
+    result = CliRunner().invoke(app, ["coverage", "matrix", "--include-templates", "--json"])
     assert result.exit_code == 0, result.output
     import json
 
@@ -279,7 +279,7 @@ def test_cli_can_count_the_planning_catalogue_too() -> None:
 
 def test_cli_accepts_an_explicit_root(tmp_path: Path) -> None:
     (tmp_path / "check.py").write_text('research_ref = "ch03#1"\n', encoding="utf-8")
-    result = CliRunner().invoke(app, ["coverage", "--root", str(tmp_path), "--json"])
+    result = CliRunner().invoke(app, ["coverage", "matrix", "--root", str(tmp_path), "--json"])
     import json
 
     payload = json.loads(result.output)

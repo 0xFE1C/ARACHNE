@@ -26,6 +26,23 @@
   {{ ui.partial_banner(t('ui.modules.partial'), retry_href="/ui/modules") }}
   {%- endif %}
 
+  {#- §4.10: this screen *is* the coverage ledger. The tally and the per-check framework
+      column come from the same `build_ledger(registry)` the CLI and the committed JSON use,
+      so the screen cannot disagree with the artefact. -#}
+  <section class="panel">
+    <h2>{{ t('ui.modules.coverage_heading') }}</h2>
+    <p class="muted small">{{ t('ui.modules.coverage_note') }}</p>
+    <table>
+      <tbody>
+        <tr><th>{{ t('ui.modules.coverage_checks') }}</th><td>{{ coverage.checks | number }}</td></tr>
+        <tr><th>{{ t('ui.modules.coverage_wstg_label') }}</th><td>{{ t('ui.modules.coverage_mapped_value', mapped=coverage.wstg.mapped | number, total=coverage.wstg.total | number) }}</td></tr>
+        <tr><th>{{ t('ui.modules.coverage_api_label') }}</th><td>{{ t('ui.modules.coverage_mapped_value', mapped=coverage.api.mapped | number, total=coverage.api.total | number) }}</td></tr>
+        <tr><th>{{ t('ui.modules.coverage_cwe_only') }}</th><td>{{ coverage.cwe_only | number }}</td></tr>
+        <tr><th>{{ t('ui.modules.coverage_generated') }}</th><td>{{ coverage.generated_at }}</td></tr>
+      </tbody>
+    </table>
+  </section>
+
   <section class="panel">
     <h2>{{ t('ui.modules.config_heading') }}</h2>
     <p class="muted small">{{ t('ui.modules.config_note') }}</p>
@@ -48,13 +65,14 @@
     <h2>{{ module.id }} <span class="muted small">{{ t('ui.modules.module_meta', version=module.version if module.version else t('ui.modules.version_unknown'), step=module.step) }}</span></h2>
     <table>
       <thead>
-        <tr><th>{{ t('ui.table.check') }}</th><th>{{ t('ui.table.title') }}</th><th>{{ t('ui.table.research') }}</th><th>{{ t('ui.table.cwe') }}</th><th>{{ t('ui.table.flags') }}</th><th>{{ t('ui.table.ran') }}</th></tr>
+        <tr><th>{{ t('ui.table.check') }}</th><th>{{ t('ui.table.title') }}</th><th>{{ t('ui.table.framework') }}</th><th>{{ t('ui.table.research') }}</th><th>{{ t('ui.table.cwe') }}</th><th>{{ t('ui.table.flags') }}</th><th>{{ t('ui.table.ran') }}</th></tr>
       </thead>
       <tbody>
       {% for check in module.checks %}
         <tr>
           <td class="mono small">{{ check.id }} <span class="muted">{{ t('ui.modules.version_short', version=check.version if check.version else t('ui.common.unknown')) }}</span></td>
           <td>{{ check.title }}</td>
+          <td class="muted small">{{ check.framework }}</td>
           <td class="muted small">{{ check.research_ref or "—" }}</td>
           <td class="muted small">{{ check.cwe or "—" }}</td>
           <td>

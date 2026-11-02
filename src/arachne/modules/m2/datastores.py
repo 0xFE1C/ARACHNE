@@ -80,6 +80,7 @@ class DbServiceProbe(NetworkCheck, Module):
             "read-only. No credential is submitted and no data is modified."
         ),
         research_ref="ch02#22-23",
+        framework=("WSTG-CONF-01", "CWE-284"),
         cwe="CWE-284",
         target_kinds=(*target_kinds_for_network_probes(), TargetKind.URL),
         severity_hint="high",

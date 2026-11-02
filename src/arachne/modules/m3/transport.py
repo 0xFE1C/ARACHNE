@@ -81,6 +81,7 @@ class OpenRedirect(WebCheck, Module):
             "Redirects are not followed."
         ),
         research_ref="ch03#14",
+        framework=("WSTG-CLNT-04", "CWE-601"),
         cwe="CWE-601",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -211,6 +212,7 @@ class CorsAudit(WebCheck, Module):
             "acceptance and a wildcard with credentials each carry their own weight. GET only."
         ),
         research_ref="ch03#23",
+        framework=("WSTG-CLNT-07", "WSTG-CLNT-13", "CWE-942"),
         cwe="CWE-942",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -329,6 +331,13 @@ class RateLimitAudit(WebCheck, Module):
             "a brute-force (ARACHNE_WEB_RATE_PROBES controls the volume)."
         ),
         research_ref="ch03#35",
+        framework=(
+            "WSTG-ATHN-03",
+            "WSTG-BUSL-05",
+            "WSTG-BUSL-07",
+            "API4:2023",
+            "CWE-770",
+        ),
         cwe="CWE-770",
         target_kinds=(TargetKind.URL,),
         severity_hint="low",

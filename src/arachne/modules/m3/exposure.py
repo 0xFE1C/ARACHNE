@@ -78,6 +78,13 @@ class SecurityHeaders(WebCheck, Module):
             "controls. Read-only: it sends no payload and changes nothing."
         ),
         research_ref="ch03#24",
+        framework=(
+            "WSTG-CONF-07",
+            "WSTG-CLNT-09",
+            "WSTG-SESS-02",
+            "API8:2023",
+            "CWE-693",
+        ),
         cwe="CWE-693",
         target_kinds=(TargetKind.URL,),
         severity_hint="low",
@@ -190,6 +197,12 @@ class ApiSurface(WebCheck, Module):
             "and the single-page-application catch-all. GET/OPTIONS only."
         ),
         research_ref="ch03#31",
+        framework=(
+            "WSTG-INFO-06",
+            "WSTG-INFO-07",
+            "API9:2023",
+            "CWE-200",
+        ),
         cwe="CWE-200",
         target_kinds=(TargetKind.URL,),
         severity_hint="low",

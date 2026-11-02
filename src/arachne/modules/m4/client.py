@@ -47,6 +47,7 @@ class ClientSecrets(UrlCheck, Module):
             "asset's provenance are reported; the values were redacted at capture time."
         ),
         research_ref="ch04#14",
+        framework=("WSTG-INFO-05", "WSTG-CLNT-12", "CWE-798"),
         cwe="CWE-798",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",

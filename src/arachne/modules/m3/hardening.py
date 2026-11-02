@@ -156,6 +156,7 @@ class NosqlOracle(WebCheck, Module):
             "back-end predicate true or false, and never extracts or modifies data."
         ),
         research_ref="ch03#2",
+        framework=("WSTG-INPV-05", "CWE-943"),
         cwe="CWE-943",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -288,6 +289,7 @@ class DirectoryTraversal(WebCheck, Module):
             "benign baseline had none. Read-only: it reads one harmless system file."
         ),
         research_ref="ch03#12",
+        framework=("WSTG-ATHZ-01", "CWE-22"),
         cwe="CWE-22",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -402,6 +404,7 @@ class FileInclusion(WebCheck, Module):
             "remote code is executed."
         ),
         research_ref="ch03#13",
+        framework=("WSTG-ATHZ-01", "CWE-98"),
         cwe="CWE-98",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",
@@ -542,6 +545,7 @@ class CrlfInjection(WebCheck, Module):
             "observes the split; it never attempts to exploit it or smuggle a second response."
         ),
         research_ref="ch03#15",
+        framework=("WSTG-INPV-15", "CWE-113"),
         cwe="CWE-113",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",

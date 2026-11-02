@@ -74,6 +74,7 @@ class CloudPosture(EndpointCheck, Module):
             "written anywhere, to the target or the cloud."
         ),
         research_ref="ch05#1",
+        framework=("WSTG-CONF-02", "API8:2023", "CWE-16"),
         cwe="CWE-16",
         target_kinds=(TargetKind.CLOUD, TargetKind.URL),
         severity_hint="high",

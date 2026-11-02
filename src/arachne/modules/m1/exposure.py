@@ -143,6 +143,7 @@ class DorkSweep(Module):
             "and records which queries surface indexed material for the target."
         ),
         research_ref="ch01#1",
+        framework=("WSTG-INFO-01", "CWE-200"),
         cwe="CWE-200",
         target_kinds=_DOMAIN_KINDS,
         severity_hint="low",
@@ -280,6 +281,7 @@ class CodeSecretMining(Module):
             "target domain. Opt-in and token budgeted."
         ),
         research_ref="ch01#2",
+        framework=("WSTG-INFO-01", "CWE-798"),
         cwe="CWE-798",
         target_kinds=(*_DOMAIN_KINDS, TargetKind.GIT),
         severity_hint="high",
@@ -391,6 +393,7 @@ class EmailHarvest(Module):
             "the organization's address-generation pattern."
         ),
         research_ref="ch01#17",
+        framework=("WSTG-INFO-01",),
         target_kinds=_DOMAIN_KINDS,
         severity_hint="info",
         type="passive",

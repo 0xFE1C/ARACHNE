@@ -86,6 +86,8 @@ class ExampleVersionBanner(Module):
         ),
         research_ref="ch04#7",
         proof="L1",  # the proof ladder: how far the check may go (L0..L4, S15)
+        # REQ-DET-002: at least one framework item; the registry refuses a check without one.
+        framework=("WSTG-CONF-05", "CWE-489"),
         cwe="CWE-489",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",
@@ -225,6 +227,7 @@ fields and the rules enforced:
 | `version` | free string; recorded in reports (`key` is `Module/name@version`). |
 | `title`, `description` | non-empty; operator-facing prose. |
 | `research_ref` | `^ch0[1-6]#\d{1,2}(?:-\d{1,2})?$` — a research-corpus method reference. |
+| `framework` | **non-empty**, and every item must exist in the pinned snapshot: `WSTG-<CAT>-<NN>`, `API<N>:2023`, `CWE-<N>`, `ATT&CK-T<NNNN>[.<NNN>]`, `LLM<N>:2025` or `ASI<N>:2026`. The registry refuses a check with no mapping (`REQ-DET-002`). A check that sets `cwe` must list it here too. |
 | `target_kinds` | non-empty; each a valid `TargetKind` (`domain`, `domain_pattern`, `url`, `ip`, `cidr`, `git`, `cloud`). |
 | `cwe` | optional, `^CWE-\d{1,5}$`. |
 | `cve` | optional, `^CVE-\d{4}-\d{4,7}$`. |

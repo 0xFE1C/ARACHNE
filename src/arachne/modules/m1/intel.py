@@ -92,6 +92,7 @@ class ServiceExposureDrift(Module):
             "Censys key."
         ),
         research_ref="ch01#3-4",
+        framework=("WSTG-CONF-01", "CWE-668"),
         target_kinds=_ADDRESS_KINDS,
         cwe="CWE-668",
         severity_hint="low",
@@ -347,6 +348,7 @@ class CertificateSurprise(Module):
             "third-party registries about the domain."
         ),
         research_ref="ch01#8-9",
+        framework=("WSTG-INFO-04", "CWE-200"),
         target_kinds=_DOMAIN_KINDS,
         cwe="CWE-200",
         severity_hint="medium",
@@ -524,6 +526,7 @@ class BreachExposure(Module):
             "and the provider named in ARACHNE_OSINT_PROVIDERS."
         ),
         research_ref="ch01#18",
+        framework=("WSTG-INFO-01", "CWE-522"),
         target_kinds=_DOMAIN_KINDS,
         cwe="CWE-522",
         severity_hint="medium",
