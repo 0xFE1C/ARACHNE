@@ -66,6 +66,9 @@ WP10_IDS: frozenset[str] = frozenset(
     }
 )
 
+#: WP-11's browser check (REQ-DET-015); excluded for the same reason.
+WP11_IDS: frozenset[str] = frozenset({"m3.dom-xss"})
+
 
 @pytest.fixture(scope="module")
 def registry() -> ModuleRegistry:
@@ -128,10 +131,12 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     wp08 = {record.id for record in ledger.records if record.id in WP08_IDS}
     wp09 = {record.id for record in ledger.records if record.id in WP09_IDS}
     wp10 = {record.id for record in ledger.records if record.id in WP10_IDS}
-    assert len(ids - mcp - wp08 - wp09 - wp10) == 152
+    wp11 = {record.id for record in ledger.records if record.id in WP11_IDS}
+    assert len(ids - mcp - wp08 - wp09 - wp10 - wp11) == 152
     assert len(mcp) == 3
     assert len(wp08) == 9
     assert len(wp10) == 5
+    assert len(wp11) == 1
 
 
 # ------------------------------------------------------------------ REQ-DET-003 WSTG

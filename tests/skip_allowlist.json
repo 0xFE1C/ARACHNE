@@ -17,6 +17,10 @@
     {
       "test": "tests/integration/test_http3_transport.py",
       "reason": "HTTP/3 is an optional extra (arachne[quic], REQ-DET-006) and this module drives a real QUIC fixture, so it needs aioquic installed. The graceful-degradation half — the check recording the extra's absence as an observation and sending nothing over QUIC — is covered unconditionally by tests/unit/test_http3_probe.py, which is why the absence of this file's tests weakens nothing."
+    },
+    {
+      "test": "tests/integration/test_browser_lab.py",
+      "reason": "The headless browser is an optional extra (arachne[browser], REQ-DET-015) and this module drives a real Chromium against the lab, so it needs playwright installed. Everything it asserts is covered without a browser on two unconditional paths: the safety criteria by tests/test_browser_safety.py (armed sockets, pre-request scope validation, the six capabilities), and the crawl's decisions — budget, JavaScript-only route discovery, DOM-sink source/sink evidence — by tests/unit/test_browser_dom_xss.py and tests/unit/test_browser_crawl.py through the scripted navigator. What only this module can add is the running-browser confirmation, which is why it is listed rather than deleted."
     }
   ]
 }

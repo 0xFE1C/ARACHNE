@@ -32,7 +32,7 @@ from urllib.parse import urljoin, urlsplit
 
 import httpx
 
-from arachne.core.airgap import AirgapError, build_airgap_policy
+from arachne.core.airgap import AirgapError, AirgapPolicy, build_airgap_policy
 from arachne.core.audit import AuditAction, Auditor, AuditOutcome
 from arachne.core.config import HttpSettings, SafetySettings, Settings, get_settings
 from arachne.core.errors import OutOfScopeError, RequestError, SafetyError
@@ -389,6 +389,22 @@ class ScopedHttpClient:
 
     async def __aexit__(self, *exc_info: object) -> None:
         await self.aclose()
+
+    @property
+    def airgap(self) -> AirgapPolicy:
+        """The deployment's air-gapped egress policy (S25, REQ-RESIL-001).
+
+        Read-only, and exposed because the client is the object the composition root
+        configures: a *second* scoped transport — the browser crawl's proxy (ADR-340) — must
+        apply the same refusal rather than invent a weaker one or silently omit the control.
+        The policy is inert unless the deployment set ``ARACHNE_AIRGAPPED``.
+        """
+        return self._airgap
+
+    @property
+    def airgap_scope_hosts(self) -> tuple[str, ...]:
+        """The scan's own hosts, which air-gapped mode always allows (see :attr:`airgap`)."""
+        return self._airgap_scope_hosts
 
     async def aclose(self) -> None:
         # The manifest is flushed here: a scan's client is closed by the orchestrator even

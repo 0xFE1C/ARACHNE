@@ -121,7 +121,7 @@ class Orchestrator:
     ) -> None:
         self.settings = settings or get_settings()
         self.catalog = catalog or load_catalog()
-        self.planner = Planner(self.catalog, settings=self.settings.planner)
+        self.planner = Planner(self.catalog, settings=self.settings.planner, web=self.settings.web)
         self.store: ScanStateStore = store or MemoryScanStateStore()
         self.target_store = target_store
         #: The tenant this scan belongs to (F-07-06). ``None`` is the default workspace.

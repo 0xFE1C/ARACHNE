@@ -29,7 +29,7 @@
 # disagree, so a plan can never describe a check differently from the code that runs it.
 # S4 adds the M2 rows the registry implements; M3-M6 below are still *planned* only and the
 # plan marks them `implemented: false`.
-catalog_version: "1.11"
+catalog_version: "1.12"
 checks:
   # ---------------------------------------------------------------- M1 recon & attack surface
   # Implemented in S3 (arachne/modules/m1/). The rows below are generated from the check
@@ -2180,4 +2180,19 @@ checks:
     target_kinds:
     - url
     estimated_requests: 8
+    requires_active_checks: true
+  # ---------------------------------------------------------------- WP-11 browser crawling
+  # The DOM-sink half of ch03#3 (REQ-DET-015). Behind the optional `browser` extra *and* the
+  # ARACHNE_WEB_BROWSER_CRAWL opt-in, so its absence is a skipped check rather than a failure.
+  - module: M3
+    name: dom-xss
+    version: '1.0'
+    title: DOM-based cross-site scripting sinks
+    description: 'Crawls the application in a hardened headless browser and loads each route with a fresh inert marker planted in the URL fragment and in a query parameter. When the marker reaches a documented DOM sink (innerHTML, document.write, eval, location.href, ...) and was absent from the server''s own response body, the page moved an attacker-controllable source into a dangerous sink without server involvement: a DOM-XSS. The evidence names the source and the sink. Requires the optional arachne[browser] extra and ARACHNE_WEB_BROWSER_CRAWL=true; the marker is inert, nothing is executed as a payload, and every navigation passes the scope gate before the request.'
+    research_ref: ch03#3
+    proof: L1
+    cwe: CWE-79
+    target_kinds:
+    - url
+    estimated_requests: 6
     requires_active_checks: true

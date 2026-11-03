@@ -23,6 +23,7 @@ import pytest
 from sqlalchemy import create_engine, text
 from tests.conftest import EXAMPLES_DIR
 
+from arachne.browser.driver import browser_available
 from arachne.cli.main import run
 from arachne.core.config import reset_settings_cache
 from arachne.core.http import ScopedHttpClient
@@ -205,6 +206,64 @@ def test_dry_run_prints_a_complete_plan_and_makes_zero_requests(
     assert "target.loaded" in actions
     assert "scan.planned" in actions
     assert "http.request" not in actions
+
+
+def test_the_browser_crawl_is_visible_in_the_plan_when_it_is_enabled(
+    cli: Callable[..., CliResult],
+    no_network: list[str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """REQ-DET-015: the crawl's budget is part of the plan, and so is its absence.
+
+    The plan needs its own target: the shared fixture's attestation authorizes no active
+    checks, and ``m3.dom-xss`` is active, so it would be withheld for an unrelated reason and
+    the plan would say nothing about the browser either way.
+
+    This installation has no browser driver (the extra is not installed), so the honest plan is
+    the one that says so: the checks step carries **no** budget — nothing is advertised that
+    cannot happen — and the warning names the extra to install. On an installation with the
+    extra, the same plan prints the budget line under ``3. checks``; the model-level half of
+    that assertion is ``tests/unit/test_browser_hardening.py``, which does not need a browser.
+    """
+    target = tmp_path / "browser-target.yaml"
+    target.write_text(
+        "target:\n"
+        "  name: browser-plan\n"
+        "  targets:\n"
+        "    - kind: url\n"
+        "      value: http://127.0.0.1:8080/\n"
+        "  attestation:\n"
+        '    attested_by: "Jane Operator <jane.operator@example.com>"\n'
+        '    attested_at: "2026-11-01T00:00:00Z"\n'
+        '    expires_at: "2027-11-01T00:00:00Z"\n'
+        '    authorization_ref: "TEST-BROWSER"\n'
+        "    scope_statement: Loopback only.\n"
+        "    allowed_targets:\n"
+        "      - http://127.0.0.1:8080/\n"
+        "    active_checks_authorized: true\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ARACHNE_WEB_BROWSER_CRAWL", "true")
+    monkeypatch.setenv("ARACHNE_WEB_BROWSER_MAX_PAGES", "7")
+    monkeypatch.setenv("ARACHNE_WEB_BROWSER_TIME_BUDGET_S", "9")
+    reset_settings_cache()
+    try:
+        result = cli("scan", "--target", str(target), "--dry-run", "--active-checks", "--json")
+    finally:
+        reset_settings_cache()
+
+    assert result.code == 0, result.stderr
+    assert no_network == [], "the dry run touched the network"
+    document = json.loads(result.stdout)
+    checks_step = next(step for step in document["steps"] if step["step"] == "checks")
+    assert any(check["name"] == "dom-xss" and check["included"] for check in document["checks"])
+    if browser_available():  # pragma: no cover - the extra is not installed in CI
+        assert (checks_step["budget_pages"], checks_step["budget_seconds"]) == (7, 9.0)
+    else:
+        assert checks_step["budget_pages"] is None
+        assert checks_step["budget_seconds"] is None
+        assert any("no browser driver is installed" in warning for warning in document["warnings"])
 
 
 def test_dry_run_json_output_is_machine_readable(

@@ -140,7 +140,10 @@ def test_build_coverage_reports_the_m1_m2_m3_and_m4_rows() -> None:
         "state-marker",
         "xpath-injection",
     )
-    assert mapped_m3["ch03#3"] == ("client-secret-verify", "xss-oracle")
+    # ch03#3 is now mapped by three checks: the reflection oracle, the L2 client-secret
+    # verification and WP-11's DOM-sink browser check (REQ-DET-015) — both halves of the
+    # method plus the client-side half of ch03#33.
+    assert mapped_m3["ch03#3"] == ("client-secret-verify", "dom-xss", "xss-oracle")
     assert mapped_m3["ch03#11"] == ("traversal-oracle",)
     assert mapped_m3["ch03#24"] == ("security-headers",)
     # S10's extended families are mapped too.

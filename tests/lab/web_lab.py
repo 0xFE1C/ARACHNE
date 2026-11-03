@@ -302,6 +302,21 @@ M6_FALSE_POSITIVE_TRAPS: tuple[tuple[str, str], ...] = (
 )
 
 
+#: WP-11 browser ground truth (REQ-DET-015): ``(check id, marker)`` in the same shape as the
+#: other sets. ``innerHTML`` is the sink the ``/spa`` shell's router writes the marker into;
+#: ``/spa/orders`` is the route only the *rendered* DOM names, so it can only be reported by a
+#: browser that executed the page's script. Both markers live in one check id because they are
+#: two halves of the same capability claim.
+BROWSER_GROUND_TRUTH: tuple[tuple[str, str], ...] = (
+    ("m3.dom-xss", "innerHTML"),
+    ("m3.dom-xss", "/spa/orders"),
+)
+
+#: The WP-11 control: ``/spa-safe`` runs the same router through ``textContent``, so the marker
+#: reaches the DOM but no sink is involved — a candidate naming it is a false positive.
+BROWSER_FALSE_POSITIVE_TRAPS: tuple[tuple[str, str], ...] = (("m3.dom-xss", "/spa-safe"),)
+
+
 #: A JWT signed with the deliberately weak secret ``secret`` (HS256). The ``m3.jwt-audit``
 #: check recovers the secret offline from the token in ``/app.js``.
 def _weak_jwt() -> str:
@@ -483,6 +498,43 @@ _APP_MAP = json.dumps(
 )
 
 _APP_JS_HARDENED = "var apiBase = '/api';\n"
+
+# ------------------------------------------------------------------- single-page app (WP-11)
+# The browser fixtures for REQ-DET-015. ``/spa`` is a minimal single-page application whose
+# router reads the URL fragment and writes it into the DOM as markup — the classic DOM-XSS
+# sink, reachable only through JavaScript execution — and which renders one route
+# (``/spa/orders``) that the server's own HTML never names. ``/spa-safe`` is the hardened twin:
+# the same router with ``textContent`` instead of ``innerHTML``, so the marker reaches the DOM
+# but no sink is involved.
+#
+# The link is assembled from two string literals on purpose: the raw response body therefore
+# does not contain ``/spa/orders``, which is what lets the check establish that the route came
+# from client-side rendering rather than from the HTML the server sent.
+_SPA_SHELL = (
+    "<!doctype html>\n<html><head><title>orders console</title></head><body>\n"
+    '<div id="app">loading</div>\n'
+    "<script>\n"
+    "  var view = document.getElementById('app');\n"
+    "  var hash = decodeURIComponent(window.location.hash.replace(/^#/, ''));\n"
+    "  if (hash) { view.innerHTML = '<p>' + hash + '</p>'; }\n"
+    "  var nav = document.createElement('a');\n"
+    "  nav.href = '/spa/' + 'orders';\n"
+    "  nav.textContent = 'orders';\n"
+    "  document.body.appendChild(nav);\n"
+    "</script>\n</body></html>\n"
+)
+
+_SPA_SHELL_SAFE = _SPA_SHELL.replace(
+    "view.innerHTML = '<p>' + hash + '</p>';", "view.textContent = hash;"
+).replace("<title>orders console</title>", "<title>orders console (hardened)</title>")
+
+_SPA_ORDERS = (
+    "<!doctype html>\n<html><body>\n"
+    '<div id="orders">orders</div>\n'
+    "<script>document.getElementById('orders').textContent = 'orders route';"
+    "history.pushState({}, '', '/spa/' + 'orders');</script>\n"
+    "</body></html>\n"
+)
 
 _RSA_KEY = (
     "-----BEGIN RSA PRIVATE KEY-----\n"
@@ -1177,6 +1229,19 @@ class _Handler(BaseHTTPRequestHandler):
     def _orders(self, query: dict[str, list[str]]) -> None:
         # A protected API route: the control for m4.unauth-api-audit.
         self._respond(401, _ORDERS_REQUIRES_AUTH, content_type="application/json")
+
+    # -------------------------------------------------------------- single-page app (WP-11)
+    def _spa(self, query: dict[str, list[str]]) -> None:
+        """The vulnerable single-page application (REQ-DET-015): a fragment-driven DOM sink."""
+        self._respond(200, _SPA_SHELL)
+
+    def _spa_safe(self, query: dict[str, list[str]]) -> None:
+        """The hardened twin: the same router writing through ``textContent``."""
+        self._respond(200, _SPA_SHELL_SAFE)
+
+    def _spa_orders(self, query: dict[str, list[str]]) -> None:
+        """The route only the rendered DOM names: the server's shell never links to it."""
+        self._respond(200, _SPA_ORDERS)
 
     def _app_js(self, query: dict[str, list[str]]) -> None:
         # The S10 jwt fixture: a client-side token signed with the weak secret "secret"; the
@@ -2560,6 +2625,12 @@ _Handler._ROUTES = {
     "/agent/config": _Handler._agentic_policy_benign,
     "/api/agent/status": _Handler._agentic_runtime,
     "/agent/status": _Handler._agentic_runtime_benign,
+    # ------------------------------------------------------------- WP-11 browser fixtures
+    # The single-page application (REQ-DET-015) and its hardened twin. ``/spa/orders`` is
+    # served but never linked from the shell's HTML — only the rendered DOM names it.
+    "/spa": _Handler._spa,
+    "/spa-safe": _Handler._spa_safe,
+    "/spa/orders": _Handler._spa_orders,
 }
 _Handler._POST_ROUTES = {
     "/upload": _Handler._upload,

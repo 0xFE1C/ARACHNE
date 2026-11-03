@@ -25,7 +25,7 @@ from typing import Any, Final, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from arachne.core.catalog import CheckSpec, PlanningCatalog
-from arachne.core.config import PlannerSettings
+from arachne.core.config import PlannerSettings, WebSettings
 from arachne.core.proof import ProofLevel
 from arachne.core.safety import Scope
 from arachne.core.target import ScanRequest, TargetKind, TargetSelector
@@ -43,8 +43,10 @@ __all__ = [
     "ScanStep",
 ]
 
-#: Bumped when the serialized plan changes shape.
-PLAN_VERSION: Final = "1.0"
+#: Bumped when the serialized plan changes shape. 1.1 adds the browser crawl's page/time
+#: budget to the checks step (WP-11, REQ-DET-015), which is what makes the budget part of the
+#: plan an operator reviews rather than a number buried in the deployment settings.
+PLAN_VERSION: Final = "1.1"
 
 _MODEL_CONFIG = ConfigDict(frozen=True, extra="forbid")
 
@@ -226,6 +228,14 @@ class PlanStep(BaseModel):
     checks: tuple[str, ...] = ()
     #: How many of ``checks`` this build cannot execute yet.
     planned_only: int = Field(default=0, ge=0)
+    #: The headless browser crawl's documented budget for this step (REQ-DET-015, WP-11):
+    #: ``budget_pages`` navigations and ``budget_seconds`` of wall clock, enforced in the walk
+    #: loop. Present only on the step that would crawl with a browser — that is, only when the
+    #: crawl is enabled in the deployment settings. Its absence is not a failure: the browser
+    #: is an optional extra, and a plan that does not mention a budget is a plan that will not
+    #: open a browser.
+    budget_pages: int | None = Field(default=None, ge=1)
+    budget_seconds: float | None = Field(default=None, gt=0)
 
 
 class PlanTotals(BaseModel):
@@ -354,9 +364,15 @@ class Planner:
         catalog: PlanningCatalog,
         *,
         settings: PlannerSettings | None = None,
+        web: WebSettings | None = None,
     ) -> None:
         self.catalog = catalog
         self.settings = settings or PlannerSettings()
+        #: The web/browser settings, so the plan can print the browser crawl's budget
+        #: (REQ-DET-015). ``None`` means "this planner was built without deployment settings",
+        #: which is what the proof-proposal and test paths do — those plans then describe no
+        #: browser budget, which is the honest answer for a plan with no crawl behind it.
+        self.web = web
 
     def plan(
         self,
@@ -426,6 +442,7 @@ class Planner:
             handled_steps=handled_steps,
             implemented_steps=self._implemented_steps(planned, handled_steps),
             pipeline=pipeline,
+            browser_budget=self._browser_budget(planned),
         )
         totals = PlanTotals(
             targets=len(definition.targets),
@@ -570,6 +587,24 @@ class Planner:
             step for step in handled_steps if step in _SELF_CONTAINED_STEPS or step in implemented
         )
 
+    def _browser_budget(self, planned: tuple[PlannedCheck, ...]) -> tuple[int, float] | None:
+        """The browser crawl's ``(pages, seconds)`` budget, or ``None`` when it will not run.
+
+        Two conditions, both required, exactly as at runtime: the deployment must have enabled
+        the crawl (``ARACHNE_WEB_BROWSER_CRAWL``) *and* the optional extra must be installed.
+        A plan therefore never advertises a crawl that this installation cannot perform — an
+        air-gapped or default install prints "not installed" instead of a budget.
+        """
+        if self.web is None or not self.web.browser_crawl:
+            return None
+        if not any(check.included and check.name == "dom-xss" for check in planned):
+            return None
+        from arachne.browser.driver import browser_available
+
+        if not browser_available():
+            return None
+        return self.web.browser_max_pages, self.web.browser_time_budget_s
+
     @staticmethod
     def _plan_steps(
         planned: tuple[PlannedCheck, ...],
@@ -577,6 +612,7 @@ class Planner:
         handled_steps: frozenset[ScanStep],
         implemented_steps: frozenset[ScanStep],
         pipeline: tuple[ScanStep, ...],
+        browser_budget: tuple[int, float] | None = None,
     ) -> tuple[PlanStep, ...]:
         steps: list[PlanStep] = []
         for order, step in enumerate(pipeline, start=1):
@@ -597,6 +633,7 @@ class Planner:
                 )
             else:
                 skipped, reason = False, None
+            budget = browser_budget if step is ScanStep.CHECKS else None
             steps.append(
                 PlanStep(
                     step=step,
@@ -608,6 +645,8 @@ class Planner:
                     skip_reason=reason,
                     checks=keys,
                     planned_only=planned_only,
+                    budget_pages=budget[0] if budget is not None else None,
+                    budget_seconds=budget[1] if budget is not None else None,
                 )
             )
         return tuple(steps)
@@ -664,4 +703,32 @@ class Planner:
                 f"{self.settings.assumed_subdomains_per_domain} extra host(s) per domain "
                 "(ARACHNE_PLAN_ASSUMED_SUBDOMAINS)"
             )
+        warnings.extend(self._browser_warnings(planned))
         return tuple(warnings)
+
+    def _browser_warnings(self, planned: tuple[PlannedCheck, ...]) -> tuple[str, ...]:
+        """What the plan says about the browser crawl (REQ-DET-015).
+
+        The honest case is the important one: a deployment that enabled the crawl but did not
+        install the optional extra must say so *in the plan*, because otherwise the operator
+        reads a plan with no DOM-sink coverage and no explanation for it. The default
+        (crawl off) says nothing at all — a plan that does not browse should not discuss
+        browsing.
+        """
+        if self.web is None or not self.web.browser_crawl:
+            return ()
+        if not any(check.included and check.name == "dom-xss" for check in planned):
+            return ()
+        from arachne.browser.driver import BROWSER_EXTRA, browser_available
+
+        if browser_available():
+            return (
+                "the headless browser crawl is enabled: m3.dom-xss will render the crawled "
+                f"surface within a budget of {self.web.browser_max_pages} navigation(s) / "
+                f"{self.web.browser_time_budget_s:g}s, every navigation passing the scope "
+                "gate before the request",
+            )
+        return (
+            "the headless browser crawl is enabled but no browser driver is installed: "
+            f"m3.dom-xss will report itself skipped (pip install arachne[{BROWSER_EXTRA}])",
+        )

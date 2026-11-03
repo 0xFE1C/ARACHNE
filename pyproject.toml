@@ -57,6 +57,13 @@ audit = ["pip-audit>=2.7,<3"]
 # Postgres support (F-09-02, F-07-04): the driver is an extra so the default SQLite install
 # stays dependency-light. The container image installs `.[postgres]`.
 postgres = ["psycopg[binary]>=3.1"]
+# The headless browser (REQ-DET-015): JavaScript-rendered route discovery and DOM-sink
+# detection. Deliberately an extra, and the most deliberate one in this file — a browser
+# engine is a large attack surface *inside* the scanner (R-16, score 15), so the default and
+# air-gapped installs must not contain it. `pip install arachne[browser]` adds the driver;
+# with it absent `m3.dom-xss` reports itself skipped and nothing else changes. Lower-bounded
+# and audited on the dependency cadence (R-16's residual risk).
+browser = ["playwright>=1.44"]
 # HTTP/3 and QUIC probing (REQ-DET-006). Deliberately an extra: the default and air-gapped
 # installs never pull a QUIC stack, and `m2.http3-probe` records the extra's absence as an
 # installation observation rather than failing. `pip install arachne[quic]` enables the
@@ -119,6 +126,9 @@ ignore = [
 # data whose line length is set by the format, not by us.
 "src/arachne/report/html_render.py" = ["E501"]
 "src/arachne/report/pdf.py" = ["E501"]
+# The DOM-sink instrumentation is a JavaScript source literal (REQ-DET-015). Its line length
+# is set by the sink it wraps, not by us, exactly as the HTML renderer's stylesheet is.
+"src/arachne/browser/sinks.py" = ["E501"]
 "tests/**" = [
   "S101",   # asserts are the test idiom
   "S104",   # tests assert on "0.0.0.0" as data, they never bind a socket
@@ -181,6 +191,14 @@ ignore_missing_imports = true
 # and the only one CI needs, so the import is guarded and untyped here.
 [[tool.mypy.overrides]]
 module = ["weasyprint", "weasyprint.*"]
+ignore_missing_imports = true
+
+# Playwright is the optional browser driver (extra `browser`, REQ-DET-015): it ships no type
+# information, the import is guarded, and the module that imports it is the transport — its
+# own acceptance evidence is the optional integration module that runs when the extra is
+# installed. Nothing in the crawl's decision path depends on it.
+[[tool.mypy.overrides]]
+module = ["playwright", "playwright.*"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------- pytest

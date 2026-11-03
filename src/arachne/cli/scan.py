@@ -370,6 +370,15 @@ def render_plan(plan: ScanPlan) -> str:
             f"    {step.order}. {step.step.value:12}{step.estimated_requests:6d} request(s)  "
             f"{detail}{marker}"
         )
+        # REQ-DET-015: the browser crawl's page and time budget is part of the plan, so an
+        # operator sees the bound before the browser ever opens. Absent when the crawl is
+        # off or the optional extra is not installed (never a claim that it will happen).
+        if step.budget_pages is not None and step.budget_seconds is not None:
+            lines.append(
+                f"       browser crawl budget: {step.budget_pages} navigation(s) / "
+                f"{step.budget_seconds:g}s (enforced; every navigation passes the scope "
+                "gate before the request)"
+            )
 
     lines.append(
         f"  checks ({plan.totals.included_checks} included, "

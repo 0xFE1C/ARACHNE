@@ -25,7 +25,7 @@ matters.
 |---|---:|---|
 | M1 Reconnaissance & OSINT | 17 | dork sweeps, subdomain enumeration, certificate transparency, breach exposure, provider drift |
 | M2 Network & services | 31 | ports, fingerprints, TLS, mTLS and X.509, DNS and AXFR, SMB, databases, OT protocols, SMTP transport, HTTP/3, read-only AD CS enumeration, CVE correlation |
-| M3 Web application | 47 | injection, access control, session and identity, request smuggling, cache poisoning, GraphQL, WebSocket, gRPC, client-side code, mobile artifacts |
+| M3 Web application | 57 | injection, access control, session and identity, request smuggling, cache poisoning, GraphQL, WebSocket, gRPC, client-side code, DOM-XSS in a headless browser (optional extra), mobile artifacts |
 | M4 Misconfiguration & exposure | 29 | exposed `.env`/`.git`, backups, debug endpoints, headers, cookies, default credentials |
 | M5 Cloud, container & supply chain | 20 | instance metadata, buckets, Kubernetes, registries, CI/CD, dependency confusion, IAM posture |
 | M6 Automation & AI-era | 19 | webshell signatures, secret scanning, local privilege escalation, AD paths, GenAI surface, MCP and Agentic Top 10 surface, Sigma hunts |
@@ -33,9 +33,15 @@ matters.
 Checks and their payloads are data, not code: payloads, wordlists, protocol tables and rule
 corpora live in `src/arachne/templates/` and can be replaced by an operator.
 
+Three capabilities are **optional extras**, so the default and air-gapped installs never carry
+them: `arachne[quic]` (HTTP/3 probing), `arachne[browser]` (the headless-browser DOM-XSS crawl)
+and `arachne[postgres]`. Each degrades to a check that reports itself skipped, naming the extra
+to install; `pip install arachne[browser]` also needs `ARACHNE_WEB_BROWSER_CRAWL=true`, because
+a browser engine inside the scanner is a new attack surface and the operator opts into it.
+
 **Analysis — a dual engine with a parity guarantee**
 
-- A **heuristic engine** of 118 rules in a restricted expression language. It has no code
+- A **heuristic engine** of 127 rules in a restricted expression language. It has no code
   execution, it is deterministic, and it works with no network and no API key.
 - An **AI engine** with seven provider adapters (OpenAI, OpenAI-compatible, Anthropic,
   Gemini, Ollama, Mistral, custom). It annotates the heuristic verdict; it never owns it.
@@ -87,10 +93,10 @@ corpora live in `src/arachne/templates/` and can be replaced by an operator.
 
 | What | Result |
 |---|---|
-| Tests | **4,647** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
-| Primary safety suite | **59 tests** in `tests/test_safety.py`; **302** in the safety files |
+| Tests | **4,756** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Primary safety suite | **59 tests** in `tests/test_safety.py`; **328** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol and mobile fixtures with planted false-positive traps |
-| Strict type checking | clean under `mypy --strict` across the **383** Python modules in `src/` |
+| Strict type checking | clean under `mypy --strict` across the **391** Python modules in `src/` |
 | Lint | clean over the whole repository (the badge's scope is the tree, not `src/` and `tests/`) |
 | Research coverage | **148/175 (84.6%)** of the corpus's numbered methods have an implementing check |
 
@@ -105,9 +111,15 @@ discover. Each is a candidate for a future release.
 
 **Detection gaps**
 
-1. **No JavaScript execution.** There is no headless browser, so single-page application
-   routes and DOM-based sinks are not reached. This is the largest gap against comparable
-   tools.
+1. **No JavaScript execution unless the optional browser extra is installed.** The headless
+   browser crawl (`m3.dom-xss`, REQ-DET-015) reaches single-page-application routes and
+   DOM-based sinks with a real engine, but it is an optional extra *and* an operator opt-in:
+   `pip install arachne[browser]` plus `ARACHNE_WEB_BROWSER_CRAWL=true`. Without both, that
+   half of client-side testing is still the largest gap against comparable tools, the check
+   reports itself skipped, and the plan says so. Its crawl is bounded by a documented page and
+   time budget, every navigation passes the scope gate before the request, and the browser
+   reaches the network only through ARACHNE's scope-bound proxy — but a page whose bundle lives
+   off-scope renders as an empty shell, because deny-by-default outranks rendering fidelity.
 2. **No WSTG or OWASP API Top 10 identifiers** in check metadata. Coverage against those
    frameworks cannot be reported, only estimated.
 3. **Four of the ten OWASP Agentic Top 10 items have no check**, and AD CS enumeration is

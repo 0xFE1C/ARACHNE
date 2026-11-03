@@ -497,6 +497,12 @@ class WebSettings:
     ``follow_redirects``
         M3 needs the raw 3xx it asked for (open-redirect reads ``Location``), so the oracle
         requests do not follow redirects even though the shared client's default would.
+    ``browser_crawl`` / ``browser_max_pages`` / ``browser_time_budget_s`` / ``browser_timeout_s``
+        The headless-browser crawl (WP-11, REQ-DET-015). **Off by default**: the browser is an
+        optional extra *and* an operator opt-in, because a browser engine inside the scanner is
+        a new attack surface (R-16). When on, ``m3.dom-xss`` walks the crawl's routes with a
+        documented navigation and wall-clock budget, enforced in the walk loop and printed in
+        the plan.
     """
 
     max_pages: int = 20
@@ -556,6 +562,23 @@ class WebSettings:
     session_cookie: SecretStr | None = None
     session_b_cookie: SecretStr | None = None
     auth_header: SecretStr | None = None
+    # ------------------------------------------------------------------ browser crawling
+    #: **Off by default** (WP-11, REQ-DET-015). Whether ``m3.dom-xss`` may crawl the
+    #: application in a headless browser. Two gates, deliberately: the optional
+    #: ``arachne[browser]`` extra must be *installed* (the default and air-gapped installs do
+    #: not contain it) **and** the operator must set ``ARACHNE_WEB_BROWSER_CRAWL=true``.
+    #: Without the second gate installing the extra would start browsing every target a scan
+    #: is pointed at, which is exactly the exposure R-16 scores at 15.
+    browser_crawl: bool = False
+    #: The browser crawl's **documented budget**, enforced in the walk loop and printed in the
+    #: plan (REQ-DET-015: the crawl is "bounded by a documented page and time budget, and the
+    #: budget is enforced"). ``browser_max_pages`` counts *navigations*, and each route is
+    #: navigated once per marker source, so 25 navigations cover 12 routes with two sources.
+    browser_max_pages: int = 25
+    browser_time_budget_s: float = 120.0
+    #: Per-navigation timeout, on top of the whole-crawl time budget: a page that never
+    #: settles must not be able to hold a single navigation open indefinitely.
+    browser_timeout_s: float = 20.0
 
     def __post_init__(self) -> None:
         for label, value in (("max_pages", self.max_pages), ("max_endpoints", self.max_endpoints)):
@@ -573,6 +596,12 @@ class WebSettings:
                 raise ConfigurationError(msg)
         if self.time_delay_s <= 0 or self.time_delta_s <= 0:
             msg = "web.time_delay_s and web.time_delta_s must be > 0"
+            raise ConfigurationError(msg)
+        if self.browser_max_pages < 1:
+            msg = f"web.browser_max_pages must be >= 1, got {self.browser_max_pages}"
+            raise ConfigurationError(msg)
+        if self.browser_time_budget_s <= 0 or self.browser_timeout_s <= 0:
+            msg = "web.browser_time_budget_s and web.browser_timeout_s must be > 0"
             raise ConfigurationError(msg)
 
     def has_second_identity(self) -> bool:
@@ -2559,6 +2588,12 @@ class Settings:
                 session_cookie=_env_secret(source, "ARACHNE_WEB_SESSION_COOKIE"),
                 session_b_cookie=_env_secret(source, "ARACHNE_WEB_SESSION_B_COOKIE"),
                 auth_header=_env_secret(source, "ARACHNE_WEB_AUTH_HEADER"),
+                browser_crawl=_env_bool(source, "ARACHNE_WEB_BROWSER_CRAWL", default=False),
+                browser_max_pages=_env_int(source, "ARACHNE_WEB_BROWSER_MAX_PAGES", 25),
+                browser_time_budget_s=_env_float(
+                    source, "ARACHNE_WEB_BROWSER_TIME_BUDGET_S", 120.0
+                ),
+                browser_timeout_s=_env_float(source, "ARACHNE_WEB_BROWSER_TIMEOUT_S", 20.0),
             ),
             web_payloads=_env_str(source, "ARACHNE_WEB_PAYLOADS") or None,
             m4=M4Settings(

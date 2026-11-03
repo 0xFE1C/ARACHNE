@@ -81,6 +81,7 @@ from arachne.modules.m3.advanced_protocol import (
 from arachne.modules.m3.authenticated import AuthenticatedSurface, SessionLogout
 from arachne.modules.m3.client import XssOracle
 from arachne.modules.m3.client_secret import ClientSecretVerify
+from arachne.modules.m3.dom_xss import DomSinkCheck
 from arachne.modules.m3.exposure import ApiSurface, SecurityHeaders
 from arachne.modules.m3.files import TraversalOracle, UploadAudit
 from arachne.modules.m3.graphql_depth import GraphQLDepthAbuse, GraphQLResolverAuth
@@ -138,6 +139,10 @@ M3_CHECKS: tuple[type[Module], ...] = (
     CmdInjectionOracle,
     XssOracle,
     TraversalOracle,
+    # WP-11 browser crawling (REQ-DET-015): the DOM-sink half of ch03#3, reachable only
+    # through JavaScript execution — behind the optional `browser` extra and the
+    # ARACHNE_WEB_BROWSER_CRAWL opt-in.
+    DomSinkCheck,
     OpenRedirect,
     CorsAudit,
     CachePoisonAudit,

@@ -6,7 +6,7 @@ the numbered methods in `docs/research/`.
 
 - research corpus: `docs/research`
 - source roots: `src/arachne/modules`
-- references found: **172**
+- references found: **173**
 - coverage: **148/175 (84.6%)**
 
 ## Summary
@@ -99,7 +99,7 @@ the numbered methods in `docs/research/`.
 |---|---|---|---|
 | 1 | SQL injection detection | yes | `sqli-oob`, `sqli-oracle`, `state-marker`, `xpath-injection` |
 | 2 | NoSQL injection detection | yes | `ldap-injection`, `nosql-oracle` |
-| 3 | Cross-site scripting detection | yes | `client-secret-verify`, `xss-oracle` |
+| 3 | Cross-site scripting detection | yes | `client-secret-verify`, `dom-xss`, `xss-oracle` |
 | 4 | Cross-site request forgery audit | yes | `csrf-audit` |
 | 5 | Server-side request forgery probing | yes | `ssrf-probe` |
 | 6 | Server-side template injection | yes | `code-injection-oracle`, `ssti-oob`, `ssti-oracle` |
