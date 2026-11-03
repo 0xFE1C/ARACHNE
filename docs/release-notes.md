@@ -87,10 +87,10 @@ corpora live in `src/arachne/templates/` and can be replaced by an operator.
 
 | What | Result |
 |---|---|
-| Tests | **4,443** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
-| Primary safety suite | **59 tests** in `tests/test_safety.py`; **270** in the safety files |
+| Tests | **4,573** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Primary safety suite | **59 tests** in `tests/test_safety.py`; **281** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol and mobile fixtures with planted false-positive traps |
-| Strict type checking | clean under `mypy --strict` across the **375** Python modules in `src/` |
+| Strict type checking | clean under `mypy --strict` across the **381** Python modules in `src/` |
 | Lint | clean over the whole repository (the badge's scope is the tree, not `src/` and `tests/`) |
 | Research coverage | **148/175 (84.6%)** of the corpus's numbered methods have an implementing check |
 

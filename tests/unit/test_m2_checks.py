@@ -721,10 +721,39 @@ async def test_mongodb_that_requires_authentication_is_only_context() -> None:
     assert "answered without authentication" not in results[0].title
 
 
-async def test_an_unidentified_database_port_is_still_reported_as_exposed() -> None:
+async def test_an_unidentified_database_port_is_still_reported_as_exposed(tmp_path) -> None:
+    """A database port the identification suite could not name is still an exposure.
+
+    The fallback fires when the operator's catalogue names a *non-canonical* port as a
+    datastore probe: there is no protocol identity to dispatch on (the port is not one of the
+    well-known ones), so the exposure itself is the finding — without inventing a product.
+    """
+    catalogue = tmp_path / "ports.yaml"
+    catalogue.write_text(
+        "catalog_version: '1.0'\n"
+        "source: test\n"
+        "tcp:\n"
+        "  - {port: 15432, service: postgres-alt, probe: postgres}\n",
+        encoding="utf-8",
+    )
+    harness = make_m2_harness(seed_services=[(15432, "postgres-alt")], routes={})
+    results = await run(DbServiceProbe, harness, config=ModuleConfig(port_catalog=str(catalogue)))
+    assert any("database port 15432 is reachable" in result.title for result in candidates(results))
+
+
+async def test_an_oracle_port_is_not_claimed_as_a_datastore() -> None:
+    """REQ-DET-010: oracle is ``not_supported``, so the port is no longer silently "database".
+
+    Before this, ``oracle`` sat in ``DATASTORE_PROTOCOLS`` with no dispatch branch and an
+    Oracle port fell through to a generic "database port reachable" candidate — a capability
+    the product does not have, reported as one. The decision is now recorded in the protocol
+    matrix (``tests/unit/test_protocol_matrix.py``) and the protocol set no longer claims it.
+    """
     harness = make_m2_harness(seed_services=[(1521, "oracle")], routes={})
     results = await run(DbServiceProbe, harness)
-    assert any("database port 1521 is reachable" in result.title for result in candidates(results))
+    assert not candidates(results)
+    assert skipped(results)
+    assert "no datastore service" in (results[0].detail or "")
 
 
 async def test_datastore_probing_skips_when_no_datastore_port_is_known() -> None:

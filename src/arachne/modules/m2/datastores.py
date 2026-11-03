@@ -27,7 +27,7 @@ binary protocols go through the network client.
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Mapping, Sequence
 from typing import Any
 
 from arachne.core.results import CheckResult, Evidence
@@ -45,12 +45,49 @@ from arachne.modules.m2.support import (
     target_kinds_for_network_probes,
 )
 
-__all__ = ["DATASTORE_PROTOCOLS", "DbServiceProbe"]
+__all__ = [
+    "DATASTORE_PROTOCOLS",
+    "HTTP_DATASTORE_PORTS",
+    "PROTOCOL_PORTS",
+    "PROTOCOL_PROBES",
+    "DbServiceProbe",
+    "datastore_protocol_for",
+]
 
 #: Protocol identities this check investigates (and the HTTP-native ones it probes over HTTP).
+#:
+#: Every name here **must** have an entry in :data:`PROTOCOL_PROBES`: the protocol matrix
+#: (``arachne.modules.protocol_matrix``) cross-references the two, because the defect this
+#: closes is precisely a name that sat in this set with no dispatch branch — an Oracle port
+#: used to fall through to the generic "database port reachable" finding. ``oracle`` was
+#: removed for that reason and is recorded ``not_supported`` in the matrix (REQ-DET-010).
 DATASTORE_PROTOCOLS: frozenset[str] = frozenset(
-    {"mysql", "postgres", "mssql", "oracle", "redis", "memcached", "mongodb"}
+    {"mysql", "postgres", "mssql", "redis", "memcached", "mongodb"}
 )
+
+#: The probe method that implements each datastore protocol identity (REQ-DET-010). The
+#: insertion order is also the dispatch order, which is why it is a mapping and not a set:
+#: a name matches before a port does.
+PROTOCOL_PROBES: Mapping[str, str] = {
+    "redis": "_redis",
+    "memcached": "_memcached",
+    "mongodb": "_mongodb",
+    "mysql": "_mysql",
+    "postgres": "_postgres",
+    "mssql": "_mssql",
+}
+
+#: The well-known ports that imply each protocol when the fingerprinter could not name it.
+#: A port is a hint (the fingerprinter confirms every one); it exists so a datastore on its
+#: canonical port is probed even when its banner did not identify it.
+PROTOCOL_PORTS: Mapping[str, tuple[int, ...]] = {
+    "redis": (6379,),
+    "memcached": (11211,),
+    "mongodb": (27017, 27018),
+    "mysql": (3306,),
+    "postgres": (5432,),
+    "mssql": (1433,),
+}
 
 #: Ports of the HTTP-native datastores (Elasticsearch, CouchDB, Kibana, InfluxDB, ...).
 HTTP_DATASTORE_PORTS: dict[int, str] = {
@@ -62,6 +99,23 @@ HTTP_DATASTORE_PORTS: dict[int, str] = {
     15672: "rabbitmq",
     27017: "mongodb-http",
 }
+
+
+def datastore_protocol_for(service: ServiceRecord) -> str | None:
+    """The datastore protocol identity of ``service``, or ``None``.
+
+    ``"http"`` means the JSON-API family (elasticsearch/couchdb/kibana/...), which is probed
+    through the scoped HTTP client rather than a binary handshake. The precedence is exactly
+    the historical if-chain: the HTTP family first, then the name-or-port pairs in
+    :data:`PROTOCOL_PROBES` order.
+    """
+    protocol = service.effective_service.lower()
+    if protocol in HTTP_DATASTORE_PORTS.values() or service.port in HTTP_DATASTORE_PORTS:
+        return "http"
+    for name in PROTOCOL_PROBES:
+        if protocol == name or service.port in PROTOCOL_PORTS[name]:
+            return name
+    return None
 
 
 class DbServiceProbe(NetworkCheck, Module):
@@ -105,12 +159,7 @@ class DbServiceProbe(NetworkCheck, Module):
         assert inventory is not None
 
         catalog = port_catalog_for(ctx)
-        datastore_ports = {
-            entry.port
-            for entry in catalog.tcp
-            if entry.probe
-            in {"mysql", "postgres", "mssql", "oracle", "redis", "memcached", "mongodb"}
-        }
+        datastore_ports = {entry.port for entry in catalog.tcp if entry.probe in PROTOCOL_PROBES}
         candidates = [
             service
             for service in services_of(inventory, ctx.asset)
@@ -129,33 +178,15 @@ class DbServiceProbe(NetworkCheck, Module):
             return
 
         for service in candidates:
-            protocol = service.effective_service.lower()
-            if protocol in HTTP_DATASTORE_PORTS.values() or service.port in HTTP_DATASTORE_PORTS:
+            protocol = datastore_protocol_for(service)
+            if protocol == "http":
                 async for result in self._http_store(ctx, service):
                     yield result
                 continue
-            if protocol == "redis" or service.port == 6379:
-                async for result in self._redis(ctx, client, service):
-                    yield result
-                continue
-            if protocol == "memcached" or service.port == 11211:
-                async for result in self._memcached(ctx, client, service):
-                    yield result
-                continue
-            if protocol == "mongodb" or service.port in {27017, 27018}:
-                async for result in self._mongodb(ctx, client, service):
-                    yield result
-                continue
-            if protocol == "mysql" or service.port == 3306:
-                async for result in self._mysql(ctx, client, service):
-                    yield result
-                continue
-            if protocol == "postgres" or service.port == 5432:
-                async for result in self._postgres(ctx, client, service):
-                    yield result
-                continue
-            if protocol == "mssql" or service.port == 1433:
-                async for result in self._mssql(ctx, client, service):
+            method = PROTOCOL_PROBES.get(protocol or "")
+            if method is not None:
+                probe = getattr(self, method)
+                async for result in probe(ctx, client, service):
                     yield result
                 continue
             # An open port whose catalogue entry is a database but which did not identify:

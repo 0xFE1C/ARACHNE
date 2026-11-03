@@ -687,7 +687,13 @@ def _is_address(value: str) -> bool:
 
 
 def _port_of_asset(value: str) -> int | None:
-    """The port an explicit ``host:port`` or URL asset names, if any."""
+    """The port an explicit ``host:port``, ``[v6]:port`` or URL asset names, if any.
+
+    The bracketed form matters for REQ-DET-007: an IPv6 literal contains colons, so the
+    ``count(":") == 1`` shortcut that recognises ``host:port`` never matches ``[::1]:8443``
+    and an IPv6 target's declared port would be dropped — the host would be scanned only on
+    the top-ports policy, not on the port the operator named.
+    """
     from urllib.parse import urlsplit
 
     if "://" in value:
@@ -695,6 +701,12 @@ def _port_of_asset(value: str) -> int | None:
             return urlsplit(value).port
         except ValueError:
             return None
+    if value.startswith("["):
+        closing = value.find("]")
+        if closing == -1:
+            return None
+        rest = value[closing + 1 :]
+        return int(rest[1:]) if rest.startswith(":") and rest[1:].isdigit() else None
     if value.count(":") == 1:
         host, _, port = value.partition(":")
         if host and port.isdigit():

@@ -30,6 +30,7 @@ from arachne.core.errors import ConfigurationError
 from arachne.core.planner import MODULE_STEP, ScanStep
 from arachne.core.proof import require_proof_consistency
 from arachne.core.target import ModuleSelection
+from arachne.modules import lifecycle_policy
 from arachne.modules.base import CheckMetadata, Module
 from arachne.modules.framework_map import validate_items
 
@@ -132,6 +133,9 @@ def _as_dict(metadata: CheckMetadata) -> dict[str, Any]:
         "requires_credentials": list(metadata.requires_credentials),
         "runs_on_discovered": metadata.runs_on_discovered,
         "target_kinds": [kind.value for kind in metadata.target_kinds],
+        # REQ-DET-008: the lifecycle state travels with the check, so plan output and any
+        # report built from the registry can flag a deprecated check without a second lookup.
+        "lifecycle": lifecycle_policy.annotate(metadata.id),
         "key": metadata.key,
     }
 

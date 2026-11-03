@@ -1898,6 +1898,50 @@ checks:
     - domain_pattern
     estimated_requests: 4
     requires_active_checks: true
+  - module: M2
+    name: tls-mutual-auth
+    version: '1.0'
+    title: Mutual TLS and client-certificate enforcement
+    description: 'Establishes whether a TLS service actually enforces client-certificate authentication. Three read-only observations are recorded: the handshake with no client certificate, the presence of a CertificateRequest in the server''s TLS 1.2 flight, and the server''s answer to a throwaway self-signed certificate. A service that asks for a certificate and then accepts a client that presented none is reported, because its advertised authentication boundary is absent. No credential belonging to a principal is used, and no application-layer byte is sent.'
+    research_ref: ch02#14
+    proof: L1
+    cwe: CWE-295
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 3
+    requires_active_checks: true
+  - module: M2
+    name: http3-probe
+    version: '1.0'
+    title: HTTP/3 transport parity
+    description: Reads the Alt-Svc advertisement and, when the optional QUIC client is installed, performs one HTTP/3 GET of the same path. The security-relevant response headers are compared with the HTTP/1.1-2 response, so a QUIC path that serves a weaker header set than the TCP path is reported. The transport used is recorded in evidence. Without the optional extra the check records that QUIC probing is unavailable and sends nothing over QUIC; the target not speaking HTTP/3 is an observation, never a finding.
+    research_ref: ch02#12
+    proof: L1
+    cwe: CWE-693
+    target_kinds:
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M2
+    name: smtp-transport
+    version: '1.0'
+    title: SMTP transport security and relay posture
+    description: Establishes whether SMTP STARTTLS is offered and required, which AUTH mechanisms the server advertises before any encryption, and whether it relays mail for an external sender to an external recipient. The relay probe sends an envelope only - a MAIL FROM and an RCPT TO for a non-deliverable reserved-domain recipient, then RSET and QUIT - and never issues DATA or a message body.
+    research_ref: ch02#20
+    proof: L1
+    cwe: CWE-319
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 4
+    requires_active_checks: true
   - module: M3
     name: graphql-depth-abuse
     version: '1.0'

@@ -552,8 +552,13 @@ def classify_ip(ip: str, policy: UrlSafetyPolicy | None = None) -> str | None:
 
     if address.is_unspecified:
         return "unspecified-address"
-    if address.is_loopback and not policy.allow_loopback:
-        return "loopback-address"
+    if address.is_loopback:
+        # Symmetric between families (REQ-DET-007). ``ipaddress`` reports ``::1`` as
+        # *reserved* as well as loopback (``127.0.0.1`` is not reserved), so falling through
+        # to the reserved check made the explicit ``allow_loopback`` opt-in cover IPv4 and
+        # silently not IPv6. The default is unchanged: without the opt-in both are refused,
+        # and the reason stays the most specific one.
+        return None if policy.allow_loopback else "loopback-address"
     if address.is_link_local and not policy.allow_link_local:
         return "link-local-address"
     if address.is_multicast:

@@ -57,6 +57,11 @@ audit = ["pip-audit>=2.7,<3"]
 # Postgres support (F-09-02, F-07-04): the driver is an extra so the default SQLite install
 # stays dependency-light. The container image installs `.[postgres]`.
 postgres = ["psycopg[binary]>=3.1"]
+# HTTP/3 and QUIC probing (REQ-DET-006). Deliberately an extra: the default and air-gapped
+# installs never pull a QUIC stack, and `m2.http3-probe` records the extra's absence as an
+# installation observation rather than failing. `pip install arachne[quic]` enables the
+# handshake; everything else works without it.
+quic = ["aioquic>=1.0"]
 
 [project.scripts]
 arachne = "arachne.cli.main:run"

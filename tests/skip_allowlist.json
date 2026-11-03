@@ -13,6 +13,10 @@
     {
       "test": "tests/integration/test_ui_triage_usability.py",
       "reason": "Needs a node binary on PATH to execute the shipped static/workspace.js — the keyboard model itself, not a copy of it — and to time the scripted 20-finding triage. The skip is asserted by test_the_script_test_skips_cleanly_when_node_is_absent."
+    },
+    {
+      "test": "tests/integration/test_http3_transport.py",
+      "reason": "HTTP/3 is an optional extra (arachne[quic], REQ-DET-006) and this module drives a real QUIC fixture, so it needs aioquic installed. The graceful-degradation half — the check recording the extra's absence as an observation and sending nothing over QUIC — is covered unconditionally by tests/unit/test_http3_probe.py, which is why the absence of this file's tests weakens nothing."
     }
   ]
 }

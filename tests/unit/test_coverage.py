@@ -125,7 +125,9 @@ def test_build_coverage_reports_the_m1_m2_m3_and_m4_rows() -> None:
     assert ch02.mapped == 28
     mapped_m2 = {item.method.ref: item.checks for item in ch02.methods if item.mapped}
     assert mapped_m2["ch02#1"] == ("host-discovery",)
-    assert mapped_m2["ch02#14"] == ("tls-deep-scan",)
+    # WP-09's mutual-TLS observation cites the same TLS chapter method as the deep scan: both
+    # are handshake observations of the same endpoint (REQ-DET-011).
+    assert set(mapped_m2["ch02#14"]) == {"tls-deep-scan", "tls-mutual-auth"}
     assert mapped_m2["ch02#29"] == ("cve-correlate",)
     assert "ch02#11" in report.unmapped  # masscan-scale sweeping is not implemented
     ch03 = next(chapter for chapter in report.chapters if chapter.chapter == "ch03")

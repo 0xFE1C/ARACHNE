@@ -36,6 +36,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from arachne.core.errors import ConfigurationError
+from arachne.modules import lifecycle_policy
 from arachne.modules.framework_map import (
     api_top10_coverage,
     cwe_top25_coverage,
@@ -632,6 +633,8 @@ class CoverageLedger:
             },
             "checks": [record.to_dict() for record in self.records],
             "wstg_items": [dict(item) for item in self.wstg_items],
+            # REQ-DET-008: deprecated checks, their successor and their removal horizon.
+            "deprecations": lifecycle_policy.ledger_section(),
         }
 
     def to_json(self) -> str:
@@ -816,6 +819,26 @@ def render_ledger_markdown(ledger: CoverageLedger) -> str:
             state = "out_of_scope"
         reason = f" — {item['reason']}" if item.get("reason") else ""
         lines.append(f"| `{item['id']}` | {state} | {checks} | {item['title']}{reason} |")
+    deprecations = lifecycle_policy.ledger_section()
+    horizon = deprecations["removal_horizon_minors"]
+    lines += [
+        "",
+        f"## Deprecated checks (REQ-DET-008) — removal horizon {horizon} minor releases",
+        "",
+        "A deprecated check still runs (compatibility) and keeps its framework mapping; it is",
+        "listed here with the check that replaces it and the release it must be removed by.",
+        "The ledger's `--check` mode fails once that release is reached.",
+        "",
+        "| Check | Successor | Deprecated in | Remove by | Reason |",
+        "|---|---|---|---|---|",
+    ]
+    for entry in deprecations["deprecated"]:
+        lines.append(
+            f"| `{entry['check_id']}` | `{entry['successor']}` | {entry['deprecated_in']} "
+            f"| {entry['removal_horizon']} | {entry['reason']} |"
+        )
+    if not deprecations["deprecated"]:
+        lines.append("| — | — | — | — | no shipped check is deprecated |")
     lines.append("")
     return "\n".join(lines)
 
@@ -870,7 +893,23 @@ def check_ledger(
             differences.append(f"the committed markdown ledger {markdown_target.name} differs")
     else:
         differences.append(f"the committed markdown ledger {markdown_target} does not exist")
+    # REQ-DET-008: a deprecation that has outlived its two-minor horizon fails this gate, which
+    # is the CI step that already runs. The message names the check and the release to remove
+    # it by, so the failure is actionable rather than a red job.
+    differences.extend(
+        f"lifecycle: {problem}"
+        for problem in lifecycle_policy.problems(
+            registry_check_ids=set((registry or _discover_registry()).check_ids())
+        )
+    )
     return (not differences), tuple(differences)
+
+
+def _discover_registry() -> ModuleRegistry:
+    """The built-in registry, imported here so the module stays importable without it."""
+    from arachne.modules.registry import ModuleRegistry
+
+    return ModuleRegistry.discover()
 
 
 def _record_differences(committed: Any, generated: list[dict[str, Any]]) -> list[str]:

@@ -39,6 +39,9 @@ check                                    ref         what it establishes
 ``m2.dns-active``                        ch02#28     AXFR attempt and dictionary resolution
 ``m2.cve-correlate``                     ch02#29     version → CVE/EPSS correlation
 ``m2.legacy-services``                   ch04#22     Telnet/rlogin/finger/TFTP exposure
+``m2.tls-mutual-auth``                   ch02#14     client-certificate enforcement (WP-09)
+``m2.smtp-transport``                    ch02#20     STARTTLS, AUTH and relay posture (WP-09)
+``m2.http3-probe``                       ch02#12     HTTP/3 transport parity (optional extra)
 ======================================  ==========  ==========================================
 
 **Safety.** Every check here is active (they all contact the target) except ``cve-correlate``,
@@ -77,9 +80,11 @@ from arachne.modules.m2.hardening import (
     LegacyServices,
     SsdpDiscovery,
 )
+from arachne.modules.m2.http3_probe import Http3Probe
+from arachne.modules.m2.mtls import MutualTlsAuth
 from arachne.modules.m2.netinfra import DnsActive, IcsProbe, SnmpEnum
 from arachne.modules.m2.ot import OtProtocolProbe
-from arachne.modules.m2.remote import RdpVncDetect, SmtpEnum, SshEnum
+from arachne.modules.m2.remote import RdpVncDetect, SmtpEnum, SmtpTransport, SshEnum
 from arachne.modules.m2.tls_cve import CveCorrelate, TlsDeepScan
 from arachne.modules.registry import ModuleGroup
 
@@ -98,12 +103,15 @@ M2_CHECKS: tuple[type[Module], ...] = (
     HttpFingerprint,
     FaviconHash,
     TlsDeepScan,
+    MutualTlsAuth,
+    Http3Probe,
     SnmpEnum,
     SmbEnum,
     NfsEnum,
     LdapEnum,
     KerberosEnum,
     SmtpEnum,
+    SmtpTransport,
     FtpAnonymous,
     DbServiceProbe,
     RdpVncDetect,
@@ -135,9 +143,12 @@ M2 = ModuleGroup(
         "LDAP, Kerberos, SMTP, SSH, RDP/VNC, SNMP, databases, ICS) and CVE correlation over "
         "the fingerprinted inventory, plus the S29 depth families: gRPC/HTTP-2 posture "
         "(cleartext h2c, server reflection, request-metadata leakage) and the read-only OT/ICS "
-        "protocols (Modbus/BACnet via m2.ics-probe, S7comm and DNP3 via m2.ot-protocol-probe)."
+        "protocols (Modbus/BACnet via m2.ics-probe, S7comm and DNP3 via m2.ot-protocol-probe), "
+        "and the WP-09 protocol surface: mutual-TLS enforcement (m2.tls-mutual-auth), SMTP "
+        "STARTTLS/AUTH/relay posture (m2.smtp-transport) and HTTP/3 transport parity "
+        "(m2.http3-probe, behind the optional `quic` extra)."
     ),
-    version="1.2.0",
+    version="1.3.0",
     research_chapter="ch02",
     checks=M2_CHECKS,
 )

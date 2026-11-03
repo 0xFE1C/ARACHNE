@@ -355,6 +355,328 @@ class SmtpEnum(NetworkCheck, Module):
                 )
 
 
+#: RFC 2606 reserved domains for the relay probe. ``.invalid`` is guaranteed never to resolve,
+#: so neither the envelope sender nor the recipient can be delivered anywhere even if a server
+#: ignored the protocol. The recipient is *syntactically valid* (a real local-part at a real
+#: domain syntax) and non-deliverable by construction, which is what makes the probe a test of
+#: the relay policy rather than a test of DNS.
+RELAY_SENDER_DOMAIN = "relay-sender.invalid"
+RELAY_RECIPIENT = "postmaster@relay-probe.invalid"
+
+#: The reply code a mail server sends when it refuses a command until STARTTLS is negotiated.
+STARTTLS_REQUIRED_CODE = "530"
+
+#: Hosts that speak TLS from the first byte (implicit TLS, RFC 8314): STARTTLS is meaningless
+#: there, and a plaintext EHLO would never get a greeting at all.
+IMPLICIT_TLS_SMTP_PORTS: frozenset[int] = frozenset({465})
+
+
+class SmtpTransport(NetworkCheck, Module):
+    """``m2.smtp-transport`` — STARTTLS enforcement, AUTH mechanisms and relay posture.
+
+    Four observations, each read-only:
+
+    1. **STARTTLS offered** — the EHLO capability list.
+    2. **STARTTLS required** — a plaintext ``MAIL FROM`` answered ``530`` (refuse until TLS)
+       versus ``250`` (accept plaintext mail submission).
+    3. **AUTH mechanisms** — the ``AUTH`` capability line(s), reported as offered. A server
+       that advertises AUTH on a plaintext session is offering to receive credentials in the
+       clear.
+    4. **Relay posture** — an envelope-only probe: ``MAIL FROM`` and ``RCPT TO`` for a
+       non-deliverable recipient under a reserved domain, then ``RSET`` and ``QUIT``.
+       **No ``DATA`` is ever issued and no body is ever sent**, so nothing can be queued or
+       delivered; a server that answers ``250`` to both is relaying for an external sender to
+       an external recipient.
+
+    The relay probe runs only when the scan's attestation authorizes active checks
+    (``active_checks_authorized``). The check as a whole is withheld without the opt-in, so
+    this is the second of the two locks, not the first.
+    """
+
+    metadata = CheckMetadata(
+        id="m2.smtp-transport",
+        module="M2",
+        name="smtp-transport",
+        version="1.0",
+        title="SMTP transport security and relay posture",
+        description=(
+            "Establishes whether SMTP STARTTLS is offered and required, which AUTH mechanisms "
+            "the server advertises before any encryption, and whether it relays mail for an "
+            "external sender to an external recipient. The relay probe sends an envelope only "
+            "- a MAIL FROM and an RCPT TO for a non-deliverable reserved-domain recipient, "
+            "then RSET and QUIT - and never issues DATA or a message body."
+        ),
+        research_ref="ch02#20",
+        framework=("WSTG-CONF-01", "CWE-319", "CWE-441"),
+        cwe="CWE-319",
+        target_kinds=_NETWORK_KINDS,
+        severity_hint="high",
+        type="active",
+        safe=True,
+        verifiable=True,
+        estimated_requests=4,
+        requires_active_checks=True,
+        runs_on_discovered=True,
+    )
+
+    async def run(self, ctx: CheckContext) -> AsyncIterator[CheckResult]:
+        client, skip = net_or_skip(ctx)
+        if skip is not None:
+            yield skip
+            return
+        assert client is not None
+        inventory, skip = inventory_or_skip(ctx)
+        if skip is not None:
+            yield skip
+            return
+        assert inventory is not None
+
+        catalog = port_catalog_for(ctx)
+        smtp_ports = (25, 587, 2525, *catalog.ports_for_probe("smtp"))
+        services = tuple(
+            service
+            for service in _services_for(ctx, ("smtp",), smtp_ports)
+            if not _is_implicit_tls(service)
+        )
+        if not services:
+            yield ctx.skipped(
+                f"no plaintext SMTP service recorded for asset {ctx.asset.key} "
+                "(m2.port-scan and m2.service-fingerprint establish them first; implicit-TLS "
+                "ports are excluded because STARTTLS does not apply to them)"
+            )
+            return
+
+        domain = _domain_hint(ctx, ctx.asset.value)
+        active = _relay_probe_authorized(ctx)
+        for service in services:
+            async for result in self._observe(ctx, client, service, domain, active=active):
+                yield result
+
+    # ------------------------------------------------------------------ the observation
+    async def _observe(
+        self,
+        ctx: CheckContext,
+        client: Any,
+        service: ServiceRecord,
+        domain: str,
+        *,
+        active: bool,
+    ) -> AsyncIterator[CheckResult]:
+        greeting = await client.tcp(service.host, service.port)
+        service.probes += 1
+        banner = greeting.banner_text(limit=1024).strip()
+        if not greeting.is_open or not banner.startswith("220"):
+            yield ctx.clean(
+                f"no SMTP greeting from {service.key}",
+                detail=f"The port answered {greeting.state!r} without a 220 greeting.",
+                evidence=[_port_evidence(ctx, service, banner[:256])],
+                confidence=0.4,
+            )
+            return
+
+        capabilities = await _smtp_ehlo(client, service, domain)
+        service.probes += 1
+        verbs = {name for name, _ in capabilities}
+        mechanisms = _smtp_auth_mechanisms(capabilities)
+        starttls_offered = "STARTTLS" in verbs
+
+        # Is it required? Ask the plaintext session to submit a message envelope. A server that
+        # refuses until TLS answers 530; one that accepts answers 250. Either answer costs one
+        # exchange and neither can deliver anything (no RCPT, no DATA, followed by RSET/QUIT).
+        plaintext = await client.tcp(
+            service.host,
+            service.port,
+            payload=(f"MAIL FROM:<probe@{RELAY_SENDER_DOMAIN}>\r\nRSET\r\nQUIT\r\n").encode(),
+            reads=4,
+        )
+        service.probes += 1
+        plaintext_replies = _smtp_replies(plaintext.banner_text(limit=4096))
+        mail_code = plaintext_replies[1] if len(plaintext_replies) > 1 else ""
+        starttls_required = starttls_offered and mail_code == STARTTLS_REQUIRED_CODE
+        plaintext_accepted = mail_code.startswith("2")
+
+        relay: dict[str, Any] = {"attempted": False}
+        if active:
+            relay = await self._relay_probe(ctx, client, service, domain)
+            service.probes += 1
+
+        _apply_identity(
+            service,
+            product=_smtp_product(banner)[0],
+            version=_smtp_product(banner)[1],
+            banner=banner,
+        )
+        facts = {
+            "host": service.host,
+            "port": service.port,
+            "greeting": banner[:160],
+            "starttls_offered": starttls_offered,
+            "starttls_required": starttls_required,
+            "plaintext_mail_code": mail_code,
+            "plaintext_submission_accepted": plaintext_accepted,
+            "auth_mechanisms": list(mechanisms),
+            "relay": relay,
+            "probe_domains": {
+                "sender": RELAY_SENDER_DOMAIN,
+                "recipient": RELAY_RECIPIENT,
+                "reserved": True,
+                "body_sent": False,
+                "data_issued": False,
+            },
+        }
+        evidence = [ctx.evidence("banner", facts, source=service.key)]
+        yield ctx.info(
+            f"SMTP transport posture for {service.key}",
+            detail=(
+                f"STARTTLS {'offered' if starttls_offered else 'not offered'}"
+                + (" and required" if starttls_required else "")
+                + f"; plaintext MAIL FROM answered {mail_code or 'nothing'}; "
+                f"{len(mechanisms)} AUTH mechanism(s) advertised "
+                f"({', '.join(mechanisms) or 'none'}); "
+                + (
+                    f"relay probe: RCPT answered {relay.get('rcpt_code', 'nothing')}"
+                    if active
+                    else "relay probe withheld (active checks are not authorized)"
+                )
+            ),
+            evidence=evidence,
+            confidence=0.9,
+        )
+
+        if not starttls_offered:
+            yield ctx.candidate(
+                f"SMTP service on {service.host}:{service.port} does not offer STARTTLS",
+                detail=(
+                    "The EHLO capability list carries no STARTTLS extension, so every "
+                    "submission and every recipient on this connection — including any "
+                    "credential — travels in the clear (CWE-319). A mail server that accepts "
+                    "plaintext submission is readable on any path between the client and it."
+                ),
+                confidence=0.75,
+                evidence=evidence,
+            )
+        elif not starttls_required and plaintext_accepted and mechanisms:
+            yield ctx.candidate(
+                f"SMTP service on {service.host}:{service.port} advertises STARTTLS but "
+                "accepts authentication in the clear",
+                detail=(
+                    "The server offers STARTTLS and still advertises "
+                    f"{', '.join(mechanisms)} on the plaintext session, and it accepted a "
+                    f"plaintext MAIL FROM ({mail_code}). A client that authenticates before "
+                    "upgrading — which the advertisement invites — sends its credential in the "
+                    "clear, so the transport security the server offers is optional in "
+                    "practice (CWE-319). Requiring it means refusing AUTH and MAIL until "
+                    "STARTTLS has completed (Postfix 'smtpd_tls_auth_only = yes' plus "
+                    "'smtpd_tls_security_level = encrypt')."
+                ),
+                confidence=0.8,
+                evidence=evidence,
+            )
+
+        if relay.get("open"):
+            yield ctx.candidate(
+                f"SMTP service on {service.host}:{service.port} accepts unauthenticated relay",
+                detail=(
+                    "The server accepted MAIL FROM "
+                    f"<probe@{RELAY_SENDER_DOMAIN}> and RCPT TO <{RELAY_RECIPIENT}> — an "
+                    "external sender naming an external recipient — without authentication. "
+                    "That is an open relay: it can be used to send mail to arbitrary "
+                    "third parties, laundering the operator's reputation and address space "
+                    "(CWE-441). The probe sent an envelope only: no DATA was issued and no "
+                    "message body exists, so nothing was queued or delivered."
+                ),
+                confidence=0.85,
+                evidence=evidence,
+            )
+        elif active and relay.get("rcpt_code"):
+            yield ctx.clean(
+                f"SMTP service on {service.key} does not relay for an external sender",
+                detail=(
+                    f"The relay probe was refused at RCPT with {relay['rcpt_code']}, so the "
+                    "server enforces a relay policy. No message body was sent and no delivery "
+                    "was attempted."
+                ),
+                evidence=evidence,
+                confidence=0.8,
+            )
+
+    async def _relay_probe(
+        self, ctx: CheckContext, client: Any, service: ServiceRecord, domain: str
+    ) -> dict[str, Any]:
+        """Envelope only: EHLO, MAIL FROM, RCPT TO, RSET, QUIT. Never DATA."""
+        payload = (
+            f"EHLO arachne-scan.{domain}\r\n"
+            f"MAIL FROM:<probe@{RELAY_SENDER_DOMAIN}>\r\n"
+            f"RCPT TO:<{RELAY_RECIPIENT}>\r\n"
+            "RSET\r\n"
+            "QUIT\r\n"
+        ).encode()
+        exchange = await client.tcp(service.host, service.port, payload=payload, reads=8)
+        replies = _smtp_replies(exchange.banner_text(limit=8192))
+        # [0] greeting, [1] EHLO, [2] MAIL FROM, [3] RCPT TO, [4] RSET, [5] QUIT
+        mail_code = replies[2] if len(replies) > 2 else ""
+        rcpt_code = replies[3] if len(replies) > 3 else ""
+        open_relay = mail_code.startswith("2") and rcpt_code in {"250", "251"}
+        return {
+            "attempted": True,
+            "mail_code": mail_code,
+            "rcpt_code": rcpt_code,
+            "rset_code": replies[4] if len(replies) > 4 else "",
+            "quit_code": replies[5] if len(replies) > 5 else "",
+            "open": open_relay,
+            "data_issued": False,
+            "body_sent": False,
+            "recipient": RELAY_RECIPIENT,
+            "sender": f"probe@{RELAY_SENDER_DOMAIN}",
+        }
+
+
+def _relay_probe_authorized(ctx: CheckContext) -> bool:
+    """True when the scan's opt-in *and* its attestation authorize active checks.
+
+    Both locks are consulted even though the planner already withholds this check without
+    them: ``active_checks`` is the operator's request, the attestation is the authorization
+    (INV-4), and a relay probe is the closest this product comes to sending mail.
+    """
+    attestation = getattr(ctx.definition, "attestation", None)
+    authorized = bool(getattr(attestation, "active_checks_authorized", False))
+    return bool(ctx.options.active_checks) and authorized
+
+
+def _is_implicit_tls(service: ServiceRecord) -> bool:
+    """True for a service that speaks TLS from the first byte (STARTTLS cannot apply)."""
+    return service.port in IMPLICIT_TLS_SMTP_PORTS or service.effective_service.lower() == "smtps"
+
+
+def _smtp_auth_mechanisms(capabilities: Sequence[tuple[str, str]]) -> tuple[str, ...]:
+    """Every mechanism named on an ``AUTH`` capability line, de-duplicated and ordered."""
+    mechanisms: list[str] = []
+    for verb, argument in capabilities:
+        if verb != "AUTH":
+            continue
+        mechanisms.extend(token.upper() for token in argument.replace("=", " ").split() if token)
+    return tuple(dict.fromkeys(mechanisms))
+
+
+def _smtp_replies(text: str) -> list[str]:
+    """The final code of each SMTP reply, in order, with multi-line replies collapsed.
+
+    An SMTP reply is one or more lines; continuation lines carry ``code-`` and the last line
+    carries ``code `` (or just the code). Recording only the terminal code is what makes
+    "[0] greeting, [1] EHLO, [2] MAIL FROM, ..." a reliable index even when the EHLO block is
+    five lines long.
+    """
+    replies: list[str] = []
+    for raw in text.replace("\r\n", "\n").splitlines():
+        line = raw.strip()
+        if len(line) < 3 or not line[:3].isdigit():
+            continue
+        if len(line) > 3 and line[3] == "-":
+            continue  # a continuation line: the reply is not finished
+        replies.append(line[:3])
+    return replies
+
+
 class RdpVncDetect(NetworkCheck, Module):
     """``m2.rdp-vnc-detect`` — RDP/VNC presence and authentication posture (ch02#25)."""
 

@@ -37,6 +37,8 @@ from datetime import UTC, datetime
 from typing import Any
 
 __all__ = [
+    "CERTIFICATE_ALERTS",
+    "TLS_HANDSHAKE_NAMES",
     "BacnetDevice",
     "BerReader",
     "Dnp3Link",
@@ -95,6 +97,7 @@ __all__ = [
     "parse_snmp_response",
     "parse_snmp_varbinds",
     "parse_ssh_banner",
+    "parse_tls_server_flight",
     "parse_tls_server_hello",
     "parse_x224_negociation",
     "postgres_ssl_request",
@@ -111,6 +114,7 @@ __all__ = [
     "smb2_session_setup_ntlmssp",
     "snmp_oids",
     "ssh_kexinit_probe",
+    "tls_client_certificate",
     "tls_client_hello",
 ]
 
@@ -2049,7 +2053,11 @@ def kerberos_error_code(data: bytes) -> int | None:
 
 # --------------------------------------------------------------------------- TLS ClientHello
 def tls_client_hello(
-    *, server_name: str | None = None, version: int = 0x0303, random: bytes | None = None
+    *,
+    server_name: str | None = None,
+    version: int = 0x0303,
+    random: bytes | None = None,
+    include_tls13: bool = True,
 ) -> bytes:
     """A minimal TLS 1.2/1.3 ClientHello (used to identify TLS on a non-standard port).
 
@@ -2057,6 +2065,13 @@ def tls_client_hello(
     a fuzz case has to be reproducible byte for byte, and a seed that changed on every call
     would make "this exact message produced that fault" unprovable. Callers that do not pass it
     get the unpredictable nonce they always got, so every existing probe is unchanged.
+
+    ``include_tls13=False`` caps the offer at TLS 1.2 (both in ``supported_versions`` and in
+    the cipher list). That is what the mutual-TLS observation needs: a server that negotiates
+    TLS 1.3 encrypts its whole handshake flight, so the ``CertificateRequest`` it sends is not
+    observable on the wire, while a TLS 1.2 server sends it in the clear — alongside
+    ``Certificate`` and ``ServerHelloDone``, in the one flight
+    :func:`parse_tls_server_flight` reads.
     """
     if random is not None and len(random) != 32:
         raise ValueError("a TLS ClientHello random must be exactly 32 bytes")
@@ -2069,12 +2084,40 @@ def tls_client_hello(
             + struct.pack(">H", len(server_name_list))
             + server_name_list
         )
-    # supported_versions (TLS 1.3 + 1.2)
-    versions = struct.pack(">BBH", 4, 3, 0x0304) + struct.pack(">H", 0x0303)
+    # supported_versions — TLS 1.3 first, then 1.2 (or 1.2 alone when capped). The extension
+    # body is ``versions<2..254>``: a one-byte length, then the 2-byte versions.
+    version_list = struct.pack(">H", 0x0303)
+    if include_tls13:
+        version_list = struct.pack(">H", 0x0304) + version_list
+    versions = struct.pack(">B", len(version_list)) + version_list
     extensions += struct.pack(">HH", 0x002B, len(versions)) + versions
-    cipher_suites = b"".join(
-        struct.pack(">H", suite) for suite in (0x1301, 0x1302, 0x1303, 0xC02F, 0xC030, 0x009C)
+    # supported_groups, ec_point_formats and signature_algorithms. OpenSSL 3.x refuses an
+    # ECDHE handshake without them (and requires signature_algorithms outright), so a hello
+    # without these is answered with an alert rather than a ServerHello — which is what made
+    # the raw probe unusable as anything but a "is this port TLS-ish" smoke test.
+    groups = struct.pack(">H", 0x001D) + struct.pack(">H", 0x0017) + struct.pack(">H", 0x0018)
+    extensions += (
+        struct.pack(">HH", 0x000A, len(groups) + 2) + struct.pack(">H", len(groups)) + groups
     )
+    extensions += struct.pack(">HH", 0x000B, 2) + b"\x01\x00"  # uncompressed only
+    signatures = b"".join(
+        struct.pack(">H", scheme) for scheme in (0x0403, 0x0804, 0x0401, 0x0805, 0x0806, 0x0201)
+    )
+    extensions += (
+        struct.pack(">HH", 0x000D, len(signatures) + 2)
+        + struct.pack(">H", len(signatures))
+        + signatures
+    )
+    suites = (
+        (0x1301, 0x1302, 0x1303, 0xC02F, 0xC030, 0x009C)
+        if include_tls13
+        else (
+            0xC02F,
+            0xC030,
+            0x009C,
+        )
+    )
+    cipher_suites = b"".join(struct.pack(">H", suite) for suite in suites)
     body = (
         struct.pack(">H", version)
         + (_random_bytes(32) if random is None else random)
@@ -2155,6 +2198,162 @@ def parse_tls_server_hello(data: bytes) -> dict[str, Any] | None:
             # supported_versions in a ServerHello carries exactly the selected version.
             negotiated = _TLS_VERSIONS.get(struct.unpack(">H", payload[:2])[0], negotiated)
     info["selected_version"] = negotiated
+    return info
+
+
+#: TLS handshake message types, by name, for evidence. Only the ones a mutual-TLS probe
+#: reads are listed; an unknown type is reported by number.
+TLS_HANDSHAKE_NAMES: dict[int, str] = {
+    0: "hello_request",
+    1: "client_hello",
+    2: "server_hello",
+    11: "certificate",
+    12: "server_key_exchange",
+    13: "certificate_request",
+    14: "server_hello_done",
+    15: "certificate_verify",
+    16: "client_key_exchange",
+    20: "finished",
+}
+
+#: Alert descriptions that mean "this peer refused the client certificate it was offered".
+#: ``certificate_required`` (116) is the TLS 1.3 form of the same answer; ``unknown_ca`` and
+#: ``bad_certificate`` are the TLS 1.2 forms a server sends when it cannot build a chain to a
+#: trust anchor it knows.
+CERTIFICATE_ALERTS: dict[int, str] = {
+    40: "handshake_failure",
+    42: "bad_certificate",
+    43: "unsupported_certificate",
+    44: "certificate_revoked",
+    45: "certificate_expired",
+    46: "certificate_unknown",
+    48: "unknown_ca",
+    49: "access_denied",
+    116: "certificate_required",
+}
+
+#: Alert names for evidence. Only the ones a probe can provoke are listed; anything else is
+#: reported by number, which is honest and stable.
+TLS_ALERTS: dict[int, str] = {
+    0: "close_notify",
+    10: "unexpected_message",
+    20: "bad_record_mac",
+    22: "record_overflow",
+    40: "handshake_failure",
+    42: "bad_certificate",
+    43: "unsupported_certificate",
+    44: "certificate_revoked",
+    45: "certificate_expired",
+    46: "certificate_unknown",
+    47: "illegal_parameter",
+    48: "unknown_ca",
+    49: "access_denied",
+    50: "decode_error",
+    51: "decrypt_error",
+    70: "protocol_version",
+    71: "insufficient_security",
+    80: "internal_error",
+    86: "inappropriate_fallback",
+    90: "user_canceled",
+    109: "missing_extension",
+    112: "unrecognized_name",
+    116: "certificate_required",
+    120: "no_application_protocol",
+}
+
+
+def tls_client_certificate(certificate_der: bytes) -> bytes:
+    """A TLS ``Certificate`` handshake message (with one certificate) as a handshake record.
+
+    ``Certificate ::= struct { ASN.1Cert certificate_list<0..2^24-1> }`` and
+    ``ASN.1Cert ::= opaque<1..2^24-1>``, so the body is two three-byte lengths and the DER.
+    Only the TLS 1.2 form is built: the mutual-TLS observation offers TLS 1.2 (see
+    :func:`tls_client_hello`) precisely so the server's own flight stays readable.
+    """
+    body = struct.pack(">I", len(certificate_der) + 3)[1:]
+    body += struct.pack(">I", len(certificate_der))[1:]
+    body += certificate_der
+    handshake = b"\x0b" + struct.pack(">I", len(body))[1:] + body
+    return b"\x16\x03\x03" + struct.pack(">H", len(handshake)) + handshake
+
+
+def parse_tls_server_flight(data: bytes) -> dict[str, Any]:
+    """Read a plaintext TLS server flight: what the server sent, in order.
+
+    Returns a dictionary rather than a dataclass because it is evidence first and a value
+    object second:
+
+    ``handshake_types``
+        the handshake message names observed, in order.
+    ``certificate_request``
+        ``True`` when the server sent a ``CertificateRequest`` (it is asking for a client
+        certificate), ``False`` when the flight completed without one, ``None`` when the
+        flight was not complete enough to say (an alert, a truncated read, or TLS 1.3, whose
+        flight is encrypted).
+    ``selected_version`` / ``alert`` / ``complete``
+        the negotiated version, the first alert ``{level, description, name}`` if any, and
+        whether ``ServerHelloDone`` closed the flight.
+
+    A record layer that is not TLS at all yields ``{"handshake_types": [], ...}`` rather than
+    an exception: "the port did not speak TLS" is an observation, not a crash.
+    """
+    info: dict[str, Any] = {
+        "handshake_types": [],
+        "certificate_request": None,
+        "selected_version": None,
+        "alert": None,
+        "complete": False,
+        "record_count": 0,
+    }
+    handshake_buffer = b""
+    alerts: list[tuple[int, int]] = []
+    index = 0
+    while index + 5 <= len(data):
+        content_type = data[index]
+        length = int.from_bytes(data[index + 3 : index + 5], "big")
+        body = data[index + 5 : index + 5 + length]
+        if len(body) < length:
+            break  # a truncated record: the rest never arrived
+        index += 5 + length
+        info["record_count"] = int(info["record_count"]) + 1
+        if content_type == 0x16:
+            handshake_buffer += body
+        elif content_type == 0x15 and len(body) >= 2:
+            alerts.append((body[0], body[1]))
+    # Walk the handshake messages that were fully received.
+    offset = 0
+    while offset + 4 <= len(handshake_buffer):
+        message_type = handshake_buffer[offset]
+        message_length = int.from_bytes(handshake_buffer[offset + 1 : offset + 4], "big")
+        end = offset + 4 + message_length
+        if end > len(handshake_buffer):
+            break
+        info["handshake_types"].append(
+            TLS_HANDSHAKE_NAMES.get(message_type, f"type-{message_type}")
+        )
+        if message_type == 2:
+            hello = parse_tls_server_hello(
+                b"\x16\x03\x03"
+                + struct.pack(">H", 4 + message_length)
+                + handshake_buffer[offset:end]
+            )
+            if hello is not None:
+                info["selected_version"] = hello.get("selected_version")
+        offset = end
+    types = info["handshake_types"]
+    if "certificate_request" in types:
+        info["certificate_request"] = True
+    elif "server_hello_done" in types:
+        info["certificate_request"] = False
+    info["complete"] = "server_hello_done" in types
+    if alerts:
+        level, description = alerts[0]
+        info["alert"] = {
+            "level": "fatal" if level == 2 else "warning",
+            "description": description,
+            "name": TLS_ALERTS.get(description, f"alert-{description}"),
+            "certificate_related": description in CERTIFICATE_ALERTS,
+        }
     return info
 
 

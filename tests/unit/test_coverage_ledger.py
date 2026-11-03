@@ -52,6 +52,9 @@ WP08_IDS: frozenset[str] = frozenset(
     }
 )
 
+#: WP-09's three protocol-surface checks (REQ-DET-006/011/012); excluded for the same reason.
+WP09_IDS: frozenset[str] = frozenset({"m2.tls-mutual-auth", "m2.smtp-transport", "m2.http3-probe"})
+
 
 @pytest.fixture(scope="module")
 def registry() -> ModuleRegistry:
@@ -112,7 +115,8 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     ids = {record.id for record in ledger.records}
     mcp = {record.id for record in ledger.records if record.id.startswith("m6.mcp-")}
     wp08 = {record.id for record in ledger.records if record.id in WP08_IDS}
-    assert len(ids - mcp - wp08) == 152
+    wp09 = {record.id for record in ledger.records if record.id in WP09_IDS}
+    assert len(ids - mcp - wp08 - wp09) == 152
     assert len(mcp) == 3
     assert len(wp08) == 9
 

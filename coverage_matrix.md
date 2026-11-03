@@ -6,7 +6,7 @@ the numbered methods in `docs/research/`.
 
 - research corpus: `docs/research`
 - source roots: `src/arachne/modules`
-- references found: **164**
+- references found: **167**
 - coverage: **148/175 (84.6%)**
 
 ## Summary
@@ -73,15 +73,15 @@ the numbered methods in `docs/research/`.
 | 9 | Service banner grabbing | yes | `grpc-reflection`, `service-fingerprint` |
 | 10 | Application protocol fingerprinting | yes | `grpc-reflection`, `service-fingerprint` |
 | 11 | Masscan-scale stateless sweeping | no | — |
-| 12 | HTTP server fingerprinting | yes | `grpc-metadata-leak`, `grpc-plaintext`, `http-fingerprint` |
+| 12 | HTTP server fingerprinting | yes | `grpc-metadata-leak`, `grpc-plaintext`, `http-fingerprint`, `http3-probe` |
 | 13 | HTTP title and favicon fingerprinting | yes | `favicon-hash` |
-| 14 | TLS configuration deep scan | yes | `tls-deep-scan` |
+| 14 | TLS configuration deep scan | yes | `tls-deep-scan`, `tls-mutual-auth` |
 | 15 | SNMP community enumeration | yes | `snmp-enum` |
 | 16 | SMB share and auth enumeration | yes | `smb-auth`, `smb-enum` |
 | 17 | NFS export enumeration | yes | `nfs-enum` |
 | 18 | LDAP directory enumeration | yes | `ldap-enum` |
 | 19 | Kerberos user enumeration | yes | `kerberos-enum` |
-| 20 | SMTP banner and relay probing | yes | `smtp-enum` |
+| 20 | SMTP banner and relay probing | yes | `smtp-enum`, `smtp-transport` |
 | 21 | Anonymous FTP access check | yes | `ftp-anonymous` |
 | 22 | Database service probing | yes | `db-service-probe` |
 | 23 | Database default-configuration probing | yes | `db-service-probe` |

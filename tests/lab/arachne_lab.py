@@ -61,7 +61,7 @@ __all__ = [
 
 #: Bumped when the fixture's service set changes: the S29 additions (S7, DNP3 and the three
 #: gRPC services) are recorded here so a stale cached fixture is spotted rather than trusted.
-LAB_VERSION = "2.0"
+LAB_VERSION = "2.1"
 
 CERT_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "lab"
 
@@ -288,6 +288,53 @@ def _tls_handler(context: ssl.SSLContext | None = None) -> Handler:
     return handler
 
 
+def _mtls_context(*, require: bool) -> ssl.SSLContext:
+    """A TLS server that asks for a client certificate — and optionally enforces it.
+
+    ``require=True`` is the correctly configured decoy: ``CERT_REQUIRED`` makes the handshake
+    fail when the client presents nothing, so the mutual-TLS check must produce no finding.
+    ``require=False`` is the planted weakness: ``CERT_OPTIONAL`` still sends a
+    ``CertificateRequest`` but completes the handshake with an unauthenticated client, which
+    is exactly the "advertises mTLS it does not enforce" condition (REQ-DET-011).
+
+    The same self-signed ``valid.crt`` is the trust anchor, so the server could validate a
+    real client — it simply is never given one it trusts.
+    """
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(CERT_DIR / "valid.crt", CERT_DIR / "valid.key")
+    context.load_verify_locations(cafile=str(CERT_DIR / "valid.crt"))
+    context.verify_mode = ssl.CERT_REQUIRED if require else ssl.CERT_OPTIONAL
+    # TLS 1.2 only: TLS 1.3 encrypts the server's CertificateRequest, so a 1.2 flight is what
+    # makes "asked for a certificate" observable at all. Pinning the fixture to 1.2 keeps the
+    # decoy and the planted weakness distinguishable by the one property under test.
+    with _suppress_deprecation():
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+        context.maximum_version = ssl.TLSVersion.TLSv1_2
+    return context
+
+
+def _mtls_handler(*, require: bool) -> Handler:
+    """Wrap the connection; never serve an application-layer byte.
+
+    The mutual-TLS probe sends no HTTP request, so the fixture must not wait for one: it
+    completes (or fails) the handshake and closes.
+    """
+
+    def handler(connection: socket.socket) -> None:
+        context = _mtls_context(require=require)
+        try:
+            with _suppress_deprecation():
+                wrapped = context.wrap_socket(connection, server_side=True)
+        except (ssl.SSLError, OSError):
+            return
+        with contextlib.suppress(OSError, ssl.SSLError):
+            wrapped.settimeout(1.0)
+            wrapped.recv(1024)
+            wrapped.close()
+
+    return handler
+
+
 def _mysql(connection: socket.socket) -> None:
     """A MySQL 5.5-era initial handshake packet."""
     capabilities_low = 0xFFFF
@@ -363,6 +410,77 @@ def _smtp(connection: socket.socket) -> None:
             return
         else:
             connection.sendall(b"502 5.5.2 Error: command not recognized\r\n")
+
+
+#: The AUTH mechanisms the open-relay fixture advertises *before* TLS (REQ-DET-012).
+LAB_SMTP_PLAINTEXT_AUTH = "PLAIN LOGIN"
+
+
+def _smtp_transport(connection: socket.socket, *, hardened: bool) -> None:
+    """A mail server that either enforces STARTTLS and refuses relay, or does neither.
+
+    ``hardened=True`` is the decoy: STARTTLS is advertised and required (every submission
+    command answers 530 until TLS), AUTH is not offered before encryption, and RCPT for an
+    external recipient is refused with 554. ``hardened=False`` is the planted weakness:
+    STARTTLS is advertised but not required, AUTH PLAIN/LOGIN is offered in the clear, and
+    RCPT for an external recipient is accepted — an open relay.
+
+    The handler answers **every** command in a read buffer, not just the first: the transport
+    check pipelines ``MAIL FROM``/``RCPT TO``/``RSET``/``QUIT`` in one write, which is what a
+    real SMTP client does under PIPELINING.
+    """
+    connection.sendall(b"220 lab.arachne.test ESMTP Postfix 3.4.14\r\n")
+    buffer = b""
+    for _ in range(16):
+        chunk = _read(connection, 2048)
+        if not chunk:
+            return
+        buffer += chunk
+        while b"\r\n" in buffer:
+            line, buffer = buffer.split(b"\r\n", 1)
+            command = line.strip().upper()
+            if not command:
+                continue
+            if command.startswith(b"EHLO"):
+                extension = (
+                    b"250-SIZE 10240000\r\n250-STARTTLS\r\n"
+                    if hardened
+                    else b"250-SIZE 10240000\r\n250-STARTTLS\r\n"
+                    b"250-AUTH " + LAB_SMTP_PLAINTEXT_AUTH.encode() + b"\r\n"
+                )
+                connection.sendall(b"250-lab.arachne.test\r\n" + extension + b"250 HELP\r\n")
+            elif command.startswith(b"STARTTLS"):
+                # The probe never upgrades; answer honestly and stop the plaintext session.
+                connection.sendall(b"454 4.7.0 TLS not available\r\n")
+            elif command.startswith(b"AUTH"):
+                connection.sendall(
+                    b"530 5.7.0 Must issue a STARTTLS command first\r\n"
+                    if hardened
+                    else b"235 2.7.0 Authentication successful\r\n"
+                )
+            elif command.startswith(b"MAIL FROM"):
+                connection.sendall(
+                    b"530 5.7.0 Must issue a STARTTLS command first\r\n"
+                    if hardened
+                    else b"250 2.1.0 Ok\r\n"
+                )
+            elif command.startswith(b"RCPT TO"):
+                connection.sendall(
+                    b"554 5.7.1 <recipient>: Relay access denied\r\n"
+                    if hardened
+                    else b"250 2.1.5 Ok\r\n"
+                )
+            elif command.startswith(b"DATA"):
+                # Never reached: the probe does not issue DATA. Refusing it keeps the fixture
+                # honest about the line the probe must not cross.
+                connection.sendall(b"554 5.5.1 Error: no valid recipients\r\n")
+            elif command.startswith(b"RSET"):
+                connection.sendall(b"250 2.0.0 Ok\r\n")
+            elif command.startswith(b"QUIT"):
+                connection.sendall(b"221 2.0.0 Bye\r\n")
+                return
+            else:
+                connection.sendall(b"502 5.5.2 Error: command not recognized\r\n")
 
 
 #: Names the lab's DNS server resolves (the rest of the dictionary gets NXDOMAIN).
@@ -860,6 +978,14 @@ def start_m2_lab(*, include_udp: bool = True) -> LabFixture:
             "grpc-tls-only",
             lambda connection: grpc_lab.handle_connection(connection, grpc_lab.TLS_ONLY),
         ),
+        # WP-09 (REQ-DET-011): the mutual-TLS pair. One enforces client certificates (the
+        # decoy: no finding), one advertises and does not enforce them (the finding).
+        ("tls-mtls-required", _mtls_handler(require=True)),
+        ("tls-mtls-optional", _mtls_handler(require=False)),
+        # WP-09 (REQ-DET-012): the SMTP transport pair. One enforces STARTTLS and refuses
+        # relay (the decoy); one advertises STARTTLS, offers AUTH in the clear and relays.
+        ("smtp-hardened", lambda connection: _smtp_transport(connection, hardened=True)),
+        ("smtp-open-relay", lambda connection: _smtp_transport(connection, hardened=False)),
     )
     for name, handler in tcp_services:
         server = _TcpServer(handler, name=name)
