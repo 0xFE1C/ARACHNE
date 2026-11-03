@@ -120,6 +120,7 @@ class SqlScanStateStore(ScanStateStore):
         status: ScanStatus | None = None,
         stats: dict[str, Any] | None = None,
         plan: dict[str, Any] | None = None,
+        residue_attestation: Mapping[str, Any] | None = None,
         mark_started: bool = False,
         mark_finished: bool = False,
     ) -> ScanRecord:
@@ -131,6 +132,12 @@ class SqlScanStateStore(ScanStateStore):
                 scan.stats_json = dict(stats)
             if plan is not None:
                 scan.plan_json = dict(plan)
+            if residue_attestation is not None:
+                # WP-14 (REQ-PROOF-017): the attestation and the digest the audit chain
+                # links are written together, in one transaction, so a stored attestation
+                # always has the hash the chain recorded for it.
+                scan.residue_attestation = dict(residue_attestation)
+                scan.residue_hash = str(residue_attestation.get("hash") or "") or None
             if mark_started and scan.started_at is None:
                 scan.started_at = datetime.now(UTC)
             if mark_finished:
@@ -232,6 +239,10 @@ def _to_record(scan: Scan, steps: tuple[StepState, ...]) -> ScanRecord:
         steps=steps,
         project_id=scan.project_id,
         request_json=dict(scan.request_json) if scan.request_json is not None else None,
+        residue_attestation=(
+            dict(scan.residue_attestation) if scan.residue_attestation is not None else None
+        ),
+        residue_hash=scan.residue_hash,
     )
 
 

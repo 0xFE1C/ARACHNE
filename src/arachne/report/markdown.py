@@ -329,6 +329,33 @@ def _finding_block(index: int, finding: ReportFinding, report: ReportData) -> li
     return lines
 
 
+def _residue_warning(report: ReportData) -> list[str]:
+    """The residue warning, right under the executive summary (WP-14, REQ-PROOF-017).
+
+    Present only when the scan recorded an attestation **and** that attestation is not
+    clean. A scan with no attestation renders nothing here — the state-changes table in the
+    appendix says "no state change was made" on its own evidence, and inventing a clean
+    verdict for a scan that never produced one is the mistake this requirement exists to
+    prevent. The signed statement is quoted verbatim: it is the artefact's own text, and
+    paraphrasing a signed claim would make the report disagree with what was signed.
+    """
+    attestation = report.residue_attestation
+    if attestation is None or attestation.clean:
+        return []
+    signature = _t(
+        "report.residue.signed" if attestation.signed else "report.residue.unsigned", report
+    )
+    digest = (attestation.hash or "")[:16]
+    lines = [
+        "",
+        f"> **{_t('report.residue.warning', report)}** — {_inline(attestation.statement)}",
+        f"> {_t('report.residue.attestation', report)}: {_inline(digest)}... ({signature})",
+    ]
+    for instruction in attestation.repair_instructions:
+        lines.append(f"> - {_inline(instruction)}")
+    return lines
+
+
 def _severity_section(
     number: int, severity: str, findings: Sequence[ReportFinding], report: ReportData
 ) -> list[str]:
@@ -1076,6 +1103,7 @@ def render_markdown(report: ReportData) -> str:
     else:
         lines.append("Authorization: no attestation recorded for this scan")
     lines.extend(["", f"## 1. {_t('report.section.executive_summary', report)}", ""])
+    lines.extend(_residue_warning(report))
     summary = report.executive_summary
     for paragraph in summary.paragraphs:
         lines.extend([_inline(paragraph), ""])

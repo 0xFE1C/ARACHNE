@@ -48,10 +48,13 @@ from arachne.core.integrity import (
     GENESIS_HASH,
     Anchor,
     AuditLink,
+    EvidenceHashRecord,
     IntegrityIssue,
     IntegrityReport,
     audit_payload,
     chain_digest,
+    evidence_hash_records,
+    payload_digest,
     reconstruct_audit_payload,
     seal_manifest,
     sign_anchor,
@@ -422,6 +425,10 @@ class IntegrityVerifier:
         ]
         if self.signer is not None or self.require_signatures:
             reports.append(self._verify_row_signatures(scan_id=scan_id, limit=row_limit))
+        # WP-14 (REQ-PROOF-018): the chain's own record of each blob's content hash. Runs
+        # whether or not a signer is configured — the chain detects the edit either way,
+        # which is the point of recording the hash there rather than only on the row.
+        reports.append(self._verify_evidence_hashes(links=links, scan_id=scan_id))
         reports.append(self._verify_seals(scan_id=scan_id))
         anchors = self.anchors()
         if anchors:
@@ -498,6 +505,91 @@ class IntegrityVerifier:
             if issue is not None:
                 issues.append(issue)
         return IntegrityReport(checked=checked, issues=tuple(issues))
+
+    def _verify_evidence_hashes(
+        self, *, links: Sequence[AuditLink], scan_id: int | None
+    ) -> IntegrityReport:
+        """Compare every recorded evidence content hash with the stored payload.
+
+        ``evidence.captured`` records the digest of the stored (redacted) payload, and
+        ``pii.remasked`` supersedes it when retention re-masks an older blob, so the map
+        this compares against is the chain's latest statement about each blob.
+
+        A missing row is classified before it is an issue. Retention deletes evidence on
+        purpose — a pruned scan takes its findings and evidence with it — and a verifier that
+        called that tampering would cry wolf on every pruning run (the same distinction
+        :meth:`_verify_seals` makes). So a blob whose *scan* is gone is a note; a blob whose
+        *finding* is gone while its scan survives is a note too (the findings policy cascaded
+        it); a blob whose finding is still there is a deletion, and a blob whose payload
+        digest no longer matches the recorded one is ``evidence.mismatch``.
+        """
+        recorded = evidence_hash_records(links)
+        if scan_id is not None:
+            recorded = {
+                key: value for key, value in recorded.items() if value.scan_id in (None, scan_id)
+            }
+        if not recorded:
+            return IntegrityReport(checked={"evidence_hashes": 0})
+        issues: list[IntegrityIssue] = []
+        notes: list[str] = []
+        checked = 0
+        with self._session_factory() as session:
+            for evidence_id, record in sorted(recorded.items()):
+                row = session.get(Evidence, evidence_id)
+                if row is None:
+                    note = self._explain_missing_evidence(session, record)
+                    if note is not None:
+                        notes.append(note)
+                        continue
+                    issues.append(
+                        IntegrityIssue(
+                            check="evidence",
+                            kind="deleted",
+                            subject=f"evidence:{evidence_id}",
+                            detail=(
+                                f"the chain recorded content hash"
+                                f" {record.digest[:16]}... at seq {record.seq} "
+                                f"({record.action}) but the row is gone from a scan that "
+                                f"still exists"
+                            ),
+                        )
+                    )
+                    continue
+                checked += 1
+                stored = payload_digest(dict(row.payload_json or {}))
+                if stored == record.digest:
+                    continue
+                issues.append(
+                    IntegrityIssue(
+                        check="evidence",
+                        kind="mismatch",
+                        subject=f"evidence:{evidence_id}",
+                        detail=(
+                            f"recorded at seq {record.seq} ({record.action}) as"
+                            f" {record.digest[:16]}..., the stored payload now hashes to"
+                            f" {stored[:16]}... — the blob was edited after capture"
+                        ),
+                    )
+                )
+        return IntegrityReport(
+            checked={"evidence_hashes": checked}, issues=tuple(issues), notes=tuple(notes)
+        )
+
+    def _explain_missing_evidence(self, session: Session, record: EvidenceHashRecord) -> str | None:
+        """Why a recorded blob is absent, when the answer is "retention" (a note, not an issue).
+
+        The only absence a verifier can attribute without guessing is a *pruned scan*: the
+        policy removed the parent, and the evidence went with it. A blob missing under a scan
+        that still exists is reported as a deletion — the same call :meth:`_verify_seals`
+        makes for a sealed row, and deliberately so: the two must not disagree about whether
+        an absent row is an event.
+        """
+        if record.scan_id is None or session.get(Scan, record.scan_id) is None:
+            return (
+                f"evidence {record.evidence_id} was recorded but its scan was pruned "
+                "(retention); its blob is gone by policy, not by tampering"
+            )
+        return None
 
     def _verify_seals(self, *, scan_id: int | None) -> IntegrityReport:
         issues: list[IntegrityIssue] = []

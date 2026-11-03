@@ -241,6 +241,8 @@ export interface ScanDetail {
   steps?: Array<StepOut> | null;
   // generic JSON: free-form object with no value schema
   assets?: Array<unknown>;
+  // generic JSON: free-form object with no value schema
+  residue_attestation?: unknown | null;
 }
 
 /** One row of ``GET /scans`` — the dashboard's data. */

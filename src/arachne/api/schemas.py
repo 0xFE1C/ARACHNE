@@ -144,6 +144,10 @@ class ScanDetail(ScanSummary):
     stats: dict[str, Any] = Field(default_factory=dict)
     steps: list[StepOut] = Field(default_factory=list)
     assets: list[dict[str, Any]] = Field(default_factory=list)
+    #: The scan's residue attestation (WP-14, REQ-PROOF-017), or ``None`` when the scan
+    #: recorded none. Optional and additive: the UI's residue section reads it and says
+    #: "no attestation recorded" rather than "clean" when it is absent.
+    residue_attestation: dict[str, Any] | None = None
 
 
 class FindingOut(BaseModel):

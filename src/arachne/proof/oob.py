@@ -32,18 +32,40 @@ Two run modes share this one class:
 
 from __future__ import annotations
 
+import hmac
 import secrets
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Final
 
 from arachne.core.audit import AuditAction, Auditor, AuditOutcome
-from arachne.core.proof import CallbackToken, parse_callback_token
+from arachne.core.proof import (
+    CallbackToken,
+    parse_callback_token,
+    per_scan_secret,
+    token_mac,
+)
 from arachne.core.redaction import redact_mapping, redact_text
+from arachne.core.signing import DeploymentSigner
 
-__all__ = ["CallbackService", "OobHit", "OobProbe"]
+__all__ = [
+    "MAX_HITS_PER_WINDOW",
+    "MAX_TOKENS_PER_SCAN",
+    "REPLAY_WINDOW_SECONDS",
+    "CallbackService",
+    "OobHit",
+    "OobProbe",
+]
+
+#: How long after its first use a token may still be *recognised* as a replay. Inside the
+#: window a replayed callback is refused and counted as a replay (the original verdict
+#: stands); outside it the token is dead and the callback is refused as expired. The window
+#: is bounded on purpose: it is the interval in which "the same callback arrived twice" is a
+#: network artifact rather than an attempt to resurrect a spent proof.
+REPLAY_WINDOW_SECONDS: Final = 300.0
 
 #: Body text kept per hit. Enough to identify the interaction (a marker, a token echo);
 #: nowhere near enough to matter as exfiltration (REQ-PROOF-011: no bulk data).
@@ -127,6 +149,10 @@ class OobProbe:
     issued_at: datetime
     consumed: bool = False
     hit: OobHit | None = None
+    #: How many times a callback arrived after the token was already spent (WP-14,
+    #: REQ-PROOF-019). Counted so "a replay happened" is a number an operator can alert on,
+    #: while the probe's verdict stays exactly what the first callback established.
+    replays: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -136,6 +162,7 @@ class OobProbe:
             "nonce": self.nonce,
             "issued_at": self.issued_at.isoformat(),
             "consumed": self.consumed,
+            "replays": self.replays,
             "hit": self.hit.to_dict() if self.hit is not None else None,
         }
 
@@ -153,15 +180,74 @@ class CallbackService:
         auditor: Auditor | None = None,
         hit_limiter: _HitRateLimiter | None = None,
         max_tokens_per_scan: int = MAX_TOKENS_PER_SCAN,
+        signer: DeploymentSigner | None = None,
+        scan_gate: Callable[[str], str | None] | None = None,
+        replay_window_s: float = REPLAY_WINDOW_SECONDS,
     ) -> None:
         self._auditor = auditor
         self._hit_limiter = hit_limiter or _HitRateLimiter()
         self._max_tokens_per_scan = max_tokens_per_scan
+        #: The deployment key the per-scan callback secrets are derived from
+        #: (REQ-PROOF-019). ``None`` means this deployment mints unauthenticated tokens —
+        #: the nonce is then the only authenticator, exactly as it was before this package.
+        self._signer = signer
+        #: Asked whether a scan may still receive a callback: it returns a refusal reason or
+        #: ``None`` for "active". The receiver asks it before anything else, so a scan that
+        #: is gone, not running, or whose attestation has expired is refused *and audited*
+        #: rather than matched.
+        self._scan_gate = scan_gate
+        self.replay_window_s = float(replay_window_s)
         self._lock = threading.Lock()
         self._probes: dict[str, OobProbe] = {}
         self._issued_per_scan: dict[str, int] = {}
         self._hits: dict[str, OobHit] = {}
         self._consumed: set[str] = set()
+        #: When each token was consumed (monotonic), for the bounded replay window.
+        self._consumed_at: dict[str, float] = {}
+        #: Per-scan secrets minted in-process, for a deployment with no deployment key: an
+        #: in-process service still authenticates its own tokens, it just cannot authenticate
+        #: another process's.
+        self._secrets: dict[str, str] = {}
+
+    # ------------------------------------------------------------------ authentication
+    def secret_for(self, scan_id: str | int) -> str | None:
+        """The per-scan secret this receiver can authenticate ``scan_id`` with.
+
+        Registered secrets (this process minted a token for the scan) win; otherwise the
+        secret is derived from the deployment key, so a *separate* callback-server process
+        authenticates the scanner's tokens without ever being told them. ``None`` means this
+        receiver has no way to authenticate that scan at all.
+        """
+        label = str(scan_id)
+        with self._lock:
+            registered = self._secrets.get(label)
+        if registered is not None:
+            return registered
+        return per_scan_secret(self._signer, label)
+
+    def register_scan_secret(self, scan_id: str | int, secret: str) -> None:
+        """Pin one scan's secret (a caller that derived it out of band can hand it over)."""
+        with self._lock:
+            self._secrets[str(scan_id)] = secret
+
+    def _authenticate(self, token: CallbackToken) -> str | None:
+        """``None`` when the token is authentic, else the refusal reason (REQ-PROOF-019)."""
+        secret = self.secret_for(token.scan_id)
+        if secret is None:
+            if token.mac is not None:
+                return (
+                    f"callback for scan {token.scan_id} carries a per-scan secret this "
+                    "receiver cannot verify (no deployment key and no registration)"
+                )
+            return None
+        if token.mac is None:
+            return (
+                f"callback for scan {token.scan_id} carries no per-scan secret, but this "
+                "receiver can derive one for that scan: the token is not authentic"
+            )
+        if not hmac.compare_digest(token.mac, token_mac(secret, token.base)):
+            return f"callback for scan {token.scan_id} presented the wrong scan secret"
+        return None
 
     # ------------------------------------------------------------------ issuance
     def issue(
@@ -175,7 +261,17 @@ class CallbackService:
         a payload-shaped "nonce" into a token, and a purple run's artifacts share one
         readable tag.
         """
-        token = CallbackToken(scan_id, check_id, nonce or secrets.token_hex(12))
+        generated = nonce or secrets.token_hex(12)
+        secret = self.secret_for(scan_id)
+        if secret is None:
+            # No deployment key: mint a per-scan secret for *this* process, so an in-process
+            # deployment still authenticates its own callbacks. What a keyless deployment
+            # cannot authenticate is another process's token, and the receiver says so
+            # instead of accepting it.
+            with self._lock:
+                secret = self._secrets.setdefault(str(scan_id), secrets.token_hex(16))
+        base = CallbackToken(scan_id, check_id, generated).base
+        token = CallbackToken(scan_id, check_id, generated, token_mac(secret, base))
         with self._lock:
             issued = self._issued_per_scan.get(token.scan_id, 0)
             if issued >= self._max_tokens_per_scan:
@@ -214,20 +310,44 @@ class CallbackService:
     ) -> OobHit | None:
         """Record an inbound interaction for ``token_value``; ``None`` when refused.
 
-        The token shape is validated (anything else is refused and audited) — the 96-bit
-        nonce is the authenticator, so no pre-registration is needed and the standalone
-        server stays stateless across checks. The captured payload is redacted *at
-        capture* like every other evidence path (REQ-PROOF-012), and ingestion is
-        rate-limited so the target cannot flood the ledger.
+        Four gates, in order, each of which refuses *and audits* (REQ-PROOF-019):
+
+        1. **Shape.** Anything that is not an ``arachne-…`` token is refused.
+        2. **The scan.** ``scan_gate`` is asked whether this scan may still receive a
+           callback at all — an unknown scan, one that is not active, or one whose
+           attestation has expired is refused here, before anything is stored.
+        3. **The per-scan secret.** When this receiver can obtain one for the scan, the token
+           must carry a MAC that verifies against it; a missing or wrong authenticator is
+           refused as a forgery. A deployment with no key cannot authenticate at all, and
+           then the 96-bit nonce is the authenticator — as it was before this package.
+        4. **Single use.** A callback that arrives after the token was spent is refused and
+           counted as a replay inside the bounded replay window, and refused as expired
+           outside it. Either way the first callback's verdict stands.
+
+        The captured payload is redacted *at capture* like every other evidence path
+        (REQ-PROOF-012), and ingestion is rate-limited so a target cannot flood the ledger.
         """
         try:
-            parse_callback_token(token_value)
+            token = parse_callback_token(token_value)
         except Exception:
             self._audit(
                 AuditAction.PROOF_OOB_HIT,
                 outcome=AuditOutcome.BLOCKED,
                 token=token_value[:120],
                 reason="refused: not a well-formed arachne callback token",
+            )
+            return None
+        # REQ-PROOF-019, in the order that keeps the decision cheap and complete: is the
+        # scan still allowed to receive a callback at all, is the token authentic, and has
+        # it already been spent?
+        refusal = self._gate_reason(token)
+        if refusal is not None:
+            self._audit(
+                AuditAction.PROOF_OOB_REFUSED,
+                outcome=AuditOutcome.BLOCKED,
+                scan_id=token.scan_id,
+                token=token.value[:160],
+                reason=refusal,
             )
             return None
         if not self._hit_limiter.allow():
@@ -253,23 +373,48 @@ class CallbackService:
         with self._lock:
             if token_value in self._consumed:
                 replayed = True
+                age = time.monotonic() - self._consumed_at.get(token_value, 0.0)
+                probe = self._probes.get(token_value)
+                if probe is not None:
+                    self._probes[token_value] = replace(probe, replays=probe.replays + 1)
             else:
                 replayed = False
+                age = 0.0
                 if len(self._hits) < MAX_STORED_HITS or token_value in self._hits:
                     self._hits[token_value] = hit
                 probe = self._probes.get(token_value)
                 if probe is not None:
                     self._probes[token_value] = replace(probe, hit=hit)
         if replayed:
+            within_window = age <= self.replay_window_s
             self._audit(
-                AuditAction.PROOF_OOB_REPLAY,
+                AuditAction.PROOF_OOB_REPLAY if within_window else AuditAction.PROOF_OOB_REFUSED,
                 outcome=AuditOutcome.BLOCKED,
+                scan_id=token.scan_id,
                 token=token_value,
-                reason="hit arrived after the token was consumed (single-use)",
+                reason=(
+                    "hit arrived after the token was consumed (single-use; replay counted, "
+                    "the first verdict stands)"
+                    if within_window
+                    else "hit arrived after the token's replay window closed (expired)"
+                ),
+                meta={"replay_window_s": self.replay_window_s, "age_s": round(age, 3)},
             )
             return None
         self._audit(AuditAction.PROOF_OOB_HIT, token=token_value, meta={"method": method})
         return hit
+
+    # ------------------------------------------------------------------ admission
+    def _gate_reason(self, token: CallbackToken) -> str | None:
+        """``None`` when the callback may proceed, else why it is refused (REQ-PROOF-019)."""
+        if self._scan_gate is not None:
+            try:
+                reason = self._scan_gate(token.scan_id)
+            except Exception as exc:  # a gate that cannot answer refuses; it never allows
+                reason = f"the scan gate could not decide: {type(exc).__name__}"
+            if reason:
+                return f"refused: {reason}"
+        return self._authenticate(token)
 
     # ------------------------------------------------------------------ matching
     def consume(self, token_value: str) -> OobHit | None:
@@ -283,6 +428,7 @@ class CallbackService:
             else:
                 spent = False
                 self._consumed.add(token_value)
+                self._consumed_at[token_value] = time.monotonic()
                 probe = self._probes.get(token_value)
                 if probe is not None:
                     self._probes[token_value] = replace(probe, consumed=True)

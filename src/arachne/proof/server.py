@@ -24,15 +24,17 @@ from __future__ import annotations
 
 import json
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
 from arachne.core.audit import Auditor, build_auditor
+from arachne.core.signing import DeploymentSigner
 from arachne.proof.oob import CallbackService
 
-__all__ = ["CallbackServerHandle", "start_callback_server"]
+__all__ = ["CallbackServerHandle", "scan_gate_for_services", "start_callback_server"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,9 +67,17 @@ def start_callback_server(
     port: int = 0,
     auditor: Auditor | None = None,
     service: CallbackService | None = None,
+    signer: DeploymentSigner | None = None,
+    scan_gate: Callable[[str], str | None] | None = None,
 ) -> CallbackServerHandle:
-    """Bind and start the facade; ``port=0`` picks an ephemeral port (tests)."""
-    effective = service or CallbackService(auditor=auditor)
+    """Bind and start the facade; ``port=0`` picks an ephemeral port (tests).
+
+    ``signer`` is the deployment key the per-scan callback secrets are derived from
+    (WP-14, REQ-PROOF-019): the scanner mints the same secret for a scan, so this process
+    authenticates its tokens without ever being told them. ``scan_gate`` answers "may this
+    scan still receive a callback?" — see :func:`scan_gate_for_services`.
+    """
+    effective = service or CallbackService(auditor=auditor, signer=signer, scan_gate=scan_gate)
     handler = _handler_for(effective)
     # The bind address is the operator's explicit choice (tests bind loopback).
     server = ThreadingHTTPServer((host, port), handler)
@@ -164,19 +174,95 @@ def _handler_for(service: CallbackService) -> type[BaseHTTPRequestHandler]:
     return _CallbackHandler
 
 
+def scan_gate_for_services(services: Any) -> Callable[[str], str | None]:
+    """A gate that refuses callbacks for scans this deployment will not accept them for.
+
+    REQ-PROOF-019 names three: a scan that is not **active** (unknown here, or not running),
+    and a scan whose **attestation has expired**. The gate reads the scan row — never a
+    target — so it adds no authority to the callback path, only a refusal.
+
+    A database that cannot be read answers ``None`` rather than guessing: the gate is one of
+    several controls on the callback path, and turning a transient store error into a
+    blanket refusal would take the L2 half of the ladder down with it. The refusal that
+    *matters* — a forged or spent token, an expired attestation that is readable — is still
+    enforced.
+    """
+    from datetime import UTC, datetime
+
+    from arachne.core.lifecycle import ScanStatus
+
+    now = datetime.now(UTC)
+
+    def gate(scan_id: str) -> str | None:
+        try:
+            identifier = int(scan_id)
+        except ValueError:
+            return f"scan {scan_id!r} is not a scan id of this deployment"
+        try:
+            record = services.store.get_scan(identifier)
+        except Exception:  # pragma: no cover - a store outage, not an authorization decision
+            return None
+        if record is None:
+            return f"scan {identifier} is not known to this deployment"
+        if record.status not in (ScanStatus.RUNNING, ScanStatus.PENDING):
+            return f"scan {identifier} is {record.status.value}, not active"
+        attestation = (record.plan or {}).get("attestation")
+        if isinstance(attestation, dict):
+            expires = attestation.get("expires_at")
+            if isinstance(expires, str) and expires:
+                try:
+                    deadline = datetime.fromisoformat(expires)
+                except ValueError:
+                    return f"scan {identifier} carries an unreadable attestation expiry"
+                if deadline.tzinfo is None:
+                    deadline = deadline.replace(tzinfo=UTC)
+                if deadline < now:
+                    return f"scan {identifier} attestation expired at {expires}"
+        return None
+
+    return gate
+
+
 def serve_forever(
     *,
     host: str,
     port: int,
     audit_log: str | None = None,
+    scan_gate: bool = True,
 ) -> int:
-    """The CLI body: run the facade in the foreground until interrupted."""
+    """The CLI body: run the facade in the foreground until interrupted.
+
+    The deployment's own key and store are wired in: the key so the per-scan callback
+    secrets can be derived (REQ-PROOF-019), and the store so a callback for a scan that is
+    not active, or whose attestation has expired, is refused and audited. ``scan_gate=False``
+    runs the facade purely as a listener (no database), which is what a deployment fronting
+    ARACHNE with its own proxy may want.
+    """
+    from arachne.core.config import get_settings
+    from arachne.core.signing import build_signer
+
     auditor = None
     if audit_log:
         from arachne.core.audit import JsonlAuditSink
 
         auditor = build_auditor(sinks=[JsonlAuditSink(audit_log)], actor="callback-server")
-    handle = start_callback_server(host=host, port=port, auditor=auditor)
+    signer = build_signer(get_settings())
+    gate: Callable[[str], str | None] | None = None
+    if scan_gate:
+        from arachne.data.services import build_services
+
+        try:
+            services = build_services(get_settings())
+        except Exception as exc:
+            print(  # noqa: T201 - the CLI's one line of operator-facing output
+                f"arachne callback-server: no scan gate (database unavailable: "
+                f"{type(exc).__name__}); callbacks are not refused for an expired scan"
+            )
+        else:
+            gate = scan_gate_for_services(services)
+    handle = start_callback_server(
+        host=host, port=port, auditor=auditor, signer=signer, scan_gate=gate
+    )
     print(  # noqa: T201 - the CLI's one line of operator-facing output
         f"arachne callback-server listening on {handle.base_url} "
         f"(hits: POST/GET /<token>, match: GET /hits?token=…; the service never dials out)"

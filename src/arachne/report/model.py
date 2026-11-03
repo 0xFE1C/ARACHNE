@@ -52,6 +52,8 @@ __all__ = [
     "ReportDiff",
     "ReportEvidence",
     "ReportFinding",
+    "ResidueAttestation",
+    "ResidueEntry",
     "ScopeMethodology",
     "Score",
     "SeverityCounts",
@@ -105,7 +107,13 @@ __all__ = [
 #: version, plus the re-verification chain (``verification_history``). A finding constructed
 #: without one is downgraded to ``info`` and marked ``unverified`` rather than reported, so
 #: an unproven claim can never be dressed as a proven one.
-REPORT_SCHEMA_VERSION = "1.12"
+#: 1.13 (WP-14) adds the optional top-level ``residue_attestation`` block: the scan's
+#: signed (or explicitly unsigned) statement of every state change it authorized — asset,
+#: action, before-value hash, restore outcome, timestamp — with the verdict ``clean`` or
+#: the unrestored list and its repair instructions (area PROOF, REQ-PROOF-017). Optional,
+#: so a report built without one (a pre-WP-14 scan) keeps its 1.12 shape byte for byte,
+#: and a missing attestation is rendered as "not recorded", never as clean.
+REPORT_SCHEMA_VERSION = "1.13"
 
 #: Why a finding carries no verification record (WP-13). It is a *reason*, so a
 #: reader of the report sees why the finding is unverified rather than a blank.
@@ -322,6 +330,49 @@ class StateChangeEntry(BaseModel):
     restore_verified: bool = False
     note: str | None = None
     error: str | None = None
+
+
+class ResidueEntry(BaseModel):
+    """One state change as the residue attestation states it (WP-14, REQ-PROOF-017).
+
+    The before-value is a **hash**, never the value: the attestation is an artefact meant to
+    be handed to a third party, and a target's prior row content is not theirs to read.
+    """
+
+    model_config = _MODEL
+
+    asset: str
+    action: str
+    check: str = ""
+    change_id: str = ""
+    before_value_hash: str = ""
+    #: ``restored`` | ``restored-unverified`` | ``not-restored`` | ``error``.
+    restore_outcome: str = ""
+    timestamp: str | None = None
+
+
+class ResidueAttestation(BaseModel):
+    """The scan's signed (or explicitly unsigned) residue attestation (WP-14).
+
+    ``clean`` is the verdict the report and the scan state key on: it is false whenever
+    ``residue`` is non-zero, and the renderers show a warning then. There is no ``None``
+    reading that means "clean" — a report built without an attestation says so rather than
+    implying the scan left nothing behind (:func:`arachne.proof.residue.attestation_is_clean`).
+    """
+
+    model_config = _MODEL
+
+    clean: bool = False
+    residue: int = 0
+    restored: int = 0
+    statement: str = ""
+    #: False on a deployment with no integrity key. Recorded rather than inferred: an
+    #: unsigned attestation says so in its own text (REQ-PROOF-017).
+    signed: bool = False
+    #: The digest the audit chain links (``proof.residue_attested``).
+    hash: str | None = None
+    changes: tuple[ResidueEntry, ...] = ()
+    repair_instructions: tuple[str, ...] = ()
 
 
 class ReportFinding(BaseModel):
@@ -1018,6 +1069,10 @@ class ReportData(BaseModel):
     #: Every state change an L4 proof made (S15, REQ-PROOF-013): what/where/before/after/
     #: restored. Empty when nothing changed — which is the normal case.
     state_changes: tuple[StateChangeEntry, ...] = ()
+    #: The scan's residue attestation (WP-14, REQ-PROOF-017). ``None`` for a scan that
+    #: recorded none (a pre-WP-14 row): the renderers then say "no residue attestation
+    #: recorded" instead of implying the scan was clean.
+    residue_attestation: ResidueAttestation | None = None
     #: Threat-intel freshness (S18, REQ-INTEL-001); ``None`` when the scan recorded none
     #: (an old scan, a deployment with no feed store). The renderers omit the section then.
     intel: IntelFreshness | None = None

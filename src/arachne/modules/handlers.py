@@ -817,6 +817,9 @@ async def run_checks(
                     http=ctx.http,
                     # S24: a purple run's payloads all carry the run's visible nonce.
                     run_nonce=access.nonce if access is not None else None,
+                    # WP-14 (REQ-PROOF-019): the per-scan secret authenticates a token this
+                    # access mints itself in standalone mode.
+                    oob_secret=getattr(ctx, "oob_secret", None),
                 ),
             )
             await _start_check(context)

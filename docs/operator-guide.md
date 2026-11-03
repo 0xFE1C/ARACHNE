@@ -475,6 +475,23 @@ L2 variants are: SSRF (`m3.ssrf-probe`), time-free blind SQLi (`m3.sqli-oob`), O
 (`m3.xxe-oob`), blind command injection via an execution monitor (`m3.cmdi-oob`) and
 template injection (`m3.ssti-oob`).
 
+**Callback hardening (WP-14, REQ-PROOF-019).** A token is not just an unguessable nonce:
+
+* **A per-scan secret authenticates it.** The scanner derives a secret for the scan from
+  `ARACHNE_INTEGRITY_KEY` and the token carries a short authenticator over itself
+  (`arachne-<scan>-<check>-<nonce>~<mac>`); the callback service derives the same secret, so
+  it accepts the scan's own token and refuses one assembled from a leaked nonce. With no
+  deployment key there is no secret to derive and the nonce is the authenticator, exactly as
+  before — set the key if you want the stronger form.
+* **A callback is refused for a scan that is not active**, or whose attestation has expired.
+  The standalone service reads the scan row for this (`--no-scan-gate` runs it as a pure
+  listener for a deployment that fronts ARACHNE with its own proxy).
+* **Single use has a bounded replay window.** A callback that arrives after the token was
+  spent is refused and counted as a replay (`proof.oob_replay`, and the probe's `replays`
+  count); the first verdict stands and no second hit is recorded. Past the window the token is
+  expired and the callback is refused under `proof.oob_refused`. A wrong or missing
+  authenticator, an inactive scan and an expired attestation are all `proof.oob_refused`.
+
 **State-change proofs (L3/L4).** With `state_changes_authorized: true` in the attestation:
 
 ```bash
@@ -489,6 +506,28 @@ and re-verifies the restore; `DELETE`/`DROP`/`TRUNCATE`/`ALTER`/`GRANT`, multi-s
 payloads and identity-store tables are refused in code. The end-of-scan cleanup pass
 re-restores anything left, and every change is persisted with the scan (`stats.proof`):
 what, where, the before-value, and whether it was restored.
+
+**The residue attestation (WP-14, REQ-PROOF-017).** Every scan — including one that
+authorized no state change at all — ends with one artefact stating what it changed and
+whether it was put back:
+
+* one entry per state change: the asset, the action, the **hash** of the before-value (never
+  the value), the restore outcome (`restored`, `restored-unverified`, `not-restored`,
+  `error`) and the timestamp;
+* the verdict: `"every state change was restored — zero residue"`, or the count that was not
+  restored plus the ledger's repair instructions;
+* **signed** with `ARACHNE_INTEGRITY_KEY` when one is configured, and **marked
+  `signed: false`** when it is not — an unsigned attestation says so rather than looking
+  like a signed one;
+* its `hash` is linked into the audit chain (`proof.residue_attested`), and it is stored on
+  the scan row (`residue_attestation`, `residue_hash`) and exposed by
+  `GET /api/v1/scans/{id}`.
+
+**A scan with non-zero residue is not clean.** It is reported as such (the report shows a
+residue warning and the unrestored list), and the attestation audit line carries outcome
+`error`. Read it before archiving the scan: `arachne report <scan> --format json` and look at
+`residue_attestation`, or `GET /api/v1/scans/<id>`. Repair, then re-run the scan's proof —
+never edit the attestation, which is hash- and signature-checked.
 
 ---
 
@@ -2505,7 +2544,7 @@ arachne verify-chain --scan 42              # one scan's rows and seal
 arachne verify-chain --require-signatures   # treat "unsigned" as a failure
 ```
 
-It checks four things:
+It checks five things:
 
 1. **The audit hash chain.** Every chained event's `hash` is recomputed from its content and
    position. An edit changes it (`modified`); a missing row leaves a gap in `seq` *and* a
@@ -2516,13 +2555,24 @@ It checks four things:
    its own.
 3. **Row signatures.** Every finding's and evidence row's deployment-key signature is
    re-verified, including the evidence payload's digest.
-4. **Scan seals.** Each completed scan's signed manifest is recomputed. A row that is gone is a
+4. **Evidence content hashes.** Every stored evidence blob's hash is recorded in the chain when
+   it is captured (WP-14, REQ-PROOF-018), and the recomputed digest of the stored payload is
+   compared with that record — so an edit behind the store's back is found even on a deployment
+   that configured no key. The verdict is `[evidence.mismatch]` and it names the evidence id;
+   a recorded blob whose row is gone while its scan survives is `[evidence.deleted]`. Evidence
+   whose whole scan was pruned by retention is reported as a **note**, not a finding: policy,
+   not tampering. (A re-mask under §39 records the blob's new hash, so the chain's latest
+   statement stays true.)
+5. **Scan seals.** Each completed scan's signed manifest is recomputed. A row that is gone is a
    deletion, a row that appeared is an insertion, a row whose content changed is an edit — and
    the report names it.
 
 ```
-verify-chain: intact (105 audit_rows, 8 findings, 21 evidences, 1 seals, 29 sealed_rows)
+verify-chain: intact (105 audit_rows, 8 findings, 21 evidences, 1 seals, 29 sealed_rows, 21 evidence_hashes)
 ```
+
+Issues print as `[<check>.<kind>] <subject>: <detail>`, so `[evidence.mismatch] evidence:21:
+… the blob was edited after capture` names both what was checked and which row.
 
 Exit codes: `0` intact, `1` not intact (issues on stderr), `2` the command could not run (no key
 when `--require-signatures` was given). Every run is itself audited (`integrity.verified` or
@@ -2583,7 +2633,30 @@ stay readable.
 
 `ARACHNE_PII_RETENTION_DAYS` is the REQ-DATA-001 hook: evidence older than that is re-masked by
 the retention pruner, which is the mechanism for "we decided to mask later than we started
-scanning". Both paths audit **counts by category** (`pii.masked`), never a value.
+scanning". Both paths audit **counts by category** (`pii.masked` at capture, `pii.remasked` in
+the prune run), never a value.
+
+**The retention re-mask, precisely** (WP-14, REQ-DATA-005):
+
+* `ARACHNE_PII_RETENTION_DAYS=0` — the default — means **mask at capture only, never re-mask**.
+  A deployment that has not asked for the pass has none of its stored payloads rewritten.
+* `arachne retention plan` (or `retention prune` without `--apply`) **changes nothing**: it
+  reports how many blobs the window covers and how many occurrences it found per category.
+  `arachne retention prune --apply` performs it.
+* An **inline** payload is masked in place, under the *project's* policy (`projects.pii_json`,
+  else `ARACHNE_PII_*`), and one audit event per masked blob (`pii.remasked`) records the
+  categories, the counts and the blob's new content hash — never a value.
+* An **offloaded** payload (one whose bytes live in an evidence backend) is **not** re-masked
+  by this pass and is **reported as such**: `pii.remask_unsupported` names the reason and a
+  bounded sample of the blob ids, and the plan carries the same count. It is never skipped
+  silently — that is the difference between a control that is partial and one that lies.
+* A project on **legal hold** is not re-masked either: an operator who suspended retention has
+  not asked for stored evidence to be rewritten.
+* Re-masking changes a payload the integrity layer already described, so the affected rows are
+  re-signed and their scans re-sealed (`integrity.sealed` with reason `pii-remask`), and the
+  new content hash is recorded in the audit chain. `arachne verify-chain` therefore stays green
+  after a re-mask: the privacy control and the tamper-evidence control agree rather than
+  contradicting each other.
 
 Masking is irreversible on purpose. A deployment that could un-mask would have kept the value,
 and the point is not to keep it.

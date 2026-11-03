@@ -44,6 +44,17 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
+def _parse_iso(value: Any) -> datetime | None:
+    """A stored timestamp back as a datetime (``None`` for a pre-WP-14 record)."""
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:  # pragma: no cover - a hand-edited journal
+        return None
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
+
+
 def _redacted(value: Any) -> Any:
     """Values stored in the ledger are redacted like evidence (REQ-PROOF-012)."""
     return redact_value(value)
@@ -65,6 +76,10 @@ class StateChangeRecord:
     restore_verified: bool = False
     note: str | None = None
     error: str | None = None
+    #: When the write was attempted (WP-14, REQ-PROOF-017). The residue attestation states a
+    #: timestamp per state change, and ``restored_at`` only exists for the ones that were put
+    #: back — a change that was *not* restored is exactly the one whose timestamp matters.
+    changed_at: datetime | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -80,6 +95,7 @@ class StateChangeRecord:
             "restore_verified": self.restore_verified,
             "note": self.note,
             "error": self.error,
+            "changed_at": self.changed_at.isoformat() if self.changed_at else None,
         }
 
     @classmethod
@@ -97,6 +113,7 @@ class StateChangeRecord:
             restore_verified=bool(data.get("restore_verified")),
             note=data.get("note"),
             error=data.get("error"),
+            changed_at=_parse_iso(data.get("changed_at")),
         )
 
     def repair_instruction(self) -> str:
@@ -235,6 +252,7 @@ class ProofLedger:
             after=_redacted(dict(after)),
             restored=False,
             note=note,
+            changed_at=_now(),
         )
         if len(self._changes) < MAX_LEDGER_ENTRIES:
             self._changes.append(record.to_dict())

@@ -226,12 +226,34 @@ def _emit(report: dict[str, Any], json_output: bool) -> None:
         detail = f" (+{entry['cascaded_rows']} cascaded rows)" if entry["cascaded_rows"] else ""
         typer.echo(f"  {category:<9} {entry['rows']:>7} rows{detail}  {_bytes(entry['bytes'])}")
     typer.echo(f"  total     {report['total_rows']:>7} rows  {_bytes(report['total_bytes'])}")
+    _emit_pii(report.get("pii") or {}, dry_run=bool(report.get("dry_run")))
     for project in report["projects"]:
         rows = sum(
             entry["rows"] + entry["cascaded_rows"] for entry in project["categories"].values()
         )
         if rows:
             typer.echo(f"    {project['slug']}: {rows} rows")
+
+
+def _emit_pii(pii: dict[str, Any], *, dry_run: bool) -> None:
+    """The re-mask half of a run: counts by category, and what could not be re-masked.
+
+    Printed even when it is zero: "nothing was re-masked" is the answer an operator
+    checking a privacy control came for, and omitting the line would leave them guessing
+    whether the run looked at it at all (REQ-DATA-005).
+    """
+    blobs = int(pii.get("blobs") or 0)
+    verb = "would be re-masked" if dry_run else "re-masked"
+    if blobs:
+        categories = ", ".join(
+            f"{name} {count}" for name, count in (pii.get("categories") or {}).items()
+        )
+        typer.echo(f"  pii       {blobs:>7} blob(s) {verb}  ({categories})")
+    else:
+        typer.echo(f"  pii       {0:>7} blob(s) {verb}")
+    unsupported = pii.get("unsupported") or {}
+    for reason, count in unsupported.items():
+        typer.echo(f"    not re-maskable: {count} blob(s) — {reason}")
 
 
 def _days(value: int) -> str:

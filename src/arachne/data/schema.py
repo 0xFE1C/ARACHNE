@@ -20,7 +20,7 @@ __all__ = [
 ]
 
 #: Revision this code expects ``alembic upgrade head`` to reach.
-LATEST_SCHEMA_REVISION: Final = "0015"
+LATEST_SCHEMA_REVISION: Final = "0016"
 
 #: Table Alembic uses to record the applied revision.
 ALEMBIC_VERSION_TABLE: Final = "alembic_version"

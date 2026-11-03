@@ -122,6 +122,12 @@ class ReportInputs:
     #: The scan's proof journal (S15, ``scans.stats["proof"]``): the state changes and
     #: cleanup status the report's state-changes table renders (REQ-PROOF-013).
     proof_state: Mapping[str, Any] = field(default_factory=dict)
+    #: The scan's stored residue attestation (WP-14, ``scans.residue_attestation``,
+    #: REQ-PROOF-017). Read from the **row**, never derived here: the attestation is an
+    #: artefact the scan machine signed and hashed at scan end, and a renderer that
+    #: re-derived one would be signing on the scanner's behalf. ``None`` means the scan
+    #: recorded none, which the renderers state rather than read as "clean".
+    residue_attestation: Mapping[str, Any] | None = None
     #: The per-user principal that requested the scan ("user X via key Y", S17).
     requested_by: str | None = None
     #: The credential labels the scan authenticated with (S19, ``scans.stats["credentials"]``).
@@ -605,6 +611,42 @@ def _state_change_entries(proof_state: Mapping[str, Any]) -> tuple[m.StateChange
     return tuple(sorted(entries, key=lambda entry: entry.change_id))
 
 
+def _residue_attestation(raw: Mapping[str, Any] | None) -> m.ResidueAttestation | None:
+    """The stored attestation as the report DTO (WP-14, REQ-PROOF-017).
+
+    A malformed or absent artefact yields ``None`` — "not recorded" — rather than a
+    synthesized "clean": the one reading this must never produce is a clean verdict nobody
+    signed.
+    """
+    if not isinstance(raw, Mapping) or not raw:
+        return None
+    changes: list[m.ResidueEntry] = []
+    for item in raw.get("changes") or ():
+        if not isinstance(item, Mapping):
+            continue
+        changes.append(
+            m.ResidueEntry(
+                asset=str(item.get("asset") or ""),
+                action=str(item.get("action") or ""),
+                check=str(item.get("check") or ""),
+                change_id=str(item.get("change_id") or ""),
+                before_value_hash=str(item.get("before_value_hash") or ""),
+                restore_outcome=str(item.get("restore_outcome") or ""),
+                timestamp=str(item["timestamp"]) if item.get("timestamp") else None,
+            )
+        )
+    return m.ResidueAttestation(
+        clean=bool(raw.get("clean")),
+        residue=int(raw.get("residue") or 0),
+        restored=int(raw.get("restored") or 0),
+        statement=str(raw.get("statement") or ""),
+        signed=bool(raw.get("signed")),
+        hash=str(raw["hash"]) if raw.get("hash") else None,
+        changes=tuple(changes),
+        repair_instructions=tuple(str(item) for item in raw.get("repair_instructions") or ()),
+    )
+
+
 def _remediation_for(
     candidate: CandidateRecord,
     analysis: StoredAnalysis | None,
@@ -996,6 +1038,7 @@ def build_report_data(inputs: ReportInputs) -> m.ReportData:
         low_confidence=tuple(low_confidence),
         patch_gap=_patch_gap(findings) if "M6" in modules else None,
         state_changes=_state_change_entries(inputs.proof_state),
+        residue_attestation=_residue_attestation(inputs.residue_attestation),
         intel=_intel_block(inputs.intel),
         attack_paths=_attack_paths(
             analyses=list(analyses.values()),
@@ -1359,6 +1402,9 @@ def build_report_for_scan(
             branding=branding,
             locale=locale or "",
             proof_state=dict(record.stats.get("proof") or {}) if record.stats else {},
+            residue_attestation=(
+                dict(record.residue_attestation) if record.residue_attestation else None
+            ),
             requested_by=(record.stats or {}).get("requested_by"),
             credentials=_credential_labels(record),
             authenticated=_authenticated(record),

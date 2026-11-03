@@ -35,6 +35,7 @@ from arachne.core.events import Event, EventBus, EventType
 from arachne.core.logging import get_logger
 from arachne.core.metrics import REGISTRY
 from arachne.core.planner import DEFAULT_PIPELINE, ScanPlan, ScanStep
+from arachne.core.proof import per_scan_secret
 from arachne.core.redaction import redact_text, redact_url
 from arachne.core.safety import Scope
 from arachne.core.target import ScanOptions, TargetDefinition
@@ -131,6 +132,11 @@ class ScanRecord:
     #: admitted them, so any node can rebuild the very same :class:`ScanRequest`.
     #: ``None`` for rows written before S16.
     request_json: dict[str, Any] | None = None
+    #: The scan's residue attestation and its hash (WP-14, REQ-PROOF-017). ``None`` for a
+    #: scan that has not finished (or one written before this package); a missing
+    #: attestation is *not* read as "clean".
+    residue_attestation: dict[str, Any] | None = None
+    residue_hash: str | None = None
 
     def step_state(self, step: ScanStep) -> StepState | None:
         for state in self.steps:
@@ -183,6 +189,7 @@ class ScanStateStore(Protocol):
         status: ScanStatus | None = None,
         stats: dict[str, Any] | None = None,
         plan: dict[str, Any] | None = None,
+        residue_attestation: Mapping[str, Any] | None = None,
         mark_started: bool = False,
         mark_finished: bool = False,
     ) -> ScanRecord: ...
@@ -261,6 +268,7 @@ class MemoryScanStateStore:
         status: ScanStatus | None = None,
         stats: dict[str, Any] | None = None,
         plan: dict[str, Any] | None = None,
+        residue_attestation: Mapping[str, Any] | None = None,
         mark_started: bool = False,
         mark_finished: bool = False,
     ) -> ScanRecord:
@@ -274,6 +282,16 @@ class MemoryScanStateStore:
                 self._clock() if mark_started and record.started_at is None else record.started_at
             ),
             finished_at=self._clock() if mark_finished else record.finished_at,
+            residue_attestation=(
+                dict(residue_attestation)
+                if residue_attestation is not None
+                else record.residue_attestation
+            ),
+            residue_hash=(
+                str(residue_attestation.get("hash") or "") or None
+                if residue_attestation is not None
+                else record.residue_hash
+            ),
         )
         self._scans[scan_id] = updated
         return updated
@@ -391,6 +409,12 @@ class StepContext:
     #: The tenant the scan belongs to, so the quota and the retention trail are attributed
     #: without a second lookup (``None`` is the implicit default workspace).
     project_id: int | None = None
+    #: This scan's out-of-band callback secret (WP-14, REQ-PROOF-019), derived from the
+    #: deployment key. A check that mints a callback token itself — the standalone mode,
+    #: where the listener is a separate process — authenticates it with this, so the
+    #: receiver can tell the scan's own token from one assembled out of a leaked nonce.
+    #: ``None`` on a deployment with no integrity key, which then has no secret to derive.
+    oob_secret: str | None = None
 
     async def emit(self, event: Event) -> None:
         await self.bus.publish(event)
@@ -618,6 +642,12 @@ class ScanMachine:
                 net=net,
                 evidence=self.evidence,
                 project_id=self.project_id,
+                # WP-14 (REQ-PROOF-019): the per-scan callback secret. Derived from the
+                # deployment key, so the standalone callback service — a different process —
+                # can authenticate this scan's tokens without ever being told the secret.
+                oob_secret=per_scan_secret(
+                    self.integrity.signer if self.integrity is not None else None, scan_id
+                ),
             )
             try:
                 # One span per step (REQ-OPS-004): the orchestrator's own trace, nested under
@@ -664,6 +694,11 @@ class ScanMachine:
                         payload={"step": step.value, "error": summary},
                     )
                 )
+                # A failed scan is still a scan that may have changed something (WP-14,
+                # REQ-PROOF-017): the attestation is emitted here too, over whatever the
+                # proof journal recorded before the failure, so "we crashed in the middle"
+                # leaves a signed statement of what was left behind rather than nothing.
+                self._attest_residue(scan_id)
                 raise ScanStateError(
                     f"scan {scan_id} failed in step {step.value}: {summary}"
                 ) from exc
@@ -711,6 +746,12 @@ class ScanMachine:
                 payload={"assets": assets, "executed": [step.value for step in executed]},
             )
         )
+        # WP-14 (REQ-PROOF-017): the scan's residue attestation. Emitted for **every**
+        # completed scan — including one that authorized no state change, which is a
+        # statement worth making — linked into the audit chain and stored on the row. A
+        # failure to write it must not fail a scan that succeeded, for the same reason the
+        # seal's is tolerated: the rows are durable either way.
+        self._attest_residue(scan_id)
         if self.integrity is not None:
             # Seal *after* the scan is marked complete and the finish event is out, so the
             # manifest covers every row the scan will ever write (S25, REQ-TRUST-005). A seal
@@ -736,6 +777,58 @@ class ScanMachine:
             already_completed=tuple(already),
             assets=assets,
         )
+
+    def _attest_residue(self, scan_id: int) -> dict[str, Any] | None:
+        """Emit the scan's residue attestation (WP-14, REQ-PROOF-017).
+
+        Built from the scan record's own proof journal, signed with the deployment key when
+        one is configured (and explicitly marked ``signed: false`` when it is not), stored on
+        the row, and linked into the audit chain by its hash. Non-zero residue is recorded as
+        an ``error``-outcome audit line: a scan that left something behind is not clean, and
+        the trail says so rather than only the report.
+
+        Returns the attestation, or ``None`` when it could not be written (logged, never
+        raised) — a bookkeeping failure must not turn a successful scan into a failed one.
+        """
+        try:
+            # Imported here rather than at module scope: ``arachne.proof`` sits above
+            # ``core`` (its ledger redacts through ``core.redaction``), so the dependency
+            # direction is inverted for this one call and is kept local on purpose.
+            from arachne.proof.residue import build_residue_attestation
+
+            record = self.store.get_scan(scan_id)
+            proof_state = (record.stats.get("proof") if record is not None else None) or {}
+            signer = self.integrity.signer if self.integrity is not None else None
+            attestation = build_residue_attestation(
+                scan_id=scan_id, proof_state=dict(proof_state), signer=signer
+            )
+            self.store.update_scan(scan_id, residue_attestation=attestation)
+            clean = bool(attestation["clean"])
+            self.auditor.record(
+                AuditAction.PROOF_RESIDUE_ATTESTED,
+                outcome=AuditOutcome.ALLOWED if clean else AuditOutcome.ERROR,
+                scan_id=scan_id,
+                reason=None if clean else str(attestation["statement"]),
+                meta={
+                    "residue": int(attestation["residue"]),
+                    "restored": int(attestation["restored"]),
+                    "changes": len(attestation["changes"]),
+                    "hash": attestation["hash"],
+                    "signed": bool(attestation["signed"]),
+                    "clean": clean,
+                },
+            )
+            return attestation
+        except Exception as exc:  # a bookkeeping failure is not a scan failure
+            _logger.warning(
+                "could not write the residue attestation",
+                extra={
+                    "event": "proof.residue_attest_failed",
+                    "scan_id": scan_id,
+                    "error": str(exc)[:200],
+                },
+            )
+            return None
 
     def _count_completion(self, status: str, record: ScanRecord | None) -> None:
         """Scan counts and durations (REQ-OPS-003): what this process finished, and how long

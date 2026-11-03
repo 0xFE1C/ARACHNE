@@ -33,17 +33,21 @@ against one definition. Two invariants:
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import re
 from enum import StrEnum
 from typing import Final
 
 from arachne.core.errors import ConfigurationError, SafetyError
+from arachne.core.signing import DeploymentSigner
 
 __all__ = [
     "ALLOWED_COMMANDS",
     "CREDENTIAL_TABLE_HINTS",
     "FEAR_WORDS",
     "MARKER_TEMPLATE",
+    "OOB_DOMAIN",
     "PROHIBITED_SQL_HEADS",
     "PROOF_LEVELS",
     "CallbackToken",
@@ -52,7 +56,9 @@ __all__ = [
     "command_payload",
     "encode_free",
     "parse_callback_token",
+    "per_scan_secret",
     "poc_marker",
+    "token_mac",
     "validate_nonce",
 ]
 
@@ -147,6 +153,12 @@ def poc_marker(nonce: str, vuln_class: str) -> str:
 _NONCE: Final = re.compile(r"^[a-z0-9]{12,64}$")
 _TOKEN_SCAN: Final = re.compile(r"^[A-Za-z0-9]{1,64}$")
 _TOKEN_CHECK: Final = re.compile(r"^[a-z0-9][a-z0-9.-]{0,127}$")
+#: The per-scan secret's MAC inside a callback token, after a ``~`` separator. That
+#: separator is what makes it unambiguous: a check id may contain dots
+#: (``m3.sqli-oob``) and the nonce may not, but neither may contain ``~``
+#: (REQ-PROOF-019).
+_TOKEN_MAC: Final = re.compile(r"^[0-9a-f]{16}$")
+_MAC_SEPARATOR: Final = "~"
 
 
 def validate_nonce(nonce: str) -> str:
@@ -163,16 +175,25 @@ def validate_nonce(nonce: str) -> str:
 
 
 class CallbackToken:
-    """One out-of-band interaction token (REQ-PROOF-005).
+    """One out-of-band interaction token (REQ-PROOF-005/019).
 
     Single-use by service contract: :meth:`arachne.proof.oob.CallbackService.consume`
     returns the hit once, then the token is spent. The string form is the token's URL
     path segment; ``str(token)`` always yields it.
+
+    ``mac`` (WP-14, REQ-PROOF-019) is the per-scan secret's authenticator over the token
+    itself: it lets a receiver that holds the deployment key tell a token *this
+    deployment's scan* minted from one an attacker assembled out of a leaked nonce. It is
+    ``None`` for a deployment that configured no key, which is then exactly as strong as
+    it was before this field existed — and the receiver says so rather than pretending
+    otherwise.
     """
 
-    __slots__ = ("check_id", "nonce", "scan_id")
+    __slots__ = ("check_id", "mac", "nonce", "scan_id")
 
-    def __init__(self, scan_id: str | int, check_id: str, nonce: str) -> None:
+    def __init__(
+        self, scan_id: str | int, check_id: str, nonce: str, mac: str | None = None
+    ) -> None:
         scan = str(scan_id)
         if not _TOKEN_SCAN.match(scan):
             msg = f"scan id {scan!r} is not token-safe (letters/digits only)"
@@ -181,13 +202,24 @@ class CallbackToken:
             msg = f"check id {check_id!r} is not token-safe"
             raise ProofRefused(msg)
         validate_nonce(nonce)
+        if mac is not None and not _TOKEN_MAC.match(mac):
+            msg = f"callback token MAC {mac!r} is not 16 lowercase hex characters"
+            raise ProofRefused(msg)
         self.scan_id = scan
         self.check_id = check_id
         self.nonce = nonce
+        self.mac = mac
+
+    @property
+    def base(self) -> str:
+        """The token without its authenticator — what the MAC is computed over."""
+        return f"arachne-{self.scan_id}-{self.check_id}-{self.nonce}"
 
     @property
     def value(self) -> str:
-        return f"arachne-{self.scan_id}-{self.check_id}-{self.nonce}"
+        if self.mac is None:
+            return self.base
+        return f"{self.base}{_MAC_SEPARATOR}{self.mac}"
 
     def __str__(self) -> str:
         return self.value
@@ -206,23 +238,55 @@ class CallbackToken:
         return hash(self.value)
 
 
+#: Signature domain the per-scan callback authenticator is derived under (REQ-PROOF-019).
+#: Distinct from every other domain so a callback authenticator can never be replayed as an
+#: audit or seal signature.
+OOB_DOMAIN: Final = "arachne.oob"
+
+
+def per_scan_secret(signer: DeploymentSigner | None, scan_id: str | int) -> str | None:
+    """The per-scan callback secret, derived from the deployment key (REQ-PROOF-019).
+
+    Derived rather than stored or transmitted: the scanner that issues a token and the
+    callback service that receives it can be different processes on different hosts, and
+    this is the only shared material they have. ``None`` without a deployment key — such a
+    deployment has no secret to derive, which the receiver reports rather than inventing
+    one.
+    """
+    if signer is None:
+        return None
+    return signer.sign(OOB_DOMAIN, str(scan_id).encode("utf-8"))
+
+
+def token_mac(secret: str, base: str) -> str:
+    """A callback token's authenticator: 16 hex characters over the token itself."""
+    return hmac.new(secret.encode("utf-8"), base.encode("utf-8"), hashlib.sha256).hexdigest()[:16]
+
+
 def parse_callback_token(token: str) -> CallbackToken:
-    """Parse ``arachne-<scan-id>-<check-id>-<nonce>``; refuse any other shape.
+    """Parse ``arachne-<scan-id>-<check-id>-<nonce>[~<mac>]``; refuse any other shape.
 
     Check ids contain dashes themselves (``m3.sqli-oob``), so parsing is anchored from
     both ends: the scan id ends at the *first* dash, the nonce starts after the *last*
     one — the nonce is ``[a-z0-9]{12,}`` and never contains a dash, so the two anchors
-    are unambiguous.
+    are unambiguous. The optional MAC is split off the ``~`` first, which no other
+    component may contain.
     """
     if not token.startswith("arachne-"):
         msg = f"token {token!r} is not an arachne-<scan>-<check>-<nonce> token"
         raise ProofRefused(msg)
-    scan, separator, remainder = token[len("arachne-") :].partition("-")
+    body, separator, raw_mac = token.rpartition(_MAC_SEPARATOR)
+    mac: str | None
+    if separator:
+        body, mac = body, raw_mac
+    else:
+        body, mac = token, None
+    scan, separator, remainder = body[len("arachne-") :].partition("-")
     check, separator, nonce = remainder.rpartition("-")
     if not (scan and separator and check and nonce):
         msg = f"token {token!r} is not an arachne-<scan>-<check>-<nonce> token"
         raise ProofRefused(msg)
-    return CallbackToken(scan, check, nonce)
+    return CallbackToken(scan, check, nonce, mac)
 
 
 # --------------------------------------------------------------------------- L3 (007)

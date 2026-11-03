@@ -155,6 +155,15 @@ class Scan(Base):
     #: before S16 have none, and the executing node then rebuilds the definition from
     #: the stored target row.
     request_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    #: The scan's residue attestation (WP-14, REQ-PROOF-017): one signed (or explicitly
+    #: unsigned) artefact enumerating every state change the scan authorized — asset,
+    #: action, before-value hash, restore outcome, timestamp — with the verdict ("zero
+    #: residue", or the list of what was not restored). ``residue_hash`` is the digest the
+    #: audit chain links, and ``residue_attestation["clean"]`` is false whenever the count
+    #: is non-zero. Nullable: rows written before WP-14 have none, and a missing
+    #: attestation is deliberately *not* read as "clean".
+    residue_attestation: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    residue_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class Asset(Base):

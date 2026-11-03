@@ -29,7 +29,13 @@ from typing import Any, Protocol
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
-from arachne.core.integrity import EVIDENCE_DOMAIN, FINDING_DOMAIN, sign_row
+from arachne.core.audit import AuditAction, Auditor
+from arachne.core.integrity import (
+    EVIDENCE_DOMAIN,
+    FINDING_DOMAIN,
+    payload_digest,
+    sign_row,
+)
 from arachne.core.metrics import REGISTRY
 from arachne.core.results import CheckResult, Evidence, confidence_percent
 from arachne.core.signing import DeploymentSigner
@@ -217,6 +223,32 @@ def _count_proof(item: Evidence) -> None:
         REGISTRY.increment("arachne_proof_state_changes_total", {"cleanup": cleanup})
 
 
+def _capture_lines(rows: Iterable[EvidenceRow], *, scan_id: int) -> tuple[dict[str, Any], ...]:
+    """The audit payload for one batch of stored evidence rows (WP-14, REQ-PROOF-018).
+
+    One entry per row, built from the **stored** payload: ``sha256`` is the digest a verifier
+    recomputes from ``payload_json`` (what ``verify-chain`` compares), and ``blob_sha256`` is
+    the object digest an offloaded row's stub declares, so a rewritten claim about the object
+    is detectable even though the object itself is not read here.
+    """
+    lines: list[dict[str, Any]] = []
+    for row in rows:
+        payload = dict(row.payload_json or {})
+        declared = payload.get("sha256")
+        lines.append(
+            {
+                "evidence_id": int(row.id),
+                "scan_id": scan_id,
+                "kind": str(row.kind),
+                "storage": str(row.storage or "inline"),
+                "size": int(row.size_bytes or 0),
+                "sha256": payload_digest(payload),
+                "blob_sha256": str(declared) if isinstance(declared, str) and declared else None,
+            }
+        )
+    return tuple(lines)
+
+
 def _evidence_rows(evidence: Iterable[Evidence]) -> tuple[EvidenceRecord, ...]:
     return tuple(
         EvidenceRecord(
@@ -347,10 +379,16 @@ class SqlFindingStore:
         *,
         signer: DeploymentSigner | None = None,
         region: str | None = None,
+        auditor: Auditor | None = None,
     ) -> None:
         self._session_factory = session_factory
         self._signer = signer
         self._region = region
+        #: WP-14 (REQ-PROOF-018): the audit trail every evidence blob's content hash is
+        #: recorded in at capture. ``None`` means this store writes rows without a chain
+        #: (the CLI's read-only paths, a unit test over a bare engine) — the rows are then
+        #: verifiable by signature and seal only.
+        self._auditor = auditor
 
     # ------------------------------------------------------------------ checks
     def record_checks(self, metadata: Iterable[Any]) -> dict[str, int]:
@@ -528,7 +566,14 @@ class SqlFindingStore:
                 check_id=check_id,
                 scan_id=scan_id,
             )
+            # WP-14 (REQ-PROOF-018): capture the content hash of every blob this finding
+            # just stored, from the *stored* payload (the redacted one — the row is the
+            # unit of custody, and hashing what arrived before redaction would make the
+            # recorded value unmatchable). Emitted after the commit, so the chain append
+            # never holds a write transaction open beside this one.
+            captures = _capture_lines(rows, scan_id=scan_id)
             session.commit()
+            self._record_captures(captures)
             return CandidateRecord(
                 id=int(finding.id),
                 scan_id=scan_id,
@@ -546,6 +591,30 @@ class SqlFindingStore:
                 evidence=tuple(stored),
                 verification=verification,
                 verifications=(verification,),
+            )
+
+    def _record_captures(self, captures: Iterable[Mapping[str, Any]]) -> None:
+        """Record one ``evidence.captured`` chain line per stored blob (REQ-PROOF-018).
+
+        One event per blob, not one per batch: an audit line naming a list of ids would make
+        "which blob was captured, and when" unanswerable, and the chain is the custody record
+        — this is the line ``verify-chain`` walks to find a mismatch.
+        """
+        if self._auditor is None:
+            return
+        for capture in captures:
+            self._auditor.record(
+                AuditAction.EVIDENCE_CAPTURED,
+                scan_id=int(capture["scan_id"]),
+                target=f"evidence:{capture['evidence_id']}",
+                meta={
+                    "evidence_id": int(capture["evidence_id"]),
+                    "sha256": capture["sha256"],
+                    "blob_sha256": capture["blob_sha256"],
+                    "kind": capture["kind"],
+                    "storage": capture["storage"],
+                    "size": int(capture["size"]),
+                },
             )
 
     def record_verification(self, record: VerificationRecord) -> VerificationRecord:

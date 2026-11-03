@@ -72,6 +72,26 @@ a browser engine inside the scanner is a new attack surface and the operator opt
   the same payload set must produce the same verdict across families, and a page that answers 200
   identically to every input produces zero positives in all of them (REQ-PROOF-020).
 - **Secrets and PII are redacted at capture**, never at render.
+- **Every scan emits a residue attestation.** One artefact per scan enumerates each state
+  change it authorized — asset, action, before-value *hash*, restore outcome, timestamp — with
+  the verdict: zero residue, or the unrestored list and its repair instructions. It is signed
+  with the deployment key when one is configured and **marked unsigned** when not, its hash is
+  linked into the audit chain, and a scan with residue is not reported as clean (WP-14,
+  REQ-PROOF-017).
+- **Evidence has a chain of custody.** Every stored blob's content hash is recorded in the audit
+  chain as it is captured, and `arachne verify-chain` reports `evidence.mismatch` — naming the
+  evidence id — when a stored payload is edited behind the store's back, and a deletion for a
+  blob whose scan still exists (WP-14, REQ-PROOF-018).
+- **Out-of-band callbacks are authenticated per scan.** A callback token carries an
+  authenticator derived from the deployment key, single use is enforced with a bounded replay
+  window, and callbacks for a scan that is not active or whose attestation has expired are
+  refused and audited (WP-14, REQ-PROOF-019).
+- **PII retention is implemented, not just documented.** `ARACHNE_PII_RETENTION_DAYS` is
+  consumed by the retention pruner: a dry run reports counts by category without changing
+  anything, the applied run masks older inline evidence under the project's policy and audits
+  one event per blob, and a blob it cannot mask (an offloaded object) is reported explicitly.
+  Re-masked rows are re-signed and their scans re-sealed, so `verify-chain` stays green
+  (WP-14, REQ-DATA-005).
 
 **Operation**
 
@@ -104,10 +124,10 @@ a browser engine inside the scanner is a new attack surface and the operator opt
 
 | What | Result |
 |---|---|
-| Tests | **4,867** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Tests | **4,954** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
 | Primary safety suite | **59 tests** in `tests/test_safety.py`; **328** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol and mobile fixtures with planted false-positive traps |
-| Strict type checking | clean under `mypy --strict` across the **399** Python modules in `src/` |
+| Strict type checking | clean under `mypy --strict` across the **400** Python modules in `src/` |
 | Lint | clean over the whole repository (the badge's scope is the tree, not `src/` and `tests/`) |
 | Research coverage | **148/175 (84.6%)** of the corpus's numbered methods have an implementing check |
 

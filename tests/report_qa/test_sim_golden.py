@@ -104,7 +104,7 @@ def test_the_json_document_carries_the_simulation_in_its_own_block_only() -> Non
 
     # 1.12 is WP-13's: the per-finding ``verification`` record became required
     # (REQ-PROOF-015). Pinned so a further bump is a conscious act, not silent drift.
-    assert document["schema_version"] == REPORT_SCHEMA_VERSION == "1.12"
+    assert document["schema_version"] == REPORT_SCHEMA_VERSION == "1.13"
     block = document["simulation"]
     assert block["provenance"] == "simulated"
     assert block["change"]["name"] == "publish-legacy-console"

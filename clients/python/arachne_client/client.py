@@ -381,6 +381,8 @@ class ScanDetail(TypedDict):
     steps: NotRequired[list[StepOut]]
     # generic JSON: free-form object with no value schema
     assets: NotRequired[list[object]]
+    # generic JSON: free-form object with no value schema
+    residue_attestation: NotRequired[object | None]
 
 
 class ScanSummary(TypedDict):

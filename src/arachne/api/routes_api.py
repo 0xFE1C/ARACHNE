@@ -235,6 +235,9 @@ def get_scan(
         **summary.model_dump(),
         plan=dict(record.plan),
         stats=dict(record.stats),
+        residue_attestation=(
+            dict(record.residue_attestation) if record.residue_attestation else None
+        ),
         steps=[
             StepOut(
                 step=state.step.value,

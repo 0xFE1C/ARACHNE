@@ -259,7 +259,7 @@ def test_an_ordinary_report_carries_no_detection_validation_block() -> None:
     # WP-13 bumped the report schema to 1.12: the per-finding ``verification`` record became
     # required (REQ-PROOF-015). Pinned so a further bump is a conscious act, not silent
     # drift.
-    assert document["schema_version"] == REPORT_SCHEMA_VERSION == "1.12"
+    assert document["schema_version"] == REPORT_SCHEMA_VERSION == "1.13"
     jsonschema.validate(document, load_report_schema())
 
 

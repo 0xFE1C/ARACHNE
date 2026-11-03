@@ -36,6 +36,16 @@ def callback_server_command(
         str | None,
         typer.Option("--audit-log", help="Append the service's audit trail to this JSONL file."),
     ] = None,
+    scan_gate: Annotated[
+        bool,
+        typer.Option(
+            "--no-scan-gate",
+            help=(
+                "Do not read the scan row: run as a pure listener, without refusing callbacks "
+                "for an inactive scan or an expired attestation (WP-14, REQ-PROOF-019)."
+            ),
+        ),
+    ] = True,
 ) -> None:
     """Run the out-of-band callback service in the foreground."""
-    raise typer.Exit(serve_forever(host=host, port=port, audit_log=audit_log))
+    raise typer.Exit(serve_forever(host=host, port=port, audit_log=audit_log, scan_gate=scan_gate))

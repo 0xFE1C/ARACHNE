@@ -437,7 +437,8 @@ def test_the_release_migration_is_expand_only() -> None:
     rename or drop anything. It must also be the revision ``data/schema.py`` expects, which is
     what keeps ``LATEST_SCHEMA_REVISION`` honest (S25; the assertion is on the *expand-only
     vocabulary* rather than on one revision's exact operation list, so a stage whose change is a
-    single new table — S27's ``fix_proposals`` — satisfies it without loosening the rule).
+    single new table — S27's ``fix_proposals`` — satisfies it without loosening the rule, and so
+    does a column-only stage — WP-14's residue attestation).
     """
     from arachne.data.schema import LATEST_SCHEMA_REVISION
 
@@ -446,13 +447,19 @@ def test_the_release_migration_is_expand_only() -> None:
     assert report.revisions == (LATEST_SCHEMA_REVISION,), report.to_dict()
     assert report.expand_only, report.to_dict()
     assert report.expand_operations, report.to_dict()
-    assert set(report.expand_operations) <= {
+    expand_vocabulary = {
         "add_column",
         "create_table",
         "create_index",
         "create_unique_constraint",
-    }, report.to_dict()
-    assert "create_table" in report.expand_operations
+    }
+    assert set(report.expand_operations) <= expand_vocabulary, report.to_dict()
+    # The head must actually *do* one of them. The assertion used to name ``create_table``
+    # specifically, which pinned it to whichever stage last added a table: a column-only stage
+    # — two nullable columns on ``scans`` (REQ-PROOF-017) — is equally expand-only and failed
+    # for no reason. ``test_a_contract_operation_is_detected_in_source`` below still holds the
+    # checker to naming a contract operation when one is present.
+    assert set(report.expand_operations) & expand_vocabulary, report.to_dict()
 
 
 def test_a_contract_operation_is_detected_in_source() -> None:

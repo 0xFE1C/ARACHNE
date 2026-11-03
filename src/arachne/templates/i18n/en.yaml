@@ -50,6 +50,14 @@ strings:
   report.simulation.change: "Proposed change"
 
   # ---- appendix sub-sections ---------------------------------------------------------
+  # WP-14 (area PROOF, REQ-PROOF-017): the residue warning a non-clean attestation raises,
+  # rendered directly under the executive summary. The statement that follows it is quoted
+  # from the signed artefact and is deliberately *not* translated.
+  report.residue.warning: "Residue: this scan did not restore everything it changed"
+  report.residue.attestation: "Residue attestation"
+  report.residue.signed: "signed with the deployment key"
+  report.residue.unsigned: "UNSIGNED — no deployment key configured"
+
   report.appendix.evidence: "Evidence payloads (redacted)"
   report.appendix.audit: "Audit log summary"
   report.appendix.out_of_scope: "Out-of-scope events"

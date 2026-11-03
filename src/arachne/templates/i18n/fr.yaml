@@ -36,6 +36,11 @@ strings:
   report.simulation.change: "Changement proposé"
 
   # ---- appendix sub-sections ---------------------------------------------------------
+  report.residue.warning: "Résidus : ce scan n'a pas restauré tout ce qu'il a modifié"
+  report.residue.attestation: "Attestation de résidus"
+  report.residue.signed: "signée avec la clé de déploiement"
+  report.residue.unsigned: "NON SIGNÉE — aucune clé de déploiement configurée"
+
   report.appendix.evidence: "Éléments de preuve (expurgés)"
   report.appendix.audit: "Résumé du journal d'audit"
   report.appendix.out_of_scope: "Événements hors périmètre"

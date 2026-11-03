@@ -27,7 +27,7 @@ import secrets
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from arachne.core.proof import CallbackToken, ProofLevel, ProofRefused, poc_marker
+from arachne.core.proof import CallbackToken, ProofLevel, ProofRefused, poc_marker, token_mac
 from arachne.proof.commands import CommandProof
 from arachne.proof.oob import CallbackService, OobHit
 from arachne.proof.sql import SqlExecutor, SqlProof
@@ -67,6 +67,7 @@ class ProofAccess:
         state_changes_authorized: bool = False,
         http: Any = None,
         run_nonce: str | None = None,
+        oob_secret: str | None = None,
     ) -> None:
         self.level = level
         self.check_id = check_id
@@ -74,6 +75,11 @@ class ProofAccess:
         self._ledger = ledger
         self._auditor = auditor
         self._service = service
+        #: The scan's out-of-band callback secret (WP-14, REQ-PROOF-019). In standalone mode
+        #: this access mints the token itself, so it must carry the same authenticator the
+        #: receiver will check; ``None`` (no deployment key) leaves the token nonce-only,
+        #: exactly as it was before this package.
+        self._oob_secret = oob_secret
         self._callback_base = (callback_base or "").rstrip("/") or None
         self._state_changes_authorized = state_changes_authorized
         self._http = http
@@ -109,8 +115,13 @@ class ProofAccess:
             token = self._service.issue(self.scan_id, self.check_id, nonce=self._run_nonce)
             url = None
         else:
+            nonce = self._run_nonce or secrets.token_hex(12)
+            base = CallbackToken(self.scan_id, self.check_id, nonce).base
             token = CallbackToken(
-                self.scan_id, self.check_id, self._run_nonce or secrets.token_hex(12)
+                self.scan_id,
+                self.check_id,
+                nonce,
+                token_mac(self._oob_secret, base) if self._oob_secret else None,
             )
             url = f"{self._callback_base}/{token.value}"
         self._ledger.record_oob_probe(token.value, check_id=self.check_id, nonce=token.nonce)

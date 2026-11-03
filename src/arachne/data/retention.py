@@ -42,7 +42,7 @@ second run continues where the first stopped, and a run with nothing to do delet
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any, Final
@@ -50,23 +50,37 @@ from typing import Any, Final
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, sessionmaker
 
-from arachne.core.audit import AuditAction, Auditor
+from arachne.core.audit import AuditAction, Auditor, AuditOutcome
 from arachne.core.config import Settings, get_settings
 from arachne.core.errors import ConfigurationError
+from arachne.core.integrity import payload_digest
 from arachne.core.logging import get_logger
 from arachne.core.metrics import REGISTRY
+from arachne.core.pii import PIIPolicy, mask_payload
+from arachne.data.evidence_service import EVIDENCE_STUB_KEY, serialized_size
 from arachne.data.models import AuditLog, Evidence, Finding, Project, Scan
 from arachne.data.quota import StorageQuota
 
 __all__ = [
     "CATEGORIES",
+    "OFFLOADED_REMASK_REASON",
     "CategoryPlan",
     "ProjectPrune",
     "PrunePlan",
+    "RemaskPlan",
     "RetentionPolicy",
     "RetentionPruner",
     "policy_for",
 ]
+
+#: Why a blob could not be re-masked, as the plan and the audit line state it. The
+#: requirement is explicit that an unmaskable *store* is reported rather than skipped
+#: silently, so the reason is a value rather than a log line.
+OFFLOADED_REMASK_REASON: Final = "payload is offloaded to an evidence backend"
+
+#: How many unmaskable blob ids one audit line names. The count is exact; the ids are a
+#: bounded sample, because a first prune on a years-old database can select thousands.
+MAX_REPORTED_UNSUPPORTED_IDS: Final = 32
 
 _logger = get_logger("data.retention")
 
@@ -216,6 +230,73 @@ class CategoryPlan:
 
 
 @dataclass(frozen=True, slots=True)
+class RemaskPlan:
+    """What the PII re-mask would touch (WP-14, REQ-DATA-005).
+
+    ``rows`` counts **blobs** that would be re-masked and ``categories`` counts
+    **occurrences** by category — the two are different numbers on purpose, because "how
+    many rows changed" and "how much personal data was removed" are different questions and
+    a single total would answer neither.
+
+    ``unsupported`` is the honest half of the requirement: a store this pruner cannot
+    re-mask is reported with its reason and its row count rather than dropped from the plan.
+    """
+
+    rows: int = 0
+    categories: Mapping[str, int] = field(default_factory=dict)
+    oldest: datetime | None = None
+    #: The exact rows the apply step will mask — the plan is the contract, as it is for
+    #: deletion (never serialized).
+    ids: tuple[int, ...] = field(default=(), repr=False)
+    #: reason → how many blobs it covers.
+    unsupported: Mapping[str, int] = field(default_factory=dict)
+    #: The blobs behind :attr:`unsupported` (never serialized; the count is exact, the ids
+    #: are reported in a bounded sample on the audit line).
+    unsupported_ids: tuple[int, ...] = field(default=(), repr=False)
+
+    @property
+    def total(self) -> int:
+        """Occurrences that would be removed across every category."""
+        return sum(self.categories.values())
+
+    def merged(self, other: RemaskPlan) -> RemaskPlan:
+        categories = dict(self.categories)
+        for name, count in other.categories.items():
+            categories[name] = categories.get(name, 0) + count
+        unsupported = dict(self.unsupported)
+        for reason, count in other.unsupported.items():
+            unsupported[reason] = unsupported.get(reason, 0) + count
+        return RemaskPlan(
+            rows=self.rows + other.rows,
+            categories=categories,
+            oldest=_earliest(self.oldest, other.oldest),
+            ids=self.ids + other.ids,
+            unsupported=unsupported,
+            unsupported_ids=self.unsupported_ids + other.unsupported_ids,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "blobs": self.rows,
+            "occurrences": self.total,
+            "categories": {name: self.categories[name] for name in sorted(self.categories)},
+            "oldest": self.oldest.isoformat() if self.oldest else None,
+            "unsupported": {name: self.unsupported[name] for name in sorted(self.unsupported)},
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class _Remasked:
+    """One blob this run re-masked (the audit line's content, and nothing else)."""
+
+    evidence_id: int
+    scan_id: int
+    project_id: int | None
+    categories: Mapping[str, int]
+    digest: str
+
+
+@dataclass(frozen=True, slots=True)
 class ProjectPrune:
     """One project's share of a pruning run."""
 
@@ -223,6 +304,9 @@ class ProjectPrune:
     slug: str
     policy: RetentionPolicy
     categories: Mapping[str, CategoryPlan]
+    #: The PII re-mask this project's policy calls for (WP-14, REQ-DATA-005). Empty when
+    #: the deployment sets no retention window or the project masks nothing.
+    pii: RemaskPlan = field(default_factory=RemaskPlan)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -230,6 +314,7 @@ class ProjectPrune:
             "slug": self.slug,
             "policy": self.policy.to_dict(),
             "categories": {name: plan.to_dict() for name, plan in sorted(self.categories.items())},
+            "pii": self.pii.to_dict(),
         }
 
 
@@ -242,6 +327,14 @@ class PrunePlan:
     projects: tuple[ProjectPrune, ...] = ()
     #: Deployment-wide audit retention (see the module docstring on why it is not per project).
     audit: CategoryPlan = field(default_factory=lambda: CategoryPlan("audit"))
+
+    @property
+    def pii(self) -> RemaskPlan:
+        """Every project's re-mask folded into one plan (REQ-DATA-005)."""
+        total = RemaskPlan()
+        for project in self.projects:
+            total = total.merged(project.pii)
+        return total
 
     def category(self, name: str) -> CategoryPlan:
         total = CategoryPlan(name)
@@ -281,6 +374,7 @@ class PrunePlan:
             "total_rows": self.total_rows,
             "total_bytes": self.total_bytes,
             "audit": self.audit.to_dict(),
+            "pii": self.pii.to_dict(),
             "projects": [project.to_dict() for project in self.projects],
         }
 
@@ -296,6 +390,8 @@ class RetentionPruner:
         auditor: Auditor | None = None,
         quota: StorageQuota | None = None,
         evidence: Any = None,
+        pii_policy: Callable[[int | None], PIIPolicy] | None = None,
+        integrity: Any = None,
     ) -> None:
         self._session_factory = session_factory
         self.settings = settings or get_settings()
@@ -304,6 +400,16 @@ class RetentionPruner:
         #: An object with ``async delete(key) -> bool`` — the evidence backend, when the
         #: deployment offloads payloads. ``None`` means payloads are inline.
         self.evidence = evidence
+        #: Resolves a project's PII policy (WP-14, REQ-DATA-005). ``None`` means this
+        #: deployment has no policy resolver, so nothing is ever re-masked — which is
+        #: different from a policy that masks nothing, and the plan says which it is.
+        self._pii_policy = pii_policy
+        #: The tamper-evidence seam (``IntegrityService``), when the deployment has one.
+        #: A re-mask is an *authorized mutation* of stored evidence: the row's signature and
+        #: its scan's seal both describe the blob, so masking without re-signing would make
+        #: `verify-chain` report a privacy control's work as tampering. ``None`` on a
+        #: deployment whose rows carry neither.
+        self.integrity = integrity
 
     # ------------------------------------------------------------------ policies
     @property
@@ -319,6 +425,22 @@ class RetentionPruner:
 
     def policy_for(self, retention: Mapping[str, Any] | None, *, source: str) -> RetentionPolicy:
         return policy_for(self.defaults, retention, source=source)
+
+    @property
+    def pii_retention_days(self) -> int:
+        """``ARACHNE_PII_RETENTION_DAYS`` — the window the re-mask keys on (REQ-DATA-005).
+
+        ``0`` (the default) means "mask at capture only, never re-mask": the control is
+        opt-in, and a deployment that has not asked for it must not have its stored payloads
+        rewritten by a pruning run.
+        """
+        return int(self.settings.pii.retention_days)
+
+    def pii_policy_for(self, project_id: int | None) -> PIIPolicy:
+        """The PII policy in force for one project (an inactive policy masks nothing)."""
+        if self._pii_policy is None:
+            return PIIPolicy()
+        return self._pii_policy(project_id)
 
     def policies(self) -> tuple[tuple[int | None, str, RetentionPolicy], ...]:
         """Every project's effective policy, plus the implicit default workspace."""
@@ -347,12 +469,14 @@ class RetentionPruner:
             entries: list[ProjectPrune] = []
             for pid, slug, retention in self._project_rows(session, project_id):
                 policy = self.policy_for(retention, source=f"project {slug}")
+                categories, pii_plan = self._plan_project(session, pid, policy, moment, batch)
                 entries.append(
                     ProjectPrune(
                         project_id=pid,
                         slug=slug,
                         policy=policy,
-                        categories=self._plan_project(session, pid, policy, moment, batch),
+                        categories=categories,
+                        pii=pii_plan,
                     )
                 )
             cutoff = self._audit_cutoff(moment)
@@ -388,10 +512,13 @@ class RetentionPruner:
         policy: RetentionPolicy,
         now: datetime,
         limit: int,
-    ) -> dict[str, CategoryPlan]:
+    ) -> tuple[dict[str, CategoryPlan], RemaskPlan]:
+        """``(per-category deletion plan, PII re-mask plan)`` for one project."""
         empty = {category: CategoryPlan(category) for category in CATEGORIES}
         if not policy.enabled:
-            return empty
+            # A legal hold freezes *deletion*, and the re-mask with it: an operator who
+            # suspended retention has not asked for stored evidence to be rewritten either.
+            return empty, RemaskPlan()
         scan_cutoff = policy.cutoff("scans", now)
         finding_cutoff = policy.cutoff("findings", now)
         evidence_cutoff = policy.cutoff("evidence", now)
@@ -497,6 +624,13 @@ class RetentionPruner:
                 keys=tuple(str(row[3]) for row in evidence_rows if row[3]),
             )
 
+        # --- PII older than the retention window, re-masked under this project's policy
+        # (WP-14, REQ-DATA-005). Rows already selected for deletion are excluded: masking a
+        # blob the same run is about to delete would be work whose only product is an audit
+        # line about a row that no longer exists.
+        excluded = set(scan_ids) | set(finding_ids) | set(evidence_plan.ids)
+        pii_plan = self._plan_pii(session, project_id, now, limit, excluded=excluded)
+
         return {
             "scans": CategoryPlan(
                 "scans",
@@ -520,7 +654,68 @@ class RetentionPruner:
             ),
             "evidence": evidence_plan,
             "audit": CategoryPlan("audit"),
-        }
+        }, pii_plan
+
+    def _plan_pii(
+        self,
+        session: Session,
+        project_id: int | None,
+        now: datetime,
+        limit: int,
+        *,
+        excluded: set[int],
+    ) -> RemaskPlan:
+        """Select the blobs the PII retention window covers (WP-14, REQ-DATA-005).
+
+        Read-only: the plan *detects* what is there and counts it without writing anything,
+        which is what makes ``--dry-run`` a real answer rather than a promise. The apply step
+        masks exactly the ids this selected, so the two cannot disagree about what a run did.
+        """
+        days = self.pii_retention_days
+        pii = self.pii_policy_for(project_id)
+        if days <= 0 or not pii.active:
+            return RemaskPlan()
+        cutoff = now - timedelta(days=days)
+        statement: Any = (
+            select(Evidence.id, Evidence.created_at, Evidence.payload_json)
+            .join(Finding, Finding.id == Evidence.finding_id)
+            .join(Scan, Scan.id == Finding.scan_id)
+            .where(Evidence.created_at < cutoff)
+            .order_by(Evidence.created_at)
+            .limit(limit)
+        )
+        statement = _scope(statement, project_id)
+        if excluded:
+            statement = statement.where(Evidence.id.notin_(sorted(excluded)))
+        rows = session.execute(statement).all()
+        ids: list[int] = []
+        categories: dict[str, int] = {}
+        unsupported: dict[str, int] = {}
+        unsupported_ids: list[int] = []
+        oldest: datetime | None = None
+        for row_id, created_at, payload in rows:
+            data = dict(payload or {})
+            if data.get(EVIDENCE_STUB_KEY):
+                unsupported[OFFLOADED_REMASK_REASON] = (
+                    unsupported.get(OFFLOADED_REMASK_REASON, 0) + 1
+                )
+                unsupported_ids.append(int(row_id))
+                continue
+            _, counts = mask_payload(data, pii)
+            if not counts:
+                continue
+            ids.append(int(row_id))
+            oldest = oldest or _as_utc(created_at)
+            for category, count in counts.items():
+                categories[category] = categories.get(category, 0) + count
+        return RemaskPlan(
+            rows=len(ids),
+            categories=categories,
+            oldest=oldest,
+            ids=tuple(ids),
+            unsupported=unsupported,
+            unsupported_ids=tuple(unsupported_ids),
+        )
 
     def _select_scan_ids(
         self,
@@ -578,6 +773,7 @@ class RetentionPruner:
     async def _apply(self, plan: PrunePlan) -> PrunePlan:
         keys: list[str] = []
         applied: list[ProjectPrune] = []
+        remasked: list[_Remasked] = []
         with self._session_factory() as session:
             for entry in plan.projects:
                 categories: dict[str, CategoryPlan] = {}
@@ -592,6 +788,10 @@ class RetentionPruner:
                         session.flush()
                     categories[name] = category_plan
                     keys.extend(category_plan.keys)
+                # REQ-DATA-005: re-mask in the same transaction as the deletion, against the
+                # ids the plan selected. Masking is irreversible, which is the point: a
+                # deployment that could un-mask would have kept the value.
+                remasked.extend(self._remask(session, entry))
                 categories["audit"] = CategoryPlan("audit")
                 applied.append(
                     ProjectPrune(
@@ -599,12 +799,21 @@ class RetentionPruner:
                         slug=entry.slug,
                         policy=entry.policy,
                         categories=categories,
+                        pii=entry.pii,
                     )
                 )
             if plan.audit.ids:
                 session.execute(delete(AuditLog).where(AuditLog.id.in_(plan.audit.ids)))
                 session.flush()
             session.commit()
+
+        self._audit_remasks(remasked)
+        self._report_unsupported(plan)
+        if remasked:
+            # The rows and their scans changed *on purpose*, so the artefacts that describe
+            # them are refreshed rather than left to fail verification: a re-masked blob
+            # would otherwise be reported as tampering by the very control that protects it.
+            self._refresh_integrity(remasked)
 
         # Blobs go after the rows: a failure to unlink leaves an orphan (harmless, and
         # visible through the backend's stats) instead of a row pointing at nothing.
@@ -628,6 +837,149 @@ class RetentionPruner:
             audit=plan.audit,
         )
 
+    # ------------------------------------------------------------------ PII re-mask
+    def _remask(self, session: Session, entry: ProjectPrune) -> list[_Remasked]:
+        """Mask the blobs this project's plan selected; return what changed.
+
+        Only rows whose payload actually carries policy-covered PII are written: a selection
+        that matches a pattern but fails its validator is left alone (the detectors are what
+        keep a version string out of this), so ``rows`` in the applied plan is the count of
+        blobs that *changed*, not the count that was inspected.
+        """
+        if not entry.pii.ids:
+            return []
+        policy = self.pii_policy_for(entry.project_id)
+        if not policy.active:  # pragma: no cover - the plan only selects under an active policy
+            return []
+        found: list[_Remasked] = []
+        statement = (
+            select(Evidence, Finding.scan_id)
+            .join(Finding, Finding.id == Evidence.finding_id)
+            .where(Evidence.id.in_(list(entry.pii.ids)))
+        )
+        for row, scan_id in session.execute(statement).all():
+            payload = dict(row.payload_json or {})
+            masked, counts = mask_payload(payload, policy)
+            if not counts:
+                continue
+            row.payload_json = masked
+            # The logical size is re-measured: a masked placeholder is usually shorter than
+            # the value it replaced, and the quota ledger is recomputed after the run, so the
+            # row and the ledger stay in step.
+            row.size_bytes = serialized_size(masked)
+            session.flush()
+            found.append(
+                _Remasked(
+                    evidence_id=int(row.id),
+                    scan_id=int(scan_id),
+                    project_id=entry.project_id,
+                    categories=dict(counts),
+                    digest=payload_digest(masked),
+                )
+            )
+        return found
+
+    def _audit_remasks(self, remasked: list[_Remasked]) -> None:
+        """One audit line per masked blob (REQ-DATA-005), counts by category, never a value."""
+        if self.auditor is None:
+            return
+        for item in remasked:
+            self.auditor.record(
+                AuditAction.PII_REMASKED,
+                scan_id=item.scan_id,
+                target=f"evidence:{item.evidence_id}",
+                reason="evidence older than the PII retention window was re-masked",
+                meta={
+                    "evidence_id": item.evidence_id,
+                    "project_id": item.project_id,
+                    "categories": item.categories,
+                    "total": sum(item.categories.values()),
+                    # The blob's *new* content hash: the chain-of-custody record follows an
+                    # authorized mutation rather than contradicting it (REQ-PROOF-018).
+                    "sha256": item.digest,
+                },
+            )
+
+    def _report_unsupported(self, plan: PrunePlan) -> None:
+        """Report the stores this run could not re-mask — once, explicitly (REQ-DATA-005)."""
+        unsupported = plan.pii.unsupported
+        if not unsupported:
+            return
+        ids = list(plan.pii.unsupported_ids)[:MAX_REPORTED_UNSUPPORTED_IDS]
+        if self.auditor is not None:
+            self.auditor.record(
+                AuditAction.PII_REMASK_UNSUPPORTED,
+                outcome=AuditOutcome.ERROR,
+                reason=(
+                    "; ".join(f"{reason}: {count}" for reason, count in sorted(unsupported.items()))
+                ),
+                meta={
+                    "reasons": {reason: unsupported[reason] for reason in sorted(unsupported)},
+                    "evidence_ids": ids,
+                    "total": sum(unsupported.values()),
+                },
+            )
+        _logger.warning(
+            "the PII retention re-mask could not cover every selected blob",
+            extra={
+                "event": "retention.pii_remask_unsupported",
+                "reasons": {reason: unsupported[reason] for reason in sorted(unsupported)},
+                "evidence_ids": ids,
+            },
+        )
+
+    def _refresh_integrity(self, remasked: list[_Remasked]) -> None:
+        """Re-sign the re-masked rows and re-seal their scans (REQ-PROOF-018 composition).
+
+        A failed refresh is logged, never raised: the masking is the privacy control and it
+        has already happened. What a failure leaves behind is exactly what this package's
+        chain-of-custody record is for — ``verify-chain`` then reports the blob, which is an
+        honest outcome for "the artefact could not be refreshed".
+        """
+        if self.integrity is None:
+            return
+        ids = sorted({item.evidence_id for item in remasked})
+        try:
+            self._resign_evidence(ids)
+        except Exception as exc:  # pragma: no cover - a store failure, logged not raised
+            _logger.warning(
+                "could not re-sign re-masked evidence",
+                extra={"event": "retention.remask_resign_failed", "error": str(exc)[:200]},
+            )
+        for scan_id in sorted({item.scan_id for item in remasked}):
+            try:
+                self.integrity.seal_scan(scan_id, reason="pii-remask")
+            except Exception as exc:  # pragma: no cover - a store failure, logged not raised
+                _logger.warning(
+                    "could not re-seal a scan after a PII re-mask",
+                    extra={
+                        "event": "retention.remask_seal_failed",
+                        "scan_id": scan_id,
+                        "error": str(exc)[:200],
+                    },
+                )
+
+    def _resign_evidence(self, ids: list[int]) -> None:
+        """Recompute the deployment-key signature of each re-masked evidence row."""
+        sign = getattr(self.integrity, "sign_evidence", None)
+        if sign is None:  # pragma: no cover - the service always has it
+            return
+        with self._session_factory() as session:
+            rows = session.scalars(select(Evidence).where(Evidence.id.in_(ids))).all()
+            for row in rows:
+                signature = sign(
+                    {
+                        "id": int(row.id),
+                        "finding_id": row.finding_id,
+                        "kind": row.kind,
+                        "payload_json": dict(row.payload_json or {}),
+                        "created_at": _as_utc(row.created_at),
+                    }
+                )
+                if signature is not None:
+                    row.signature = signature
+            session.commit()
+
     # ------------------------------------------------------------------ audit + metrics
     def _audit(self, action: AuditAction, plan: PrunePlan, *, dry_run: bool) -> None:
         if self.auditor is None:
@@ -649,6 +1001,9 @@ class RetentionPruner:
                 "projects": [
                     {"project_id": entry.project_id, "slug": entry.slug} for entry in plan.projects
                 ],
+                # REQ-DATA-005: the re-mask is part of what a run does, so it is part of
+                # what the run's own audit line reports — counts and reasons, never a value.
+                "pii": plan.pii.to_dict(),
             },
         )
         _logger.info(
@@ -668,6 +1023,16 @@ class RetentionPruner:
             rows = category.rows + category.cascaded_rows
             if rows:
                 REGISTRY.increment(metric, {"category": name}, float(rows))
+        # PII re-masking is counted per category, like every other retention metric — and
+        # separately from deletion, because "how much evidence did we delete" and "how much
+        # personal data did we remove from what we kept" are different answers.
+        pii = plan.pii
+        if pii.rows:
+            REGISTRY.increment(
+                metric,
+                {"category": "pii-remask"},
+                float(pii.rows),
+            )
 
 
 def _scope(statement: Any, project_id: int | None) -> Any:

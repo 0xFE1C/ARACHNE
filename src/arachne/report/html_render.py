@@ -81,6 +81,9 @@ dl.meta { display:grid; grid-template-columns:max-content 1fr; gap:1px 12px; mar
 dl.meta dt { color:var(--muted); }
 dl.meta dd { margin:0; }
 .lc { background:#fff8e1; border:1px solid #f0d894; border-radius:6px; padding:.6rem .9rem; }
+/* A residue warning is not a low-confidence observation: it says the scan did not put the
+   target back, which is an operator action item (WP-14, REQ-PROOF-017). */
+.warn { background:#fdecea; border:1px solid #e6b0aa; border-radius:6px; padding:.6rem .9rem; }
 .footer { margin-top:2.4rem; color:var(--muted); font-size:.8rem; border-top:1px solid var(--line); padding-top:.6rem; }
 @media print {
   .wrap { max-width:none; padding:0; }
@@ -198,6 +201,29 @@ def _cover(report: ReportData) -> str:
     )
 
 
+def _residue_warning(report: ReportData) -> str:
+    """The residue warning as HTML (WP-14, REQ-PROOF-017) — markup for the Markdown block.
+
+    Empty unless the scan recorded an attestation that is not clean. The signed statement is
+    quoted verbatim, like the Markdown renderer's: the artefact's own words are the claim.
+    """
+    attestation = report.residue_attestation
+    if attestation is None or attestation.clean:
+        return ""
+    signature = _t(
+        "report.residue.signed" if attestation.signed else "report.residue.unsigned", report
+    )
+    digest = _esc((attestation.hash or "")[:16])
+    items = "".join(f"<li>{_esc(item)}</li>" for item in attestation.repair_instructions)
+    return (
+        '<p class="warn" role="alert">'
+        f"<strong>{_esc(_t('report.residue.warning', report))}</strong> — "
+        f"{_esc(attestation.statement)} "
+        f'<span class="small muted">({_esc(_t("report.residue.attestation", report))}: '
+        f"{digest}..., {_esc(signature)})</span></p>" + (f"<ul>{items}</ul>" if items else "")
+    )
+
+
 def _summary(report: ReportData) -> str:
     summary = report.executive_summary
     parts = [f"<section><h2>1. {_t('report.section.executive_summary', report)}</h2>"]
@@ -209,6 +235,7 @@ def _summary(report: ReportData) -> str:
         f"{summary.low_confidence_count} low-confidence observation(s) · posture "
         f"{_esc(summary.posture)}</p>"
     )
+    parts.append(_residue_warning(report))
     if summary.headline_finding_ids:
         parts.append(
             '<p class="small">Highest priority: '

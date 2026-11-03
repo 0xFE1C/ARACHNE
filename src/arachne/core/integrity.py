@@ -37,22 +37,37 @@ __all__ = [
     "ANCHOR_DOMAIN",
     "AUDIT_DOMAIN",
     "CHAIN_FIELDS",
+    "EVIDENCE_CAPTURED_ACTION",
     "EVIDENCE_DOMAIN",
+    "EVIDENCE_HASH_ACTIONS",
     "FINDING_DOMAIN",
     "GENESIS_HASH",
+    "NO_STATE_CHANGE_STATEMENT",
+    "PII_REMASKED_ACTION",
+    "RESIDUE_DOMAIN",
     "SEAL_DOMAIN",
+    "ZERO_RESIDUE_STATEMENT",
     "Anchor",
     "AuditLink",
+    "EvidenceHashRecord",
     "IntegrityIssue",
     "IntegrityReport",
+    "attestation_digest",
     "audit_payload",
+    "before_value_hash",
     "chain_digest",
+    "evidence_hash_records",
     "evidence_signature_payload",
     "finding_signature_payload",
     "reconstruct_audit_payload",
+    "residue_attestation_payload",
+    "residue_entry",
     "seal_digest",
     "seal_manifest",
+    "sign_anchor",
+    "sign_attestation",
     "verify_anchors",
+    "verify_attestation",
     "verify_audit_chain",
     "verify_row_signature",
     "verify_seal",
@@ -68,6 +83,23 @@ ANCHOR_DOMAIN: Final = "arachne.anchor"
 FINDING_DOMAIN: Final = "arachne.finding"
 EVIDENCE_DOMAIN: Final = "arachne.evidence"
 SEAL_DOMAIN: Final = "arachne.seal"
+RESIDUE_DOMAIN: Final = "arachne.residue"
+
+#: The audit actions whose ``meta`` carries an evidence blob's content hash (WP-14,
+#: REQ-PROOF-018). Order matters to a chain walk: a later record **supersedes** an earlier
+#: one, which is how an *authorized* mutation keeps the chain-of-custody record true rather
+#: than turning it into a false tamper report — ``pii.remasked`` is the retention pruner
+#: re-masking a blob under a policy that arrived after the capture (REQ-DATA-005), and a
+#: verifier that ignored it would report every re-masked blob as tampered.
+EVIDENCE_CAPTURED_ACTION: Final = "evidence.captured"
+PII_REMASKED_ACTION: Final = "pii.remasked"
+EVIDENCE_HASH_ACTIONS: Final[tuple[str, ...]] = (EVIDENCE_CAPTURED_ACTION, PII_REMASKED_ACTION)
+
+#: The statement a residue attestation carries when nothing was changed (REQ-PROOF-017).
+#: The requirement names this wording; ``tests/unit/test_residue_attestation.py`` pins it.
+NO_STATE_CHANGE_STATEMENT: Final = "no state-changing action was authorized for this scan"
+#: …and when everything a scan changed was put back.
+ZERO_RESIDUE_STATEMENT: Final = "every state change was restored — zero residue"
 
 #: The fields that carry the chain itself. They are excluded from the hashed payload so a
 #: verification recomputes the same value from the stored *content* — and so writing the
@@ -675,3 +707,176 @@ def _as_text_or_none(value: Any) -> str | None:
     if value is None:
         return None
     return _as_text(value)
+
+
+# ------------------------------------------------- evidence chain-of-custody (REQ-PROOF-018)
+@dataclass(frozen=True, slots=True)
+class EvidenceHashRecord:
+    """One evidence blob's content hash, as the audit chain recorded it.
+
+    ``action`` says which act wrote it — the capture, or a re-mask under a retention policy
+    that arrived later — so a verification report can name *why* the record it compares
+    against is the one it is.
+    """
+
+    evidence_id: int
+    digest: str
+    scan_id: int | None = None
+    action: str = EVIDENCE_CAPTURED_ACTION
+    seq: int | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "evidence_id": self.evidence_id,
+            "sha256": self.digest,
+            "scan_id": self.scan_id,
+            "action": self.action,
+            "seq": self.seq,
+        }
+
+
+def evidence_hash_records(links: Sequence[AuditLink]) -> dict[int, EvidenceHashRecord]:
+    """Every evidence content hash a chain recorded, keyed by evidence id.
+
+    The walk is in chain order and **the last record for an id wins**: retention's re-mask
+    writes a later ``pii.remasked`` line carrying the blob's new digest, so the map that a
+    verifier compares against a stored payload is always the chain's latest statement about
+    it. Without that, re-masking PII (REQ-DATA-005) would make every affected blob look
+    tampered to ``verify-chain`` — the two controls would contradict each other instead of
+    composing.
+    """
+    out: dict[int, EvidenceHashRecord] = {}
+    for link in links:
+        payload = link.payload
+        action = str(payload.get("action") or "")
+        if action not in EVIDENCE_HASH_ACTIONS:
+            continue
+        meta = payload.get("meta")
+        if not isinstance(meta, Mapping):
+            continue
+        record = _evidence_hash_record(action, link.seq, payload.get("scan_id"), meta)
+        if record is not None:
+            out[record.evidence_id] = record
+    return out
+
+
+def _evidence_hash_record(
+    action: str, seq: int, scan_id: Any, meta: Mapping[str, Any]
+) -> EvidenceHashRecord | None:
+    """One chain line as a record, or ``None`` when it is not one (an old or partial row)."""
+    raw_id = meta.get("evidence_id")
+    digest = meta.get("sha256")
+    if isinstance(raw_id, bool) or not isinstance(raw_id, int):
+        return None
+    if not isinstance(digest, str) or not digest:
+        return None
+    return EvidenceHashRecord(
+        evidence_id=raw_id,
+        digest=digest,
+        scan_id=_as_int_or_none(scan_id),
+        action=action,
+        seq=seq,
+    )
+
+
+def _as_int_or_none(value: Any) -> int | None:
+    if isinstance(value, bool) or value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):  # pragma: no cover - a hand-written audit row
+        return None
+
+
+# ----------------------------------------------------- residue attestation (REQ-PROOF-017)
+def before_value_hash(before: Mapping[str, Any] | None) -> str:
+    """The hash of a state change's before-value — never the value itself.
+
+    The requirement asks the attestation to enumerate the before-**value hash**, which is
+    also the only form that is safe to sign and to publish: a restored row's prior content
+    can hold whatever the target held there (the ledger already redacts it, but a digest is
+    what makes the envelope publishable rather than merely stored).
+    """
+    return hashlib.sha256(canonical_bytes(before if before is not None else {})).hexdigest()
+
+
+def residue_entry(change: Mapping[str, Any]) -> dict[str, Any]:
+    """One state change as the attestation states it: asset, action, hash, outcome, time.
+
+    ``restore_outcome`` collapses the ledger's two booleans into the one word an auditor
+    reads: ``restored`` (verified), ``restored-unverified``, ``not-restored`` (the repair
+    case) or ``error``.
+    """
+    restored = bool(change.get("restored"))
+    if restored and bool(change.get("restore_verified")):
+        outcome = "restored"
+    elif restored:
+        outcome = "restored-unverified"
+    elif change.get("error"):
+        outcome = "error"
+    else:
+        outcome = "not-restored"
+    return {
+        "asset": str(change.get("locator") or change.get("table") or "the target"),
+        "action": str(change.get("kind") or "state-change"),
+        "check": str(change.get("check_id") or ""),
+        "change_id": str(change.get("change_id") or ""),
+        "before_value_hash": before_value_hash(
+            change.get("before") if isinstance(change.get("before"), Mapping) else None
+        ),
+        "restore_outcome": outcome,
+        "timestamp": change.get("changed_at") or change.get("restored_at"),
+    }
+
+
+def residue_attestation_payload(
+    *,
+    scan_id: int | str,
+    generated_at: str,
+    entries: Sequence[Mapping[str, Any]],
+    residue: int,
+    statement: str,
+    repair_instructions: Sequence[str] = (),
+    restored: int = 0,
+) -> dict[str, Any]:
+    """The attestation's signed body: the entries, the verdict and the statement.
+
+    Built as a plain mapping so the same function serves the writer (which hashes and signs
+    it) and a verifier (which recomputes the hash from what was stored). ``residue`` is the
+    count of state changes that are **not** restored — the number the report's warning and
+    the "not clean" verdict both key on.
+    """
+    return {
+        "schema_version": 1,
+        "scan_id": scan_id,
+        "generated_at": generated_at,
+        "statement": statement,
+        "residue": residue,
+        "restored": restored,
+        "changes": [dict(entry) for entry in entries],
+        "repair_instructions": list(repair_instructions),
+    }
+
+
+def attestation_digest(payload: Mapping[str, Any]) -> str:
+    """The attestation's hash — what the audit chain links (REQ-PROOF-017)."""
+    return hashlib.sha256(canonical_bytes(dict(payload))).hexdigest()
+
+
+def sign_attestation(signer: DeploymentSigner, payload: Mapping[str, Any]) -> str:
+    """The deployment key's signature over the attestation body."""
+    return signer.sign(RESIDUE_DOMAIN, canonical_bytes(dict(payload)))
+
+
+def verify_attestation(
+    signer: DeploymentSigner | None, payload: Mapping[str, Any], signature: str | None
+) -> bool:
+    """True when ``signature`` is the deployment key's signature over ``payload``.
+
+    ``signer is None`` is *not* a pass: an unsigned attestation is verified only by the
+    caller choosing to accept it, which is why the attestation itself records
+    ``signed: false`` rather than leaving the reader to infer it from a missing field.
+    """
+    if signer is None:
+        return False
+    return signer.verify(RESIDUE_DOMAIN, canonical_bytes(dict(payload)), signature)

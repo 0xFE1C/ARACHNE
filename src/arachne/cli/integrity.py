@@ -221,7 +221,12 @@ def _emit_report(report: IntegrityReport, *, json_output: bool, signed: bool) ->
         return
     typer.echo(f"verify-chain: {report.summary()}")
     for issue in report.issues:
-        typer.echo(f"  [{issue.kind}] {issue.subject}: {issue.detail}", err=True)
+        # ``<check>.<kind>`` rather than just the kind: REQ-PROOF-018 names the verdict
+        # ``evidence.mismatch``, and a body edit to a stored blob is a different answer from
+        # an edited audit row. The bracketed pair keeps both readable in one line.
+        typer.echo(f"  [{issue.check}.{issue.kind}] {issue.subject}: {issue.detail}", err=True)
+    for note in report.notes:
+        typer.echo(f"  note: {note}")
     if not signed and report.ok:
         typer.echo(
             "  note: no integrity key is configured, so signatures and seals are not checked; "

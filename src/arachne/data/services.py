@@ -177,17 +177,26 @@ def build_integrity_verifier(services: ScanServices) -> IntegrityVerifier:
 
 
 def build_retention_pruner(services: ScanServices) -> RetentionPruner:
-    """The pruning job for this deployment (S20, REQ-DATA-001).
+    """The pruning job for this deployment (S20, REQ-DATA-001; S25 PII, WP-14).
 
     Its evidence backend is the *same* object the scan writes through, so a pruned row's
-    object is unlinked from the store it actually lives in.
+    object is unlinked from the store it actually lives in. The PII resolver is the same one
+    the evidence service masks with, so the re-mask applies the *project's* policy rather
+    than a second opinion about it (REQ-DATA-005), and the integrity service is the same
+    seal/anchor seam, so a re-masked blob's row signature and its scan's seal are refreshed
+    rather than left to fail verification.
     """
+    default_pii = PIIPolicy.from_settings(services.settings.pii)
     return RetentionPruner(
         services.session_factory,
         settings=services.settings,
         auditor=services.auditor,
         quota=services.quota,
         evidence=services.evidence_backend,
+        pii_policy=lambda project_id: services.projects.pii_policy(
+            project_id, fallback=default_pii
+        ),
+        integrity=services.integrity,
     )
 
 
@@ -241,8 +250,15 @@ def build_services(settings: Settings | None = None, *, check_schema: bool = Tru
         store=store,
         target_store=target_store,
         # S25: findings and evidence are signed as they are written, and every evidence row
-        # is stamped with this deployment's region (REQ-RESIL-004).
-        findings=SqlFindingStore(factory, signer=signer, region=effective.resilience.region),
+        # is stamped with this deployment's region (REQ-RESIL-004). WP-14 (REQ-PROOF-018):
+        # the auditor records each blob's content hash in the chain at capture, which is
+        # what makes a later edit to a stored payload detectable by `verify-chain`.
+        findings=SqlFindingStore(
+            factory,
+            signer=signer,
+            region=effective.resilience.region,
+            auditor=auditor,
+        ),
         analyses=SqlAnalysisStore(factory),
         projects=projects,
         feeds=FeedStore(factory, directory=effective.feeds_dir),

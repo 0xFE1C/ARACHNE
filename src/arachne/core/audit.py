@@ -23,7 +23,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from arachne.core.config import Settings, get_settings
 from arachne.core.integrity import (
     AUDIT_DOMAIN,
+    EVIDENCE_CAPTURED_ACTION,
     GENESIS_HASH,
+    PII_REMASKED_ACTION,
     audit_payload,
     chain_digest,
 )
@@ -150,6 +152,17 @@ class AuditAction(StrEnum):
     PROOF_OOB_ISSUED = "proof.oob_issued"
     PROOF_OOB_HIT = "proof.oob_hit"
     PROOF_OOB_REPLAY = "proof.oob_replay"
+    #: WP-14 (area PROOF, REQ-PROOF-019): a callback the receiver *refused* — a forged or
+    #: missing per-scan secret MAC, a scan that is not active, or a token past its replay
+    #: window. Distinct from ``proof.oob_hit`` (which also carries the malformed-token and
+    #: rate-limit refusals that predate this package) so an operator can alert on
+    #: "someone is trying to forge callbacks" separately from "the target is chatty".
+    PROOF_OOB_REFUSED = "proof.oob_refused"
+    #: WP-14 (area PROOF, REQ-PROOF-017): the per-scan residue attestation. One line per
+    #: scan, carrying the attestation's hash (so the chain links it), the residue count and
+    #: whether the deployment key signed it. A non-zero residue is also one
+    #: ``proof.repair_required`` line per unrestored change (the pre-existing action).
+    PROOF_RESIDUE_ATTESTED = "proof.residue_attested"
     #: S15 L3 one-shot command proof (REQ-PROOF-007): the single allowlisted echo.
     PROOF_COMMAND_EXECUTED = "proof.command_executed"
     #: S15 L4 state changes (REQ-PROOF-008/010): every write, every restore, the end-of-scan
@@ -238,6 +251,22 @@ class AuditAction(StrEnum):
     RETENTION_PLANNED = "retention.planned"
     RETENTION_PRUNED = "retention.pruned"
     EVIDENCE_STORED = "evidence.stored"
+    #: WP-14 (area PROOF/DATA, REQ-PROOF-018): **every** evidence blob's content hash is
+    #: recorded in the audit chain as it is captured (``evidence.captured``), so a later
+    #: edit to a stored payload is detectable by ``arachne verify-chain`` even on a
+    #: deployment whose rows carry no signature. ``pii.masked`` is the capture-time masking
+    #: the evidence service already audits; ``pii.remasked`` (WP-14, REQ-DATA-005) is the
+    #: retention pruner re-masking an **older** blob under a policy that arrived later — one
+    #: line per masked blob, carrying the blob's *new* content hash, so the chain-of-custody
+    #: record follows an authorized mutation instead of contradicting it.
+    #: ``pii.remask_unsupported`` reports, once per run, the blobs a store could not
+    #: re-mask (an offloaded object store, here) — reported rather than skipped in silence.
+    #: The literals live in :mod:`arachne.core.integrity` (the module that has to
+    #: recognise these events while walking the chain) and are bound here so the writer and
+    #: the verifier cannot drift apart.
+    EVIDENCE_CAPTURED = EVIDENCE_CAPTURED_ACTION
+    PII_REMASKED = PII_REMASKED_ACTION
+    PII_REMASK_UNSUPPORTED = "pii.remask_unsupported"
     QUOTA_WARNING = "quota.warning"
     QUOTA_EXCEEDED = "quota.exceeded"
     #: S21 (area AGENT): the agentic hypothesis loop. ``hypothesis.proposed`` is one line per
