@@ -345,6 +345,14 @@ class AnalysisLog(Base):
     Records which engine produced the analysis, which model/template version was used,
     the prompt hash (never the prompt body, which can embed target secrets), the output,
     and the token spend.
+
+    ``provenance`` (WP-15, area AGENT, REQ-AGENT-008) is the AI half of that record as one
+    document: the origin (``ai`` or ``heuristic``), the provider and model, the prompt-template
+    hash, the prompt and completion token counts, the evidence ids the model cited and the
+    change it made to the analysis. It is **nullable and additive** — every row written before
+    WP-15 keeps ``NULL``, and a reader treats a missing record as "not stated" rather than as
+    "heuristic". ``origin`` is what makes an AI row distinguishable from a heuristic one without
+    reading the audit trail or joining tables.
     """
 
     __tablename__ = "analysis_log"
@@ -359,6 +367,8 @@ class AnalysisLog(Base):
     prompt_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     output_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
     tokens_used: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    #: The AI provenance record (WP-15, REQ-AGENT-008). ``NULL`` for a pre-WP-15 row.
+    provenance: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, nullable=False
     )

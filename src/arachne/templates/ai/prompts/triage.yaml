@@ -1,5 +1,5 @@
 id: triage
-version: "1.0"
+version: "1.1"
 stage: triage
 schema: triage
 response_format: json
@@ -19,6 +19,9 @@ system: |
   - If the deterministic verdict is already correct, keep it and say why in one sentence.
   - fp_likely is true only when the evidence suggests a benign cause (placeholder page,
     login wall, WAF challenge, intentional public resource).
+  - evidence_ids must list the ids of the evidence lines in the target_data block that your
+    judgement actually rests on (for example [evidence 12]). Never cite an id that is not shown
+    there, and never answer with an empty list.
   - Reply with a single JSON object matching the schema exactly. No prose outside the JSON.
 user: |
   [CONTEXT]

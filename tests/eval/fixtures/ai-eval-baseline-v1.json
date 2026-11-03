@@ -1,0 +1,59 @@
+{
+  "document": "arachne-ai-eval-baseline",
+  "version": "1.0",
+  "created": "2026-11-04",
+  "fixture_version": "v1",
+  "corpus_sha256": "39454cb8d8d561f5d81a12203a0424a678a8cf6cbb19d3195003733aa4d846de",
+  "prompt_corpus": "a56c87beb81cadf5",
+  "cases": 240,
+  "threshold": 0.02,
+  "metrics": {
+    "triage.precision": 1.0,
+    "triage.recall": 1.0,
+    "triage.accuracy": 1.0,
+    "correlate.precision": 1.0,
+    "correlate.recall": 1.0,
+    "correlate.accuracy": 1.0,
+    "narrative.precision": 1.0,
+    "narrative.recall": 1.0,
+    "narrative.accuracy": 1.0
+  },
+  "stages": [
+    {
+      "stage": "triage",
+      "cases": 100,
+      "answered": 100,
+      "labelled_positives": 58,
+      "predicted_positives": 58,
+      "true_positives": 58,
+      "correct": 100,
+      "precision": 1.0,
+      "recall": 1.0,
+      "accuracy": 1.0
+    },
+    {
+      "stage": "correlate",
+      "cases": 40,
+      "answered": 40,
+      "labelled_positives": 40,
+      "predicted_positives": 40,
+      "true_positives": 40,
+      "correct": 40,
+      "precision": 1.0,
+      "recall": 1.0,
+      "accuracy": 1.0
+    },
+    {
+      "stage": "narrative",
+      "cases": 100,
+      "answered": 100,
+      "labelled_positives": 100,
+      "predicted_positives": 100,
+      "true_positives": 100,
+      "correct": 100,
+      "precision": 1.0,
+      "recall": 1.0,
+      "accuracy": 1.0
+    }
+  ]
+}

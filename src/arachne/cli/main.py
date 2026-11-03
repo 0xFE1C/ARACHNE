@@ -31,6 +31,7 @@ from sqlalchemy import create_engine, inspect
 
 from arachne import __version__
 from arachne.cli.agent import agent_command
+from arachne.cli.ai import ai_app
 from arachne.cli.analyze import analyze_command
 from arachne.cli.callback import callback_server_command
 from arachne.cli.compliance import compliance_app
@@ -102,6 +103,7 @@ app = typer.Typer(
     add_completion=False,
 )
 db_app = typer.Typer(name="db", help="Evidence-store database commands.", no_args_is_help=True)
+app.add_typer(ai_app, name="ai")
 app.add_typer(db_app, name="db")
 app.add_typer(module_app, name="module")
 app.add_typer(fp_app, name="fp")

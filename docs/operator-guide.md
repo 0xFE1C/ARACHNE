@@ -323,6 +323,23 @@ The one-provider shortcut also reads `ARACHNE_AI_BASE_URL`, `ARACHNE_AI_MODEL` a
 Provider keys are read from the environment by the AI layer and are never logged, stored in
 evidence, or written to reports.
 
+**What the AI contributed, and what it cost.** Every analysis row persists an AI provenance
+record — origin (`ai`/`heuristic`), provider, model, prompt-template hash, prompt and completion
+tokens, the evidence ids the model cited, and the change it made — so an AI row is distinguishable
+from a heuristic one without reading the audit trail. Three entry points expose it:
+
+| Command | What it answers |
+|---|---|
+| `arachne ai provenance --scan 41` | Which provider received how many tokens for this scan, how many rows a model contributed to, and which stages did the work. `--project 3` does the same across a project; `--table` prints it for a terminal. |
+| `arachne compliance export --scan 41 --framework iso27001` | The same block, attached to the control-evidence document an auditor already reads (the `ai` key). `null` there means the exporter could not say — never "no AI ran". |
+| `python -m arachne.ai.eval --cases tests/eval/fixtures/ai-eval-cases-v1.jsonl --baseline tests/eval/fixtures/ai-eval-baseline-v1.json --check` | Whether a prompt, model-config or stage change regressed the offline evaluation suite. Exit code 1 on a regression beyond the declared 2-point threshold. |
+| `python -m arachne.ai.parity --cases tests/eval/fixtures/ai-eval-cases-v1.jsonl --date YYYY-MM-DD` | The provider parity matrix: per adapter and stage, the structured-output mechanism chosen, whether decoding is constrained, and the scores. |
+
+An AI answer that cites no evidence id the finding actually has is refused: the stage is recorded
+as a failed stage (`evidence_not_cited`), the deterministic result stands, and the row is not
+marked as an AI contribution. That is deliberate — an unciteable AI row is the one thing the
+provenance requirement forbids.
+
 ### 2.13 REST API and web UI
 
 | Variable | Default | Meaning |

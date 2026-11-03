@@ -111,6 +111,11 @@ class AuditAction(StrEnum):
     #: result, which is the provenance half of the degradation chain .
     AI_REQUEST = "ai.request"
     AI_DEGRADED = "ai.degraded"
+    #: WP-15 (area AGENT, REQ-AGENT-011): one line per capability-scoped tool call the AI layer
+    #: makes. An *undeclared* tool is recorded with ``outcome=blocked`` and the name that was
+    #: asked for, because "an AI stage requested a capability ARACHNE does not have" is the event
+    #: that would precede capability creep, and it should be visible without reading a traceback.
+    AI_TOOL = "ai.tool"
     #: S12 (API + webhooks): one line per HTTP request the API answers — method, path, status,
     #: the authenticated principal and the duration — so the interface layer is auditable too
     #: (F-08-02). ``api.denied`` marks a request refused before it reached a route (missing or

@@ -351,3 +351,90 @@ async def test_hybrid_without_a_provider_is_the_heuristic_engine() -> None:
     _orch, findings, _analyses, _sink, _bus, session = await run_scan(settings, engine="hybrid")
     assert session.status is ScanStatus.COMPLETED
     assert findings.list_candidates(session.scan_id or 0)
+
+
+# --------------------------------------------------------------------------- 5. provenance
+
+
+async def test_every_ai_row_persists_a_cited_provenance_record(
+    ai_env: dict[str, str], server: FakeOpenAI
+) -> None:
+    """REQ-AGENT-008, end to end: the row carries what left the boundary and what came back.
+
+    "An AI-produced row is distinguishable from a heuristic one without reading logs" is the
+    ``origin`` field on the row's own provenance; the citation is what makes the claim checkable;
+    and the tokens are attributed to the row that bought them, not to the scan in general.
+    """
+    from arachne.ai.provenance import AI_ORIGIN, ProvenanceRecord, summarize_provenance
+
+    settings = build_settings(ai_env)
+    _orchestrator, findings, analyses, _sink, _bus, session = await run_scan(settings, engine="ai")
+    scan_id = session.scan_id or 0
+    rows = analyses.list_analyses(scan_id)
+    assert rows, "the analysis step wrote no analysis rows"
+
+    candidates = {record.id: record for record in findings.list_candidates(scan_id)}
+    ai_rows = [row for row in rows if row.origin == AI_ORIGIN]
+    assert ai_rows, "no row declared an AI origin"
+
+    for row in ai_rows:
+        record = ProvenanceRecord.from_dict(row.provenance)
+        assert record.is_ai
+        assert record.provider == "openai_compatible"
+        assert record.model == "fake-model-1"
+        assert record.prompt_hash and record.template_version
+        assert record.prompt_tokens > 0 and record.completion_tokens > 0
+        assert record.total_tokens > 0
+        assert record.stages
+        # The citation is real: every id the model gave is an evidence row of *this* finding.
+        assert row.finding_id is not None
+        evidence_ids = {str(item.id) for item in candidates[row.finding_id].evidence}
+        assert record.evidence_ids, "an AI row must cite an evidence id"
+        assert set(record.evidence_ids) <= evidence_ids, (record.evidence_ids, evidence_ids)
+        # ... and the change the AI half made is recorded, not inferred.
+        assert "policy" in record.change
+
+    # A heuristic row is distinguishable by the same field, with no log in sight.
+    for row in rows:
+        if row.origin == AI_ORIGIN:
+            continue
+        assert row.provenance.get("origin") in {None, "heuristic"}
+
+    summary = summarize_provenance([row.provenance for row in rows], scan_ids=(scan_id,))
+    assert summary["uncited_ai_rows"] == 0
+    assert summary["ai_rows"] == len(ai_rows)
+    assert summary["providers"]["openai_compatible"]["rows"] == len(ai_rows)
+    assert summary["providers"]["openai_compatible"]["total_tokens"] > 0
+    assert set(summary["stages"]) <= {"triage", "explain", "remediate", "narrative"}
+
+
+async def test_no_provider_configured_leaves_every_row_heuristic_origin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """REQ-AGENT-008: removing the provider config leaves the scan working, and honest.
+
+    Nothing about the finding set changes; what changes is that no row claims an AI origin — and
+    the row says so itself rather than leaving a reader to infer it from a missing log line.
+    """
+    from arachne.ai.provenance import HEURISTIC_ORIGIN
+
+    for key in (
+        "ARACHNE_AI_PROVIDER",
+        "ARACHNE_AI_BASE_URL",
+        "ARACHNE_AI_MODEL",
+        "ARACHNE_AI_CONFIG",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    settings = build_settings()
+    _orch, findings, analyses, _sink, _bus, session = await run_scan(settings, engine="hybrid")
+
+    assert session.status is ScanStatus.COMPLETED
+    scan_id = session.scan_id or 0
+    assert findings.list_candidates(scan_id), "the scan lost its findings without a provider"
+    rows = analyses.list_analyses(scan_id)
+    assert rows
+    assert all(row.origin == HEURISTIC_ORIGIN for row in rows)
+    for row in rows:
+        assert not row.evidence_ids
+        assert row.payload["provenance"]["engine"] == "heuristic"
+        assert row.payload["narrative"], "the heuristic engine still writes the analysis"

@@ -1,5 +1,5 @@
 id: explain
-version: "1.0"
+version: "1.1"
 stage: explain
 schema: explain
 response_format: json
@@ -14,6 +14,9 @@ system: |
   - key_facts is a short list of concrete, checkable observations (status codes, headers,
     matched patterns, versions), at most ten items.
   - Keep the summary under 120 words.
+  - evidence_ids must list the ids of the evidence lines the summary draws on (for example
+    [evidence 12]). Never cite an id that is not shown in the target_data block, and never answer
+    with an empty list.
   - Reply with a single JSON object matching the schema exactly.
 user: |
   [CONTEXT]

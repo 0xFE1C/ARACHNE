@@ -88,15 +88,19 @@ def env_candidate(finding_id: int = 1) -> Candidate:
         asset_kind="url",
         asset_value="https://target.example/.env",
         evidence=(
+            # WP-15: real evidence row ids, because an AI contribution must cite one
+            # (REQ-AGENT-008) and a citation has to resolve to something the scan stored.
             EvidenceFact(
                 "http_request",
                 {"method": "GET", "url": "https://target.example/.env"},
                 source="https://target.example/.env",
+                id=101,
             ),
             EvidenceFact(
                 "http_response",
                 {"status_code": 200, "headers": {}, "body": "DB_PASSWORD=[REDACTED:value]"},
                 source="https://target.example/.env",
+                id=102,
             ),
         ),
     )
@@ -130,6 +134,7 @@ def service_candidate(finding_id: int = 2) -> Candidate:
                     "facts": {"dialects": ["NT LM 0.12"]},
                 },
                 source="10.0.0.5:445",
+                id=201,
             ),
         ),
     )

@@ -14,6 +14,7 @@ provider mid-scan" test drives the degradation chain, and to answer with unparse
 from __future__ import annotations
 
 import json
+import re
 import threading
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -29,6 +30,36 @@ _STAGE_BY_PROPERTY: dict[str, str] = {
     "shared_root_cause": "correlate",
     "order": "prioritize",
 }
+
+
+def _user_text(body: dict[str, Any]) -> str:
+    """The request's user-role content, as one string (where the evidence markers live)."""
+    messages = body.get("messages")
+    if isinstance(messages, list):
+        return "\n".join(
+            str(message.get("content") or "") for message in messages if isinstance(message, dict)
+        )
+    contents = body.get("contents")
+    if isinstance(contents, list):
+        return "\n".join(str(part) for part in contents)
+    return ""
+
+
+def _cited(body: dict[str, Any], stage: str, answer: dict[str, Any]) -> dict[str, Any]:
+    """Add the citation the stage's schema requires (WP-15, REQ-AGENT-008).
+
+    The ids come from the request body's own evidence markers, so this endpoint behaves like a
+    model that read the prompt: if the prompt carries no evidence, no citation is produced and
+    the stage must be refused by the engine — which is the behaviour the tests assert.
+    """
+    if stage not in {"triage", "explain", "remediate", "narrative", "correlate"}:
+        return answer
+    text = _user_text(body)
+    ids = list(dict.fromkeys(_EVIDENCE_RE.findall(text)))
+    return {**answer, "evidence_ids": ids[:2]}
+
+
+_EVIDENCE_RE = re.compile(r"\[evidence\s+([^\]\s]+)\]")
 
 
 def _stage_of_body(body: dict[str, Any]) -> str:
@@ -124,7 +155,10 @@ class FakeOpenAI:
                             {
                                 "index": 0,
                                 "finish_reason": "stop",
-                                "message": {"role": "assistant", "content": json.dumps(answer)},
+                                "message": {
+                                    "role": "assistant",
+                                    "content": json.dumps(_cited(body, stage, answer)),
+                                },
                             }
                         ],
                         "usage": {

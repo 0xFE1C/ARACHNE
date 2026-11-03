@@ -35,6 +35,9 @@ def good_payload() -> dict[str, object]:
         "confidence": 88,
         "fp_likely": False,
         "reason": "Exposed .env with live credentials.",
+        # WP-15: every citing stage's schema requires the evidence it relied on (REQ-AGENT-008),
+        # so a schema-valid triage answer must carry it.
+        "evidence_ids": ["12"],
     }
 
 
@@ -143,7 +146,13 @@ def test_the_json_schema_is_derived_from_the_model() -> None:
         "high",
         "critical",
     ]
-    assert schema["required"] == ["severity", "confidence", "fp_likely", "reason"]
+    assert schema["required"] == [
+        "severity",
+        "confidence",
+        "fp_likely",
+        "reason",
+        "evidence_ids",
+    ]
 
 
 def test_normalize_schema_drops_titles_and_closes_objects() -> None:

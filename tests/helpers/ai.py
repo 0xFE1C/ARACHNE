@@ -15,6 +15,7 @@ Three ideas keep the AI tests fast and honest:
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -25,7 +26,7 @@ from arachne.ai.engine import AiEngine, AiPolicies
 from arachne.ai.privacy import PrivacyMode, Redactor
 from arachne.ai.prompts import PromptStore, load_prompt_store
 from arachne.ai.reliability import RetryPolicy
-from arachne.ai.stages import CANDIDATE_STAGES
+from arachne.ai.stages import CANDIDATE_STAGES, CITATION_LINE_PREFIX, CITING_STAGES
 from arachne.ai.types import (
     CompletionRequest,
     CompletionResult,
@@ -47,6 +48,42 @@ _SCHEMA_HINTS: dict[str, str] = {
     # S21: the agentic stage's schema is identified by its own field.
     "hypotheses": "hypothesize",
 }
+
+#: The line ``ai.stages`` renders to offer the citable ids, and the ids on it.
+_CITATION_LINE_RE = re.compile(re.escape(CITATION_LINE_PREFIX) + r"\s*([^\n]*)", re.IGNORECASE)
+_EVIDENCE_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]*")
+
+
+def evidence_ids_in_request(request: CompletionRequest) -> list[str]:
+    """The evidence ids the prompt offered this call, in order (WP-15, REQ-AGENT-008).
+
+    A real model cites what it was shown; so does this one, by reading the prompt's own citation
+    line. A scripted provider that answered with a hard-coded id would test the engine's
+    plumbing while proving nothing about the citation contract — and would hide the case where
+    the prompt offers no evidence at all, which is exactly the case the engine must refuse.
+    """
+    text = "\n".join(
+        [
+            request.system,
+            *(str(message.get("content") or "") for message in request.messages),
+        ]
+    )
+    offered: list[str] = []
+    for line in text.splitlines():
+        match = _CITATION_LINE_RE.search(line)
+        if match is None:
+            continue
+        for token in _EVIDENCE_ID_RE.findall(match.group(1)):
+            if token not in offered:
+                offered.append(token)
+    return offered
+
+
+def cite(request: CompletionRequest, stage: str, answer: dict[str, Any]) -> dict[str, Any]:
+    """Add the citation the stage's schema requires, from the prompt's own evidence lines."""
+    if stage not in CITING_STAGES:
+        return answer
+    return {**answer, "evidence_ids": evidence_ids_in_request(request)[:2]}
 
 
 def stage_from_request(request: CompletionRequest) -> str:
@@ -145,7 +182,7 @@ class FakeProvider:
                     provider=self.name,
                     transient=False,
                 )
-            text = json.dumps(answer)
+            text = json.dumps(cite(request, stage, answer))
         return CompletionResult(
             text=text,
             raw={"scripted": True},
@@ -283,7 +320,13 @@ def triage_request(*, model: str = "test-model") -> CompletionRequest:
 
 
 def env_candidate(finding_id: int = 1, **overrides: Any) -> Any:
-    """The M4 env-file candidate the parity harness also uses."""
+    """The M4 env-file candidate the parity harness also uses.
+
+    Its two evidence facts carry row ids (``101``/``102``), because a citation has to resolve to
+    something the scan actually stored: ``REQ-AGENT-008`` refuses an AI contribution that cites
+    no evidence the finding has, and a helper whose evidence was anonymous would exercise only
+    the refusal path.
+    """
     from arachne.analyzer.model import Candidate, EvidenceFact
 
     values: dict[str, Any] = {
@@ -310,6 +353,7 @@ def env_candidate(finding_id: int = 1, **overrides: Any) -> Any:
                     "http_request",
                     {"method": "GET", "url": "https://target.example/.env"},
                     source="https://target.example/.env",
+                    id=101,
                 ),
                 EvidenceFact(
                     "http_response",
@@ -319,6 +363,7 @@ def env_candidate(finding_id: int = 1, **overrides: Any) -> Any:
                         "body": "DB_PASSWORD=[REDACTED:value]",
                     },
                     source="https://target.example/.env",
+                    id=102,
                 ),
             )
         }

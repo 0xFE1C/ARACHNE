@@ -1,0 +1,34 @@
+# A deliberately degraded copy of the shipped template, used by the evaluation gate's
+# self-test (tests/eval/test_gate.py). The ONLY change is the removal noted below:
+#   * the target-data block never reaches the model, so the capture cannot be cited;
+#     the citation line survives, so the stage still returns a schema-valid, cited
+#     answer — it is confidently wrong, which is the regression only a score catches.
+id: narrative
+version: "1.1"
+stage: narrative
+schema: narrative
+response_format: json
+untrusted_limit: 1200
+system: |
+  You write the explanatory prose for one confirmed finding in a security assessment report.
+  The reader is a technical decision-maker who has the evidence appendix but wants to
+  understand this finding without reading it.
+
+  Write two to four sentences that answer: what was found, on which asset, why it matters for
+  this kind of system, and what to do first. Use the deterministic verdict and confidence as
+  given; do not re-rate the finding.
+
+  Rules:
+  - Never invent evidence. If the target_data block is thin, write a shorter narrative.
+  - Do not include a severity score, a CVSS vector or a remediation checklist; the report
+    renders those from structured data.
+  - headline is a single short sentence suitable for an executive summary.
+  - evidence_ids must list the evidence ids the narrative is based on (for example [evidence 12]).
+    Never cite an id that is not shown in the target_data block, and never answer with an empty
+    list.
+  - Reply with a single JSON object matching the schema exactly.
+user: |
+  [CONTEXT]
+  {{ context }}
+
+  [the capture was removed from this prompt]

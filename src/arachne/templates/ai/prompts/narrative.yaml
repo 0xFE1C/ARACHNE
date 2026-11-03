@@ -1,5 +1,5 @@
 id: narrative
-version: "1.0"
+version: "1.1"
 stage: narrative
 schema: narrative
 response_format: json
@@ -18,6 +18,9 @@ system: |
   - Do not include a severity score, a CVSS vector or a remediation checklist; the report
     renders those from structured data.
   - headline is a single short sentence suitable for an executive summary.
+  - evidence_ids must list the evidence ids the narrative is based on (for example [evidence 12]).
+    Never cite an id that is not shown in the target_data block, and never answer with an empty
+    list.
   - Reply with a single JSON object matching the schema exactly.
 user: |
   [CONTEXT]

@@ -48,6 +48,37 @@ a browser engine inside the scanner is a new attack surface and the operator opt
 - A **parity suite** proves both engines reach the same finding set on the ground-truth
   fixtures, so a report cannot tell which engine ran except through its provenance field.
 
+**AI provenance and evaluation — the "how do you know?" layer (WP-15)**
+
+- **Every AI contribution is traceable, and AI changes are gateable.** Each analysis row persists
+  a provenance record — origin (`ai`/`heuristic`), provider, model, prompt-template hash, prompt
+  and completion tokens, the evidence ids the model cited, and the change it made — in its own
+  `analysis_log.provenance` column, so an AI row is distinguishable from a heuristic one without
+  reading a log. `arachne ai provenance --scan N` (or `--project P`) exports it, and
+  `arachne compliance export` carries the same block: which provider received how many tokens for
+  this scan.
+- **An AI row cannot exist without a cited evidence id.** The provenance record refuses to be
+  built without one, the engine treats an uncited answer as a *failed stage*, and the store
+  refuses to persist a payload that claims AI without a citation. The prompt offers the model the
+  closed list of ids it may cite, and every citing stage's schema requires it to cite at least one.
+- **A held-out offline evaluation suite measures AI changes.** 240 labelled cases in a versioned
+  corpus (`tests/eval/fixtures/ai-eval-cases-v1.jsonl`), run through the shipped engine with a
+  scripted provider — no network, no API key, deterministic across runs — scored **per stage**
+  (precision, recall and accuracy for `triage`, `correlate` and `narrative`). The baseline is
+  committed alongside the corpus digest, a regression beyond two percentage points fails the gate,
+  and a deliberately degraded prompt corpus is caught by a self-test in the same suite.
+- **A dated provider parity matrix measures all seven adapters.** `docs/ai-provider-matrix.md`
+  records, per adapter and per stage, the structured-output mechanism each one chose
+  (`json_schema`, `tool_use`, `response_schema`, `format_schema`, `custom`), whether that mechanism
+  constrains decoding at the provider or only asks for JSON, the suite's scores, and what an
+  operator must supply — including the `custom` adapter's refusal to plan anything without a
+  user-defined request template.
+- **The AI layer's tool surface is enumerated and typed.** `ai.tools` declares the
+  capability-scoped tools an AI stage may call (`analysis.*`, `catalogue.*`), each with a typed
+  argument model; an undeclared name is a typed error and an audited `ai.tool` refusal. There is
+  no process, socket or filesystem capability in the vocabulary, and a static-analysis test asserts
+  that no module of `arachne.ai` imports such a primitive.
+
 **Safety architecture — the part that does not change between releases**
 
 - **Scope is deny-by-default.** An empty scope authorizes nothing. Hosts are resolved and
@@ -124,10 +155,10 @@ a browser engine inside the scanner is a new attack surface and the operator opt
 
 | What | Result |
 |---|---|
-| Tests | **4,954** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Tests | **5,099** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
 | Primary safety suite | **59 tests** in `tests/test_safety.py`; **328** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol and mobile fixtures with planted false-positive traps |
-| Strict type checking | clean under `mypy --strict` across the **400** Python modules in `src/` |
+| Strict type checking | clean under `mypy --strict` across the **408** Python modules in `src/` |
 | Lint | clean over the whole repository (the badge's scope is the tree, not `src/` and `tests/`) |
 | Research coverage | **148/175 (84.6%)** of the corpus's numbered methods have an implementing check |
 
@@ -194,6 +225,29 @@ discover. Each is a candidate for a future release.
     `verify-chain` passes unless you pass `--require-signatures`.
 15. **15 registered checks are not referenced by id in the test suite** (M4, M5 and M6
     clusters), so a regression in them could go unnoticed.
+
+**AI provenance and evaluation (WP-15) — what the new evidence does and does not cover**
+
+19. **The evaluation suite measures the pipeline's information fidelity, not a model's
+    quality.** It runs a *scripted* provider that answers from the rendered prompt, so a score
+    drop means a prompt or merge change stopped conveying what a label depends on — which is the
+    regression class a prompt edit causes. Whether a particular model is good enough for a stage
+    is not what these numbers say, and they must not be read as an accuracy claim about one.
+20. **The provider parity matrix is produced through each adapter's real request/response
+    handling with a scripted responder, not against live endpoints.** It therefore measures
+    whether an adapter can carry the stage contract (structured output plus a citation) and which
+    mechanism it chooses — not a vendor's live behaviour, latency or quality. The `custom`
+    adapter is measured only in its documented configuration; unconfigured, it is reported as
+    unsupported for every stage.
+21. **Two declared tools have no shipped caller yet.** `analysis.evidence` and
+    `analysis.severity_scale` are declared, typed, capability-scoped and tested, but no shipped
+    stage calls them (the per-candidate stages read their inputs through the prompt). The
+    registry's shipped caller is the agentic `hypothesize` stage, which reads its check
+    vocabulary through `catalogue.list_checks`.
+22. **`hypothesize` contributions are not `analysis_log` rows.** They carry stage-level
+    provenance (provider, model, prompt hash, template version) in the reasoning record instead,
+    because a hypothesis is a proposal, not an analysis of a finding; the citation requirement
+    applies to the five stages that produce analysis content.
 
 **Developer experience**
 

@@ -56,7 +56,9 @@ def test_the_hash_is_stable_and_changes_with_the_template() -> None:
 def test_rendered_prompts_record_template_version_and_hash(store: PromptStore) -> None:
     rendered = store.render("narrative", context_lines=["finding: x"], target_data="body")
     payload = rendered.to_dict()
-    assert payload["template_version"] == "1.0"
+    # 1.1 is the WP-15 corpus: every citing stage's template gained the evidence-citation rule
+    # and its schema gained the required ``evidence_ids`` field (REQ-AGENT-008).
+    assert payload["template_version"] == "1.1"
     assert payload["stage"] == "narrative"
     assert payload["prompt_hash"] == rendered.prompt_hash
     assert payload["schema"] == "narrative"

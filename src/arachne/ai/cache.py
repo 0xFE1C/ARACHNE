@@ -9,18 +9,25 @@ The store is a bounded LRU in memory, optionally mirrored to a JSON file so a *s
 the same project reuses the first one's answers (the "per-project" half of the requirement).
 A cache hit is recorded on the ledger as a hit and never as spend, which is what keeps the
 budget honest when a rule change causes a re-analysis of the same candidates.
+
+The mirroring itself is delegated to :class:`~arachne.core.jsonstore.JsonFileStore` (WP-15).
+``REQ-AGENT-011`` requires the AI package to import no process, socket or filesystem-write
+primitive — asserted by ``ai.capability`` over this package's own source — so the *policy* (what
+is cached, how large the LRU is, when a hit is free) lives here and the *write* lives in
+``core``. The behavioural contract is unchanged: a cache that cannot be written never fails a
+scan, and the path rules are the store's, not a second implementation's.
 """
 
 from __future__ import annotations
 
 import hashlib
-import json
 import threading
 from collections import OrderedDict
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Final
 
+from arachne.core.jsonstore import JsonFileStore
 from arachne.core.logging import get_logger
 
 __all__ = ["RequestCache", "cache_key"]
@@ -55,12 +62,13 @@ class RequestCache:
             msg = "cache max_entries must be >= 1"
             raise ValueError(msg)
         self.max_entries = max_entries
-        self.path = Path(path).expanduser() if path else None
+        self._store = _build_store(path)
+        self.path = self._store.path if self._store is not None else None
         self._entries: OrderedDict[str, dict[str, Any]] = OrderedDict()
         self._lock = threading.Lock()
         self.hits = 0
         self.misses = 0
-        if self.path is not None:
+        if self._store is not None:
             self._load()
 
     # ------------------------------------------------------------------ interface
@@ -96,17 +104,8 @@ class RequestCache:
 
     # ------------------------------------------------------------------ persistence
     def _load(self) -> None:
-        assert self.path is not None  # guarded by the caller
-        if not self.path.is_file():
-            return
-        try:
-            raw = json.loads(self.path.read_text(encoding="utf-8"))
-        except (OSError, ValueError) as exc:
-            _logger.warning(
-                "ai cache could not be read",
-                extra={"event": "ai.cache_unreadable", "path": str(self.path), "error": str(exc)},
-            )
-            return
+        assert self._store is not None  # guarded by the caller
+        raw = self._store.load()
         entries = raw.get("entries") if isinstance(raw, dict) else None
         if not isinstance(entries, dict):
             return
@@ -115,13 +114,17 @@ class RequestCache:
                 self._entries[str(key)] = value
 
     def _save_locked(self) -> None:
-        assert self.path is not None
-        payload = json.dumps({"version": CACHE_KEY_VERSION, "entries": self._entries})
-        try:
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            self.path.write_text(payload, encoding="utf-8")
-        except OSError as exc:  # a cache that cannot be written must not fail a scan
+        assert self._store is not None
+        if not self._store.save({"version": CACHE_KEY_VERSION, "entries": self._entries}):
             _logger.warning(
                 "ai cache could not be written",
-                extra={"event": "ai.cache_unwritable", "path": str(self.path), "error": str(exc)},
+                extra={"event": "ai.cache_unwritable", "path": str(self._store.path)},
             )
+
+
+def _build_store(path: str | None) -> JsonFileStore | None:
+    """The file mirror for ``path``, when one was configured (the directory is the allowlist)."""
+    if not path:
+        return None
+    expanded = Path(path).expanduser()
+    return JsonFileStore(directory=expanded.parent, filename=expanded.name)

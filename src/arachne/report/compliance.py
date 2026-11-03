@@ -29,7 +29,7 @@ An unmapped control is not a clean result. Nothing here ever renders a framework
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from importlib.resources import files
 from typing import Final, Literal
@@ -352,7 +352,11 @@ def compute_framework_coverage(
 
 # --------------------------------------------------------------------------- export
 def export_control_evidence(
-    map_data: ComplianceMap, report: ReportData, *, generated_at: str | None = None
+    map_data: ComplianceMap,
+    report: ReportData,
+    *,
+    generated_at: str | None = None,
+    ai_provenance: Mapping[str, object] | None = None,
 ) -> dict[str, object]:
     """The audit-ready per-control evidence document (REQ-TRUST-001).
 
@@ -366,6 +370,13 @@ def export_control_evidence(
     ``status`` per control is pass/fail/gap exactly as the report renders it, and the
     framework's unmapped remainder is stated in ``coverage`` so the document cannot be
     read as a conformity claim.
+
+    ``ai_provenance`` is the one block that is *not* a projection of the report DTO, and it is
+    carried for the AI-governance question the report cannot answer on its own
+    (REQ-AGENT-008): which provider received how many tokens for this scan, and how many rows
+    a model contributed to. The caller supplies it from ``analysis_log.provenance`` (the CLI
+    reads it from the store); it contains ids, hashes and counts — no prompt bodies, no evidence
+    payloads — so passing it cannot widen what the export discloses.
     """
     coverage = compute_framework_coverage(map_data, report.scope.checks, report.findings)
     controls: list[dict[str, object]] = []
@@ -470,5 +481,9 @@ def export_control_evidence(
             "first_event_at": audit.first_event_at.isoformat() if audit.first_event_at else None,
             "last_event_at": audit.last_event_at.isoformat() if audit.last_event_at else None,
         },
+        # WP-15 (REQ-AGENT-008): the AI-governance block. Present only when the caller supplied
+        # it, so a document produced without the analysis store is unchanged and an auditor can
+        # tell "no AI ran" from "the exporter could not say".
+        "ai": dict(ai_provenance) if ai_provenance else None,
         "controls": controls,
     }

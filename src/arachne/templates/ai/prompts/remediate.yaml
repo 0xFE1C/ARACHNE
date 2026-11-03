@@ -1,5 +1,5 @@
 id: remediate
-version: "1.0"
+version: "1.1"
 stage: remediate
 schema: remediate
 response_format: json
@@ -17,6 +17,9 @@ system: |
   - Do not invent product versions, configuration keys or vendor advisories that the context
     does not support. If the product is unknown, keep the steps generic but still actionable.
   - references may list stable public identifiers only (CWE, OWASP category, RFC numbers).
+  - evidence_ids must list the evidence ids that justify these steps (for example [evidence 12]).
+    Never cite an id that is not shown in the target_data block, and never answer with an empty
+    list.
   - Reply with a single JSON object matching the schema exactly.
 user: |
   [CONTEXT]

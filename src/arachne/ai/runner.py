@@ -84,6 +84,11 @@ class StageOutcome:
     attempts: int = 0
     latency_ms: float = 0.0
     model: str = ""
+    #: Tokens attributed to *this stage's* contribution (REQ-AGENT-008). The ledger answers
+    #: "what has the scan spent"; these answer "what did this finding cost", summed across the
+    #: candidate's stages and carried onto its analysis row. A cache hit is zero by definition.
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
     fallback: str | None = None
     error: str | None = None
 
@@ -100,6 +105,8 @@ class StageOutcome:
             "template_version": self.template_version,
             "prompt_hash": self.prompt_hash,
             "schema": self.schema,
+            "prompt_tokens": self.prompt_tokens,
+            "completion_tokens": self.completion_tokens,
             "fallback": self.fallback,
             "error": self.error,
         }
@@ -298,6 +305,8 @@ class StageRunner:
             attempts=attempts,
             latency_ms=latency_ms,
             model=effective_model,
+            prompt_tokens=usage.prompt_tokens if usage is not None else 0,
+            completion_tokens=usage.completion_tokens if usage is not None else 0,
         )
 
     # ------------------------------------------------------------------ internals
@@ -405,6 +414,7 @@ class StageRunner:
             schema=schema_name,
             fallback=reason,
             error=message[:500],
+            model=self.provider.model,
         )
 
     def _audit(

@@ -354,11 +354,15 @@ async def test_correlate_describes_a_group_above_the_threshold() -> None:
         host="target.example",
         members=[("10.0.0.5", "high", "a"), ("db", "medium", "b"), ("web", "low", "c")],
         trigger="correlation.db-plus-web",
+        # WP-15: the group's merged evidence is the closed vocabulary the answer must cite
+        # from, so a compound can never carry an uncited AI description (REQ-AGENT-008).
+        evidence=["11", "12"],
     )
     assert suggestion is not None
     assert suggestion.title.startswith("Exposed configuration plus")
     assert suggestion.severity == "critical"
     assert suggestion.provenance["stage"] == "correlate"
+    assert suggestion.evidence_ids == ("11", "12")
 
 
 async def test_a_group_below_the_threshold_is_not_sent_to_the_model() -> None:

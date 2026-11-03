@@ -35,11 +35,13 @@ from typing import Any, Final
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from arachne.ai.structured import SchemaSpec
-from arachne.analyzer.model import SEVERITY_ORDER, Analysis, Candidate
+from arachne.analyzer.model import SEVERITY_ORDER, Analysis, Candidate, EvidenceFact
 from arachne.core.redaction import redact_text
 
 __all__ = [
     "CANDIDATE_STAGES",
+    "CITATION_LINE_PREFIX",
+    "CITING_STAGES",
     "HYPOTHESIZE_MAX_TARGET_CHARS",
     "SCHEMAS",
     "STAGES",
@@ -59,6 +61,9 @@ __all__ = [
     "build_prioritize_input",
     "build_remediate_input",
     "build_triage_input",
+    "evidence_ids",
+    "evidence_ref",
+    "resolve_citations",
     "schema_for",
 ]
 
@@ -76,7 +81,60 @@ STAGES: Final[tuple[str, ...]] = (
 #: Per-candidate stages (the ones the analysis step runs once per finding).
 CANDIDATE_STAGES: Final[tuple[str, ...]] = ("triage", "explain", "remediate", "narrative")
 
+#: The stages whose output must cite the evidence it relied on (WP-15, REQ-AGENT-008). Every
+#: stage that produces a persisted AI contribution is in this set: an answer that cannot name the
+#: evidence behind it is not an AI contribution ARACHNE is willing to record as one.
+CITING_STAGES: Final[frozenset[str]] = frozenset(
+    {"triage", "explain", "remediate", "narrative", "correlate"}
+)
+
+#: The exact sentence that offers a model the ids it may cite (REQ-AGENT-008). It is a constant
+#: so the closed vocabulary is stated once: the per-candidate stages and ``correlate`` render the
+#: same line, and a reader — or a test — can find it without knowing the stage.
+CITATION_LINE_PREFIX: Final = "evidence ids you may cite:"
+
 _MODEL = ConfigDict(frozen=True, extra="forbid")
+
+
+def evidence_ref(fact: EvidenceFact) -> str | None:
+    """The addressable id of one evidence fact (``None`` when it was never stored).
+
+    The id is the ``evidences`` row id as a string, which is the same id the report's evidence
+    refs and ``Analysis.merged_evidence_refs`` use. A fact with no row id — a candidate built by
+    a caller that did not persist its evidence — is **not citable**, because a citation that
+    cannot be resolved later is not evidence of anything.
+    """
+    return str(fact.id) if fact.id is not None else None
+
+
+def evidence_ids(candidate: Candidate) -> tuple[str, ...]:
+    """The evidence ids a stage may cite for ``candidate``, in capture order."""
+    return tuple(ref for fact in candidate.evidence if (ref := evidence_ref(fact)) is not None)
+
+
+def resolve_citations(
+    cited: Sequence[Any], available: Sequence[str]
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """``(resolved, unknown)`` — the cited ids that exist, and the ones that do not.
+
+    Both halves are kept: ``resolved`` is what a provenance record may carry, and ``unknown`` is
+    recorded so a model that invents an evidence id is visible rather than silently equal to one
+    that cited nothing.
+    """
+    known = set(available)
+    resolved: list[str] = []
+    unknown: list[str] = []
+    for item in cited:
+        text = str(item).strip()
+        if not text:
+            continue
+        if text in known:
+            if text not in resolved:
+                resolved.append(text)
+        elif text not in unknown:
+            unknown.append(text)
+    return tuple(resolved), tuple(unknown)
+
 
 #: How much captured evidence one stage may see. Small on purpose: the model is being asked to
 #: judge a finding, not to re-read the target (and the budget is per scan).
@@ -102,6 +160,9 @@ class TriageOutput(BaseModel):
     fp_likely: bool
     reason: str = Field(max_length=2000)
     categories: list[str] = Field(default_factory=list, max_length=8)
+    #: The evidence ids this judgement rests on (REQ-AGENT-008). Required and non-empty: the
+    #: engine refuses an answer that cites nothing, so "the model decided" always has a subject.
+    evidence_ids: list[str] = Field(min_length=1, max_length=8)
 
     @field_validator("severity")
     @classmethod
@@ -119,6 +180,7 @@ class ExplainOutput(BaseModel):
 
     summary: str = Field(max_length=2000)
     key_facts: list[str] = Field(default_factory=list, max_length=10)
+    evidence_ids: list[str] = Field(min_length=1, max_length=8)
 
 
 class RemediateOutput(BaseModel):
@@ -129,6 +191,7 @@ class RemediateOutput(BaseModel):
     summary: str = Field(max_length=2000)
     steps: list[str] = Field(default_factory=list, max_length=12)
     references: list[str] = Field(default_factory=list, max_length=10)
+    evidence_ids: list[str] = Field(min_length=1, max_length=8)
 
 
 class NarrativeOutput(BaseModel):
@@ -138,6 +201,7 @@ class NarrativeOutput(BaseModel):
 
     narrative: str = Field(max_length=4000)
     headline: str = Field(default="", max_length=300)
+    evidence_ids: list[str] = Field(min_length=1, max_length=8)
 
 
 class CorrelateOutput(BaseModel):
@@ -149,6 +213,8 @@ class CorrelateOutput(BaseModel):
     reasoning: str = Field(max_length=3000)
     shared_root_cause: str = Field(default="", max_length=300)
     severity: str | None = Field(default=None, json_schema_extra=_SEVERITY_ENUM)
+    #: The merged evidence ids of the group's members that the correlation rests on.
+    evidence_ids: list[str] = Field(min_length=1, max_length=24)
 
     @field_validator("severity")
     @classmethod
@@ -251,13 +317,29 @@ def _assets(candidate: Candidate) -> str:
 
 
 def _evidence_text(candidate: Candidate, *, limit: int = EVIDENCE_CHARS) -> str:
-    """The captured evidence, as text for the prompt (already redacted at capture)."""
+    """The captured evidence, as text for the prompt (already redacted at capture).
+
+    Each line is prefixed with the evidence's row id, which is the only thing the model is
+    allowed to cite back — so "the evidence the answer relied on" is an id ARACHNE can resolve,
+    not a sentence a reader has to trust.
+    """
     lines: list[str] = []
     for item in candidate.evidence:
         payload = _payload_summary(item.payload)
         if payload:
-            lines.append(f"- {item.kind} ({item.source or 'no source'}): {payload}")
+            marker = f"[evidence {evidence_ref(item)}] " if evidence_ref(item) else "[evidence] "
+            lines.append(f"- {marker}{item.kind} ({item.source or 'no source'}): {payload}")
     return "\n".join(lines)[:limit]
+
+
+def _citation_lines(candidate: Candidate) -> list[str]:
+    """The closed vocabulary of ids this candidate's answer may cite (REQ-AGENT-008)."""
+    refs = evidence_ids(candidate)
+    listed = ", ".join(refs) if refs else "none (this finding has no stored evidence)"
+    return [
+        f"{CITATION_LINE_PREFIX} {listed}",
+        "every severity/confidence judgement must cite at least one of these ids",
+    ]
 
 
 def _payload_summary(payload: Mapping[str, Any], *, depth: int = 0) -> str:
@@ -325,6 +407,7 @@ def build_triage_input(candidate: Candidate, anchor: Analysis | None) -> StageIn
         f"check severity hint: {candidate.severity_hint or 'none'}",
         "check confidence: "
         f"{candidate.check_confidence if candidate.check_confidence is not None else 'n/a'}",
+        *_citation_lines(candidate),
         *_verdict_lines(anchor),
     ]
     target = _evidence_text(candidate)
@@ -337,6 +420,7 @@ def build_explain_input(candidate: Candidate, anchor: Analysis | None) -> StageI
         f"finding: {candidate.title}",
         f"asset: {_assets(candidate)}",
         f"check: {candidate.check_id or 'unknown'}",
+        *_citation_lines(candidate),
         *_verdict_lines(anchor),
     ]
     return StageInput(context_lines=tuple(context), target_data=_evidence_text(candidate))
@@ -352,6 +436,7 @@ def build_remediate_input(candidate: Candidate, anchor: Analysis | None) -> Stag
         f"product context: {product or 'none observed'}",
         f"existing catalog guidance: "
         f"{anchor.remediation.summary if anchor is not None else 'none'}",
+        *_citation_lines(candidate),
     ]
     return StageInput(context_lines=tuple(context), target_data=_evidence_text(candidate))
 
@@ -363,6 +448,7 @@ def build_narrative_input(candidate: Candidate, anchor: Analysis | None) -> Stag
         f"asset: {candidate.asset_label}",
         f"module: {candidate.check_module or 'unknown'}",
         f"cwe: {candidate.cwe or 'none'}",
+        *_citation_lines(candidate),
         *_verdict_lines(anchor),
         f"remediation: {anchor.remediation.summary if anchor is not None else 'none'}",
     ]
@@ -374,13 +460,22 @@ def build_correlate_input(
     host: str,
     members: Sequence[tuple[str, str, str]],
     trigger: str,
+    evidence: Sequence[str] = (),
 ) -> StageInput:
-    """``correlate``: the members of one correlation group and why they were grouped."""
+    """``correlate``: the members of one correlation group and why they were grouped.
+
+    ``evidence`` is the union of the members' evidence ids — the closed vocabulary the answer
+    must cite from (REQ-AGENT-008). The *existence* of the group stays the correlation engine's
+    decision; the citation is what makes the model's description of it checkable.
+    """
     context = [
         f"correlation trigger: {trigger}",
         f"shared host: {host}",
         f"member count: {len(members)}",
     ]
+    if evidence:
+        context.append(f"{CITATION_LINE_PREFIX} {', '.join(evidence)}")
+        context.append("the compound description must cite at least one of these ids")
     lines = [f"- {label} — {severity}: {title}" for label, severity, title in members]
     return StageInput(
         context_lines=tuple(context),

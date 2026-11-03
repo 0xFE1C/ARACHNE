@@ -78,6 +78,7 @@ def export_command(
     ] = None,
 ) -> None:
     """Export one scan's per-control evidence for a framework as audit-ready JSON."""
+    from arachne.ai.provenance import summarize_provenance
     from arachne.data.analysis_store import SqlAnalysisStore
     from arachne.data.finding_store import SqlFindingStore
     from arachne.data.report_store import SqlAuditReader
@@ -118,6 +119,12 @@ def export_command(
             settings=settings,
             compliance_frameworks=(canonical,),
         )
+        # WP-15 (REQ-AGENT-008): the AI-governance answer an auditor asks for — which provider
+        # received how many tokens for this scan — read from the records the scan persisted.
+        ai_provenance = {
+            "scope": {"kind": "scan", "scan_id": scan},
+            **summarize_provenance(analyses.provenance_for_scan(scan), scan_ids=(scan,)),
+        }
     finally:
         services.close()
 
@@ -125,6 +132,7 @@ def export_command(
         map_data,
         report,
         generated_at=datetime.now(UTC).isoformat(),
+        ai_provenance=ai_provenance,
     )
     rendered = json.dumps(document, indent=2, ensure_ascii=False, default=str) + "\n"
     if output is not None:

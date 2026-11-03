@@ -10,15 +10,22 @@ a reason:
     reportable.
 ``analysis_log``
     The whole analysis — score, rule trace, narrative, provenance — as ``output_json``
-    (F-03-05). It is the report's narrative source and the audit trail of
-    *why* a finding has the severity it has; keeping it out of ``findings`` is what lets the
-    schema stay the spec's.
+    (F-03-05), plus the AI provenance record as its own column (WP-15, REQ-AGENT-008). It is
+    the report's narrative source and the audit trail of *why* a finding has the severity it
+    has; keeping it out of ``findings`` is what lets the schema stay the spec's.
 ``fp_feedback``
     Operator decisions (F-05-07), read back by the tuner as an aggregate.
 
 A compound finding from the correlation engine has no ``checks`` row to point at, so its
 ``check_id`` stays NULL and its synthetic identity (``correlation.<rule>``) lives in the
 analysis record — where a report already looks for the explanation.
+
+:func:`provenance_of` is the one place that decides whether an analysis row may call itself
+AI-authored: the payload's ``ai.provenance`` block is rebuilt as a
+:class:`~arachne.ai.provenance.ProvenanceRecord`, and a row that claims ``ai`` without a cited
+evidence id is written as ``heuristic`` with ``fallback="provenance_invalid"``. The invariant is
+enforced structurally in the record type, and this is the boundary that keeps a payload written
+by something else from smuggling an unverifiable claim into the table.
 
 :class:`~arachne.analyzer.fp.FeedbackRecord` is imported under ``TYPE_CHECKING`` only: the
 analyzer package re-exports its handlers, and those import *this* module, so a module-level
@@ -37,8 +44,9 @@ from typing import TYPE_CHECKING, Any, Protocol
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from arachne.ai.provenance import ProvenanceError, ProvenanceRecord
 from arachne.analyzer.model import Analysis, FpStats, Verdict
-from arachne.data.models import AnalysisLog, Finding, FpFeedback
+from arachne.data.models import AnalysisLog, Finding, FpFeedback, Scan
 from arachne.data.scan_store import as_utc
 
 if TYPE_CHECKING:  # ``analyzer.fp`` imports back through ``analyzer/__init__`` (see note)
@@ -50,6 +58,7 @@ __all__ = [
     "SqlAnalysisStore",
     "StoredAnalysis",
     "analysis_from_log",
+    "provenance_of",
 ]
 
 
@@ -68,7 +77,21 @@ class StoredAnalysis:
     #: ``analysis_log.id`` — the report's ``provenance.analysis_log_id`` .
     log_id: int | None = None
     created_at: datetime | None = None
+    #: The AI provenance record (WP-15, REQ-AGENT-008): ``origin`` says whether a model
+    #: contributed to this row, without reading the trail or joining tables.
+    provenance: Mapping[str, Any] = field(default_factory=dict)
     payload: Mapping[str, Any] = field(default_factory=dict)
+
+    @property
+    def origin(self) -> str:
+        """``ai`` or ``heuristic`` (an unstated record reads as the engine's own label)."""
+        value = self.provenance.get("origin")
+        return str(value) if isinstance(value, str) and value else self.engine
+
+    @property
+    def evidence_ids(self) -> tuple[str, ...]:
+        """The evidence ids this row's AI content cited (empty for a heuristic row)."""
+        return tuple(str(item) for item in self.provenance.get("evidence_ids") or ())
 
     @property
     def check_id(self) -> str | None:
@@ -202,6 +225,34 @@ def analysis_from_log(record: StoredAnalysis) -> Analysis | None:
     )
 
 
+def provenance_of(analysis: Analysis) -> ProvenanceRecord:
+    """The provenance record to persist for ``analysis`` (REQ-AGENT-008).
+
+    The engine writes the record into the analysis payload (``ai.provenance``); this rebuilds it
+    as a typed value, so a malformed or uncited claim cannot reach the column. Three cases:
+
+    * a valid record — returned unchanged, whatever its origin;
+    * an analysis with no record at all — a heuristic-origin record derived from
+      :class:`~arachne.analyzer.model.Provenance`, which is what a third-party ``Analyzer``
+      produces and what every pre-WP-15 payload looks like;
+    * a payload that *claims* ``ai`` without a citable evidence id — written as heuristic-origin
+      with ``fallback="provenance_invalid"``, because an AI row that cannot name its evidence is
+      the one thing the requirement forbids, and a scan must not fail over it.
+    """
+    raw = analysis.ai.get("provenance") if isinstance(analysis.ai, Mapping) else None
+    if isinstance(raw, Mapping):
+        try:
+            return ProvenanceRecord.from_dict(raw)
+        except ProvenanceError:
+            return ProvenanceRecord.heuristic(
+                fallback="provenance_invalid",
+                change={"origin_claimed": str(raw.get("origin") or "")},
+            )
+    if analysis.provenance.engine == "ai":
+        return ProvenanceRecord.heuristic(fallback="provenance_invalid")
+    return ProvenanceRecord.heuristic(fallback=analysis.provenance.fallback)
+
+
 def _verdict(value: Any) -> Verdict:
     """A stored verdict, coerced to the model's vocabulary (tolerating an older row)."""
     text = str(value or "analyzed")
@@ -305,16 +356,18 @@ class MemoryAnalysisStore:
         engine: str,
         finding_id: int | None,
     ) -> StoredAnalysis:
+        record = provenance_of(analysis)
         stored = StoredAnalysis(
             finding_id=finding_id,
             scan_id=scan_id,
             severity=analysis.severity,
             confidence=analysis.confidence,
             status=analysis.status,
-            engine=engine,
+            engine=record.origin,
             remediation_id=analysis.remediation.id,
             template_version=analysis.provenance.template_version,
             log_id=self._next_log,
+            provenance=record.to_dict(),
             payload=analysis.to_dict(),
         )
         self._next_log += 1
@@ -398,10 +451,49 @@ class SqlAnalysisStore:
                         template_version=row.template_version,
                         log_id=int(row.id),
                         created_at=as_utc(row.created_at),
+                        provenance=dict(row.provenance) if row.provenance else {},
                         payload=dict(row.output_json),
                     )
                 )
         return tuple(out)
+
+    def provenance_for_scan(self, scan_id: int) -> tuple[Mapping[str, Any], ...]:
+        """Every analysis row's provenance record for one scan (REQ-AGENT-008's export).
+
+        Read straight from the column rather than re-derived from ``output_json``: the export is
+        a statement about what was *persisted* at the time, and a payload edited afterwards must
+        not change it. A pre-WP-15 row contributes nothing (its record was never stated).
+        """
+        with self._session_factory() as session:
+            rows = session.scalars(
+                select(AnalysisLog.provenance)
+                .join(Finding, Finding.id == AnalysisLog.finding_id)
+                .where(Finding.scan_id == scan_id, AnalysisLog.provenance.is_not(None))
+                .order_by(AnalysisLog.id)
+            ).all()
+        return tuple(dict(row) for row in rows if row)
+
+    def provenance_for_project(self, project_id: int | None) -> tuple[Mapping[str, Any], ...]:
+        """Every analysis row's provenance record across a project's scans (REQ-AGENT-008).
+
+        ``None`` selects the implicit default project — the rows whose scan carries no
+        ``project_id``, which is how a pre-S14 deployment reads (``data/project_store.py``).
+        """
+        with self._session_factory() as session:
+            query = (
+                select(AnalysisLog.provenance)
+                .join(Finding, Finding.id == AnalysisLog.finding_id)
+                .join(Scan, Scan.id == Finding.scan_id)
+                .where(AnalysisLog.provenance.is_not(None))
+                .order_by(AnalysisLog.id)
+            )
+            query = (
+                query.where(Scan.project_id.is_(None))
+                if project_id is None
+                else query.where(Scan.project_id == project_id)
+            )
+            rows = session.scalars(query).all()
+        return tuple(dict(row) for row in rows if row)
 
     def count_analyses(self, scan_id: int) -> int:
         with self._session_factory() as session:
@@ -467,14 +559,16 @@ class SqlAnalysisStore:
         engine: str,
         finding: Finding | None,
     ) -> StoredAnalysis:
+        record = provenance_of(analysis)
         row = AnalysisLog(
             finding_id=finding.id if finding is not None else None,
-            engine=analysis.provenance.engine or engine,
+            engine=record.origin or engine,
             model=analysis.provenance.model,
             template_version=analysis.provenance.template_version,
             prompt_hash=analysis.provenance.prompt_hash,
             output_json=analysis.to_dict(),
-            tokens_used=0,
+            tokens_used=record.total_tokens,
+            provenance=record.to_dict(),
         )
         session.add(row)
         session.flush()
@@ -489,5 +583,6 @@ class SqlAnalysisStore:
             template_version=row.template_version,
             log_id=int(row.id),
             created_at=as_utc(row.created_at),
+            provenance=record.to_dict(),
             payload=analysis.to_dict(),
         )

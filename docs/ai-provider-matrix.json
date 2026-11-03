@@ -1,0 +1,368 @@
+{
+  "document": "arachne-ai-provider-matrix",
+  "version": "1.0",
+  "date": "2026-11-04",
+  "fixture_version": "v1",
+  "corpus_sha256": "39454cb8d8d561f5d81a12203a0424a678a8cf6cbb19d3195003733aa4d846de",
+  "prompt_corpus": "a56c87beb81cadf5",
+  "cases": 240,
+  "adapters": [
+    "openai",
+    "openai_compatible",
+    "anthropic",
+    "gemini",
+    "ollama",
+    "mistral",
+    "custom"
+  ],
+  "stages": [
+    "triage",
+    "correlate",
+    "narrative"
+  ],
+  "rows": [
+    {
+      "adapter": "openai",
+      "configuration": "documented",
+      "requires": "OPENAI_API_KEY in the environment",
+      "limitation": "Requires a credential; the endpoint's JSON-schema support is model-dependent.",
+      "mechanisms": [
+        "json_schema"
+      ],
+      "stages": {
+        "triage": {
+          "supported": true,
+          "mechanism": "json_schema",
+          "constrained": true,
+          "cases": 100,
+          "answered": 100,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        },
+        "correlate": {
+          "supported": true,
+          "mechanism": "json_schema",
+          "constrained": true,
+          "cases": 40,
+          "answered": 40,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        },
+        "narrative": {
+          "supported": true,
+          "mechanism": "json_schema",
+          "constrained": true,
+          "cases": 100,
+          "answered": 100,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        }
+      },
+      "prompt_corpus": "a56c87beb81cadf5"
+    },
+    {
+      "adapter": "openai_compatible",
+      "configuration": "documented",
+      "requires": "an operator-supplied base_url (vLLM, LM Studio, llama.cpp, Azure, Groq, ...)",
+      "limitation": "Has no default base_url: a deployment must name the endpoint, because 'compatible' is a family, not a service. Structured output depends on what the endpoint supports \u2014 the adapter degrades json_schema to guided_json, json_object, then plain text, and records which one it used.",
+      "mechanisms": [
+        "json_schema"
+      ],
+      "stages": {
+        "triage": {
+          "supported": true,
+          "mechanism": "json_schema",
+          "constrained": true,
+          "cases": 100,
+          "answered": 100,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        },
+        "correlate": {
+          "supported": true,
+          "mechanism": "json_schema",
+          "constrained": true,
+          "cases": 40,
+          "answered": 40,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        },
+        "narrative": {
+          "supported": true,
+          "mechanism": "json_schema",
+          "constrained": true,
+          "cases": 100,
+          "answered": 100,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        }
+      },
+      "prompt_corpus": "a56c87beb81cadf5"
+    },
+    {
+      "adapter": "anthropic",
+      "configuration": "documented",
+      "requires": "ANTHROPIC_API_KEY in the environment",
+      "limitation": "Constrains through a single forced tool rather than a response_format; an old pinned API version may not support tool_choice at all.",
+      "mechanisms": [
+        "tool_use"
+      ],
+      "stages": {
+        "triage": {
+          "supported": true,
+          "mechanism": "tool_use",
+          "constrained": true,
+          "cases": 100,
+          "answered": 100,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        },
+        "correlate": {
+          "supported": true,
+          "mechanism": "tool_use",
+          "constrained": true,
+          "cases": 40,
+          "answered": 40,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        },
+        "narrative": {
+          "supported": true,
+          "mechanism": "tool_use",
+          "constrained": true,
+          "cases": 100,
+          "answered": 100,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        }
+      },
+      "prompt_corpus": "a56c87beb81cadf5"
+    },
+    {
+      "adapter": "gemini",
+      "configuration": "documented",
+      "requires": "GEMINI_API_KEY in the environment (or an ADC proxy in front of the API)",
+      "limitation": "responseSchema is Google's OpenAPI subset, so a schema keyword outside that subset is dropped before the request is sent rather than sent and rejected.",
+      "mechanisms": [
+        "response_schema"
+      ],
+      "stages": {
+        "triage": {
+          "supported": true,
+          "mechanism": "response_schema",
+          "constrained": true,
+          "cases": 100,
+          "answered": 100,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        },
+        "correlate": {
+          "supported": true,
+          "mechanism": "response_schema",
+          "constrained": true,
+          "cases": 40,
+          "answered": 40,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        },
+        "narrative": {
+          "supported": true,
+          "mechanism": "response_schema",
+          "constrained": true,
+          "cases": 100,
+          "answered": 100,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        }
+      },
+      "prompt_corpus": "a56c87beb81cadf5"
+    },
+    {
+      "adapter": "ollama",
+      "configuration": "documented",
+      "requires": "nothing \u2014 the fully local path; a non-loopback base_url must be declared",
+      "limitation": "Unreachable without a declared local endpoint; the default is loopback only, so a remote Ollama is refused unless the operator says so. 'format' as a schema is a newer-server feature: on an old server the field is ignored and the answer is only as structured as the model is.",
+      "mechanisms": [
+        "format_schema"
+      ],
+      "stages": {
+        "triage": {
+          "supported": true,
+          "mechanism": "format_schema",
+          "constrained": true,
+          "cases": 100,
+          "answered": 100,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        },
+        "correlate": {
+          "supported": true,
+          "mechanism": "format_schema",
+          "constrained": true,
+          "cases": 40,
+          "answered": 40,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        },
+        "narrative": {
+          "supported": true,
+          "mechanism": "format_schema",
+          "constrained": true,
+          "cases": 100,
+          "answered": 100,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        }
+      },
+      "prompt_corpus": "a56c87beb81cadf5"
+    },
+    {
+      "adapter": "mistral",
+      "configuration": "documented",
+      "requires": "MISTRAL_API_KEY in the environment",
+      "limitation": "Requires a credential; the adapter is OpenAI-shaped but the endpoint is not.",
+      "mechanisms": [
+        "json_schema"
+      ],
+      "stages": {
+        "triage": {
+          "supported": true,
+          "mechanism": "json_schema",
+          "constrained": true,
+          "cases": 100,
+          "answered": 100,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        },
+        "correlate": {
+          "supported": true,
+          "mechanism": "json_schema",
+          "constrained": true,
+          "cases": 40,
+          "answered": 40,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        },
+        "narrative": {
+          "supported": true,
+          "mechanism": "json_schema",
+          "constrained": true,
+          "cases": 100,
+          "answered": 100,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        }
+      },
+      "prompt_corpus": "a56c87beb81cadf5"
+    },
+    {
+      "adapter": "custom",
+      "configuration": "documented",
+      "requires": "extra.request_template and extra.response_path (a user-defined JSON mapping for an API format ARACHNE does not know)",
+      "limitation": "Cannot plan or interpret anything without an operator-supplied request_template and response_path: the adapter is the documented escape hatch for an unknown API format, so it has no default shape to fall back on. Unconfigured, every stage is refused before a request is built \u2014 see the 'unconfigured' row.",
+      "mechanisms": [
+        "custom"
+      ],
+      "stages": {
+        "triage": {
+          "supported": true,
+          "mechanism": "custom",
+          "constrained": false,
+          "cases": 100,
+          "answered": 100,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        },
+        "correlate": {
+          "supported": true,
+          "mechanism": "custom",
+          "constrained": false,
+          "cases": 40,
+          "answered": 40,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        },
+        "narrative": {
+          "supported": true,
+          "mechanism": "custom",
+          "constrained": false,
+          "cases": 100,
+          "answered": 100,
+          "precision": 1.0,
+          "recall": 1.0,
+          "accuracy": 1.0,
+          "reason": ""
+        }
+      },
+      "prompt_corpus": "a56c87beb81cadf5"
+    },
+    {
+      "adapter": "custom",
+      "configuration": "unconfigured",
+      "requires": "extra.request_template and extra.response_path",
+      "limitation": "Cannot plan or interpret anything without an operator-supplied request_template and response_path: the adapter is the documented escape hatch for an unknown API format, so it has no default shape to fall back on. Unconfigured, every stage is refused before a request is built \u2014 see the 'unconfigured' row.",
+      "mechanisms": [],
+      "stages": {
+        "triage": {
+          "supported": false,
+          "reason": "the 'custom' adapter needs extra.request_template (a JSON mapping with {{model}}/{{system}}/{{prompt}} placeholders)",
+          "mechanism": "",
+          "constrained": false
+        },
+        "correlate": {
+          "supported": false,
+          "reason": "the 'custom' adapter needs extra.request_template (a JSON mapping with {{model}}/{{system}}/{{prompt}} placeholders)",
+          "mechanism": "",
+          "constrained": false
+        },
+        "narrative": {
+          "supported": false,
+          "reason": "the 'custom' adapter needs extra.request_template (a JSON mapping with {{model}}/{{system}}/{{prompt}} placeholders)",
+          "mechanism": "",
+          "constrained": false
+        }
+      },
+      "reason": "the 'custom' adapter needs extra.request_template (a JSON mapping with {{model}}/{{system}}/{{prompt}} placeholders)"
+    }
+  ]
+}

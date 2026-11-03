@@ -1,5 +1,5 @@
 id: correlate
-version: "1.0"
+version: "1.1"
 stage: correlate
 schema: correlate
 response_format: json
@@ -19,6 +19,8 @@ system: |
     an empty string when the members are independent but jointly severe.
   - severity is the severity of the *combination* (critical, high, medium, low, info), or null
     to leave the correlation engine's decision unchanged.
+  - evidence_ids must list the evidence ids from the context's list that the shared root cause
+    rests on. Never cite an id that is not offered, and never answer with an empty list.
   - Reply with a single JSON object matching the schema exactly.
 user: |
   [CONTEXT]

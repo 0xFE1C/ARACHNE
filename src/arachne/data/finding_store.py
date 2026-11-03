@@ -249,17 +249,29 @@ def _capture_lines(rows: Iterable[EvidenceRow], *, scan_id: int) -> tuple[dict[s
     return tuple(lines)
 
 
-def _evidence_rows(evidence: Iterable[Evidence]) -> tuple[EvidenceRecord, ...]:
-    return tuple(
-        EvidenceRecord(
-            id=None,
-            kind=item.kind,
-            payload=dict(item.payload),
-            sha256=item.sha256,
-            created_at=item.captured_at,
+def _evidence_rows(
+    evidence: Iterable[Evidence], *, first_id: int | None = None
+) -> tuple[EvidenceRecord, ...]:
+    """The evidence rows of one candidate, optionally given minted ids.
+
+    ``first_id`` exists because an AI contribution must cite the evidence it relied on
+    (REQ-AGENT-008, WP-15), and a citation has to name something. The SQL store gets row ids
+    from the database; :class:`MemoryFindingStore` mints them here, in capture order, so a
+    memory-backed scan can satisfy the same contract as a persisted one. Without an id the
+    fact is real evidence but unaddressable, and no AI stage may cite it.
+    """
+    rows: list[EvidenceRecord] = []
+    for offset, item in enumerate(evidence):
+        rows.append(
+            EvidenceRecord(
+                id=None if first_id is None else first_id + offset,
+                kind=item.kind,
+                payload=dict(item.payload),
+                sha256=item.sha256,
+                created_at=item.captured_at,
+            )
         )
-        for item in evidence
-    )
+    return tuple(rows)
 
 
 class MemoryFindingStore:
@@ -275,6 +287,14 @@ class MemoryFindingStore:
         self._check_versions: dict[int, str] = {}
         self._verifications: dict[int, list[VerificationRecord]] = {}
         self._next_verification = 1
+        #: WP-15: evidence ids for a memory-backed scan. A citation must name a row that
+        #: exists, so the store that mints candidate ids mints these too.
+        self._next_evidence = 1
+
+    def _record_evidence(self, evidence: Iterable[Evidence]) -> tuple[EvidenceRecord, ...]:
+        rows = _evidence_rows(evidence, first_id=self._next_evidence)
+        self._next_evidence += len(rows)
+        return rows
 
     def record_checks(self, metadata: Iterable[Any]) -> dict[str, int]:
         for item in metadata:
@@ -307,7 +327,7 @@ class MemoryFindingStore:
             check_key=result.check,
             module=result.module,
             created_at=(result.evidence[0].captured_at if result.evidence else datetime.now(UTC)),
-            evidence=_evidence_rows(result.evidence),
+            evidence=self._record_evidence(result.evidence),
         )
         self._next_candidate += 1
         verification = record_for_result(
