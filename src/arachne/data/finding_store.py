@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
@@ -37,8 +37,15 @@ from arachne.data.evidence_service import EVIDENCE_STUB_KEY, serialized_size
 from arachne.data.models import Asset as AssetRow
 from arachne.data.models import Check, Finding
 from arachne.data.models import Evidence as EvidenceRow
+from arachne.data.models import FindingVerification as FindingVerificationRow
 from arachne.data.quota import StorageQuota
 from arachne.data.scan_store import as_utc
+from arachne.data.verification import (
+    VerificationRecord,
+    append_verification,
+    level_rank,
+    record_for_result,
+)
 
 __all__ = [
     "CandidateRecord",
@@ -111,6 +118,11 @@ class CandidateRecord:
     #: already has one; carrying it here saves the report layer a second query (S8).
     created_at: datetime | None = None
     evidence: tuple[EvidenceRecord, ...] = ()
+    #: The finding's current verification record (WP-13, REQ-PROOF-015). ``None`` means the
+    #: finding carries none — which the report renders as ``unverified`` at severity ``info``.
+    verification: VerificationRecord | None = None
+    #: Every verification record for the finding, oldest first (REQ-PROOF-016's history).
+    verifications: tuple[VerificationRecord, ...] = ()
 
     @property
     def is_candidate(self) -> bool:
@@ -131,6 +143,7 @@ class CandidateRecord:
             "asset": {"kind": self.asset_kind, "value": self.asset_value},
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "evidence": [item.to_dict() for item in self.evidence],
+            "verification": self.verification.to_dict() if self.verification else None,
         }
 
 
@@ -154,6 +167,14 @@ class FindingStore(Protocol):
     def count_candidates(self, scan_id: int) -> int: ...
 
     def list_candidates(self, scan_id: int) -> tuple[CandidateRecord, ...]: ...
+
+    def find_candidate(self, finding_id: int) -> CandidateRecord | None:
+        """One candidate by id, or ``None`` (WP-13's re-verification entry point)."""
+        ...
+
+    def record_verification(self, record: VerificationRecord) -> VerificationRecord:
+        """Append a verification record and make it the finding's current one (WP-13)."""
+        ...
 
 
 def _note_payload(result: CheckResult, asset: str | None) -> dict[str, Any]:
@@ -217,12 +238,18 @@ class MemoryFindingStore:
         self._candidates: dict[int, list[CandidateRecord]] = {}
         self._next_check = 1
         self._next_candidate = 1
+        #: ``check key → version`` so a memory-backed candidate records the same
+        #: ``check_version`` a SQL-backed one does (WP-13).
+        self._check_versions: dict[int, str] = {}
+        self._verifications: dict[int, list[VerificationRecord]] = {}
+        self._next_verification = 1
 
     def record_checks(self, metadata: Iterable[Any]) -> dict[str, int]:
         for item in metadata:
             self._checks.setdefault(item.key, self._next_check)
             if self._checks[item.key] == self._next_check:
                 self._next_check += 1
+            self._check_versions[self._checks[item.key]] = str(item.version)
         return dict(self._checks)
 
     def record_candidate(
@@ -234,8 +261,9 @@ class MemoryFindingStore:
         asset_id: int | None,
         asset: tuple[str, str] | None = None,
     ) -> CandidateRecord:
+        identifier = self._next_candidate
         record = CandidateRecord(
-            id=self._next_candidate,
+            id=identifier,
             scan_id=scan_id,
             title=result.title,
             status="open",
@@ -250,14 +278,58 @@ class MemoryFindingStore:
             evidence=_evidence_rows(result.evidence),
         )
         self._next_candidate += 1
-        self._candidates.setdefault(scan_id, []).append(record)
-        return record
+        verification = record_for_result(
+            result,
+            check_version=self._check_versions.get(check_id) if check_id is not None else None,
+            verified_at=record.created_at or datetime.now(UTC),
+            finding_id=identifier,
+            scan_id=scan_id,
+        )
+        self._verifications[identifier] = [verification]
+        self._candidates.setdefault(scan_id, []).append(
+            replace(record, verification=verification, verifications=(verification,))
+        )
+        return self._candidates[scan_id][-1]
 
     def count_candidates(self, scan_id: int) -> int:
         return len(self._candidates.get(scan_id, ()))
 
     def list_candidates(self, scan_id: int) -> tuple[CandidateRecord, ...]:
         return tuple(self._candidates.get(scan_id, ()))
+
+    def find_candidate(self, finding_id: int) -> CandidateRecord | None:
+        for candidates in self._candidates.values():
+            for candidate in candidates:
+                if candidate.id == finding_id:
+                    return candidate
+        return None
+
+    def record_verification(self, record: VerificationRecord) -> VerificationRecord:
+        if record.finding_id is None:
+            msg = "a verification record must name the finding it belongs to"
+            raise ValueError(msg)
+        history = self._verifications.setdefault(int(record.finding_id), [])
+        if record.parent_id is not None:
+            parent = next((item for item in history if item.id == record.parent_id), None)
+            if parent is not None and level_rank(record.level) > level_rank(parent.level):
+                msg = (
+                    f"refusing to persist a re-verification at {record.level} above its "
+                    f"parent {parent.level}"
+                )
+                raise ValueError(msg)
+        stored = replace(record, id=self._next_verification)
+        self._next_verification += 1
+        history.append(stored)
+        for candidates in self._candidates.values():
+            for index, candidate in enumerate(candidates):
+                if candidate.id != stored.finding_id:
+                    continue
+                candidates[index] = replace(
+                    candidate,
+                    verification=stored,
+                    verifications=tuple(history),
+                )
+        return stored
 
 
 class SqlFindingStore:
@@ -445,6 +517,17 @@ class SqlFindingStore:
                     )
                 )
             finding.evidence_refs_json = [item.id for item in stored]
+            # WP-13 (REQ-PROOF-015): every finding persists a verification record, computed
+            # here, in the same transaction as the finding it belongs to. The record is
+            # derived from the *check's* result — there is no parameter through which an
+            # analyzer or an AI contribution could supply one (PD-8).
+            verification = _persist_verification(
+                session,
+                finding=finding,
+                result=result,
+                check_id=check_id,
+                scan_id=scan_id,
+            )
             session.commit()
             return CandidateRecord(
                 id=int(finding.id),
@@ -461,7 +544,16 @@ class SqlFindingStore:
                 module=result.module,
                 created_at=as_utc(finding.created_at),
                 evidence=tuple(stored),
+                verification=verification,
+                verifications=(verification,),
             )
+
+    def record_verification(self, record: VerificationRecord) -> VerificationRecord:
+        """Append a verification record and make it the finding's current one (WP-13)."""
+        with self._session_factory() as session:
+            stored = append_verification(session, record)
+            session.commit()
+            return stored
 
     def count_candidates(self, scan_id: int) -> int:
         with self._session_factory() as session:
@@ -470,65 +562,166 @@ class SqlFindingStore:
             )
         return int(total or 0)
 
+    def find_candidate(self, finding_id: int) -> CandidateRecord | None:
+        with self._session_factory() as session:
+            finding = session.get(Finding, finding_id)
+            if finding is None:
+                return None
+            return _candidate_from_row(session, finding, self._session_factory)
+
     def list_candidates(self, scan_id: int) -> tuple[CandidateRecord, ...]:
         with self._session_factory() as session:
             findings = session.scalars(
                 select(Finding).where(Finding.scan_id == scan_id).order_by(Finding.id)
             ).all()
-            out: list[CandidateRecord] = []
-            for finding in findings:
-                evidence_rows = session.scalars(
-                    select(EvidenceRow)
-                    .where(EvidenceRow.finding_id == finding.id)
-                    .order_by(EvidenceRow.id)
-                ).all()
-                check_key: str | None = None
-                module: str | None = None
-                research_ref: str | None = None
-                asset_kind: str | None = None
-                asset_value: str | None = None
-                if finding.asset_id is not None:
-                    identity = _asset_identity(self._session_factory, finding.asset_id)
-                    if identity is not None:
-                        asset_kind, asset_value = identity
-                if finding.check_id is not None:
-                    check = session.get(Check, finding.check_id)
-                    if check is not None:
-                        check_key = f"{check.module}/{check.name}@{check.version}"
-                        module = str(check.module)
-                        research_ref = check.research_ref
-                out.append(
-                    CandidateRecord(
-                        id=int(finding.id),
-                        scan_id=int(finding.scan_id),
-                        title=str(finding.title),
-                        status=str(finding.status),
-                        confidence=finding.confidence,
-                        severity=finding.severity,
-                        check_id=finding.check_id,
-                        asset_id=finding.asset_id,
-                        asset_kind=asset_kind,
-                        asset_value=asset_value,
-                        check_key=check_key,
-                        module=module,
-                        research_ref=research_ref,
-                        created_at=as_utc(finding.created_at),
-                        evidence=tuple(
-                            EvidenceRecord(
-                                id=int(row.id),
-                                kind=str(row.kind),
-                                payload=dict(row.payload_json),
-                                sha256=row.sha256,
-                                created_at=as_utc(row.created_at),
-                                size_bytes=row.size_bytes,
-                                storage=row.storage,
-                                storage_key=row.storage_key,
-                            )
-                            for row in evidence_rows
-                        ),
-                    )
-                )
+            out = [
+                _candidate_from_row(session, finding, self._session_factory) for finding in findings
+            ]
         return tuple(out)
+
+
+def _candidate_from_row(
+    session: Session, finding: Finding, session_factory: sessionmaker[Session]
+) -> CandidateRecord:
+    """One ``findings`` row as a :class:`CandidateRecord`, with its evidence and record.
+
+    Shared by :meth:`SqlFindingStore.list_candidates` and
+    :meth:`SqlFindingStore.find_candidate`, so the two cannot describe one row differently.
+    """
+    evidence_rows = session.scalars(
+        select(EvidenceRow).where(EvidenceRow.finding_id == finding.id).order_by(EvidenceRow.id)
+    ).all()
+    check_key: str | None = None
+    module: str | None = None
+    research_ref: str | None = None
+    asset_kind: str | None = None
+    asset_value: str | None = None
+    if finding.asset_id is not None:
+        identity = _asset_identity(session_factory, finding.asset_id)
+        if identity is not None:
+            asset_kind, asset_value = identity
+    if finding.check_id is not None:
+        check = session.get(Check, finding.check_id)
+        if check is not None:
+            check_key = f"{check.module}/{check.name}@{check.version}"
+            module = str(check.module)
+            research_ref = check.research_ref
+    return CandidateRecord(
+        id=int(finding.id),
+        scan_id=int(finding.scan_id),
+        title=str(finding.title),
+        status=str(finding.status),
+        confidence=finding.confidence,
+        severity=finding.severity,
+        check_id=finding.check_id,
+        asset_id=finding.asset_id,
+        asset_kind=asset_kind,
+        asset_value=asset_value,
+        check_key=check_key,
+        module=module,
+        research_ref=research_ref,
+        created_at=as_utc(finding.created_at),
+        evidence=tuple(
+            EvidenceRecord(
+                id=int(row.id),
+                kind=str(row.kind),
+                payload=dict(row.payload_json),
+                sha256=row.sha256,
+                created_at=as_utc(row.created_at),
+                size_bytes=row.size_bytes,
+                storage=row.storage,
+                storage_key=row.storage_key,
+            )
+            for row in evidence_rows
+        ),
+        verification=_verification_of(session, finding),
+        verifications=_verification_history(session, int(finding.id)),
+    )
+
+
+def _persist_verification(
+    session: Session,
+    *,
+    finding: Finding,
+    result: CheckResult,
+    check_id: int | None,
+    scan_id: int,
+) -> VerificationRecord:
+    """Write the finding's verification record and point the finding at it (REQ-PROOF-015).
+
+    ``check_version`` comes from the ``checks`` row the candidate's ``check_id`` names, so
+    the record says which version of the check established the claim — the question
+    "did the check change since?" a re-verification needs.
+    """
+    version: str | None = None
+    if check_id is not None:
+        check = session.get(Check, check_id)
+        if check is not None:
+            version = str(check.version)
+    verified_at = (
+        result.evidence[0].captured_at if result.evidence else finding.created_at
+    ) or datetime.now(UTC)
+    record = record_for_result(
+        result,
+        check_version=version,
+        verified_at=verified_at,
+        finding_id=int(finding.id),
+        scan_id=scan_id,
+    )
+    row = FindingVerificationRow(
+        finding_id=int(finding.id),
+        parent_id=None,
+        scan_id=scan_id,
+        status=record.status,
+        level=record.level,
+        method=record.method,
+        observations_json=[dict(item) for item in record.observations],
+        reproducibility_token=record.reproducibility_token,
+        verified_at=record.verified_at or datetime.now(UTC),
+        check_version=record.check_version,
+        outcome=record.outcome,
+    )
+    session.add(row)
+    session.flush()
+    finding.verification_id = int(row.id)
+    return replace(record, id=int(row.id))
+
+
+def _verification_of(session: Session, finding: Finding) -> VerificationRecord | None:
+    """The record ``findings.verification_id`` names, or ``None`` when the finding has none."""
+    if finding.verification_id is None:
+        return None
+    row = session.get(FindingVerificationRow, int(finding.verification_id))
+    return None if row is None else _row_to_verification(row)
+
+
+def _verification_history(session: Session, finding_id: int) -> tuple[VerificationRecord, ...]:
+    rows = session.scalars(
+        select(FindingVerificationRow)
+        .where(FindingVerificationRow.finding_id == finding_id)
+        .order_by(FindingVerificationRow.id)
+    ).all()
+    return tuple(_row_to_verification(row) for row in rows)
+
+
+def _row_to_verification(row: FindingVerificationRow) -> VerificationRecord:
+    observations = row.observations_json if isinstance(row.observations_json, list) else []
+    return VerificationRecord(
+        id=int(row.id),
+        finding_id=int(row.finding_id),
+        parent_id=int(row.parent_id) if row.parent_id is not None else None,
+        scan_id=int(row.scan_id) if row.scan_id is not None else None,
+        status=str(row.status),
+        level=str(row.level),
+        method=str(row.method),
+        observations=tuple(dict(item) for item in observations if isinstance(item, Mapping)),
+        reproducibility_token=(
+            str(row.reproducibility_token) if row.reproducibility_token else None
+        ),
+        verified_at=as_utc(row.verified_at),
+        check_version=str(row.check_version) if row.check_version else None,
+        outcome=str(row.outcome) if row.outcome else None,
+    )
 
 
 def _asset_identity(

@@ -65,6 +65,7 @@ strings:
   report.finding.description: "Description"
   report.finding.remediation: "Remediation"
   report.finding.verification: "Verification of fix"
+  report.finding.verification_record: "Verification"
   report.finding.provenance: "Provenance"
   report.finding.classification: "Classification"
   report.finding.asset: "Asset"

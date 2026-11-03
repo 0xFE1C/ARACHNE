@@ -40,7 +40,7 @@ Low-confidence observations (reported separately, not confirmed): 1
 - Timeframe: 2026-10-27T12:00:00+00:00 → 2026-10-27T12:41:00+00:00 (2460 seconds)
 - Checks run: 2 run, 1 not run
 - Rate limits: global_per_second=20.0, per_host_per_second=5.0
-- Report schema: 1.11
+- Report schema: 1.12
 
 **Scope (compiled, deny by default):**
 
@@ -80,6 +80,12 @@ Classification: check `m4.dashboard-exposure@1.0` · research `ch04#5` · A01:20
   ```
 - **E-0006 · note** — candidate 2 provenance · sha256 `161b1ed38b674bd1…`
   Detail: candidate 2 provenance
+**Vérification:**
+- level L1 · verified · check 1.0 · check-local observation (test fixture)
+- reproducibility: `ar9xfixture0001`
+- verified at: 2026-10-27
+- observation: GET / HTTP/1.1 → HTTP 200
+
 
 **Remédiation:** Block .env at the web-server layer and rotate the credentials.
 
@@ -114,6 +120,12 @@ Classification: check `m4.env-file-probe@1.0` · research `ch04#1` · A05:2021-S
   ```
 - **E-0003 · note** — candidate 1 provenance · sha256 `6370b71e43d43353…`
   Detail: candidate 1 provenance
+**Vérification:**
+- level L1 · verified · check 1.0 · check-local observation (test fixture)
+- reproducibility: `ar9xfixture0001`
+- verified at: 2026-10-27
+- observation: GET / HTTP/1.1 → HTTP 200
+
 
 **Remédiation:** Block .env at the web-server layer and rotate the credentials.
 

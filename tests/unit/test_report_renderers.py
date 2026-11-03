@@ -6,6 +6,7 @@ import json
 
 import jsonschema
 import pytest
+from tests.helpers.report import report_verification
 
 from arachne.core.errors import ReportError
 from arachne.report import (
@@ -142,6 +143,8 @@ def test_json_is_the_full_dto(synthetic_report: object) -> None:
         "status",
         "provenance",
         "timestamps",
+        # WP-13 (REQ-PROOF-015): required on every finding, so it is part of the contract.
+        "verification",
     ):
         assert key in finding, key
 
@@ -156,6 +159,7 @@ def test_a_table_breaking_title_is_escaped() -> None:
         asset=AssetRef(kind="url", value="https://t.example/"),
         severity="high",
         score=Score(confidence=90),
+        verification=report_verification(),
         remediation=RemediationPlan(id="x", summary="fix it"),
     )
     from datetime import UTC, datetime

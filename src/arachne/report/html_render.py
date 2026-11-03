@@ -31,6 +31,7 @@ from collections.abc import Sequence
 from datetime import datetime
 
 from arachne.i18n import DEFAULT_LOCALE, translate
+from arachne.report import model as m
 from arachne.report.model import (
     ReportData,
     ReportEvidence,
@@ -334,6 +335,39 @@ def _payload_block(entry: ReportEvidence) -> str:
     return "<pre>" + _text("\n".join(lines)) + "</pre>"
 
 
+def _verification_block(finding: ReportFinding, report: ReportData) -> str:
+    """The per-finding *Verification* section (WP-13, REQ-PROOF-015/016)."""
+    record = finding.verification
+    label = _t("report.finding.verification_record", report)
+    rows = [
+        ("status", record.status),
+        ("level", record.level),
+        ("method", record.method or "(not recorded)"),
+        ("check version", record.check_version or "(not recorded)"),
+        ("reproducibility", record.reproducibility or "(not recorded)"),
+        ("verified at", _date(record.verified_at) if record.verified_at else "(not recorded)"),
+    ]
+    meta = "".join(f"<dt>{_esc(name)}</dt><dd>{_inline(value)}</dd>" for name, value in rows)
+    parts = [f'<h4>{_esc(label)}</h4><dl class="meta">{meta}</dl>']
+    if record.observations:
+        parts.append("<ul>")
+        for item in record.observations:
+            parts.append(f"<li>{_inline(m.observation_summary(item))}</li>")
+        parts.append("</ul>")
+    history = [
+        entry for entry in finding.verification_history if entry.parent_record_id is not None
+    ]
+    if history:
+        parts.append('<ul class="small">')
+        for entry in history:
+            parts.append(
+                f"<li>re-verification: {_esc(entry.outcome or entry.status)} at level "
+                f"{_esc(entry.level)} (parent record {entry.parent_record_id})</li>"
+            )
+        parts.append("</ul>")
+    return "".join(parts)
+
+
 def _finding_block(index: int, finding: ReportFinding, report: ReportData) -> str:
     section, _ = next(
         (
@@ -386,6 +420,7 @@ def _finding_block(index: int, finding: ReportFinding, report: ReportData) -> st
             parts.append(_payload_block(entry))
             parts.append("</li>")
         parts.append("</ul>")
+    parts.append(_verification_block(finding, report))
     parts.append(f"<h4>Remediation</h4><p>{_inline(finding.remediation.summary)}</p>")
     if finding.remediation.steps:
         parts.append(

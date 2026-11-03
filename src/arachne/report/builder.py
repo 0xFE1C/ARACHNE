@@ -384,6 +384,51 @@ def _proof_from_payload(payload: Mapping[str, Any]) -> m.FindingProof:
     )
 
 
+def _verification_from_record(record: Any) -> m.VerificationRecord | None:
+    """The stored verification record as the report renders it (WP-13, REQ-PROOF-015).
+
+    Deliberately reads **only** the store's record: nothing here consults an
+    :class:`~arachne.data.analysis_store.StoredAnalysis`, so the AI stage cannot introduce
+    or alter a verification record (PD-8, ``05-detection-program.md`` §3.4). A missing
+    record returns ``None``, and :class:`~arachne.report.model.ReportFinding` then forces the
+    finding to ``info`` and marks it ``unverified``.
+    """
+    if record is None:
+        return None
+    status = str(getattr(record, "status", "unverified"))
+    return m.VerificationRecord(
+        status="verified" if status == "verified" else "unverified",
+        level=str(getattr(record, "level", "L0")),
+        method=str(getattr(record, "method", "")),
+        observations=tuple(
+            dict(item)
+            for item in (getattr(record, "observations", ()) or ())
+            if isinstance(item, Mapping)
+        ),
+        reproducibility=getattr(record, "reproducibility_token", None),
+        verified_at=getattr(record, "verified_at", None),
+        check_version=getattr(record, "check_version", None),
+        parent_record_id=getattr(record, "parent_id", None),
+        outcome=getattr(record, "outcome", None),
+    )
+
+
+def _verification_for(
+    candidate: CandidateRecord,
+) -> tuple[m.VerificationRecord | None, tuple[m.VerificationRecord, ...]]:
+    """The finding's current record and its history, from the store only (REQ-PROOF-016)."""
+    current = _verification_from_record(getattr(candidate, "verification", None))
+    history = tuple(
+        item
+        for item in (
+            _verification_from_record(record)
+            for record in (getattr(candidate, "verifications", ()) or ())
+        )
+        if item is not None
+    )
+    return current, history
+
+
 def _finding_proof(
     candidate: CandidateRecord, merged_proofs: Mapping[int, m.FindingProof] | None = None
 ) -> m.FindingProof | None:
@@ -803,6 +848,7 @@ def build_report_data(inputs: ReportInputs) -> m.ReportData:
             refs = [identifier]
 
         finding_refs[candidate.id] = tuple(refs)
+        verification, verification_history = _verification_for(candidate)
         finding = m.ReportFinding(
             id=m.finding_id(candidate.id),
             scan_id=scan_label,
@@ -821,6 +867,11 @@ def build_report_data(inputs: ReportInputs) -> m.ReportData:
             description=description,
             evidence_refs=tuple(refs),
             proof=_finding_proof(candidate, merged_proofs),
+            # ``None`` is deliberate and safe: the model's before-validator turns a
+            # missing record into an ``unverified`` finding at severity ``info``
+            # (REQ-PROOF-015), which is exactly the behaviour a lost record must have.
+            verification=verification,  # type: ignore[arg-type]
+            verification_history=verification_history,
             remediation=_remediation_for(candidate, analysis, check_id, cwe, catalog),
             status=status,
             provenance=_provenance(analysis, inputs.engine),

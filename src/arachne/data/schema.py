@@ -20,7 +20,7 @@ __all__ = [
 ]
 
 #: Revision this code expects ``alembic upgrade head`` to reach.
-LATEST_SCHEMA_REVISION: Final = "0014"
+LATEST_SCHEMA_REVISION: Final = "0015"
 
 #: Table Alembic uses to record the applied revision.
 ALEMBIC_VERSION_TABLE: Final = "alembic_version"
@@ -88,6 +88,11 @@ EXTENSION_TABLE_NAMES: Final[tuple[str, ...]] = (
     # plots. Its own table on purpose: a simulation point is an observation of a
     # computation, never a finding, so nothing that reads findings can reach it.
     "simulation_points",
+    # WP-13 (area PROOF): the per-finding verification record — how a finding was
+    # established (level, method, observations, reproducibility token, verified-at, check
+    # version) and, for a re-verification, the parent record it re-checked. The finding's
+    # current record is named by the additive ``findings.verification_id`` column.
+    "finding_verifications",
 )
 
 #: Every table the schema owns.

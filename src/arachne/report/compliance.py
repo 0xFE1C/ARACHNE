@@ -406,6 +406,10 @@ def export_control_evidence(
                     "proof": finding.proof.model_dump(mode="json")
                     if finding.proof is not None
                     else None,
+                    # WP-13: the verification record travels with the control evidence too,
+                    # so a compliance reader sees whether the control's finding was
+                    # established or merely asserted (REQ-PROOF-015).
+                    "verification": finding.verification.model_dump(mode="json"),
                     "evidence": evidence,
                 }
             )

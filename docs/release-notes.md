@@ -60,6 +60,17 @@ a browser engine inside the scanner is a new attack surface and the operator opt
   restored and re-verified by a cleanup pass.
 - **The audit trail is hash-chained and tamper-evident.** `arachne verify-chain` detects an
   edited, deleted, reordered or truncated trail, and verifies signed rows and per-scan seals.
+- **Every finding carries its verification record.** The proof level, the method, the
+  observations, a reproducibility token, when it was verified and which version of the check did
+  it — required by report schema 1.12 (WP-13, REQ-PROOF-015). A finding reported without one is
+  forced to `info` and marked `unverified`. `arachne verify-finding <id>` re-runs that finding's
+  own check against the same asset and reports `still-verified` / `no-longer-verified` /
+  `inconclusive` / `refused`, re-checking scope **and** attestation before any request and never
+  raising the proof level (REQ-PROOF-016).
+- **The injection families share one differential oracle.** Two boolean rules, a query rule and a
+  content-marker rule live in `modules/m3/oracle.py` and are exercised by one conformance suite:
+  the same payload set must produce the same verdict across families, and a page that answers 200
+  identically to every input produces zero positives in all of them (REQ-PROOF-020).
 - **Secrets and PII are redacted at capture**, never at render.
 
 **Operation**
@@ -93,10 +104,10 @@ a browser engine inside the scanner is a new attack surface and the operator opt
 
 | What | Result |
 |---|---|
-| Tests | **4,818** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Tests | **4,867** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
 | Primary safety suite | **59 tests** in `tests/test_safety.py`; **328** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol and mobile fixtures with planted false-positive traps |
-| Strict type checking | clean under `mypy --strict` across the **395** Python modules in `src/` |
+| Strict type checking | clean under `mypy --strict` across the **399** Python modules in `src/` |
 | Lint | clean over the whole repository (the badge's scope is the tree, not `src/` and `tests/`) |
 | Research coverage | **148/175 (84.6%)** of the corpus's numbered methods have an implementing check |
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 from pydantic import ValidationError
+from tests.helpers.report import report_verification
 
 from arachne.report.model import (
     REPORT_SCHEMA_VERSION,
@@ -62,5 +63,6 @@ def test_a_finding_requires_a_severity_from_the_vocabulary(tmp_path: object) -> 
             asset=AssetRef(kind="url", value="https://example.test/"),
             severity="urgent",  # type: ignore[arg-type]
             score=Score(confidence=90),
+            verification=report_verification(),
             remediation=RemediationPlan(id="x", summary="fix it"),
         )

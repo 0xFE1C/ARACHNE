@@ -45,6 +45,18 @@ class AuditRecord:
     reason: str | None = None
     meta: Mapping[str, Any] = field(default_factory=dict)
 
+    @property
+    def event_meta(self) -> Mapping[str, Any]:
+        """The event's **own** ``meta`` mapping.
+
+        ``meta`` on this record is the whole stored document (``meta_json`` holds the
+        serialized event minus ``action``), which is what the appendix renders. A caller that
+        wants the keys the emitter passed — ``check``, ``parent_record_id`` and the like —
+        wants this (WP-13).
+        """
+        nested = self.meta.get("meta")
+        return dict(nested) if isinstance(nested, Mapping) else {}
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "ts": self.ts.isoformat() if self.ts else None,
@@ -110,6 +122,24 @@ class SqlAuditReader:
                 )
             )
         return tuple(out)
+
+    def check_outcomes(self, scan_id: int, check_id: str) -> tuple[bool, bool]:
+        """``(completed_cleanly, skipped_or_failed)`` for one check in one scan (WP-13).
+
+        The per-check audit line the checks step emits carries the check id inside the
+        event's own ``meta`` (``meta_json`` holds the whole event document minus ``action``),
+        so this reader — which owns the row shape — is the right place to unwrap it.
+        """
+        ran = False
+        skipped = False
+        for record in self.events_for_scan(scan_id):
+            if record.event_meta.get("check") != check_id:
+                continue
+            if record.action == "check.completed" and record.outcome == "allowed":
+                ran = True
+            elif record.action in {"check.skipped", "check.failed"}:
+                skipped = True
+        return ran, skipped
 
 
 class SqlScanDiffStore:

@@ -59,6 +59,7 @@ from arachne.cli.serve import serve_command
 from arachne.cli.simulate import app as simulate_app
 from arachne.cli.synthesize import synthesize_app
 from arachne.cli.vault import vault_app
+from arachne.cli.verify import verify_finding_command
 from arachne.core.config import Settings, get_settings
 from arachne.core.errors import ArachneError
 from arachne.core.logging import configure_logging, get_logger
@@ -135,6 +136,12 @@ app.command(
 app.command("analyze", help="Analyse a stored scan's candidates with the heuristic engine.")(
     analyze_command
 )
+# WP-13: re-run one finding's proof and record the outcome (REQ-PROOF-016). Exits non-zero
+# when the re-verification is refused, so a script can tell "not answered" from "answered".
+app.command(
+    "verify-finding",
+    help="Re-run the proof behind one finding against the same asset (WP-13, REQ-PROOF-016).",
+)(verify_finding_command)
 app.command("report", help="Render a stored scan as a Markdown or JSON report (F-06-02).")(
     report_command
 )

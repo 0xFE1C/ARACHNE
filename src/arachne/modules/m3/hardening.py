@@ -42,6 +42,7 @@ from arachne.core.target import TargetKind
 from arachne.modules.base import CheckMetadata, Module
 from arachne.modules.context import CheckContext
 from arachne.modules.m3.inventory import WebInventory, origin_of
+from arachne.modules.m3.oracle import DEFAULT_ORACLE
 from arachne.modules.m3.support import (
     BodyDelta,
     WebCheck,
@@ -636,35 +637,41 @@ class CrlfInjection(WebCheck, Module):
 def _first_canary(
     body: str, baseline_body: str, canaries: tuple[re.Pattern[str], ...]
 ) -> str | None:
-    """The first canary that appears in ``body`` but not in ``baseline_body`` (its text)."""
-    for pattern in canaries:
-        match = pattern.search(body)
-        if match is not None and pattern.search(baseline_body) is None:
-            return match.group(0)
-    return None
+    """The first canary in ``body`` and not in ``baseline_body`` (REQ-PROOF-020's marker rule).
+
+    The traversal and local-file-inclusion families share this rule with every other
+    canary-based family through the oracle, so "is this canary evidence?" is answered once.
+    """
+    verdict = DEFAULT_ORACLE.marker(
+        baseline_body=baseline_body, probe_body=body, patterns=list(canaries)
+    )
+    if not verdict.confirmed:
+        return None
+    return str(verdict.metrics.get("marker") or None) or None
 
 
 def _query_differential(
     baseline: HttpExchange, injected: HttpExchange | None, probe: str
 ) -> tuple[BodyDelta, HttpExchange] | None:
-    """A significant response differential that is *not* just the probe echoed back."""
+    """A significant response differential that is *not* just the probe echoed back.
+
+    The decision is the shared oracle's (REQ-PROOF-020): the noise floor and the
+    "the probe was simply reflected" guard live in :class:`~arachne.modules.m3.oracle
+    .DifferentialOracle`, which the SQLi and XPath families call too. The ``16``-byte floor
+    and the reflection slack this family used are the oracle's fields.
+    """
     if injected is None:
         return None
     delta = compare_pages(baseline, injected)
-    if not delta.significant(min_ratio_drop=0.05, min_length_delta=16):
-        return None
-    if _is_pure_reflection(baseline, injected, probe, delta):
+    verdict = DEFAULT_ORACLE.query(
+        baseline=baseline,
+        probe=injected,
+        probe_text=probe,
+        min_length_delta=16,
+    )
+    if not verdict.confirmed:
         return None
     return delta, injected
-
-
-def _is_pure_reflection(
-    baseline: HttpExchange, injected: HttpExchange, probe: str, delta: BodyDelta
-) -> bool:
-    """True when the only change is ``probe`` being echoed verbatim (not a query effect)."""
-    if delta.status_changed or not probe:
-        return False
-    return probe in injected.body and abs(delta.length_delta) <= len(probe) + 16
 
 
 def _rfi_indicator(body: str) -> str | None:

@@ -159,6 +159,16 @@ class AuditAction(StrEnum):
     PROOF_STATE_RESTORED = "proof.state_restored"
     PROOF_CLEANUP_COMPLETED = "proof.cleanup_completed"
     PROOF_REPAIR_REQUIRED = "proof.repair_required"
+    #: WP-13 (area PROOF, REQ-PROOF-015/016): the per-finding verification record.
+    #: ``finding.verification_recorded`` names a record that now exists (the parent, when a
+    #: re-verification writes its own); ``finding.reverified`` records a completed
+    #: re-verification with its outcome; ``finding.reverify_refused`` a re-verification the
+    #: gates refused — expired or non-covering attestation, out-of-scope asset, or a check
+    #: whose declared proof level now sits above the record it would re-check (never an
+    #: escalation). A refusal is audited *and* returned non-zero by the CLI.
+    FINDING_VERIFICATION_RECORDED = "finding.verification_recorded"
+    FINDING_REVERIFIED = "finding.reverified"
+    FINDING_REVERIFY_REFUSED = "finding.reverify_refused"
     #: S16 (area SCALE): the distributed work queue. ``scan.enqueued`` is a producer
     # (API or scheduler) queueing an admitted scan; ``scan.leased``/``scan.released``
     # book-end one agent's execution of it (the agent's identity is in ``meta`` and in

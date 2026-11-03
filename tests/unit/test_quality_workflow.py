@@ -17,6 +17,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from tests.helpers.report import report_verification
 
 from arachne.analyzer.fp import FeedbackEvent, compute_trends, rising_alerts
 from arachne.core.audit import Auditor, MemoryAuditSink
@@ -51,6 +52,7 @@ def _finding(
         asset=AssetRef(kind="url", value=asset),
         severity=severity,  # type: ignore[arg-type]
         score=Score(confidence=80),
+        verification=report_verification(),
         remediation=RemediationPlan(id="fix-it", summary="fix it"),
     )
 

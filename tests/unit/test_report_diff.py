@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from tests.helpers.report import report_verification
+
 from arachne.report.diff import build_diff, diff_from_payload, diff_payload
 from arachne.report.model import AssetRef, RemediationPlan, ReportFinding, Score
 
@@ -23,6 +25,7 @@ def finding(
         asset=AssetRef(kind="url", value=asset),
         severity=severity,  # type: ignore[arg-type]
         score=Score(confidence=90),
+        verification=report_verification(),
         remediation=RemediationPlan(id="x", summary="fix it"),
     )
 

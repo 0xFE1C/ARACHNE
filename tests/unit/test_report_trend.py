@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from tests.helpers.report import report_verification
+
 from arachne.report.diff import build_diff, diff_payload
 from arachne.report.markdown import _diff_section, _severity_trend, _webshell_line
 from arachne.report.model import AssetRef, RemediationPlan, ReportDiff, ReportFinding, Score
@@ -19,6 +21,7 @@ def _finding(number: int, *, check: str, asset: str, severity: str) -> ReportFin
         asset=AssetRef(kind="url", value=asset),
         severity=severity,  # type: ignore[arg-type]
         score=Score(confidence=90),
+        verification=report_verification(),
         remediation=RemediationPlan(id="x", summary="fix it"),
     )
 

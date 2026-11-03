@@ -14,6 +14,8 @@ import hashlib
 import json
 from datetime import UTC, datetime
 
+from tests.helpers.report import report_verification
+
 from arachne.cli.ci import gate_summary
 from arachne.ecos.ci_gate import (
     GateFinding,
@@ -72,6 +74,7 @@ def _report() -> ReportData:
         severity="high",
         score=Score(confidence=70),
         description="the security group allows 0.0.0.0/0",
+        verification=report_verification(),
         remediation=RemediationPlan(id="REM-1", summary="restrict the CIDR"),
     )
     return ReportData(

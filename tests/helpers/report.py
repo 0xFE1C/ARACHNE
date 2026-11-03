@@ -17,8 +17,9 @@ from datetime import UTC, datetime
 
 from arachne.data.analysis_store import StoredAnalysis
 from arachne.data.finding_store import CandidateRecord, EvidenceRecord
+from arachne.data.verification import VerificationRecord as StoredVerificationRecord
 from arachne.report.builder import ReportInputs, build_report_data
-from arachne.report.model import ReportData
+from arachne.report.model import ReportData, VerificationRecord
 
 __all__ = [
     "NOW",
@@ -123,6 +124,45 @@ def _evidence(
     )
 
 
+def make_stored_verification(
+    *,
+    level: str = "L1",
+    method: str = "check-local observation (test fixture)",
+    token: str = "ar9xfixture0001",  # noqa: S107 - a fixture handle, not a secret
+    check_version: str = "1.0",
+) -> StoredVerificationRecord:
+    """A persisted verification record, shaped like the store's (WP-13, REQ-PROOF-015)."""
+    return StoredVerificationRecord(
+        id=1,
+        finding_id=1,
+        level=level,
+        method=method,
+        observations=({"what": "exchange", "request": "GET / HTTP/1.1", "status": 200},),
+        reproducibility_token=token,
+        verified_at=NOW,
+        check_version=check_version,
+        status="verified",
+    )
+
+
+def report_verification(
+    *,
+    level: str = "L1",
+    method: str = "check-local observation (test fixture)",
+    status: str = "verified",
+) -> VerificationRecord:
+    """The report-schema verification record a hand-built finding carries (WP-13)."""
+    return VerificationRecord(
+        status=status,  # type: ignore[arg-type]
+        level=level,
+        method=method,
+        observations=({"what": "exchange", "request": "GET / HTTP/1.1", "status": 200},),
+        reproducibility="ar9xfixture0001",
+        verified_at=NOW,
+        check_version="1.0",
+    )
+
+
 def make_candidate(
     *,
     number: int,
@@ -137,10 +177,21 @@ def make_candidate(
     status: str = "open",
     evidence_start: int | None = None,
     with_evidence: bool = True,
+    verification: StoredVerificationRecord | None = None,
+    with_verification: bool = True,
 ) -> CandidateRecord:
-    """One stored candidate, shaped like ``SqlFindingStore.list_candidates`` output."""
+    """One stored candidate, shaped like ``SqlFindingStore.list_candidates`` output.
+
+    A persisted record is attached by default, because every finding the store writes carries
+    one (WP-13). ``with_verification=False`` is how a test asks for the "no record" case,
+    which the report must render as ``unverified`` at severity ``info``; ``verification``
+    supplies a specific record instead of the fixture one.
+    """
     start = evidence_start if evidence_start is not None else number * 10
     evidence = _evidence(finding=number, start=start, source=asset_value) if with_evidence else ()
+    record = verification
+    if record is None and with_verification:
+        record = make_stored_verification(check_version=version)
     return CandidateRecord(
         id=number,
         scan_id=1,
@@ -157,6 +208,8 @@ def make_candidate(
         research_ref=research_ref,
         created_at=NOW,
         evidence=evidence,
+        verification=record,
+        verifications=(record,) if record is not None else (),
     )
 
 

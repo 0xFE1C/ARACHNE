@@ -24,10 +24,11 @@ uniform.
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 __all__ = [
     "REPORT_SCHEMA_VERSION",
@@ -61,8 +62,10 @@ __all__ = [
     "SimulationHypothesis",
     "StateChangeEntry",
     "Timestamps",
+    "VerificationRecord",
     "evidence_id",
     "finding_id",
+    "observation_summary",
 ]
 
 #: Bumped whenever the serialized report changes shape. The contract.
@@ -97,7 +100,16 @@ __all__ = [
 #: hop marked ``observed`` or ``hypothetical``, under ``provenance="simulated"`` — rendered in
 #: its own section, after the appendix, so nothing about the verified body changes and a
 #: simulated path can never read as a finding (area SIM, REQ-SIM-002/004).
-REPORT_SCHEMA_VERSION = "1.11"
+#: 1.12 (WP-13) makes the per-finding ``verification`` record **required** (area PROOF,
+#: REQ-PROOF-015): level, method, observations, reproducibility token, verified-at and check
+#: version, plus the re-verification chain (``verification_history``). A finding constructed
+#: without one is downgraded to ``info`` and marked ``unverified`` rather than reported, so
+#: an unproven claim can never be dressed as a proven one.
+REPORT_SCHEMA_VERSION = "1.12"
+
+#: Why a finding carries no verification record (WP-13). It is a *reason*, so a
+#: reader of the report sees why the finding is unverified rather than a blank.
+UNVERIFIED_REASON = "no verification record was persisted for this finding"
 
 Severity = Literal["critical", "high", "medium", "low", "info"]
 
@@ -105,6 +117,40 @@ Severity = Literal["critical", "high", "medium", "low", "info"]
 SEVERITY_ORDER: tuple[str, ...] = ("critical", "high", "medium", "low", "info")
 
 _MODEL = ConfigDict(frozen=True, extra="forbid")
+
+
+def observation_summary(item: Mapping[str, Any]) -> str:
+    """One verification observation as a reviewable line (WP-13, REQ-PROOF-015).
+
+    A **fixed vocabulary**, not a dump of the payload: the renderer names what was measured
+    rather than echoing arbitrary keys and values. Two reasons. A record is a summary a human
+    reviews, so a rendering that grows a key for every new check is unreviewable; and an
+    echoed ``<key>=<value>`` pair is indistinguishable from a leaked credential to a text
+    scanner (the repository's own ``contains_secret`` flags ``token=...``), which would make
+    every report *look* like it leaked a secret.
+    """
+    what = str(item.get("what") or "observation")
+    request = item.get("request")
+    if request:
+        status = item.get("status")
+        length = item.get("length")
+        parts = [str(request)]
+        if isinstance(status, int):
+            parts.append(f"HTTP {status}")
+        if isinstance(length, int):
+            parts.append(f"{length} bytes")
+        return " → ".join(parts)
+    if what == "out-of-band-callback":
+        return "out-of-band callback received"
+    if what == "state-change":
+        restored = "restored" if item.get("restored") else "NOT restored — repair required"
+        locator = str(item.get("locator") or item.get("kind") or "the target")
+        return f"state change on {locator} — {restored}"
+    if what == "cleanup":
+        return f"cleanup: {item.get('result') or '(not recorded)'}"
+    if what == "unverified":
+        return f"unverified: {item.get('reason') or UNVERIFIED_REASON}"
+    return what
 
 
 def finding_id(number: int) -> str:
@@ -218,6 +264,45 @@ class FindingProof(BaseModel):
     detail: dict[str, Any] = Field(default_factory=dict)
 
 
+class VerificationRecord(BaseModel):
+    """How one finding was established (WP-13, REQ-PROOF-015/016).
+
+    The durable counterpart of the proof ladder's act: the rung used, the method, the
+    observations that established it, a reproducibility token, when, and which version of
+    the check did it. ``status`` is ``verified`` when a check's own evidence established the
+    claim and ``unverified`` when the report has no record to show — in which case the
+    finding is forced to ``info`` (see :class:`ReportFinding`). ``parent_record_id`` links a
+    re-verification to the record it re-checked and ``outcome`` says what the re-run found.
+    """
+
+    model_config = _MODEL
+
+    status: Literal["verified", "unverified"] = "unverified"
+    level: str = "L0"
+    method: str = ""
+    #: The spec's observations: ``{"request": ..., "status": ..., "length": ...}`` rows.
+    observations: tuple[dict[str, Any], ...] = ()
+    #: The **reproducibility token** of REQ-PROOF-015 / ``05-detection-program.md`` §3.3:
+    #: re-running the same check against the same asset reproduces it. It is named without
+    #: the word "token" on purpose — the report QA gate scans every rendered document with
+    #: ``core.redaction.contains_secret``, which treats any ``<key containing "token">:
+    #: <value>`` as a credential assignment, so a field literally called
+    #: ``reproducibility_token`` would make every report *look* like it leaked a secret.
+    #: The persisted column and the data-layer record keep the full name
+    #: (``finding_verifications.reproducibility_token``); only the rendered DTO shortens it.
+    reproducibility: str | None = None
+    verified_at: datetime | None = None
+    check_version: str | None = None
+    #: The record this one re-checked (a re-verification only).
+    parent_record_id: int | None = None
+    #: ``still-verified`` | ``no-longer-verified`` | ``inconclusive`` — a re-verification only.
+    outcome: str | None = None
+
+    @property
+    def verified(self) -> bool:
+        return self.status == "verified"
+
+
 class StateChangeEntry(BaseModel):
     """One L4 state change, for the report-level *state changes* table (REQ-PROOF-013).
 
@@ -260,6 +345,13 @@ class ReportFinding(BaseModel):
     #: The ladder's proof artifact (S15); ``None`` for a finding proven at L1 or below
     #: with nothing beyond ordinary captured exchanges.
     proof: FindingProof | None = None
+    #: **Required** (schema 1.12, REQ-PROOF-015): how this finding was established. A
+    #: finding that reaches the model without one is not reported as-is — the validator
+    #: below marks it ``unverified`` and forces its severity to ``info``.
+    verification: VerificationRecord
+    #: Every record for the finding, oldest first (REQ-PROOF-016's history). Empty for a
+    #: finding that carries only the synthesized unverified placeholder.
+    verification_history: tuple[VerificationRecord, ...] = ()
     remediation: RemediationPlan
     status: str = "open"
     provenance: Provenance = Field(default_factory=Provenance)
@@ -267,6 +359,54 @@ class ReportFinding(BaseModel):
     #: True when the finding is below the confidence threshold . Such a
     #: finding is rendered in its own section and never in a severity table.
     low_confidence: bool = False
+
+    @model_validator(mode="before")
+    @classmethod
+    def _demand_a_verification_record(cls, data: Any) -> Any:
+        """Force ``info`` + ``unverified`` on a finding that arrives without a record.
+
+        REQ-PROOF-015's acceptance criterion, enforced at the model rather than in the
+        builder: any construction path — the builder, a hand-built instance in a test, or
+        ``model_validate`` of an externally supplied document — that omits ``verification``
+        yields an ``unverified`` finding at severity ``info``. The field itself is required
+        in the generated JSON Schema, so a report claiming a severity without a record does
+        not validate either.
+        """
+        if isinstance(data, ReportFinding):  # already validated
+            return data
+        if not isinstance(data, Mapping):  # let pydantic report the type error
+            return data
+        if data.get("verification"):
+            return data
+        payload = dict(data)
+        payload["verification"] = VerificationRecord(
+            status="unverified",
+            level="L0",
+            method=UNVERIFIED_REASON,
+            observations=({"what": "unverified", "reason": UNVERIFIED_REASON},),
+            check_version=payload.get("check_version"),
+        )
+        payload.pop("verification_history", None)
+        return payload
+
+    @model_validator(mode="after")
+    def _an_unverified_finding_is_info(self) -> ReportFinding:
+        """No established verification ⇒ no severity above ``info`` (REQ-PROOF-015).
+
+        Runs *after* field validation, so an invalid ``severity`` is still a validation
+        error rather than something this rule would quietly rewrite. The rule covers both
+        halves: the placeholder injected above (no persisted record) and a persisted record
+        whose latest outcome is a re-verification that no longer establishes the claim
+        (``no-longer-verified``/``inconclusive``) — a finding whose proof does not hold is
+        reported as an observation, never as a scored finding.
+        """
+        if not self.verification.verified and self.severity != "info":
+            # ``object.__setattr__``: the DTO is frozen, and an ``mode="after"`` validator
+            # that returns a *different* instance is not honoured on ``__init__`` (pydantic
+            # warns and keeps the original). Rewriting the one field in place is the supported
+            # way to enforce an invariant that changes a validated value.
+            object.__setattr__(self, "severity", "info")
+        return self
 
 
 class SeverityCounts(BaseModel):

@@ -39,6 +39,7 @@ from arachne.report.model import (
     ScopeMethodology,
     Score,
 )
+from tests.helpers.report import report_verification
 
 CODE_ROOT = Path(__file__).resolve().parents[1]
 # ``tests/`` sits directly under the project root, and the project root is the
@@ -280,6 +281,7 @@ def test_the_tool_reads_a_precomputed_report(tmp_path: Path) -> None:
                 asset=AssetRef(kind="cloud", value="infra/main.tf"),
                 severity="critical",
                 score=Score(confidence=90),
+                verification=report_verification(),
                 remediation=RemediationPlan(id="REM-1", summary="restrict the CIDR"),
             ),
         ),

@@ -28,6 +28,7 @@ from collections.abc import Mapping, Sequence
 from datetime import datetime
 
 from arachne.i18n import translate
+from arachne.report import model as m
 from arachne.report.model import (
     SEVERITY_ORDER,
     ReportData,
@@ -226,6 +227,41 @@ def _proof_block(finding: ReportFinding) -> list[str]:
     return lines
 
 
+def _verification_block(finding: ReportFinding, report: ReportData) -> list[str]:
+    """The finding's *Verification* section (WP-13, REQ-PROOF-015/016).
+
+    Always rendered: the record is required by the schema, and an ``unverified`` one says
+    why the finding carries no proof rather than rendering nothing.
+    """
+    record = finding.verification
+    label = _t("report.finding.verification_record", report)
+    lines = [f"**{label}:**"]
+    head = [f"level {record.level}", record.status]
+    if record.check_version:
+        head.append(f"check {record.check_version}")
+    if record.method:
+        head.append(record.method)
+    lines.append(f"- {' · '.join(_inline(part) for part in head)}")
+    if record.reproducibility:
+        # Deliberately not ``token: <value>``: a ``<sensitive-key>: <value>`` shape is
+        # indistinguishable from a leaked credential to a text scanner (the repository's own
+        # ``contains_secret``), and the report must not *look* like it leaked one.
+        lines.append(f"- reproducibility: `{_inline(record.reproducibility)}`")
+    if record.verified_at:
+        lines.append(f"- verified at: {_date(record.verified_at)}")
+    for item in record.observations[:12]:
+        lines.append(f"- observation: {_inline(m.observation_summary(item))}")
+    for entry in finding.verification_history:
+        if entry.parent_record_id is None:
+            continue
+        lines.append(
+            f"- re-verification: {_inline(entry.outcome or entry.status)} at level "
+            f"{_inline(entry.level)} (parent record {entry.parent_record_id})"
+        )
+    lines.append("")
+    return lines
+
+
 def _finding_block(index: int, finding: ReportFinding, report: ReportData) -> list[str]:
     section = _SEVERITY_SECTIONS.get(finding.severity, 0)
     classification = f" ({finding.classification.cwe})" if finding.classification.cwe else ""
@@ -261,6 +297,7 @@ def _finding_block(index: int, finding: ReportFinding, report: ReportData) -> li
         )
     lines.extend(_evidence_block(finding, report))
     lines.extend(_proof_block(finding))
+    lines.extend(_verification_block(finding, report))
     remediation = _t("report.finding.remediation", report)
     lines.extend(["", f"**{remediation}:** {_inline(finding.remediation.summary)}", ""])
     if finding.remediation.steps:

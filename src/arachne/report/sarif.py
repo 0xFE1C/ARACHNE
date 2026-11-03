@@ -173,8 +173,30 @@ def _result(finding: ReportFinding) -> dict[str, Any]:
             "findingId": finding.id,
             "evidenceRefs": list(finding.evidence_refs),
             "assetKind": asset.kind,
+            # REQ-PROOF-015: SARIF carries the verification record as a result property, so
+            # a code-scanning consumer sees *how* the finding was established alongside the
+            # finding itself — and an unverified one is visible as such.
+            "verification": _verification_property(finding),
         },
     }
+
+
+def _verification_property(finding: ReportFinding) -> dict[str, Any]:
+    """The finding's verification record as a SARIF result property (REQ-PROOF-015)."""
+    record = finding.verification
+    payload: dict[str, Any] = {
+        "status": record.status,
+        "level": record.level,
+        "method": record.method,
+        "reproducibility": record.reproducibility,
+        "verifiedAt": record.verified_at.isoformat() if record.verified_at else None,
+        "checkVersion": record.check_version,
+        "observations": [dict(item) for item in record.observations],
+    }
+    if record.parent_record_id is not None:
+        payload["parentRecordId"] = record.parent_record_id
+        payload["outcome"] = record.outcome
+    return payload
 
 
 def _asset_uri(kind: str, value: str) -> str:

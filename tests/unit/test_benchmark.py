@@ -22,6 +22,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from tests.helpers.report import report_verification
 
 from arachne.core.errors import ConfigurationError
 from arachne.quality.benchmark import (
@@ -347,6 +348,7 @@ def test_a_finding_can_be_measured_from_its_rendered_form() -> None:
         asset=AssetRef(kind="url", value="https://lab/product"),
         severity="high",
         score=Score(confidence=90),
+        verification=report_verification(),
         remediation=RemediationPlan(id="fix-it", summary="parameterise the query"),
     )
 

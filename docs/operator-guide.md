@@ -2528,32 +2528,6 @@ Exit codes: `0` intact, `1` not intact (issues on stderr), `2` the command could
 when `--require-signatures` was given). Every run is itself audited (`integrity.verified` or
 `integrity.tamper`).
 
-### 37.1 Anchoring
-
-```bash
-arachne integrity anchor                              # checkpoint the current head
-arachne integrity anchor --export /safe/anchor.json   # …and keep a copy off the host
-arachne integrity seal --scan 42                      # (re)seal a scan
-```
-
-Anchoring is automatic too: `ARACHNE_INTEGRITY_ANCHOR_EVERY=1000` writes one every thousand
-audit rows. **Export an anchor somewhere the database cannot reach.** An anchor that lives only
-in the database it guards can be deleted along with the evidence of the deletion; a copy on
-another host cannot.
-
-### 37.2 What to do when it fails
-
-| Finding | What it means | First move |
-|---|---|---|
-| `modified` on an audit row | the stored event content was edited | treat the trail as compromised; preserve a copy before anything else |
-| `deleted` / `reordered` | rows were removed or moved | compare against your exported anchors to bound *when* |
-| `audit-signature` | the row, or the signature, was forged | rotate `ARACHNE_INTEGRITY_KEY`; the key may be exposed |
-| `seal: … is gone` | a finding or evidence row was deleted after the scan completed | restore from a bundle and compare |
-| `anchor: trailing row(s) were deleted` | the log was truncated | an exported anchor tells you how far back the damage goes |
-| `unsigned` | no `ARACHNE_INTEGRITY_KEY` is configured | set one; without it nothing can be verified |
-
-Never "fix" a failing chain by deleting the failing rows. A gap is a record.
-
 ## 38. Evidence residency (S25, REQ-RESIL-004)
 
 A tenant's contract can require that its evidence never leaves a region — and "never" has to be
@@ -3750,3 +3724,65 @@ does, and the probe samples are in the report.
 | `stopped: probe latency ... is 12.3x the 1ms baseline` | the abort guard fired on a real slowdown. The run stopped; nothing else was sent |
 | every candidate has `needs-manual-triage` | no shipped check can prove that signal. That is the honest answer, not a defect |
 | a run that stops immediately with `budget-exhausted` | the plan asked for a case/request/second bound smaller than the baseline probes need. Raise it, or set `ARACHNE_FUZZ_*` if the ceiling clamped it (`fuzz check` says so) |
+### 37.1 Anchoring
+
+```bash
+arachne integrity anchor                              # checkpoint the current head
+arachne integrity anchor --export /safe/anchor.json   # …and keep a copy off the host
+arachne integrity seal --scan 42                      # (re)seal a scan
+```
+
+Anchoring is automatic too: `ARACHNE_INTEGRITY_ANCHOR_EVERY=1000` writes one every thousand
+audit rows. **Export an anchor somewhere the database cannot reach.** An anchor that lives only
+in the database it guards can be deleted along with the evidence of the deletion; a copy on
+another host cannot.
+
+### 37.2 What to do when it fails
+
+| Finding | What it means | First move |
+|---|---|---|
+| `modified` on an audit row | the stored event content was edited | treat the trail as compromised; preserve a copy before anything else |
+| `deleted` / `reordered` | rows were removed or moved | compare against your exported anchors to bound *when* |
+| `audit-signature` | the row, or the signature, was forged | rotate `ARACHNE_INTEGRITY_KEY`; the key may be exposed |
+| `seal: … is gone` | a finding or evidence row was deleted after the scan completed | restore from a bundle and compare |
+| `anchor: trailing row(s) were deleted` | the log was truncated | an exported anchor tells you how far back the damage goes |
+| `unsigned` | no `ARACHNE_INTEGRITY_KEY` is configured | set one; without it nothing can be verified |
+
+Never "fix" a failing chain by deleting the failing rows. A gap is a record.
+
+
+## 50. Re-verifying one finding: `arachne verify-finding` (WP-13, REQ-PROOF-016)
+
+```bash
+arachne verify-finding 42            # re-run finding 42's own check against the same asset
+arachne verify-finding 42 --json     # the verdict as a document, for a script
+arachne verify-finding 42 --actor "alice@example.com"
+```
+
+Every finding carries a **verification record**: the proof level it was established at, the
+method, the observations, a reproducibility token, when it was verified and which version of the
+check did it. `verify-finding` re-runs *that* check — and nothing else — against the same asset,
+then records the new result as a new record linked to the one it re-checked.
+
+It answers one of four things:
+
+| Verdict | Exit | Meaning |
+|---|---:|---|
+| `still-verified` | 0 | the check ran against the asset and reported the finding again |
+| `no-longer-verified` | 0 | the check ran cleanly and reported nothing; the proof no longer holds |
+| `inconclusive` | 0 | the check could not run (skipped, failed, no recorded line) — neither confirmed nor refuted |
+| `refused` | 1 | nothing was re-checked: an expired or non-covering attestation, an out-of-scope asset, no verification record, or a check that would need a **higher** proof level than the finding was recorded at |
+
+Three properties worth knowing as an operator:
+
+- **Scope and attestation are re-checked before any network access.** The command re-uses the
+  scan's own gates on the request document the original scan stored, so an attestation that has
+  since expired refuses the re-verification exactly as it would refuse a scan — and the refusal is
+  audited (`finding.reverify_refused`) with nothing dialled.
+- **The level never rises.** A check that has grown a stronger proof since the finding was
+  recorded is refused rather than run up a rung (PD-7). To establish a stronger claim, run a scan
+  with the attestation that authorizes it.
+- **A finding whose re-verification does not confirm it is reported at severity `info`.** Its
+  report entry shows the record as `unverified`, so a stale severity cannot outlive its proof.
+  The audit trail carries both records: `finding.verification_recorded` for the parent and
+  `finding.reverified` for the new one.

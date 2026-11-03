@@ -102,7 +102,9 @@ def test_the_json_document_carries_the_simulation_in_its_own_block_only() -> Non
     report = _report_with_simulation()
     document = json.loads(report.model_dump_json())
 
-    assert document["schema_version"] == REPORT_SCHEMA_VERSION == "1.11"
+    # 1.12 is WP-13's: the per-finding ``verification`` record became required
+    # (REQ-PROOF-015). Pinned so a further bump is a conscious act, not silent drift.
+    assert document["schema_version"] == REPORT_SCHEMA_VERSION == "1.12"
     block = document["simulation"]
     assert block["provenance"] == "simulated"
     assert block["change"]["name"] == "publish-legacy-console"

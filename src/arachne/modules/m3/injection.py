@@ -36,6 +36,7 @@ from arachne.core.target import TargetKind
 from arachne.modules.base import CheckMetadata, Module
 from arachne.modules.context import CheckContext
 from arachne.modules.m3.inventory import Page, origin_of, page_from_exchange
+from arachne.modules.m3.oracle import DEFAULT_ORACLE
 from arachne.modules.m3.support import (
     WebCheck,
     compare_pages,
@@ -56,9 +57,9 @@ __all__ = ["SqliOracle"]
 #: How many blocking-sleep probes one run may spend (the slowest oracle, so tightly capped).
 MAX_TIME_PROBES = 2
 
-#: A boolean differential needs the true request to resemble the baseline at least this much
-#: more closely than the false one — a margin, so rendering jitter cannot pass as an oracle.
-BOOLEAN_MARGIN = 0.1
+#: The margin a boolean differential needs is the shared oracle's ``margin`` field
+#: (``modules/m3/oracle.py``, REQ-PROOF-020) — it is no longer a literal in this module, so
+#: this family and XPath cannot drift apart about what "a real difference" means.
 
 
 @dataclass(frozen=True, slots=True)
@@ -267,14 +268,14 @@ class SqliOracle(WebCheck, Module):
             return None
         true_page = page_from_exchange(true_exchange)
         false_page = page_from_exchange(false_exchange)
-        if true_page.status >= 500 or false_page.status >= 500:
-            # A server error on either half is the error oracle's business, not a boolean read.
-            return None
-        if not compare_pages(true_page, false_page).significant(min_ratio_drop=0.05):
-            return None
-        true_ratio = compare_pages(baseline, true_page).ratio
-        false_ratio = compare_pages(baseline, false_page).ratio
-        if true_ratio - false_ratio < BOOLEAN_MARGIN:
+        # REQ-PROOF-020: the decision is the shared oracle's, not this family's. The margin
+        # and the 5xx refusal that used to live here are now ``DifferentialOracle`` fields.
+        verdict = DEFAULT_ORACLE.boolean(
+            baseline=baseline,
+            true_page=true_page,
+            false_page=false_page,
+        )
+        if not verdict.confirmed:
             return None
         return true_page, false_page, true_exchange, false_exchange
 

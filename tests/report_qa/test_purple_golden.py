@@ -256,10 +256,10 @@ def test_an_ordinary_report_carries_no_detection_validation_block() -> None:
     assert "Detection validation" not in markdown
     document = json.loads(report.model_dump_json())
     assert document["detection_validation"] is None
-    # S28 bumped the report schema to 1.11: the optional top-level ``simulation`` block
-    # joined the DTO (REQ-SIM-004). Pinned so a further bump is a conscious act, not silent
+    # WP-13 bumped the report schema to 1.12: the per-finding ``verification`` record became
+    # required (REQ-PROOF-015). Pinned so a further bump is a conscious act, not silent
     # drift.
-    assert document["schema_version"] == REPORT_SCHEMA_VERSION == "1.11"
+    assert document["schema_version"] == REPORT_SCHEMA_VERSION == "1.12"
     jsonschema.validate(document, load_report_schema())
 
 

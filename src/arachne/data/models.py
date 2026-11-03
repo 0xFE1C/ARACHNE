@@ -223,6 +223,68 @@ class Finding(Base, TimestampMixin):
     #: legitimately mutate afterwards (severity/confidence/status) are covered by the
     #: scan's seal instead, not by this signature.
     signature: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    #: The finding's *current* verification record (WP-13, REQ-PROOF-015): the row in
+    #: ``finding_verifications`` the report renders. ``NULL`` means the finding carries no
+    #: record — a pre-WP-13 row, or a write path that bypassed the store — and the report
+    #: then forces its severity to ``info`` and marks it ``unverified``. A logical
+    #: reference rather than a database-level foreign key: the reverse edge
+    #: (``finding_verifications.finding_id``) already carries the cascade, and a mutual
+    #: constraint would make SQLite rebuild ``findings`` for an otherwise additive column.
+    verification_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+
+
+class FindingVerification(Base, TimestampMixin):
+    """One verification record: how a finding was established (WP-13, REQ-PROOF-015/016).
+
+    The proof ladder lives in ``core/proof.py``/``proof/``; this table is the durable
+    *record* of an act. The finding's current record is named by
+    ``findings.verification_id``; every re-verification appends a row whose ``parent_id``
+    names the record it re-checked, so the history is a chain and the earlier records stay
+    exactly as they were.
+
+    ``status`` is ``verified`` (the check's own evidence established the claim) or
+    ``unverified`` (a re-verification that no longer reproduces it). ``outcome`` is set only
+    on a re-verification — ``still-verified`` / ``no-longer-verified`` / ``inconclusive`` —
+    and is ``NULL`` for the original record. ``refused`` is never a row: a refusal means
+    nothing was re-checked, so there is nothing to record.
+    """
+
+    __tablename__ = "finding_verifications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    finding_id: Mapped[int] = mapped_column(
+        ForeignKey("findings.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    #: The record this one re-checked (``NULL`` for the original). ``SET NULL`` keeps the
+    #: child row if its parent is ever pruned, so the history never dangles into a missing id.
+    parent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("finding_verifications.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    #: The scan that produced the record (the original scan, or the verification re-scan).
+    scan_id: Mapped[int | None] = mapped_column(
+        ForeignKey("scans.id", ondelete="SET NULL"), nullable=True
+    )
+    #: ``verified`` | ``unverified`` (see the class docstring).
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="verified")
+    #: ``L0``..``L4`` — the rung the claim was established at (never above the parent's).
+    level: Mapped[str] = mapped_column(String(4), nullable=False)
+    #: The verification method, in operator-readable form.
+    method: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    #: The observations that established (or refuted) it: the spec's
+    #: ``{request, status, length}`` rows, bounded by ``data.verification.MAX_OBSERVATIONS``.
+    observations_json: Mapped[list[Any]] = mapped_column(JSON, default=list, nullable=False)
+    #: The handle a re-run reproduces: the ladder's single-use token when the proof had one,
+    #: otherwise a content digest over the observation set.
+    reproducibility_token: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    verified_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False, index=True
+    )
+    #: The check's version at the time of the verification, so "the check changed" is
+    #: answerable without consulting the ``checks`` table's present state.
+    check_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    #: Set only by a re-verification: ``still-verified`` | ``no-longer-verified`` |
+    #: ``inconclusive``.
+    outcome: Mapped[str | None] = mapped_column(String(24), nullable=True)
 
 
 class Evidence(Base):

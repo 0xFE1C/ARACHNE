@@ -56,6 +56,7 @@ from arachne.modules.m3.breadth_support import (
     reproduce,
 )
 from arachne.modules.m3.inventory import Page, WebInventory, origin_of
+from arachne.modules.m3.oracle import DEFAULT_ORACLE
 from arachne.modules.m3.support import (
     WebCheck,
     http_or_skip,
@@ -472,9 +473,14 @@ class XpathInjectionOracle(WebCheck, Module):
             "true": count_records(true[0].body, marker),
             "false": count_records(false[0].body, marker),
         }
-        if counts["true"] <= counts["false"] or counts["true"] < counts["baseline"]:
-            return None
-        if not differs(true[0], false[0]):
+        # REQ-PROOF-020: the differential is the shared oracle's. XPath's own record-count
+        # corroboration rides along as the oracle's ``extra`` conjunct, so this family can
+        # only ever be *stricter* than the shared rule — never looser.
+        stronger = counts["true"] > counts["false"] and counts["true"] >= counts["baseline"]
+        verdict = DEFAULT_ORACLE.boolean(
+            baseline=baseline[0], true_page=true[0], false_page=false[0], extra=stronger
+        )
+        if not verdict.confirmed:
             return None
         return true[0], true[1], false[0], false[1], counts
 
