@@ -566,6 +566,11 @@ class CoverageLedger:
     cwe_version: str = ""
     #: The Agentic Top 10 per-item states (REQ-DET-013). Empty only for a ledger built by hand.
     asi_items: tuple[dict[str, Any], ...] = ()
+    #: The cloud-provider coverage rows (REQ-DET-017): every provider is either
+    #: ``supported`` with its checks or ``not_supported`` with a reason. Empty only for a
+    #: ledger built by hand.
+    cloud_provider_items: tuple[dict[str, Any], ...] = ()
+    cloud_provider_version: str = ""
     registry_version: str = REGISTRY_VERSION
     ledger_version: str = LEDGER_VERSION
 
@@ -607,6 +612,26 @@ class CoverageLedger:
             "gap": [str(item["id"]) for item in self.asi_items if item["state"] == "gap"],
         }
 
+    def cloud_provider_counts(self) -> dict[str, Any]:
+        """The REQ-DET-017 tally: supported providers and the explicit gaps."""
+        supported = [
+            str(item["provider"])
+            for item in self.cloud_provider_items
+            if item["state"] == "supported"
+        ]
+        unsupported = [
+            str(item["provider"])
+            for item in self.cloud_provider_items
+            if item["state"] == "not_supported"
+        ]
+        return {
+            "supported": supported,
+            "not_supported": unsupported,
+            "supported_count": len(supported),
+            "not_supported_count": len(unsupported),
+            "total": len(self.cloud_provider_items),
+        }
+
     def cwe_counts(self) -> dict[str, dict[str, Any]]:
         """The REQ-DET-004 tally: in-scope coverage first, the full 25 beside it."""
 
@@ -645,6 +670,12 @@ class CoverageLedger:
             },
             "checks": [record.to_dict() for record in self.records],
             "wstg_items": [dict(item) for item in self.wstg_items],
+            # REQ-DET-017: the provider rows, including the explicit not_supported gaps.
+            "cloud_providers": {
+                "version": self.cloud_provider_version,
+                **self.cloud_provider_counts(),
+                "items": [dict(item) for item in self.cloud_provider_items],
+            },
             # REQ-DET-008: deprecated checks, their successor and their removal horizon.
             "deprecations": lifecycle_policy.ledger_section(),
         }
@@ -740,6 +771,12 @@ def build_ledger(
         }
         for state in asi_top10_coverage(by_item)
     )
+    from arachne.modules.cloud_providers import (
+        CLOUD_PROVIDER_MATRIX,
+        PROVIDER_LEDGER_VERSION,
+    )
+
+    cloud_provider_items = tuple(entry.to_dict() for entry in CLOUD_PROVIDER_MATRIX)
     return CoverageLedger(
         generated_at=date,
         records=tuple(records),
@@ -747,6 +784,8 @@ def build_ledger(
         api_items=api_items,
         cwe_items=cwe_items,
         asi_items=asi_items,
+        cloud_provider_items=cloud_provider_items,
+        cloud_provider_version=PROVIDER_LEDGER_VERSION,
         cwe_version=cwe_top25_framework().version,
         registry_digest=registry_digest(registry),
         framework_versions=framework_versions(),
@@ -859,6 +898,25 @@ def render_ledger_markdown(ledger: CoverageLedger) -> str:
             state = "out_of_scope"
         reason = f" — {item['reason']}" if item.get("reason") else ""
         lines.append(f"| `{item['id']}` | {state} | {checks} | {item['title']}{reason} |")
+    provider = ledger.cloud_provider_counts()
+    lines += [
+        "",
+        f"## Cloud providers (REQ-DET-017) — {provider['supported_count']} supported, "
+        f"{provider['not_supported_count']} not supported",
+        "",
+        "A provider is either `supported` with the read-only checks that cover it, or",
+        "`not_supported` with the reason. The second state is a stated gap, never silence.",
+        "",
+        "| Provider | State | Checks | Read operations | Reason |",
+        "|---|---|---|---|---|",
+    ]
+    for item in ledger.cloud_provider_items:
+        checks = ", ".join(f"`{check}`" for check in item["checks"]) or "—"
+        operations = ", ".join(f"`{op['method']} {op['path']}`" for op in item["operations"]) or "—"
+        lines.append(
+            f"| `{item['provider']}` | {item['state']} | {checks} | {operations} | "
+            f"{item['reason']} |"
+        )
     deprecations = lifecycle_policy.ledger_section()
     horizon = deprecations["removal_horizon_minors"]
     lines += [

@@ -123,14 +123,15 @@ def test_the_shipped_checks_are_annotated_l1() -> None:
     bring it to 157; WP-09's three L1 transport checks (mTLS, SMTP transport, HTTP/3)
     bring it to 160; WP-10's five L1 identity/AI-surface checks (AD CS and the four
     Agentic Top 10 reads) bring it to 165; WP-11's DOM-sink browser check (an L1 read of a
-    page the scan already reaches) brings it to 166. The declaration is pinned here
+    page the scan already reaches) brings it to 166; WP-12's native image scanner and
+    DigitalOcean posture check bring it to 168. The declaration is pinned here
     rather than merely permitted, so an accidental widening of any check's reach still fails.
     The number in a test name is churn, the property is not.
     """
     registry = ModuleRegistry.builtin()
     ladder = {m.id for m in registry.metadata() if m.proof.is_opt_in}
     original = [m for m in registry.metadata() if m.id not in ladder]
-    assert len(original) == 166
+    assert len(original) == 168
     assert all(m.proof in {ProofLevel.L0, ProofLevel.L1} for m in original)
     assert {m.id for m in original if m.proof is ProofLevel.L0} == {"m1.mobile-artifact"}
     assert all(not m.requires_state_attestation for m in original)

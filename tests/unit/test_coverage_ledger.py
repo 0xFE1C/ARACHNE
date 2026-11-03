@@ -69,6 +69,9 @@ WP10_IDS: frozenset[str] = frozenset(
 #: WP-11's browser check (REQ-DET-015); excluded for the same reason.
 WP11_IDS: frozenset[str] = frozenset({"m3.dom-xss"})
 
+#: WP-12's image and cloud-breadth checks (REQ-DET-016/017); excluded for the same reason.
+WP12_IDS: frozenset[str] = frozenset({"m5.image-scan", "m5.do-posture"})
+
 
 @pytest.fixture(scope="module")
 def registry() -> ModuleRegistry:
@@ -132,11 +135,13 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     wp09 = {record.id for record in ledger.records if record.id in WP09_IDS}
     wp10 = {record.id for record in ledger.records if record.id in WP10_IDS}
     wp11 = {record.id for record in ledger.records if record.id in WP11_IDS}
-    assert len(ids - mcp - wp08 - wp09 - wp10 - wp11) == 152
+    wp12 = {record.id for record in ledger.records if record.id in WP12_IDS}
+    assert len(ids - mcp - wp08 - wp09 - wp10 - wp11 - wp12) == 152
     assert len(mcp) == 3
     assert len(wp08) == 9
     assert len(wp10) == 5
     assert len(wp11) == 1
+    assert len(wp12) == 2
 
 
 # ------------------------------------------------------------------ REQ-DET-003 WSTG

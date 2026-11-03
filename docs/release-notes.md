@@ -19,7 +19,7 @@ matters.
 
 ### What is in this snapshot
 
-**Detection — 172 registered checks across six modules**
+**Detection — 175 registered checks across six modules**
 
 | Module | Checks | Surface |
 |---|---:|---|
@@ -27,7 +27,7 @@ matters.
 | M2 Network & services | 31 | ports, fingerprints, TLS, mTLS and X.509, DNS and AXFR, SMB, databases, OT protocols, SMTP transport, HTTP/3, read-only AD CS enumeration, CVE correlation |
 | M3 Web application | 57 | injection, access control, session and identity, request smuggling, cache poisoning, GraphQL, WebSocket, gRPC, client-side code, DOM-XSS in a headless browser (optional extra), mobile artifacts |
 | M4 Misconfiguration & exposure | 29 | exposed `.env`/`.git`, backups, debug endpoints, headers, cookies, default credentials |
-| M5 Cloud, container & supply chain | 20 | instance metadata, buckets, Kubernetes, registries, CI/CD, dependency confusion, IAM posture |
+| M5 Cloud, container & supply chain | 22 | instance metadata, buckets, Kubernetes, registries, native container-image scanning, CI/CD, dependency confusion, IAM posture, DigitalOcean posture |
 | M6 Automation & AI-era | 19 | webshell signatures, secret scanning, local privilege escalation, AD paths, GenAI surface, MCP and Agentic Top 10 surface, Sigma hunts |
 
 Checks and their payloads are data, not code: payloads, wordlists, protocol tables and rule
@@ -93,10 +93,10 @@ a browser engine inside the scanner is a new attack surface and the operator opt
 
 | What | Result |
 |---|---|
-| Tests | **4,756** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Tests | **4,818** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
 | Primary safety suite | **59 tests** in `tests/test_safety.py`; **328** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol and mobile fixtures with planted false-positive traps |
-| Strict type checking | clean under `mypy --strict` across the **391** Python modules in `src/` |
+| Strict type checking | clean under `mypy --strict` across the **395** Python modules in `src/` |
 | Lint | clean over the whole repository (the badge's scope is the tree, not `src/` and `tests/`) |
 | Research coverage | **148/175 (84.6%)** of the corpus's numbered methods have an implementing check |
 
@@ -135,9 +135,13 @@ discover. Each is a candidate for a future release.
 6. **`oracle`, `sip` and `opc-ua` are declared in the port catalogue without an implementing
    check.** An Oracle port currently produces a generic "port reachable" finding rather than
    a database finding.
-7. **Container registry scanning delegates to an external scanner and is off by default**, so
-   it does not work in an air-gapped deployment.
-8. **Cloud posture covers AWS, Azure and GCP only.**
+7. **Container image scanning is native and on by default**, so it works air-gapped with
+   nothing installed (REQ-DET-016). The external Trivy/Grype path is an opt-in import of a JSON
+   report produced out of band, never a launcher. The shipped advisory index is small; replace
+   it with `ARACHNE_M5_PROBES` for real coverage.
+8. **Cloud posture covers AWS, Azure, GCP and DigitalOcean.** OCI and Alibaba Cloud are
+   `not_supported`, each with its reason in the coverage ledger — their APIs need a request
+   signing scheme this release does not implement, and a guessed one would misreport posture.
 9. **Four in-scope CWE Top 25 weaknesses have no check**: CWE-94, CWE-863, CWE-20 and CWE-77.
 
 **Behaviour you should know about**

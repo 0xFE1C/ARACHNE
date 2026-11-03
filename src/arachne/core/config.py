@@ -675,8 +675,11 @@ class M5Settings:
         ``sts:GetCallerIdentity``-class validation call for a key it found. Documented
         permission list: the single call needs no IAM permission beyond the identity itself.
     ``registry_scan``
-        **Off by default.** Whether ``m5.registry-scan`` may invoke the external image scanner
-        (Trivy/Syft/Grype class) — running a container-image tool is a deployment decision.
+        **Off by default.** Whether ``m5.image-scan`` may *also* run the external image
+        scanner (Trivy/Grype class) over the layers it already unpacked. The native scan is
+        the default and works with nothing installed (REQ-DET-016); the external tool is an
+        opt-in fallback that never fetches the image itself, so it cannot escape the scope
+        gate. Running a container-image tool is a deployment decision.
     ``docker_socket``
         Whether ``m5.docker-socket`` probes the local daemon socket in addition to any
         reachable TCP API. Read-only (``/version``, ``/containers/json``).
@@ -696,9 +699,28 @@ class M5Settings:
     docker_socket: bool = True
     iac_tool: str | None = None
     sbom_tool: str | None = None
+    #: The out-of-band report the external scanner produced (``ARACHNE_M5_SBOM_REPORT``).
+    #: Read as bounded local JSON when ``registry_scan`` is on and ``sbom_tool`` names a known
+    #: shape; the tool is never executed, so this path cannot bypass the scope gate.
+    sbom_report: str | None = None
     max_file_bytes: int = 262144
     #: Bounded repository file walk (a clone can be large; the checks only read artifacts).
     max_repo_files: int = 4000
+    #: Native container-image scanning (WP-12, REQ-DET-016). **On by default**: the image is
+    #: resolved to its manifest, the layers are fetched through the scoped client, and the
+    #: packages are read from the unpacked content, with no external process and no network
+    #: beyond the registry in scope. ``image_max_layers`` / ``image_max_layer_bytes`` bound
+    #: what one image may cost; ``image_max_unpacked_bytes`` / ``image_max_file_bytes`` /
+    #: ``image_max_members`` are the hostile-archive caps (a decompression bomb is refused,
+    #: not followed). ``image_temp_dir`` pins the temporary directory (never the workspace);
+    #: the default is the platform's temporary directory.
+    image_scan: bool = True
+    image_max_layers: int = 64
+    image_max_layer_bytes: int = 67_108_864
+    image_max_unpacked_bytes: int = 268_435_456
+    image_max_file_bytes: int = 33_554_432
+    image_max_members: int = 100_000
+    image_temp_dir: str | None = None
     #: Continuous cloud-config posture (S23, REQ-POSTURE-001). ``posture_max_resources``
     #: bounds one snapshot's inventory (a CSPM-style export can be large) and
     #: ``posture_max_bytes`` the snapshot body itself. ``posture_token`` is the optional
@@ -717,6 +739,11 @@ class M5Settings:
             ("max_repo_files", self.max_repo_files),
             ("posture_max_resources", self.posture_max_resources),
             ("posture_max_bytes", self.posture_max_bytes),
+            ("image_max_layers", self.image_max_layers),
+            ("image_max_layer_bytes", self.image_max_layer_bytes),
+            ("image_max_unpacked_bytes", self.image_max_unpacked_bytes),
+            ("image_max_file_bytes", self.image_max_file_bytes),
+            ("image_max_members", self.image_max_members),
         ):
             if value < 1:
                 msg = f"m5.{label} must be >= 1, got {value}"
@@ -2624,8 +2651,22 @@ class Settings:
                 docker_socket=_env_bool(source, "ARACHNE_M5_DOCKER_SOCKET", default=True),
                 iac_tool=_env_str(source, "ARACHNE_M5_IAC_TOOL") or None,
                 sbom_tool=_env_str(source, "ARACHNE_M5_SBOM_TOOL") or None,
+                sbom_report=_env_str(source, "ARACHNE_M5_SBOM_REPORT") or None,
                 max_file_bytes=_env_int(source, "ARACHNE_M5_MAX_FILE_BYTES", 262144),
                 max_repo_files=_env_int(source, "ARACHNE_M5_MAX_REPO_FILES", 4000),
+                image_scan=_env_bool(source, "ARACHNE_M5_IMAGE_SCAN", default=True),
+                image_max_layers=_env_int(source, "ARACHNE_M5_IMAGE_MAX_LAYERS", 64),
+                image_max_layer_bytes=_env_int(
+                    source, "ARACHNE_M5_IMAGE_MAX_LAYER_BYTES", 67_108_864
+                ),
+                image_max_unpacked_bytes=_env_int(
+                    source, "ARACHNE_M5_IMAGE_MAX_UNPACKED_BYTES", 268_435_456
+                ),
+                image_max_file_bytes=_env_int(
+                    source, "ARACHNE_M5_IMAGE_MAX_FILE_BYTES", 33_554_432
+                ),
+                image_max_members=_env_int(source, "ARACHNE_M5_IMAGE_MAX_MEMBERS", 100_000),
+                image_temp_dir=_env_str(source, "ARACHNE_M5_IMAGE_TEMP_DIR") or None,
                 posture_max_resources=_env_int(source, "ARACHNE_M5_POSTURE_MAX_RESOURCES", 200),
                 posture_max_bytes=_env_int(source, "ARACHNE_M5_POSTURE_MAX_BYTES", 1_048_576),
                 posture_token=_env_secret(source, "ARACHNE_M5_POSTURE_TOKEN"),

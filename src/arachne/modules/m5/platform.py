@@ -562,9 +562,9 @@ class RegistryScan(EndpointCheck, Module):
         description=(
             "Requests the Docker Registry v2 catalog (``/v2/_catalog``) and a bounded repository "
             "list and reports a registry that answers without authentication (research ch05#15: a "
-            "misconfigured Harbor/Docker Registry/ECR reveals every repository and tag). An "
-            "external image scanner (Trivy/Syft-class) is used when ARACHNE_M5_SBOM_TOOL is "
-            "configured and ARACHNE_M5_REGISTRY_SCAN is enabled. GET only."
+            "misconfigured Harbor/Docker Registry/ECR reveals every repository and tag). Image "
+            "contents are read by ``m5.image-scan``, natively and by default (REQ-DET-016); "
+            "this check only lists the catalog. GET only."
         ),
         research_ref="ch05#15",
         framework=("WSTG-CONF-05", "CWE-1104"),

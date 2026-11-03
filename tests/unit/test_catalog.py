@@ -63,14 +63,15 @@ def test_bundled_catalogue_covers_every_module_and_is_versioned() -> None:
     # read-only MCP checks bring it to 147; WP-08's nine L1 breadth rows bring it to 156;
     # WP-09's three L1 transport rows (mTLS, SMTP transport, HTTP/3) bring it to 159;
     # WP-10's five L1 identity/AI-surface rows (AD CS + four ASI) bring it to 164; WP-11's
-    # one L1 browser row (m3.dom-xss) brings it to 165.
+    # one L1 browser row (m3.dom-xss) brings it to 165; WP-12's two L1 image/cloud rows
+    # (m5.image-scan, m5.do-posture) bring it to 167.
     # The seven L2+ rows are opt-in, and only rce-echo/state-marker demand the
     # state-change attestation.
     # (S29's tenth depth row, m1.mobile-artifact, declares L0 — it is the one check that
     # contacts nothing at all — so it is in neither list and is pinned here explicitly.)
     originals = [check for check in catalog.checks if check.proof.value == "L1"]
     ladder = [check for check in catalog.checks if check.proof.value in {"L2", "L3", "L4"}]
-    assert len(originals) == 165
+    assert len(originals) == 167
     assert {check.name for check in catalog.checks if check.proof.value == "L0"} == {
         "mobile-artifact"
     }

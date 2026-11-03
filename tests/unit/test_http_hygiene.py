@@ -294,11 +294,13 @@ def test_the_handoff_tool_calls_fixed_argv_with_a_timeout() -> None:
 #: output must be accounted for by hand.
 VERBATIM_READ_EXEMPTIONS = frozenset({"api/oidc.py", "intel/sync.py"})
 
-#: Call sites allowed to use ``request_bytes`` — the byte-exact read path (ADR-250.4). One
-#: module: the evidence backend, whose objects are already redacted captures addressed by
-#: their content digest, so a text decode plus a redaction pass would corrupt them and change
-#: the digest the row records. Every other read keeps the redacting ``HttpExchange`` shape.
-BYTE_READ_EXEMPTIONS = frozenset({"data/evidence_backend.py"})
+#: Call sites allowed to use ``request_bytes`` — the byte-exact read path (ADR-250.4). Two
+#: modules: the evidence backend, whose objects are already redacted captures addressed by
+#: their content digest, and the native image scanner (WP-12), whose payload is a compressed
+#: layer addressed by *its* content digest before anything is unpacked. A text decode plus a
+#: redaction pass would corrupt both and change the digest the row verifies. Every other read
+#: keeps the redacting ``HttpExchange`` shape.
+BYTE_READ_EXEMPTIONS = frozenset({"data/evidence_backend.py", "modules/m5/image.py"})
 
 
 def test_only_the_documented_call_sites_read_a_response_verbatim() -> None:
@@ -333,12 +335,13 @@ def test_only_the_documented_call_sites_read_a_response_verbatim() -> None:
 
 
 def test_only_the_documented_call_sites_read_a_body_as_bytes() -> None:
-    """``request_bytes`` is the byte-exact read path, and it has exactly one caller.
+    """``request_bytes`` is the byte-exact read path, and it has two callers.
 
-    It exists because an evidence object is not text: it is a compressed, content-addressed
-    container whose digest is recorded with the finding. Returning it through the ordinary
-    ``HttpExchange`` (a redacted, decoded string) would corrupt it. Naming the exception here
-    is what stops it becoming the habit of "just fetch the bytes" everywhere else.
+    It exists because some bodies are not text: an evidence object and a container layer are
+    both compressed, content-addressed containers whose digest is recorded with the finding.
+    Returning one through the ordinary ``HttpExchange`` (a redacted, decoded string) would
+    corrupt it. Naming the exceptions here is what stops it becoming the habit of "just fetch
+    the bytes" everywhere else.
     """
     offenders: dict[str, list[str]] = {}
     for path in python_files():

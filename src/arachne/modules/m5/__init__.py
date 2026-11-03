@@ -14,6 +14,8 @@ check                                      ref         what it establishes
 ``m5.tfstate-exposure``                    ch05#11-12  committed/served state + IaC review
 ``m5.k8s-exposure``                        ch05#13-14  anonymous kubelet API / dashboard
 ``m5.registry-scan``                       ch05#15     anonymous registry catalog
+``m5.image-scan``                          ch05#15     native image packages + advisories
+``m5.do-posture``                          ch05#1      DigitalOcean read-only posture
 ``m5.docker-socket``                       ch05#16     reachable Docker daemon API/socket
 ``m5.leaked-cloud-keys``                   ch05#3      cloud credentials in artifacts
 ``m5.gcp-sa-keys``                         ch05#6      GCP service-account key material
@@ -39,9 +41,12 @@ reconciliation.
 bucket/registry probes non-destructive; repo/pipeline analysis on **local clones only**. The two
 metadata checks are off by default on top of the active-checks gate (``ARACHNE_M5_IMDS_PROBE``);
 credential validation is off by default (``ARACHNE_M5_VALIDATE_CLOUD_KEYS``) and uses only a
-configured key; the external image scanner is off by default (``ARACHNE_M5_REGISTRY_SCAN`` /
-``ARACHNE_M5_SBOM_TOOL``). Nothing in M5 is destructive: no object write, no image push, no
-account change, no alias claim.
+configured key. Container images are scanned natively and on by default
+(``ARACHNE_M5_IMAGE_SCAN``): the manifest and layers go through the scoped client, a hostile
+archive is unpacked into a temporary directory only and is never executed. The external
+scanner is an opt-in report import (``ARACHNE_M5_REGISTRY_SCAN`` / ``ARACHNE_M5_SBOM_TOOL`` /
+``ARACHNE_M5_SBOM_REPORT``), never the default and never a process. Nothing in M5 is
+destructive: no object write, no image push, no account change, no alias claim.
 """
 
 from __future__ import annotations
@@ -61,6 +66,7 @@ from arachne.modules.m5.hardening import (
     SearchPlatformExposure,
     ServerlessFunctions,
 )
+from arachne.modules.m5.image import ImageScan
 from arachne.modules.m5.platform import (
     DockerSocket,
     FirebaseRules,
@@ -69,6 +75,7 @@ from arachne.modules.m5.platform import (
     SupabaseRls,
     TfstateExposure,
 )
+from arachne.modules.m5.provider_posture import DigitalOceanPosture
 from arachne.modules.m5.supply import (
     CicdAudit,
     DepConfusion,
@@ -92,6 +99,8 @@ M5_CHECKS: tuple[type[Module], ...] = (
     SbomReview,
     ImageHistorySecrets,
     TfstateExposure,
+    ImageScan,
+    DigitalOceanPosture,
     BucketEnumerator,
     FirebaseRules,
     SupabaseRls,

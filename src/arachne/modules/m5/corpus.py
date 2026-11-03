@@ -84,6 +84,10 @@ class VulnerableComponent:
     below: str
     cve: str
     severity: str
+    #: The vendor advisory id (DSA/USN/GHSA-class) when the corpus entry carries one. The
+    #: image scanner reports it as ``advisory`` and falls back to the CVE when absent, so an
+    #: image finding always names an advisory (REQ-DET-016).
+    advisory: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -440,9 +444,40 @@ class M5Corpus:
                     below=str(entry["below"]),
                     cve=str(entry.get("cve", "")),
                     severity=str(entry.get("severity", "medium")),
+                    advisory=str(entry.get("advisory", "")),
                 )
             )
         return tuple(out)
+
+    # ------------------------------------------------------------------ container images
+    def image_media_types(self) -> tuple[str, ...]:
+        """The OCI/Docker manifest media types the native scanner accepts (REQ-DET-016)."""
+        return tuple(self.strings("container_image", "media_types")) or (
+            "application/vnd.oci.image.manifest.v1+json",
+            "application/vnd.docker.distribution.manifest.v2+json",
+        )
+
+    def image_os_vulnerable(self) -> tuple[VulnerableComponent, ...]:
+        """The offline OS-package advisory index (dpkg/apk names)."""
+        out: list[VulnerableComponent] = []
+        for entry in self._entries("container_image", "os_vulnerable"):
+            if "name" not in entry or "below" not in entry:
+                continue
+            out.append(
+                VulnerableComponent(
+                    name=str(entry["name"]),
+                    ecosystem=str(entry.get("ecosystem", "os")),
+                    below=str(entry["below"]),
+                    cve=str(entry.get("cve", "")),
+                    severity=str(entry.get("severity", "medium")),
+                    advisory=str(entry.get("advisory", "")),
+                )
+            )
+        return tuple(out)
+
+    def image_vulnerable(self) -> tuple[VulnerableComponent, ...]:
+        """Every advisory an image may match: the OS index plus the language index."""
+        return self.image_os_vulnerable() + self.sbom_vulnerable()
 
     # ------------------------------------------------------------------ metadata / iam
     def imds_targets(self) -> tuple[NamedSpec, ...]:

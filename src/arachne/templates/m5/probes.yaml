@@ -199,6 +199,27 @@ sbom:
     - {name: "spring-core", ecosystem: maven, below: "5.3.33", cve: "CVE-2024-22262", severity: medium}
     - {name: "urllib3", ecosystem: pypi, below: "2.2.2", cve: "CVE-2024-37891", severity: medium}
 
+# --------------------------------------------------------------------------- container images (ch05#15, REQ-DET-016)
+container_image:
+  # The OCI/Docker media types the native scanner resolves. An index/manifest list is
+  # followed one level (the first platform-specific manifest) and never recursively.
+  media_types: [
+    "application/vnd.oci.image.manifest.v1+json",
+    "application/vnd.oci.image.index.v1+json",
+    "application/vnd.docker.distribution.manifest.v2+json",
+    "application/vnd.docker.distribution.manifest.list.v2+json",
+  ]
+  # OS-package advisories read from the unpacked layer (dpkg status / apk installed DB).
+  # ``advisory`` is the vendor advisory id when one exists; ``cve`` remains the machine id.
+  # The shipped index is deliberately small; ARACHNE_M5_PROBES replaces it with the real feed.
+  os_vulnerable:
+    - {name: "openssl", ecosystem: deb, below: "3.0.14", cve: "CVE-2024-0727", advisory: "DSA-5610-1", severity: high}
+    - {name: "libssl3", ecosystem: deb, below: "3.0.14", cve: "CVE-2024-0727", advisory: "DSA-5610-1", severity: high}
+    - {name: "libc6", ecosystem: deb, below: "2.38", cve: "CVE-2023-4911", advisory: "DSA-5514-1", severity: high}
+    - {name: "libcurl4", ecosystem: deb, below: "8.4.0", cve: "CVE-2023-38545", advisory: "DSA-5541-1", severity: high}
+    - {name: "busybox", ecosystem: apk, below: "1.36.1", cve: "CVE-2023-42363", severity: medium}
+    - {name: "musl", ecosystem: apk, below: "1.2.4", cve: "CVE-2023-42366", severity: medium}
+
 # --------------------------------------------------------------------------- SSRF → IMDS (ch05#4)
 imds:
   # Metadata endpoints injected into a server-side fetch sink. Each carries a marker the sink's

@@ -29,6 +29,7 @@ from arachne.core.audit import AuditAction, Auditor, AuditOutcome
 from arachne.core.errors import CredentialError, CredentialScopeError
 from arachne.core.logging import get_logger
 from arachne.core.vault import (
+    CLOUD_CREDENTIAL_KINDS,
     WEB_CREDENTIAL_KINDS,
     CredentialHandle,
     CredentialStore,
@@ -444,6 +445,41 @@ class CredentialBroker:
             detail=result.detail,
             exchanges=result.exchanges,
             label=handle.label,
+        )
+
+    # ------------------------------------------------------------------ cloud API reads
+    async def authorized_get(
+        self,
+        client: Any,
+        url: str,
+        *,
+        kinds: Iterable[str] = CLOUD_CREDENTIAL_KINDS,
+        headers: Mapping[str, str] | None = None,
+    ) -> Any:
+        """One read-only GET with a vault-supplied bearer token, or ``None``.
+
+        This is the cloud-API counterpart of :meth:`login`: the check asks the broker for an
+        *outcome*, not a secret. The broker selects a credential of a cloud kind that is
+        scoped to ``url`` (the same scope check and audit record as every other release),
+        reads the material, puts it in the ``Authorization`` header of **this one** request
+        and drops it. The client captures a redacted exchange, so the check — and every
+        evidence path downstream — sees the response without ever seeing the token.
+
+        ``None`` means no credential was selected, held, scoped to this URL, or released; the
+        refusal is already audited, so the caller reports a skip rather than inventing an
+        unauthenticated result.
+        """
+        handle = self.handle_for(kinds, url=url)
+        if handle is None:
+            return None
+        material = handle.material(release_seam())
+        request_headers = dict(headers or {})
+        request_headers["Authorization"] = f"Bearer {material.secret_value()}"
+        return await client.request(
+            "GET",
+            url,
+            headers=request_headers,
+            follow_redirects=False,
         )
 
     # ------------------------------------------------------------------ state

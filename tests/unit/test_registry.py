@@ -92,8 +92,10 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # all default-on active L1 checks -> 167. WP-10 adds the read-only AD CS enumeration
     # (REQ-DET-014) and the four Agentic Top 10 surface checks (REQ-DET-013) -> 172.
     # WP-11 adds the DOM-sink browser check (REQ-DET-015), a default-on active L1 check whose
-    # browser is an optional extra and an operator opt-in -> 173.
-    assert len(registry.checks()) == 173
+    # browser is an optional extra and an operator opt-in -> 173. WP-12 adds the native image
+    # scanner (REQ-DET-016) and the DigitalOcean read-only posture check (REQ-DET-017), both
+    # default-on L1 checks with an active request path -> 175.
+    assert len(registry.checks()) == 175
     # M1's code-secret-mining, M2's SNMP and ICS checks, M4's metadata-ssrf and
     # default-credentials checks, M3's ssrf-probe, M5's imds-ssrf / azure-mi-audit and
     # M6's deception-listeners / ad-attack-path, S13's m1.bucket-hunt, S15's six
@@ -105,8 +107,9 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # WP-09's three new checks are active and WP-10 adds four active AD CS / ASI ones
     # (the four agentic checks are hybrid reads and are not counted as active), so the
     # active count rises with the total. WP-11's m3.dom-xss is active too (it navigates with
-    # a marker), so it raises the count by one as well.
-    assert registry.totals()["active_checks"] == 96
+    # a marker), and WP-12's m5.image-scan and m5.do-posture both request the target, so the
+    # count rises by three across those two work packages.
+    assert registry.totals()["active_checks"] == 98
     # S15: the six L2+ declarations are exactly the proof ladder's opt-in rows. S29 adds one
     # more: m3.client-secret-verify, the L2 dynamic verification of a client-side credential.
     assert registry.totals()["proof_l2plus"] == 7
@@ -228,8 +231,8 @@ def test_a_plugin_extends_an_existing_module(monkeypatch) -> None:  # type: igno
     )
     registry = ModuleRegistry.discover()
     assert registry.module_ids() == ("M1", "M2", "M3", "M4", "M5", "M6")
-    # The shipped set (173 at WP-11) plus the plugin's one extra check.
-    assert len(registry.checks()) == 174
+    # The shipped set (175 at WP-12) plus the plugin's one extra check.
+    assert len(registry.checks()) == 176
     assert registry.group("M1").origin == "builtin+extra"  # type: ignore[union-attr]
 
 

@@ -1143,7 +1143,7 @@ checks:
     name: registry-scan
     version: '1.0'
     title: Container registry anonymously enumerable
-    description: 'Requests the Docker Registry v2 catalog (``/v2/_catalog``) and a bounded repository list and reports a registry that answers without authentication (research ch05#15: a misconfigured Harbor/Docker Registry/ECR reveals every repository and tag). An external image scanner (Trivy/Syft-class) is used when ARACHNE_M5_SBOM_TOOL is configured and ARACHNE_M5_REGISTRY_SCAN is enabled. GET only.'
+    description: 'Requests the Docker Registry v2 catalog (``/v2/_catalog``) and a bounded repository list and reports a registry that answers without authentication (research ch05#15: a misconfigured Harbor/Docker Registry/ECR reveals every repository and tag). Image contents are read by ``m5.image-scan``, natively and by default (REQ-DET-016); this check only lists the catalog. GET only.'
     research_ref: ch05#15
     proof: L1
     cwe: CWE-1104
@@ -1151,6 +1151,32 @@ checks:
     - cloud
     - url
     estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: image-scan
+    version: '1.0'
+    title: Container image carries known-vulnerable packages
+    description: 'Resolves a container image to its manifest, fetches the layers through the scoped client, unpacks them into a private temporary directory under a documented size cap, reads the dpkg/apk package databases and the Python/npm metadata, and matches them against the offline advisory index (research ch05#15; REQ-DET-016). The image and its contents are never executed. A distroless image is a valid empty result. The external Trivy/Grype-class scanner remains available as an opt-in over the already-unpacked root; it is never the default and never fetches the image itself.'
+    research_ref: ch05#15
+    proof: L1
+    cwe: CWE-1104
+    target_kinds:
+    - cloud
+    - artifact
+    estimated_requests: 8
+    requires_active_checks: true
+  - module: M5
+    name: do-posture
+    version: '1.0'
+    title: DigitalOcean account exposes a database, firewall or load balancer
+    description: 'Reads the DigitalOcean account''s droplets, managed databases, load balancers and firewalls with four documented GET operations and reports the posture conditions the account''s own fields carry: a managed database with no private network or no trusted sources, an inbound firewall rule open to SSH from the internet, a load balancer serving HTTP without a redirect, and droplets with no cloud firewall (research ch05#1; REQ-DET-017). The bearer token comes from the credential vault and is injected by the broker; the check never sees it. Nothing is created, modified or deleted.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-16
+    target_kinds:
+    - cloud
+    - url
+    estimated_requests: 4
     requires_active_checks: true
   - module: M5
     name: docker-socket

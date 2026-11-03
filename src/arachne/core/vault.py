@@ -54,6 +54,7 @@ from arachne.core.safety import host_matches_glob, normalize_host, url_under_pre
 from arachne.core.secrets import decrypt_blob, encrypt_blob
 
 __all__ = [
+    "CLOUD_CREDENTIAL_KINDS",
     "CREDENTIAL_KINDS",
     "VAULT_MAGIC",
     "WEB_CREDENTIAL_KINDS",
@@ -77,13 +78,26 @@ VAULT_MAGIC: Final = "ARACHNE-CV-1"
 #: What a credential is *for*. The kind decides which checks may select it: a web credential
 #: drives a login flow, a protocol credential is offered to a raw-network check.
 #: ``ldap`` was added by WP-10 (REQ-DET-014): the AD CS enumeration binds to the directory with
-#: an operator-supplied credential. It is additive — the kind flows through the same scope
-#: check, the same single-release seam and the same audit record as the four before it.
-CredentialKind = Literal["web-form", "web-json", "ssh", "smb", "ldap"]
-CREDENTIAL_KINDS: Final[tuple[str, ...]] = ("web-form", "web-json", "ssh", "smb", "ldap")
+#: an operator-supplied credential. ``cloud-token`` was added by WP-12 (REQ-DET-017): the
+#: read-only DigitalOcean posture check spends a bearer token. Both are additive — the kind
+#: flows through the same scope check, the same single-release seam and the same audit record
+#: as the four before them.
+CredentialKind = Literal["web-form", "web-json", "ssh", "smb", "ldap", "cloud-token"]
+CREDENTIAL_KINDS: Final[tuple[str, ...]] = (
+    "web-form",
+    "web-json",
+    "ssh",
+    "smb",
+    "ldap",
+    "cloud-token",
+)
 #: The kinds a web check may select (both are HTTP login flows; the difference is the body
 #: encoding, which the login spec may also override).
 WEB_CREDENTIAL_KINDS: Final[tuple[str, ...]] = ("web-form", "web-json")
+#: The kinds a read-only cloud API check may select. ``cloud-token`` was added by WP-12
+#: (REQ-DET-017): the broker injects the bearer token into one request and hands the check
+#: the redacted exchange, so the material never crosses the module boundary.
+CLOUD_CREDENTIAL_KINDS: Final[tuple[str, ...]] = ("cloud-token",)
 
 #: A vault is an operator's working set, not a credential database: cap it.
 MAX_ENTRIES: Final = 256

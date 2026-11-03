@@ -227,10 +227,18 @@ at capture time, so they never reach evidence.
 | `ARACHNE_M5_MAX_BUCKET_NAMES` | `8` | Bucket-name candidates from one domain. |
 | `ARACHNE_M5_IMDS_PROBE` | `false` | Allow `m5.imds-ssrf` to send the metadata GET. |
 | `ARACHNE_M5_VALIDATE_CLOUD_KEYS` | `false` | Allow read-only validation call for a found cloud key. |
-| `ARACHNE_M5_REGISTRY_SCAN` | `false` | Allow invoking an external image scanner (Trivy/Syft/Grype class). |
+| `ARACHNE_M5_IMAGE_SCAN` | `true` | Native container-image scanning: resolve the manifest, fetch the layers in scope, unpack into a temporary directory and match advisories. No external tool. |
+| `ARACHNE_M5_IMAGE_MAX_LAYERS` | `64` | Layer cap for one image. |
+| `ARACHNE_M5_IMAGE_MAX_LAYER_BYTES` | `67108864` | Compressed cap for one layer. |
+| `ARACHNE_M5_IMAGE_MAX_UNPACKED_BYTES` | `268435456` | Total unpacked-byte cap across an image; a layer over it is refused. |
+| `ARACHNE_M5_IMAGE_MAX_FILE_BYTES` | `33554432` | Per-member unpacked cap. |
+| `ARACHNE_M5_IMAGE_MAX_MEMBERS` | `100000` | Per-image archive-member cap. |
+| `ARACHNE_M5_IMAGE_TEMP_DIR` | *(platform temp)* | Directory the image is unpacked into; never the workspace. |
+| `ARACHNE_M5_REGISTRY_SCAN` | `false` | Opt in to the external scanner path; it is never the default and never a process. |
 | `ARACHNE_M5_DOCKER_SOCKET` | `true` | Probe the local Docker daemon socket in addition to a reachable TCP API. |
 | `ARACHNE_M5_IAC_TOOL` | *(unset)* | Optional external IaC scanner (tfsec/checkov). |
-| `ARACHNE_M5_SBOM_TOOL` | *(unset)* | Optional external SBOM tool (trivy/syft). |
+| `ARACHNE_M5_SBOM_TOOL` | *(unset)* | External scanner whose report is imported (trivy/grype). |
+| `ARACHNE_M5_SBOM_REPORT` | *(unset)* | JSON report the external scanner produced out of band, merged into the native findings. |
 | `ARACHNE_M5_MAX_FILE_BYTES` | `262144` | Bytes read from one local artifact. |
 | `ARACHNE_M5_MAX_REPO_FILES` | `4000` | Repository file-walk cap. |
 | `ARACHNE_M5_PROBES` | *(bundled)* | Replace the M5 probe corpus/wordlists. |

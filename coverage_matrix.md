@@ -6,7 +6,7 @@ the numbered methods in `docs/research/`.
 
 - research corpus: `docs/research`
 - source roots: `src/arachne/modules`
-- references found: **173**
+- references found: **175**
 - coverage: **148/175 (84.6%)**
 
 ## Summary
@@ -172,7 +172,7 @@ the numbered methods in `docs/research/`.
 
 | # | Method | Mapped | Checks |
 |---|---|---|---|
-| 1 | Cloud IAM policy review | yes | `cloud-posture`, `iam-review` |
+| 1 | Cloud IAM policy review | yes | `cloud-posture`, `do-posture`, `iam-review` |
 | 2 | Cloud storage bucket enumeration | yes | `bucket-enumerator` |
 | 3 | Leaked cloud credential detection | yes | `leaked-cloud-keys` |
 | 4 | Instance metadata service exposure | yes | `imds-ssrf` |
@@ -186,7 +186,7 @@ the numbered methods in `docs/research/`.
 | 12 | Terraform state secret extraction | yes | `tfstate-exposure` |
 | 13 | Kubernetes API exposure | yes | `k8s-exposure` |
 | 14 | Kubernetes manifest misconfiguration | yes | `k8s-exposure` |
-| 15 | Container registry image scanning | yes | `registry-scan` |
+| 15 | Container registry image scanning | yes | `image-scan`, `registry-scan` |
 | 16 | Docker socket exposure | yes | `docker-socket` |
 | 17 | Image layer and history secret extraction | yes | `image-history-secrets` |
 | 18 | Cloud networking and security-group review | no | — |
