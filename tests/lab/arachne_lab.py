@@ -21,6 +21,10 @@ service                              what it plants
 ``smtp``                             Postfix 3.4.14 that answers VRFY
 ``dns``                              a nameserver that permits AXFR and resolves a few names
 ``ldap``                             a directory that accepts an anonymous bind
+``ldap-adcs``                        an AD CS deployment with an ESC1 template and
+                                     an ESC6 CA (credentialed bind; WP-10)
+``ldap-adcs-hardened``               the same object shapes, both conditions removed
+                                     (the decoy; WP-10)
 ``snmp`` (UDP, opt-in)                an agent that answers community ``public``
 ``modbus``                           a Modbus/TCP device identification response
 ===================================  ==============================================
@@ -61,7 +65,7 @@ __all__ = [
 
 #: Bumped when the fixture's service set changes: the S29 additions (S7, DNP3 and the three
 #: gRPC services) are recorded here so a stale cached fixture is spotted rather than trusted.
-LAB_VERSION = "2.1"
+LAB_VERSION = "2.2"
 
 CERT_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "lab"
 
@@ -586,8 +590,8 @@ def _ber_str(value: str) -> bytes:
     return _ber(0x04, value.encode())
 
 
-def _ldap_bind_response() -> bytes:
-    return _ber(0x61, _ber_int(0) + _ber_str("") + _ber_str(""))
+def _ldap_bind_response(result_code: int = 0) -> bytes:
+    return _ber(0x61, _ber_int(result_code) + _ber_str("") + _ber_str(""))
 
 
 def _ldap_search_entry() -> bytes:
@@ -797,6 +801,196 @@ _SMB_STATE: dict[str, Any] = {"challenge": None}
 _SMB_LOCK = threading.Lock()
 
 
+# --------------------------------------------------------------------------- AD CS (WP-10)
+#: The lab directory's credential (WP-10, REQ-DET-014). A lab credential: the scanner's vault
+#: holds the same value under a label, and the zero-occurrence test asserts it never reaches a
+#: log, an evidence blob or a report.
+LAB_LDAP_USER = "svc-adcs"
+LAB_LDAP_PASSWORD = "svc-adcs-lab-password"
+LAB_LDAP_DEFAULT_DN = "DC=lab,DC=arachne,DC=test"
+LAB_LDAP_CONFIG_DN = f"CN=Configuration,{LAB_LDAP_DEFAULT_DN}"
+LAB_LDAP_ADCS_BASE = f"CN=Public Key Services,CN=Services,{LAB_LDAP_CONFIG_DN}"
+
+#: The misconfigured deployment's objects: a template that permits an enrollee-supplied subject
+#: with a client-auth usage (ESC1) and a CA that honours a requester-supplied SAN (ESC6).
+LAB_ADCS_CA = "lab-issuing-ca"
+LAB_ADCS_CA_FLAGS = 0x00040000  # EDITF_ATTRIBUTESUBJECTALTNAME2
+LAB_ADCS_TEMPLATE = "LabUser"
+LAB_ADCS_CLIENT_AUTH_EKU = "1.3.6.1.5.5.7.3.2"
+
+#: The hardened deployment's objects: the same shapes with both conditions removed.
+LAB_ADCS_SAFE_CA = "lab-hardened-ca"
+LAB_ADCS_SAFE_TEMPLATE = "LabWebServer"
+LAB_ADCS_SERVER_AUTH_EKU = "1.3.6.1.5.5.7.3.1"
+
+
+def _ldap_request_messages(payload: bytes) -> list[tuple[int, int, bytes]]:
+    """``[(message_id, application_tag, body)]`` for a pipelined LDAP request buffer."""
+    out: list[tuple[int, int, bytes]] = []
+    try:
+        reader = wire.BerReader(payload)
+        while not reader.eof:
+            tag, body = reader.read_tlv()
+            if tag != 0x30:
+                break
+            inner = wire.BerReader(body)
+            message_id = inner.read_int()
+            application_tag, application_body = inner.read_tlv()
+            out.append((message_id, application_tag, application_body))
+    except ValueError:
+        return out
+    return out
+
+
+def _ldap_bind_credentials(body: bytes) -> tuple[str, str]:
+    """``(dn, password)`` from a simple BindRequest body."""
+    inner = wire.BerReader(body)
+    inner.read_int()  # version
+    dn = inner.read_octet_string().decode("utf-8", "replace")
+    _tag, password = inner.read_tlv()
+    return dn, password.decode("utf-8", "replace")
+
+
+def _ldap_search_base(body: bytes) -> str:
+    """The base DN of a searchRequest body (its first field)."""
+    return wire.BerReader(body).read_octet_string().decode("utf-8", "replace")
+
+
+def _ldap_search_entry(dn: str, attributes: dict[str, tuple[str, ...]]) -> bytes:
+    """A ``searchResEntry`` (0x67) carrying the attributes asked for."""
+    rendered = b"".join(
+        _ber(0x30, _ber_str(name) + _ber(0x31, b"".join(_ber_str(value) for value in values)))
+        for name, values in attributes.items()
+    )
+    return _ber(0x67, _ber_str(dn) + _ber(0x30, rendered))
+
+
+def _ldap_search_done(result_code: int = 0) -> bytes:
+    """A ``searchResDone`` (0x65)."""
+    return _ber(0x65, _ber_int(result_code) + _ber_str("") + _ber_str(""))
+
+
+def _ldap_adcs_objects(hardened: bool) -> tuple[tuple[str, dict[str, tuple[str, ...]]], ...]:
+    """The two AD CS objects the lab publishes — misconfigured or hardened."""
+    if hardened:
+        return (
+            (
+                f"CN={LAB_ADCS_SAFE_CA},CN=Certification Authorities,{LAB_LDAP_ADCS_BASE}",
+                {
+                    "objectClass": ("top", "pKIEnrollmentService"),
+                    "cn": (LAB_ADCS_SAFE_CA,),
+                    "dNSHostName": ("ca.lab.arachne.test",),
+                    "flags": ("0",),
+                    "certificateTemplates": (LAB_ADCS_SAFE_TEMPLATE,),
+                },
+            ),
+            (
+                f"CN={LAB_ADCS_SAFE_TEMPLATE},CN=Certificate Templates,{LAB_LDAP_ADCS_BASE}",
+                {
+                    "objectClass": ("top", "pKICertificateTemplate"),
+                    "cn": (LAB_ADCS_SAFE_TEMPLATE,),
+                    "displayName": ("Lab Web Server",),
+                    "msPKI-Certificate-Name-Flag": ("0",),
+                    "msPKI-Enrollment-Flag": ("0",),
+                    "msPKI-Template-Schema-Version": ("2",),
+                    "pKIExtendedKeyUsage": (LAB_ADCS_SERVER_AUTH_EKU,),
+                },
+            ),
+        )
+    return (
+        (
+            f"CN={LAB_ADCS_CA},CN=Certification Authorities,{LAB_LDAP_ADCS_BASE}",
+            {
+                "objectClass": ("top", "pKIEnrollmentService"),
+                "cn": (LAB_ADCS_CA,),
+                "dNSHostName": ("ca.lab.arachne.test",),
+                "flags": (str(LAB_ADCS_CA_FLAGS),),
+                "certificateTemplates": (LAB_ADCS_TEMPLATE,),
+            },
+        ),
+        (
+            f"CN={LAB_ADCS_TEMPLATE},CN=Certificate Templates,{LAB_LDAP_ADCS_BASE}",
+            {
+                "objectClass": ("top", "pKICertificateTemplate"),
+                "cn": (LAB_ADCS_TEMPLATE,),
+                "displayName": ("Lab User",),
+                "msPKI-Certificate-Name-Flag": ("1",),  # ENROLLEE_SUPPLIES_SUBJECT
+                "msPKI-Enrollment-Flag": ("0",),
+                "msPKI-Template-Schema-Version": ("2",),
+                "pKIExtendedKeyUsage": (LAB_ADCS_CLIENT_AUTH_EKU,),
+            },
+        ),
+    )
+
+
+def _ldap_adcs(connection: socket.socket, *, hardened: bool) -> None:
+    """An LDAP server with AD CS objects: credentialed bind, then the enumeration search.
+
+    Models the ordering RFC 4511 §4.2.1 mandates for a pipelined bind: the request buffer is
+    split into its LDAPMessages and the searches are answered *after* the bind, as the bound
+    identity. A wrong password gets ``invalidCredentials`` and nothing else, which is what the
+    check's "not enumerated" path reads.
+    """
+    connection.settimeout(0.3)
+    chunks: list[bytes] = []
+    received = 0
+    while received < 16384:
+        chunk = _read(connection, 16384 - received)
+        if not chunk:
+            break
+        chunks.append(chunk)
+        received += len(chunk)
+        if b"\x63" in b"".join(chunks):  # a searchRequest has arrived; the buffer is complete
+            break
+    messages = _ldap_request_messages(b"".join(chunks))
+    if not messages:
+        return
+    out = bytearray()
+    bound = False
+    for message_id, tag, body in messages:
+        if tag == 0x60:  # bindRequest
+            dn, password = _ldap_bind_credentials(body)
+            expected = f"cn={LAB_LDAP_USER},"
+            if password == LAB_LDAP_PASSWORD and dn.lower().startswith(expected):
+                bound = True
+                out.extend(_ldap_message(message_id, _ldap_bind_response(0)))
+            else:
+                out.extend(_ldap_message(message_id, _ldap_bind_response(49)))  # invalidCredentials
+            continue
+        if tag != 0x63:  # not a search: answer unwillingToPerform, never guess
+            out.extend(_ldap_message(message_id, _ldap_search_done(53)))
+            continue
+        if not bound:
+            out.extend(_ldap_message(message_id, _ldap_search_done(50)))  # insufficientAccessRights
+            continue
+        base = _ldap_search_base(body)
+        if base == "":  # the rootDSE read
+            out.extend(
+                _ldap_message(
+                    message_id,
+                    _ldap_search_entry(
+                        "",
+                        {
+                            "objectClass": ("top",),
+                            "configurationNamingContext": (LAB_LDAP_CONFIG_DN,),
+                            "defaultNamingContext": (LAB_LDAP_DEFAULT_DN,),
+                            "supportedLDAPVersion": ("3",),
+                        },
+                    ),
+                )
+            )
+            out.extend(_ldap_message(message_id, _ldap_search_done(0)))
+            continue
+        if base.lower() == LAB_LDAP_ADCS_BASE.lower():
+            for dn, attributes in _ldap_adcs_objects(hardened):
+                out.extend(_ldap_message(message_id, _ldap_search_entry(dn, attributes)))
+            out.extend(_ldap_message(message_id, _ldap_search_done(0)))
+            continue
+        out.extend(_ldap_message(message_id, _ldap_search_done(32)))  # noSuchObject
+    if out:
+        connection.sendall(bytes(out))
+
+
 def _smb2_header(status: int, command: int, *, message_id: int = 1, session_id: int = 0) -> bytes:
     return (
         b"\xfeSMB"
@@ -986,6 +1180,11 @@ def start_m2_lab(*, include_udp: bool = True) -> LabFixture:
         # relay (the decoy); one advertises STARTTLS, offers AUTH in the clear and relays.
         ("smtp-hardened", lambda connection: _smtp_transport(connection, hardened=True)),
         ("smtp-open-relay", lambda connection: _smtp_transport(connection, hardened=False)),
+        # WP-10 (REQ-DET-014): the AD CS pair. One publishes an ESC1 template and an ESC6 CA
+        # (the finding); one publishes the same object shapes with both conditions removed
+        # (the decoy). Both demand the lab credential before answering a search.
+        ("ldap-adcs", lambda connection: _ldap_adcs(connection, hardened=False)),
+        ("ldap-adcs-hardened", lambda connection: _ldap_adcs(connection, hardened=True)),
     )
     for name, handler in tcp_services:
         server = _TcpServer(handler, name=name)

@@ -76,8 +76,11 @@ VAULT_MAGIC: Final = "ARACHNE-CV-1"
 
 #: What a credential is *for*. The kind decides which checks may select it: a web credential
 #: drives a login flow, a protocol credential is offered to a raw-network check.
-CredentialKind = Literal["web-form", "web-json", "ssh", "smb"]
-CREDENTIAL_KINDS: Final[tuple[str, ...]] = ("web-form", "web-json", "ssh", "smb")
+#: ``ldap`` was added by WP-10 (REQ-DET-014): the AD CS enumeration binds to the directory with
+#: an operator-supplied credential. It is additive — the kind flows through the same scope
+#: check, the same single-release seam and the same audit record as the four before it.
+CredentialKind = Literal["web-form", "web-json", "ssh", "smb", "ldap"]
+CREDENTIAL_KINDS: Final[tuple[str, ...]] = ("web-form", "web-json", "ssh", "smb", "ldap")
 #: The kinds a web check may select (both are HTTP login flows; the difference is the body
 #: encoding, which the login spec may also override).
 WEB_CREDENTIAL_KINDS: Final[tuple[str, ...]] = ("web-form", "web-json")

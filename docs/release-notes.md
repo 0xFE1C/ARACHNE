@@ -19,16 +19,16 @@ matters.
 
 ### What is in this snapshot
 
-**Detection — 152 registered checks across six modules**
+**Detection — 172 registered checks across six modules**
 
 | Module | Checks | Surface |
 |---|---:|---|
 | M1 Reconnaissance & OSINT | 17 | dork sweeps, subdomain enumeration, certificate transparency, breach exposure, provider drift |
-| M2 Network & services | 27 | ports, fingerprints, TLS and X.509, DNS and AXFR, SMB, databases, OT protocols, CVE correlation |
+| M2 Network & services | 31 | ports, fingerprints, TLS, mTLS and X.509, DNS and AXFR, SMB, databases, OT protocols, SMTP transport, HTTP/3, read-only AD CS enumeration, CVE correlation |
 | M3 Web application | 47 | injection, access control, session and identity, request smuggling, cache poisoning, GraphQL, WebSocket, gRPC, client-side code, mobile artifacts |
 | M4 Misconfiguration & exposure | 29 | exposed `.env`/`.git`, backups, debug endpoints, headers, cookies, default credentials |
 | M5 Cloud, container & supply chain | 20 | instance metadata, buckets, Kubernetes, registries, CI/CD, dependency confusion, IAM posture |
-| M6 Automation & AI-era | 12 | webshell signatures, secret scanning, local privilege escalation, AD paths, GenAI surface, Sigma hunts |
+| M6 Automation & AI-era | 19 | webshell signatures, secret scanning, local privilege escalation, AD paths, GenAI surface, MCP and Agentic Top 10 surface, Sigma hunts |
 
 Checks and their payloads are data, not code: payloads, wordlists, protocol tables and rule
 corpora live in `src/arachne/templates/` and can be replaced by an operator.
@@ -87,10 +87,10 @@ corpora live in `src/arachne/templates/` and can be replaced by an operator.
 
 | What | Result |
 |---|---|
-| Tests | **4,573** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
-| Primary safety suite | **59 tests** in `tests/test_safety.py`; **281** in the safety files |
+| Tests | **4,647** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Primary safety suite | **59 tests** in `tests/test_safety.py`; **302** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol and mobile fixtures with planted false-positive traps |
-| Strict type checking | clean under `mypy --strict` across the **381** Python modules in `src/` |
+| Strict type checking | clean under `mypy --strict` across the **383** Python modules in `src/` |
 | Lint | clean over the whole repository (the badge's scope is the tree, not `src/` and `tests/`) |
 | Research coverage | **148/175 (84.6%)** of the corpus's numbered methods have an implementing check |
 
@@ -110,7 +110,13 @@ discover. Each is a candidate for a future release.
    tools.
 2. **No WSTG or OWASP API Top 10 identifiers** in check metadata. Coverage against those
    frameworks cannot be reported, only estimated.
-3. **No MCP-server checks, no OWASP Agentic Top 10 coverage, no ADCS enumeration.**
+3. **Four of the ten OWASP Agentic Top 10 items have no check**, and AD CS enumeration is
+   partial. `ASI01`, `ASI04`, `ASI05` and `ASI08` are named as gaps in the coverage ledger
+   (`.spec/ledgers/coverage-ledger.md`); the six that ship are `ASI02`, `ASI03`, `ASI06`,
+   `ASI07`, `ASI09` and `ASI10`. The AD CS check reports the template and CA conditions
+   associated with the published ESC classes but cannot decide the ACL-based ESC4/ESC5/ESC7,
+   the relay-based ESC8 or the mapping-based ESC9/ESC10 halves, which it names as
+   not-assessed rather than omitting. MCP-server checks ship (three of them).
 4. **No mutual-TLS or client-certificate check**, and no SMTP transport-security check
    (STARTTLS enforcement, AUTH, open relay).
 5. **No HTTP/3 probing**, and IPv6-only targets are under-scanned.

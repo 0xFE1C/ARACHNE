@@ -19,6 +19,10 @@ check                                      ref          what it establishes
 ``m6.sigma-hunt-rules``                    ch06#18-23   post-exploit Sigma rules + log ingest
 ``m6.deception-listeners``                 ch06#25      honeytoken trigger monitoring (opt-in)
 ``m6.ad-attack-path``                      ch06#19      read-only AD escalation paths (opt-in)
+``m6.agentic-tool-manifest``               ch06#15      agentic ASI02 tool surface (WP-10)
+``m6.agentic-memory-store``                ch06#15      agentic ASI06 context store (WP-10)
+``m6.agentic-human-trust``                 ch06#15      agentic ASI09 human gate (WP-10)
+``m6.agentic-rogue-runtime``               ch06#15      agentic ASI10 unmanaged runtime (WP-10)
 ========================================  ===========  ============================================
 
 **Numbering.** As for M1-M5, ``research_ref`` values are the canonical method numbers of
@@ -40,6 +44,7 @@ post-exploitation action. The telemetry checks require an explicit log-access gr
 from __future__ import annotations
 
 from arachne.modules.base import Module
+from arachne.modules.m6.agentic import AGENTIC_CHECKS
 from arachne.modules.m6.exposure import CveEpssCorrelation, LpeDiscovery
 from arachne.modules.m6.genai import AttackSurfaceGenai
 from arachne.modules.m6.hardening import CredentialHunt, ExploitMatch, TemplateScan
@@ -62,6 +67,7 @@ M6_CHECKS: tuple[type[Module], ...] = (
     WebshellYara,
     AttackSurfaceGenai,
     *MCP_CHECKS,
+    *AGENTIC_CHECKS,
     SigmaHuntRules,
     DeceptionListeners,
     AdAttackPath,
@@ -82,10 +88,13 @@ M6 = ModuleGroup(
         "endpoints, prompt hygiene, agent configs), CVE/EPSS correlation and patch-gap "
         "analysis, repository/git-history and CI-log secret scanning, post-exploit Sigma hunt "
         "rules with an opt-in log-ingest path, local-privilege-escalation CVE matching, "
-        "read-only AD attack-path analysis and honeytoken trigger monitoring. File-read-only "
-        "throughout; nothing performs a post-exploitation action."
+        "read-only AD attack-path analysis, honeytoken trigger monitoring, and the read-only "
+        "OWASP Agentic Top 10 surface (agent tool manifests, memory stores, published agent "
+        "policy and unmanaged agent runtimes — ASI02, ASI06, ASI09, ASI10). File-read-only "
+        "throughout; nothing performs a post-exploitation action and no check prompts, starts "
+        "or writes to a target agent."
     ),
-    version="1.0.0",
+    version="1.1.0",
     research_chapter="ch06",
     checks=M6_CHECKS,
 )

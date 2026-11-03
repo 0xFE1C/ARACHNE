@@ -1655,6 +1655,26 @@ checks:
     target_kinds: [url]
     estimated_requests: 4
 
+  # ---------------------------------------------------------------- M2 AD CS (WP-10, REQ-DET-014)
+  # Read-only AD CS enumeration: two LDAP object classes, credentialed, L1. The check
+  # reports configuration *conditions* and never attempts exploitation.
+  - module: M2
+    name: adcs-enum
+    version: '1.0'
+    title: Active Directory Certificate Services misconfiguration (read-only)
+    description: 'Binds to the directory with the scan''s selected LDAP credential and enumerates two AD CS object classes — pKICertificateTemplate and pKIEnrollmentService — under the configuration naming context, then reports the configuration conditions associated with the published ESC classes (a template that permits an enrollee-supplied subject, an unrestricted usage, an enrolment-agent usage, a missing security extension, a v1 schema, or a CA that honours a requester-supplied subject alternative name). The ESC class is named as context, never as a claim of exploitability. ARACHNE does not attempt exploitation: no request reaches the CA service, no certificate is requested and no template is modified. Read-only, credentialed, and skipped when no credential is available.'
+    research_ref: ch02#18
+    proof: L1
+    cwe: CWE-269
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+
   # ---------------------------------------------------------------- M6 MCP family (WP-07, REQ-DET-005)
   # The read-only MCP security family: three anonymous GETs at the published well-known
   # documents and the MCP endpoint. All L1, all default-on (opt-out-able), all GET-only.
@@ -1690,6 +1710,55 @@ checks:
     cwe: CWE-918
     target_kinds: [url]
     estimated_requests: 2
+
+  # ---------------------------------------------------------------- M6 agentic family (WP-10, REQ-DET-013)
+  # The read-only OWASP Agentic Top 10 surface: one anonymous GET per path at the
+  # published agent/tool/memory/policy documents. All L1, all default-on (opt-out-able),
+  # all GET-only: no check authenticates to, writes to or starts a target agent.
+  - module: M6
+    name: agentic-tool-manifest
+    version: '1.0'
+    title: Agent tool manifest publishes high-impact tools without an authorization gate
+    description: 'Reads the agent/MCP tool manifests a target publishes with one anonymous GET per path and reports a manifest that answers without an authentication challenge while it enumerates tools whose declared capability is destructive (command execution, file mutation, credential access, outbound fetch). The condition is the missing authorization gate on the tool surface, not the tools themselves. Read-only: the documents are parsed and no tool is ever invoked.'
+    research_ref: ch06#15
+    proof: L1
+    cwe: CWE-269
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M6
+    name: agentic-memory-store
+    version: '1.0'
+    title: Agent memory store is readable without authentication
+    description: 'Reads the memory/vector/context endpoints a target publishes with one anonymous GET per path and reports one that answers 2xx without an authentication challenge with a collection listing. A context store reachable with no credential on the same surface a write would use is the context-poisoning condition (ASI06): the agent''s long-term context is not integrity-protected. Read-only: ARACHNE reads and writes nothing.'
+    research_ref: ch06#15
+    proof: L1
+    cwe: CWE-345
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M6
+    name: agentic-human-trust
+    version: '1.0'
+    title: Agent policy declares autonomous execution without human confirmation
+    description: 'Reads the agent policy documents a target publishes with one anonymous GET per path and reports a policy that declares its actions run without human confirmation (`auto_approve`, `requires_confirmation: false`, `approval_mode: none`). With no confirmation step a human has no intervention point, so the trust they extend to the agent''s output is not backed by a control — the human-agent trust condition (ASI09). Read-only: the published document is parsed and no instruction is sent to the agent.'
+    research_ref: ch06#15
+    proof: L1
+    cwe: CWE-863
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M6
+    name: agentic-rogue-runtime
+    version: '1.0'
+    title: Agent runtime answers unauthenticated callers with its own configuration
+    description: 'Reads the agent runtime endpoints a target publishes with one anonymous GET per path and reports one that answers 2xx without an authentication challenge while self-describing (its model, tools, framework or uptime). Nothing binds an operator to the process and nothing binds the caller, so any reachable host can drive an agent the estate cannot attribute — the unmanaged/rogue-agent condition (ASI10). Read-only: the description is parsed and no agent action is requested.'
+    research_ref: ch06#15
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 5
 
   # ---------------------------------------------------------------- S15 proof ladder (area PROOF)
   # The L2 out-of-band variants and the attested L3/L4 proofs (S15, area PROOF).

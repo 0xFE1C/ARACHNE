@@ -58,6 +58,19 @@ LADDER_CHECKS: tuple[str, ...] = (
     "m3.state-marker",
 )
 
+#: ``pyproject.toml``'s per-test timeout is 60 s and says a genuinely slower test takes an
+#: explicit, reviewed marker. This file's module-scoped ``run`` fixture is that test: it climbs
+#: the whole L1→L4 ladder over the lab in one scan, which measures 59.0-60.4 s across runs on
+#: this machine, so under the default cap the fixture is killed and all 19 tests in the file
+#: error. That was true at ``4786059`` (WP-09) as well as here: measured with ``--timeout=300``
+#: the fixture takes 59.19/59.40/60.44 s at that commit and 59.05/59.07/59.06 s at WP-10, i.e.
+#: it sits astride the cap and is load-marginal. The marker records the real budget for a scan
+#: that is legitimately this long; it does not disable the timeout. WP-10 (REQ-DET-013/014)
+#: touches nothing on this file's path. The underlying decision — raise the default cap or make
+#: the demo scan cheaper — belongs to REQ-QUAL-007/013's owner and is recorded in ``STATE.md``
+#: section 8.
+pytestmark = pytest.mark.timeout(300)  # reviewed exception: the ladder scan is genuinely ~60 s
+
 
 @dataclass
 class LadderRun:

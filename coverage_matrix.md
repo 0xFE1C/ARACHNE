@@ -6,7 +6,7 @@ the numbered methods in `docs/research/`.
 
 - research corpus: `docs/research`
 - source roots: `src/arachne/modules`
-- references found: **167**
+- references found: **172**
 - coverage: **148/175 (84.6%)**
 
 ## Summary
@@ -79,7 +79,7 @@ the numbered methods in `docs/research/`.
 | 15 | SNMP community enumeration | yes | `snmp-enum` |
 | 16 | SMB share and auth enumeration | yes | `smb-auth`, `smb-enum` |
 | 17 | NFS export enumeration | yes | `nfs-enum` |
-| 18 | LDAP directory enumeration | yes | `ldap-enum` |
+| 18 | LDAP directory enumeration | yes | `adcs-enum`, `ldap-enum` |
 | 19 | Kerberos user enumeration | yes | `kerberos-enum` |
 | 20 | SMTP banner and relay probing | yes | `smtp-enum`, `smtp-transport` |
 | 21 | Anonymous FTP access check | yes | `ftp-anonymous` |
@@ -216,7 +216,7 @@ the numbered methods in `docs/research/`.
 | 12 | Honeypot and decoy deployment | no | — |
 | 13 | Autonomous agentic exploitation | no | — |
 | 14 | GenAI application attack-surface mapping | yes | `attack-surface-genai` |
-| 15 | LLM prompt-injection surface mapping | yes | `attack-surface-genai`, `mcp-oauth-metadata`, `mcp-session-auth`, `mcp-token-audience` |
+| 15 | LLM prompt-injection surface mapping | yes | `agentic-human-trust`, `agentic-memory-store`, `agentic-rogue-runtime`, `agentic-tool-manifest`, `attack-surface-genai`, `mcp-oauth-metadata`, `mcp-session-auth`, `mcp-token-audience` |
 | 16 | Local privilege-escalation discovery | yes | `lpe-discovery` |
 | 17 | Credential store hunting | yes | `credential-hunt` |
 | 18 | Sigma hunt-rule evaluation | yes | `sigma-hunt-rules` |

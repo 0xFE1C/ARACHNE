@@ -89,8 +89,9 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # default-on L1 GET-only checks -> 155. WP-08 adds the four CWE Top 25 emitters and the
     # five injection families (REQ-DET-004/009), all default-on active L1 checks -> 164.
     # WP-09 adds the mTLS, SMTP-transport and HTTP/3 transport checks (REQ-DET-006/011/012),
-    # all default-on active L1 checks -> 167.
-    assert len(registry.checks()) == 167
+    # all default-on active L1 checks -> 167. WP-10 adds the read-only AD CS enumeration
+    # (REQ-DET-014) and the four Agentic Top 10 surface checks (REQ-DET-013) -> 172.
+    assert len(registry.checks()) == 172
     # M1's code-secret-mining, M2's SNMP and ICS checks, M4's metadata-ssrf and
     # default-credentials checks, M3's ssrf-probe, M5's imds-ssrf / azure-mi-audit and
     # M6's deception-listeners / ad-attack-path, S13's m1.bucket-hunt, S15's six
@@ -99,8 +100,10 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # S29's seven opt-in additions are the four GraphQL/WebSocket probes, the L2
     # client-secret check, the OT/ICS protocol probe and the mobile-artifact check.
     assert registry.totals()["opt_in_checks"] == 30
-    # WP-09's three new checks are all active, so the active count rises with the total.
-    assert registry.totals()["active_checks"] == 94
+    # WP-09's three new checks are active and WP-10 adds four active AD CS / ASI ones
+    # (the four agentic checks are hybrid reads and are not counted as active), so the
+    # active count rises with the total.
+    assert registry.totals()["active_checks"] == 95
     # S15: the six L2+ declarations are exactly the proof ladder's opt-in rows. S29 adds one
     # more: m3.client-secret-verify, the L2 dynamic verification of a client-side credential.
     assert registry.totals()["proof_l2plus"] == 7
@@ -222,8 +225,8 @@ def test_a_plugin_extends_an_existing_module(monkeypatch) -> None:  # type: igno
     )
     registry = ModuleRegistry.discover()
     assert registry.module_ids() == ("M1", "M2", "M3", "M4", "M5", "M6")
-    # The shipped set (167 at WP-09) plus the plugin's one extra check.
-    assert len(registry.checks()) == 168
+    # The shipped set (172 at WP-10) plus the plugin's one extra check.
+    assert len(registry.checks()) == 173
     assert registry.group("M1").origin == "builtin+extra"  # type: ignore[union-attr]
 
 

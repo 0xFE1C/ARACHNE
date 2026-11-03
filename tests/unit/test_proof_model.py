@@ -121,14 +121,15 @@ def test_the_shipped_checks_are_annotated_l1() -> None:
     ``m1.mobile-artifact`` is **L0** because it contacts nothing at all. WP-07's three
     read-only MCP checks bring the non-ladder set to 148; WP-08's nine L1 breadth checks
     bring it to 157; WP-09's three L1 transport checks (mTLS, SMTP transport, HTTP/3)
-    bring it to 160. The declaration is pinned here
+    bring it to 160; WP-10's five L1 identity/AI-surface checks (AD CS and the four
+    Agentic Top 10 reads) bring it to 165. The declaration is pinned here
     rather than merely permitted, so an accidental widening of any check's reach still fails.
     The number in a test name is churn, the property is not.
     """
     registry = ModuleRegistry.builtin()
     ladder = {m.id for m in registry.metadata() if m.proof.is_opt_in}
     original = [m for m in registry.metadata() if m.id not in ladder]
-    assert len(original) == 160
+    assert len(original) == 165
     assert all(m.proof in {ProofLevel.L0, ProofLevel.L1} for m in original)
     assert {m.id for m in original if m.proof is ProofLevel.L0} == {"m1.mobile-artifact"}
     assert all(not m.requires_state_attestation for m in original)

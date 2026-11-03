@@ -39,6 +39,7 @@ from arachne.core.errors import ConfigurationError
 from arachne.modules import lifecycle_policy
 from arachne.modules.framework_map import (
     api_top10_coverage,
+    asi_top10_coverage,
     cwe_top25_coverage,
     cwe_top25_framework,
     framework_versions,
@@ -563,6 +564,8 @@ class CoverageLedger:
     framework_versions: Mapping[str, str] = field(default_factory=dict)
     cwe_items: tuple[dict[str, Any], ...] = ()
     cwe_version: str = ""
+    #: The Agentic Top 10 per-item states (REQ-DET-013). Empty only for a ledger built by hand.
+    asi_items: tuple[dict[str, Any], ...] = ()
     registry_version: str = REGISTRY_VERSION
     ledger_version: str = LEDGER_VERSION
 
@@ -596,6 +599,14 @@ class CoverageLedger:
             "total": len(self.api_items),
         }
 
+    def asi_counts(self) -> dict[str, Any]:
+        """The REQ-DET-013 tally: ``mapped / 10`` with every unmapped item named as a gap."""
+        return {
+            "mapped": sum(1 for item in self.asi_items if item["state"] == "mapped"),
+            "total": len(self.asi_items),
+            "gap": [str(item["id"]) for item in self.asi_items if item["state"] == "gap"],
+        }
+
     def cwe_counts(self) -> dict[str, dict[str, Any]]:
         """The REQ-DET-004 tally: in-scope coverage first, the full 25 beside it."""
 
@@ -626,6 +637,7 @@ class CoverageLedger:
             },
             "wstg": self.wstg_counts(),
             "api_top10": self.api_counts(),
+            "asi_top10": {**self.asi_counts(), "items": [dict(item) for item in self.asi_items]},
             "cwe_top25": {
                 "version": self.cwe_version,
                 **self.cwe_counts(),
@@ -719,12 +731,22 @@ def build_ledger(
         }
         for state in cwe_top25_coverage(by_cwe)
     )
+    asi_items = tuple(
+        {
+            "id": state.id,
+            "state": state.state,
+            "title": state.item.title,
+            "checks": list(state.checks),
+        }
+        for state in asi_top10_coverage(by_item)
+    )
     return CoverageLedger(
         generated_at=date,
         records=tuple(records),
         wstg_items=wstg_items,
         api_items=api_items,
         cwe_items=cwe_items,
+        asi_items=asi_items,
         cwe_version=cwe_top25_framework().version,
         registry_digest=registry_digest(registry),
         framework_versions=framework_versions(),
@@ -740,6 +762,7 @@ def render_ledger_markdown(ledger: CoverageLedger) -> str:
     """The committed Markdown ledger: the same data, readable in a diff."""
     wstg = ledger.wstg_counts()
     api = ledger.api_counts()
+    asi = ledger.asi_counts()
     cwe = ledger.cwe_counts()
     versions = ", ".join(f"{name} {version}" for name, version in ledger.framework_versions.items())
     lines = [
@@ -758,6 +781,8 @@ def render_ledger_markdown(ledger: CoverageLedger) -> str:
         f"- WSTG v4.2: **{wstg['mapped']}/{wstg['total']} mapped**, "
         f"{wstg['in_scope']} in scope, {wstg['out_of_scope']} out of scope, {wstg['gap']} gap",
         f"- OWASP API Top 10 (2023): **{api['mapped']}/{api['total']} mapped**",
+        f"- OWASP Agentic Top 10 (2026): **{asi['mapped']}/{asi['total']} mapped**; gap: "
+        + (", ".join(f"`{item}`" for item in asi["gap"]) if asi["gap"] else "none"),
         f"- CWE Top 25 (2025), in scope: **{cwe['in_scope']['covered']}/"
         f"{cwe['in_scope']['total']} covered**; all 25: "
         f"{cwe['all']['covered']}/{cwe['all']['total']}",
@@ -795,6 +820,21 @@ def render_ledger_markdown(ledger: CoverageLedger) -> str:
         "|---|---|---|---|",
     ]
     for item in ledger.api_items:
+        checks = ", ".join(f"`{check}`" for check in item["checks"]) or "—"
+        lines.append(f"| `{item['id']}` | {item['state']} | {checks} | {item['title']} |")
+    lines += [
+        "",
+        f"## OWASP Agentic Top 10 (2026) — {asi['mapped']}/{asi['total']} mapped (REQ-DET-013)",
+        "",
+        "An item is `mapped` when at least one registered check names it in its framework",
+        "mapping (`CheckMetadata.framework`) and `gap` when none does. The unmapped items are",
+        "named individually: they are the requirement's remaining coverage debt, not a silent",
+        "shortfall.",
+        "",
+        "| ASI id | State | Checks | Item |",
+        "|---|---|---|---|",
+    ]
+    for item in ledger.asi_items:
         checks = ", ".join(f"`{check}`" for check in item["checks"]) or "—"
         lines.append(f"| `{item['id']}` | {item['state']} | {checks} | {item['title']} |")
     lines += [

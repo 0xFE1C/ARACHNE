@@ -53,6 +53,7 @@ __all__ = [
     "FrameworkItem",
     "WstgState",
     "api_top10_coverage",
+    "asi_top10_coverage",
     "cwe_top25_coverage",
     "cwe_top25_framework",
     "framework",
@@ -325,7 +326,24 @@ def wstg_coverage(mapped: Mapping[str, Sequence[str]]) -> tuple[WstgState, ...]:
 
 def api_top10_coverage(mapped: Mapping[str, Sequence[str]]) -> tuple[WstgState, ...]:
     """The ten API Top 10 ids with their mapped checks (REQ-DET-005)."""
-    spec = framework("API")
+    return _item_coverage("API", mapped)
+
+
+def asi_top10_coverage(mapped: Mapping[str, Sequence[str]]) -> tuple[WstgState, ...]:
+    """The ten Agentic Top 10 ids with their mapped checks (REQ-DET-013).
+
+    Every ASI item is authored ``in_scope``, so the state is ``mapped`` when a registered check
+    names it and ``gap`` when none does. That is how the ledger reports ``asi.mapped / 10`` with
+    the unmapped items named individually rather than only as a shortfall.
+    """
+    return _item_coverage("ASI", mapped)
+
+
+def _item_coverage(
+    framework_name: str, mapped: Mapping[str, Sequence[str]]
+) -> tuple[WstgState, ...]:
+    """``(mapped | gap)`` per pinned item of a framework whose whole list is in scope."""
+    spec = framework(framework_name)
     return tuple(
         WstgState(
             item=item,

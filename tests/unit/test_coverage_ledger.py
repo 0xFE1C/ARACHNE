@@ -55,6 +55,17 @@ WP08_IDS: frozenset[str] = frozenset(
 #: WP-09's three protocol-surface checks (REQ-DET-006/011/012); excluded for the same reason.
 WP09_IDS: frozenset[str] = frozenset({"m2.tls-mutual-auth", "m2.smtp-transport", "m2.http3-probe"})
 
+#: WP-10's identity-and-AI-surface checks (REQ-DET-013/014); excluded for the same reason.
+WP10_IDS: frozenset[str] = frozenset(
+    {
+        "m2.adcs-enum",
+        "m6.agentic-tool-manifest",
+        "m6.agentic-memory-store",
+        "m6.agentic-human-trust",
+        "m6.agentic-rogue-runtime",
+    }
+)
+
 
 @pytest.fixture(scope="module")
 def registry() -> ModuleRegistry:
@@ -116,9 +127,11 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     mcp = {record.id for record in ledger.records if record.id.startswith("m6.mcp-")}
     wp08 = {record.id for record in ledger.records if record.id in WP08_IDS}
     wp09 = {record.id for record in ledger.records if record.id in WP09_IDS}
-    assert len(ids - mcp - wp08 - wp09) == 152
+    wp10 = {record.id for record in ledger.records if record.id in WP10_IDS}
+    assert len(ids - mcp - wp08 - wp09 - wp10) == 152
     assert len(mcp) == 3
     assert len(wp08) == 9
+    assert len(wp10) == 5
 
 
 # ------------------------------------------------------------------ REQ-DET-003 WSTG

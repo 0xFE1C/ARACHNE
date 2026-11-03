@@ -56,10 +56,14 @@ __all__ = [
 
 _logger = get_logger("creds.broker")
 
-#: Which credential kind a raw-protocol authenticator may draw on.
+#: Which credential kind a raw-protocol authenticator may draw on. ``ldap`` was added by WP-10
+#: (REQ-DET-014) for the read-only AD CS enumeration: the check supplies an ``Authenticator``,
+#: the broker releases the material for exactly one bind, and the scope check, the audit record
+#: and the redaction rules are unchanged.
 PROTOCOL_KINDS: Mapping[str, tuple[str, ...]] = {
     "smb": ("smb",),
     "ssh": ("ssh",),
+    "ldap": ("ldap",),
 }
 
 

@@ -59,6 +59,7 @@ __all__ = [
     "bson_decode_document",
     "bson_encode_document",
     "build_ldap_bind_request",
+    "build_ldap_search",
     "build_ldap_search_request",
     "build_snmp_get",
     "dnp3_crc",
@@ -67,8 +68,11 @@ __all__ = [
     "dns_query",
     "dns_tcp_payload",
     "encode_dns_name",
+    "iter_ldap_messages",
     "kerberos_as_req",
     "kerberos_error_code",
+    "ldap_filter_or",
+    "ldap_filter_present",
     "md4",
     "memcached_stats",
     "memcached_values",
@@ -710,6 +714,95 @@ def parse_ldap_message(data: bytes) -> LdapMessage | None:
         attributes=attributes,
         raw=data[:2048],
     )
+
+
+#: LDAP application tags this build *names*. The read-only ones are used; the write ones are
+#: named so a test can assert that nothing in the tree constructs them (REQ-DET-014).
+LDAP_BIND_REQUEST = 0x60
+LDAP_BIND_RESPONSE = 0x61
+LDAP_SEARCH_REQUEST = 0x63
+LDAP_SEARCH_DONE = 0x65
+LDAP_MODIFY_REQUEST = 0x66
+LDAP_ADD_REQUEST = 0x68
+LDAP_DELETE_REQUEST = 0x4A
+LDAP_EXTENDED_REQUEST = 0x77
+
+#: Every LDAP operation that *changes* the directory. ARACHNE builds none of them.
+LDAP_WRITE_TAGS: frozenset[int] = frozenset(
+    {LDAP_MODIFY_REQUEST, LDAP_ADD_REQUEST, LDAP_DELETE_REQUEST}
+)
+
+LDAP_SCOPE_BASE = 0
+LDAP_SCOPE_ONE = 1
+LDAP_SCOPE_SUBTREE = 2
+
+#: How many messages one reply stream may be split into — a bound on a hostile server.
+MAX_LDAP_MESSAGES = 512
+
+
+def ldap_filter_present(attribute: str) -> bytes:
+    """A ``present`` filter ``(attr=*)``: context tag ``[7]`` with the attribute description."""
+    return ber_tlv(0xA7, attribute.encode())
+
+
+def ldap_filter_or(parts: Sequence[bytes]) -> bytes:
+    """An ``or`` filter ``(|(a)(b)...)``: context tag ``[0]`` over the sub-filters."""
+    return ber_tlv(0xA0, b"".join(parts))
+
+
+def build_ldap_search(
+    message_id: int,
+    base_dn: str,
+    *,
+    scope: int = LDAP_SCOPE_SUBTREE,
+    attributes: Sequence[str] = (),
+    filter_body: bytes | None = None,
+    size_limit: int = 512,
+    time_limit: int = 10,
+) -> bytes:
+    """One ``searchRequest`` with an explicit scope, filter and attribute list.
+
+    Deliberately *separate* from :func:`build_ldap_search_request`, which stays the fixed
+    base-object rootDSE read of research ch02#18: extending the ADCS enumeration must not be
+    able to change what the older check puts on the wire. ``filter_body`` is a pre-built
+    filter (the helpers above); it defaults to the ``(objectClass=*)`` present filter.
+    """
+    base = ber_tlv(0x04, base_dn.encode())
+    scope_tlv = ber_tlv(0x0A, ber_int(scope))
+    deref = ber_tlv(0x0A, ber_int(0))  # neverDerefAliases
+    size = ber_tlv(0x02, ber_int(max(1, size_limit)))
+    time = ber_tlv(0x02, ber_int(max(1, time_limit)))
+    types_only = ber_tlv(0x01, b"\x00")
+    present = filter_body if filter_body is not None else ldap_filter_present("objectClass")
+    attrs = ber_tlv(0x30, b"".join(ber_tlv(0x04, name.encode()) for name in attributes))
+    body = base + scope_tlv + deref + size + time + types_only + present + attrs
+    return ber_tlv(0x30, ber_tlv(0x02, ber_int(message_id)) + ber_tlv(0x63, body))
+
+
+def iter_ldap_messages(data: bytes, *, limit: int = MAX_LDAP_MESSAGES) -> tuple[LdapMessage, ...]:
+    """Every ``LDAPMessage`` in a stream of replies (RFC 4511 §4.1).
+
+    A directory answers one search with many ``searchResEntry`` messages and one
+    ``searchResDone``, so a reader that stops at the first message sees a single entry. The
+    split is on top-level SEQUENCE TLVs — BER is self-delimiting — and each message is decoded
+    by :func:`parse_ldap_message`. A truncated tail is ignored, which is the honest outcome for
+    a bounded read: the entries that arrived are what was observed.
+    """
+    messages: list[LdapMessage] = []
+    reader = BerReader(data)
+    while not reader.eof and len(messages) < limit:
+        start = reader.pos
+        try:
+            tag, _ = reader.read_tlv()
+        except ValueError:
+            break
+        if tag != 0x30:
+            break
+        parsed = parse_ldap_message(data[start : reader.pos])
+        if parsed is None:
+            break
+        messages.append(parsed)
+    return tuple(messages)
 
 
 # --------------------------------------------------------------------------- SNMP (ch02#15)

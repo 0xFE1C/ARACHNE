@@ -765,6 +765,12 @@ class WebLab:
     #: that answers 401 with a bearer challenge. That is the false-positive trap the MCP
     #: checks must stay silent on.
     mcp_conformant: bool = False
+    #: ------------------------------------------------------------------ WP-10 agentic family
+    #: When set, the OWASP Agentic Top 10 routes serve the *hardened* deployment instead of the
+    #: planted one (REQ-DET-013): an authorization challenge on the tool manifest and the agent
+    #: runtime, a benign tool list, an empty collection listing and a policy that keeps human
+    #: confirmation. That is the false-positive trap the four ASI checks must stay silent on.
+    agentic_hardened: bool = False
 
     def session_user(self, token: str | None) -> str | None:
         return self.sessions.get(token or "") if token else None
@@ -2073,6 +2079,160 @@ class _Handler(BaseHTTPRequestHandler):
             cookies=(f"session={secrets.token_hex(8)}; path=/",),
         )
 
+    # ------------------------------------------------------------------ WP-10 agentic family
+    def _agentic_challenge(self) -> None:
+        """The hardened deployment's answer: a challenge, so the surface is not published."""
+        self._respond(
+            401,
+            json.dumps({"error": "unauthorized"}),
+            content_type="application/json",
+            headers={"WWW-Authenticate": 'Bearer realm="agent-lab"'},
+            cookies=(),
+        )
+
+    def _agentic_tool_manifest(self, query: dict[str, list[str]]) -> None:
+        """An agent tool manifest: unauthenticated with destructive tools (or the decoy pair)."""
+        if self.lab.agentic_hardened:
+            self._agentic_challenge()
+            return
+        self._respond(
+            200,
+            json.dumps(
+                {
+                    "name": "lab-agent",
+                    "version": "1.0",
+                    "tools": [
+                        {
+                            "name": "run_shell",
+                            "description": "Execute a shell command on the agent host",
+                        },
+                        {
+                            "name": "get_customer",
+                            "description": "Look up a customer record by id",
+                        },
+                    ],
+                }
+            ),
+            content_type="application/json",
+            cookies=(),
+        )
+
+    def _agentic_tool_manifest_benign(self, query: dict[str, list[str]]) -> None:
+        """The decoy's second route: a served manifest that declares only benign tools."""
+        self._respond(
+            200,
+            json.dumps(
+                {
+                    "name": "lab-agent",
+                    "tools": [
+                        {"name": "get_customer", "description": "Look up a customer record by id"},
+                        {"name": "get_weather", "description": "Read the local weather report"},
+                    ],
+                }
+            ),
+            content_type="application/json",
+            cookies=(),
+        )
+
+    def _agentic_memory(self, query: dict[str, list[str]]) -> None:
+        """An agent memory store: an unauthenticated collection listing (or the challenge)."""
+        if self.lab.agentic_hardened:
+            self._agentic_challenge()
+            return
+        self._respond(
+            200,
+            json.dumps(
+                {
+                    "collections": ["support-notes", "release-faq"],
+                    "size": 2,
+                    "embedding_model": "lab-embed-1",
+                }
+            ),
+            content_type="application/json",
+            cookies=(),
+        )
+
+    def _agentic_collections_benign(self, query: dict[str, list[str]]) -> None:
+        """The decoy's second route: a served document that is not a memory listing."""
+        self._respond(
+            200,
+            json.dumps({"status": "ok", "collections": []}),
+            content_type="application/json",
+            cookies=(),
+        )
+
+    def _agentic_policy(self, query: dict[str, list[str]]) -> None:
+        """An agent policy: autonomous with no confirmation (or the confirmation-preserving one)."""
+        if self.lab.agentic_hardened:
+            self._respond(
+                200,
+                json.dumps(
+                    {
+                        "agent": {
+                            "name": "lab-agent",
+                            "requires_confirmation": True,
+                            "human_in_the_loop": True,
+                            "approval_mode": "manual",
+                        }
+                    }
+                ),
+                content_type="application/json",
+                cookies=(),
+            )
+            return
+        self._respond(
+            200,
+            json.dumps(
+                {
+                    "agent": {
+                        "name": "lab-agent",
+                        "auto_approve": True,
+                        "human_in_the_loop": False,
+                        "max_steps": 50,
+                    }
+                }
+            ),
+            content_type="application/json",
+            cookies=(),
+        )
+
+    def _agentic_policy_benign(self, query: dict[str, list[str]]) -> None:
+        """The decoy's second route: a policy that keeps its confirmation gate."""
+        self._respond(
+            200,
+            json.dumps({"confirmation": "required", "autonomous": False}),
+            content_type="application/json",
+            cookies=(),
+        )
+
+    def _agentic_runtime(self, query: dict[str, list[str]]) -> None:
+        """An agent runtime self-description: unauthenticated (or the challenge)."""
+        if self.lab.agentic_hardened:
+            self._agentic_challenge()
+            return
+        self._respond(
+            200,
+            json.dumps(
+                {
+                    "model": "lab-model-7b",
+                    "framework": "lab-agent-runtime",
+                    "tools": ["run_shell", "get_customer"],
+                    "uptime": 1234,
+                }
+            ),
+            content_type="application/json",
+            cookies=(),
+        )
+
+    def _agentic_runtime_benign(self, query: dict[str, list[str]]) -> None:
+        """The decoy's second route: a served document that describes no agent runtime."""
+        self._respond(
+            200,
+            json.dumps({"status": "ok", "version": "2"}),
+            content_type="application/json",
+            cookies=(),
+        )
+
     # ------------------------------------------------------------------ S19 authenticated area
     def _auth_cookie(self) -> str | None:
         """The session token from the request's Cookie header (``AUTH_SID=<token>``)."""
@@ -2391,6 +2551,15 @@ _Handler._ROUTES = {
     "/.well-known/oauth-protected-resource": _Handler._mcp_protected_resource,
     "/.well-known/oauth-authorization-server": _Handler._mcp_auth_server,
     "/mcp": _Handler._mcp_endpoint,
+    # ------------------------------------------------------------------ M6 agentic family (WP-10)
+    "/.well-known/mcp.json": _Handler._agentic_tool_manifest,
+    "/mcp/tools": _Handler._agentic_tool_manifest_benign,
+    "/api/memory": _Handler._agentic_memory,
+    "/v1/collections": _Handler._agentic_collections_benign,
+    "/.well-known/agent-policy.json": _Handler._agentic_policy,
+    "/agent/config": _Handler._agentic_policy_benign,
+    "/api/agent/status": _Handler._agentic_runtime,
+    "/agent/status": _Handler._agentic_runtime_benign,
 }
 _Handler._POST_ROUTES = {
     "/upload": _Handler._upload,
@@ -2472,7 +2641,10 @@ def _read_ws_frame(stream: Any) -> tuple[int, bytes] | None:
 
 @contextmanager
 def start_web_lab(
-    *, callback_base: str | None = None, mcp_conformant: bool = False
+    *,
+    callback_base: str | None = None,
+    mcp_conformant: bool = False,
+    agentic_hardened: bool = False,
 ) -> Iterator[WebLab]:
     """Start the lab on loopback and yield its handle; tear it down on exit.
 
@@ -2482,6 +2654,9 @@ def start_web_lab(
 
     ``mcp_conformant`` flips the three MCP routes to a conformant server (WP-07): the decoy the
     MCP check family must stay silent on.
+
+    ``agentic_hardened`` flips the Agentic Top 10 routes to the hardened deployment (WP-10):
+    the decoy the four ASI checks must stay silent on.
     """
     import sqlite3
 
@@ -2497,6 +2672,7 @@ def start_web_lab(
         poc_db=db,
         db_lock=threading.Lock(),
         mcp_conformant=mcp_conformant,
+        agentic_hardened=agentic_hardened,
     )
     handler = type("_BoundHandler", (_Handler,), {"lab": lab})
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)

@@ -42,6 +42,7 @@ check                                    ref         what it establishes
 ``m2.tls-mutual-auth``                   ch02#14     client-certificate enforcement (WP-09)
 ``m2.smtp-transport``                    ch02#20     STARTTLS, AUTH and relay posture (WP-09)
 ``m2.http3-probe``                       ch02#12     HTTP/3 transport parity (optional extra)
+``m2.adcs-enum``                         ch02#18     AD CS templates/CA, read-only (WP-10, L1)
 ======================================  ==========  ==========================================
 
 **Safety.** Every check here is active (they all contact the target) except ``cve-correlate``,
@@ -63,6 +64,7 @@ canonical corpus numbers; the check **ids** are exactly the spec's. See ADR-080.
 from __future__ import annotations
 
 from arachne.modules.base import Module
+from arachne.modules.m2.adcs import AdcsEnumeration
 from arachne.modules.m2.credentialed import SmbAuth
 from arachne.modules.m2.datastores import DbServiceProbe
 from arachne.modules.m2.directory import KerberosEnum, LdapEnum, NfsEnum, SmbEnum
@@ -131,6 +133,9 @@ M2_CHECKS: tuple[type[Module], ...] = (
     GrpcReflection,
     GrpcMetadataLeak,
     OtProtocolProbe,
+    # WP-10 (REQ-DET-014): the read-only AD CS enumeration. Credentialed (kind ``ldap``), L1,
+    # and read-only by construction: it reads two LDAP object classes and never reaches the CA.
+    AdcsEnumeration,
 )
 
 #: The M2 module group . Bump the version when the check set or a check's
@@ -146,9 +151,12 @@ M2 = ModuleGroup(
         "protocols (Modbus/BACnet via m2.ics-probe, S7comm and DNP3 via m2.ot-protocol-probe), "
         "and the WP-09 protocol surface: mutual-TLS enforcement (m2.tls-mutual-auth), SMTP "
         "STARTTLS/AUTH/relay posture (m2.smtp-transport) and HTTP/3 transport parity "
-        "(m2.http3-probe, behind the optional `quic` extra)."
+        "(m2.http3-probe, behind the optional `quic` extra), and the WP-10 identity surface: "
+        "read-only AD CS template and CA enumeration over LDAP (m2.adcs-enum), which reports "
+        "the configuration conditions associated with the published ESC classes and never "
+        "attempts exploitation."
     ),
-    version="1.3.0",
+    version="1.4.0",
     research_chapter="ch02",
     checks=M2_CHECKS,
 )
