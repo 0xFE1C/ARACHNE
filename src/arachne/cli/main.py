@@ -6,8 +6,10 @@
     plan a scan, run one, or resume an interrupted one (S2: F-01-03/04/10)
 ``arachne agent [--name NAME] [--api-url URL --api-key KEY] [--once]``
     run a worker of the scan fleet (S16): register, lease, execute, heartbeat, ack
-``arachne db upgrade [REVISION]``
-    apply Alembic migrations (``head`` by default)
+``arachne db upgrade [REVISION] [--dry-run] [--allow-destructive]``
+    apply Alembic migrations (``head`` by default); ``--dry-run`` prints the SQL instead
+``arachne db migrations --check``
+    every migration's reversibility declaration, and a gate on it (WP-18, REQ-OPS-008)
 ``arachne db current``
     show the applied revision and whether it is up to date
 ``arachne fuzz run PLAN``
@@ -18,9 +20,10 @@
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from alembic import command
@@ -46,6 +49,7 @@ from arachne.cli.integrity import integrity_app, verify_chain_command
 from arachne.cli.intel import intel_app
 from arachne.cli.module import coverage_app, module_app
 from arachne.cli.observability import metrics_command
+from arachne.cli.ops import slo_app
 from arachne.cli.packs import packs_app
 from arachne.cli.plugin import plugin_app
 from arachne.cli.posture import app as posture_app
@@ -66,6 +70,14 @@ from arachne.core.config import Settings, get_settings
 from arachne.core.errors import ArachneError
 from arachne.core.logging import configure_logging, get_logger
 from arachne.core.tracing import configure_tracing
+from arachne.resil.migrations import (
+    UnsupportedDryRunError,
+    current_revision,
+    declarations,
+    dry_run_sql,
+    irreversible,
+    pending_declarations,
+)
 
 __all__ = ["app", "run"]
 
@@ -125,6 +137,8 @@ app.add_typer(iac_app, name="iac")
 app.add_typer(integrity_app, name="integrity")
 app.add_typer(packs_app, name="packs")
 app.add_typer(dr_app, name="dr")
+# WP-18 (REQ-OPS-007): the service-level objectives, their error budgets and their alerts.
+app.add_typer(slo_app, name="slo")
 # WP-16 (REQ-ECOS-009): the versioned outbound webhook event catalogue.
 app.add_typer(events_app, name="events")
 # S27: remediation as code — propose, approve, submit, verify (area FIX).
@@ -223,12 +237,107 @@ def db_upgrade(
     database_url: Annotated[
         str | None, typer.Option("--database-url", help="Override ARACHNE_DATABASE_URL.")
     ] = None,
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="Print the SQL without running any of it (REQ-OPS-008)."),
+    ] = False,
+    allow_destructive: Annotated[
+        bool,
+        typer.Option(
+            "--allow-destructive",
+            help="Acknowledge a migration that declares reversible: false.",
+        ),
+    ] = False,
+    json_output: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = False,
 ) -> None:
-    """Apply migrations up to REVISION (default: head)."""
+    """Apply migrations up to REVISION (default: head).
+
+    Every migration declares whether it is reversible. An upgrade whose pending range contains
+    a migration that does not declare itself reversible (or declares itself non-reversible) is
+    refused unless ``--allow-destructive`` says the operator means it; ``--dry-run`` prints the
+    SQL that would run and changes nothing.
+    """
     url = _resolve_database_url(database_url)
+    versions_dir = PROJECT_ROOT / "migrations" / "versions"
+    applied = current_revision(url)
+    pending = pending_declarations(versions_dir, current=applied, target=revision)
+    blocking = irreversible(pending)
+
+    if dry_run:
+        try:
+            run = dry_run_sql(url, target=revision)
+        except UnsupportedDryRunError as exc:
+            typer.echo(f"error: {exc}", err=True)
+            raise typer.Exit(code=2) from exc
+        report: dict[str, Any] = {
+            "database": url,
+            "current": applied,
+            "target": revision,
+            "method": run.method,
+            "pending": [item.to_dict() for item in pending],
+            "requires_allow_destructive": bool(blocking),
+            "statements": list(run.statements),
+        }
+        if json_output:
+            typer.echo(json.dumps(report, indent=2))
+        else:
+            typer.echo(f"dry run: {url} at {applied or '(none)'} -> {revision}")
+            for item in pending:
+                typer.echo(f"  pending {item.summary()}")
+            typer.echo(f"  SQL {run.method_note()}")
+            typer.echo(run.sql if run.statements else "-- nothing to do")
+            if blocking:
+                names = ", ".join(item.revision for item in blocking)
+                typer.echo(
+                    f"NOTE: {names} do not declare themselves reversible; the real upgrade "
+                    "will be refused without --allow-destructive",
+                    err=True,
+                )
+        return
+
+    if blocking and not allow_destructive:
+        names = ", ".join(f"{item.revision} ({item.name})" for item in blocking)
+        typer.echo(
+            f"REFUSED: {names} do not declare themselves reversible.\n"
+            "A migration without a working downgrade cannot be undone by rolling back.\n"
+            "Inspect the plan with `arachne db upgrade --dry-run`, then re-run with "
+            "--allow-destructive if the change is intended and the backup is verified.",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
     typer.echo(f"upgrading {url} to {revision}")
+    for item in pending:
+        typer.echo(f"  applying {item.summary()}")
     command.upgrade(_alembic_config(url), revision)
     typer.echo("done")
+
+
+@db_app.command("migrations")
+def db_migrations(
+    database_url: Annotated[
+        str | None, typer.Option("--database-url", help="Override ARACHNE_DATABASE_URL.")
+    ] = None,
+    check: Annotated[
+        bool, typer.Option("--check", help="Exit non-zero on an undeclared migration.")
+    ] = False,
+    json_output: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = False,
+) -> None:
+    """List every migration with its reversibility declaration (REQ-OPS-008)."""
+    versions_dir = PROJECT_ROOT / "migrations" / "versions"
+    items = declarations(versions_dir)
+    undeclared = [item for item in items if not item.declared]
+    if json_output:
+        typer.echo(json.dumps([item.to_dict() for item in items], indent=2))
+    else:
+        for item in items:
+            typer.echo(f"{item.revision}\t{item.name}\t{item.reversible!r}")
+    if check and undeclared:
+        names = ", ".join(item.revision for item in undeclared)
+        typer.echo(f"FAIL: no reversible declaration in {names}", err=True)
+        raise typer.Exit(code=1)
+    if check:
+        typer.echo(f"ok: {len(items)} migration(s) declare their reversibility")
 
 
 @db_app.command("downgrade")

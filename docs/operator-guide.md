@@ -2585,6 +2585,87 @@ scan farm:   3 replica(s) — queue depth 9 ÷ 4 per worker = 3
 A scale-to-zero decision waits out a cooldown, so a burst arriving between two scrapes does not
 make the farm thrash.
 
+**The metric, precisely.** The scaler reads `arachne_queue_depth{status="queued"}` — scans
+admitted and not yet leased, read from the database at scrape time so every worker reports the
+same number. The family's other three series (`leased`, `done`, `cancelled`) are for the
+dashboard, not for the scaler; the fleet's live work is carried unlabelled by
+`arachne_queue_leases`.
+
+**The starting threshold.** `queueDepthPerReplica: 4` means one worker per four queued scans.
+It is a starting point, not a measurement: size it from the published throughput
+(`benchmarks/envelope/envelope.json`, checks per minute per agent) against the arrival rate you
+actually see. Two ways to get it wrong:
+
+* **Too low** (1–2) makes the pool chase every burst, and the scale-down cooldown then removes
+  capacity the queue still needs.
+* **Too high** lets a backlog sit on too few workers, which shows up as a rising
+  `arachne_queue_oldest_age_seconds` while the replica count stays flat.
+
+The plain-HPA path needs a Prometheus adapter to publish the metric to the external-metrics API
+(the chart does not install one). A rule for a cluster already running `prometheus-adapter`:
+
+```yaml
+rules:
+  external:
+    - seriesQuery: 'arachne_queue_depth'
+      resources:
+        overrides:
+          namespace: {resource: "namespace"}
+      name:
+        matches: "^arachne_(.*)"
+        as: "arachne_$1"
+      metricsQuery: 'sum(<<.Series>>{<<.LabelMatchers>>,status="queued"})'
+```
+
+KEDA needs no adapter: its Prometheus scaler queries the API's `/metrics` directly.
+
+### 35.4 Upgrade safety: the dry run, the declaration, and the destructive gate (WP-18, REQ-OPS-008)
+
+Three things happen before a migration touches a database you care about.
+
+**1. Read the SQL first.** `--dry-run` prints exactly what would run and changes nothing:
+
+```bash
+arachne db upgrade --dry-run                 # the plan, then the SQL
+arachne db upgrade --dry-run --json          # the plan as JSON, for a review or a pipeline
+```
+
+Two renderings, named in the output rather than left to trust. On SQLite the statements are
+captured by applying the upgrade to a **throwaway snapshot** of the database (SQLite's own
+backup API, opened read-only) — the only way to render `batch_alter_table`, and the database
+itself is never opened for writing. On other dialects Alembic renders them offline in `--sql`
+mode, executing nothing at all. The command says which one it used, and why.
+
+**2. Every migration declares whether it is reversible.** The declaration is a line in the
+migration's own docstring (`reversible: true`), so it sits in the prose a reviewer already
+reads:
+
+```bash
+arachne db migrations            # revision, file, reversible — one line each
+arachne db migrations --check    # exit 1 if any migration declares nothing
+```
+
+The declaration is a *claim about the downgrade*, and `tests/unit/test_migrations.py` tests it
+per revision: upgrade to it, downgrade to its parent, and compare the schema with a fresh
+upgrade to that parent. At this release all 17 migrations measure reversible. A declaration
+that flatters a migration fails in CI rather than during a rollback — the only moment a
+downgrade ever matters.
+
+**3. A migration that does not declare itself reversible needs an acknowledgement.**
+
+```bash
+arachne db upgrade                       # refused, naming the revision and its file
+arachne db upgrade --allow-destructive   # proceed, having read the dry run
+```
+
+An *absent* declaration counts as non-reversible: the safe default is to ask. The refusal
+happens before anything connects, so a mistyped upgrade cannot half-apply on a hunch.
+
+**The populated-database case** is a test, not advice:
+`tests/unit/test_migrations.py::test_an_upgrade_from_two_versions_back_succeeds_on_a_populated_database`
+writes an estate through the ORM, rolls the schema back two revisions, upgrades again, and
+asserts every table's row count and the data are intact.
+
 ## 36. Disaster recovery (S25, REQ-RESIL-005)
 
 ### 36.1 The objectives
@@ -2659,6 +2740,50 @@ arachne scan --dry-run ...      # a smoke scan against a lab target
 | Weekly | verify a bundle by restoring it onto a scratch instance |
 | Monthly | full restore rehearsal on an isolated instance; record the measured RTO |
 | Per release | re-run the rehearsal; re-check `head_migration.expand_only` |
+
+### 36.5 The rehearsal, unattended (WP-18, REQ-OPS-010)
+
+The schedule above is advice. `arachne dr rehearse` is the mechanical version of it, and the
+one a scheduled job runs:
+
+```bash
+arachne dr rehearse --record var/dr/rehearsals.jsonl
+arachne dr rehearse --json --record var/dr/rehearsals.jsonl
+arachne dr rehearse --history --record var/dr/rehearsals.jsonl   # the trend
+```
+
+Five stages, each named and timed, because "the rehearsal failed" is not actionable at 3 a.m.:
+
+| Stage | What it proves |
+|---|---|
+| `backup` | a full, signed bundle can be written from the source database |
+| `restore` | the bundle loads into a **scratch** database the rehearsal created |
+| `row-counts` | every table's restored count equals the count its manifest declares |
+| `audit-chain` | the restored copy's chain, anchors and row signatures verify (INV-8) |
+| `objectives` | the measured RTO and RPO are inside the declared objectives |
+
+The source database is only ever read; the scratch database and the bundle are removed at the
+end (keep them with `--keep-scratch`). Nothing needs a cluster: the scratch database is a fresh
+SQLite file, so the rehearsal runs on a laptop, in CI, and in a staging namespace alike.
+
+**The two measured numbers**, defined precisely because a vague RTO is one nobody can falsify:
+
+* **measured RTO** — wall-clock from the start of the rehearsal to the end of verification:
+  how long until the deployment could serve again with a state it trusts.
+* **measured RPO** — the age, at the moment the backup began, of the newest row the source
+  holds: how far back the recovery point takes you, and therefore what a restore would lose.
+
+**It fails loudly.** A broken stage prints the stage's name and exits non-zero; nothing is
+reported as a pass on the strength of the stages before it. A run that restores correctly but
+exceeds an objective also fails — recovering, but too slowly, is a failed rehearsal, not a pass
+with a note. Every run appends one JSON line (pass or fail) to the record file, so "we rehearse
+monthly" is a file of measurements rather than a claim.
+
+**On a schedule.** `.github/workflows/rehearsal.yml` runs it nightly in CI — a non-production
+environment with a populated SQLite database — and uploads the record as an artefact. Point it
+at staging instead with `--database-url` and an `ARACHNE_INTEGRITY_KEY`, and the rehearsal will
+exercise the signature check too (without a key it says so in its notes rather than pretending
+it did).
 
 ## 37. Verifying the trail: `arachne verify-chain` (S25, REQ-TRUST-005)
 
@@ -4039,3 +4164,170 @@ cooldown rather than once per request.
 
 **Release checklist.** `tests/perf` green, both gates above passing, and the two
 `benchmarks/` JSON files committed. The full list is in [performance.md](performance.md) §8.
+
+## 52. Service-level objectives and error budgets (WP-18, REQ-OPS-007)
+
+This is the runbook the alerts link to. The objectives, the budgets and the alert rules are
+versioned artefacts in the repository, not panels in somebody's Grafana:
+
+| Path | What it is |
+|---|---|
+| `deploy/observability/slos/` | the objectives: target, window, measurement query |
+| `deploy/observability/alerts/arachne-slo-burn.yaml` | the generated recording rules and burn alerts |
+| `deploy/observability/dashboards/arachne-slo.json` | the generated Grafana dashboard, one panel pair per objective |
+
+A dashboard is a shipped artefact for the same reason the alerts are: a panel measuring the
+wrong thing is indistinguishable from a healthy service. Both files are generated from the
+definitions (`deploy/observability/README.md` says how to load them), and both are checked —
+`--check` fails when either has drifted, and every PromQL expression a panel carries goes
+through the same metric contract as the definitions themselves.
+
+```bash
+arachne slo show                 # every objective: target, budget, query, alert thresholds
+arachne slo check                # the contract test + a check that the rules are in step
+python -m arachne.ops.slo --render   # rewrite the alert rules from the definitions
+```
+
+The contract test (`tests/unit/test_slo_contract.py`) resolves every metric, label and
+histogram bucket a definition names against the families `GET /metrics` actually exposes. A
+definition that measures something nobody publishes fails there, rather than turning into an
+empty panel that reads as "healthy".
+
+**The three objectives**
+
+| Objective | Indicator | Target | Window |
+|---|---|---|---|
+| `api-availability` | requests answered outside 5xx ÷ all requests | 99.9 % | 30 d |
+| `api-latency` | requests within 500 ms ÷ all requests | 99 % | 30 d |
+| `scan-completion` | scans completed ÷ finished scans | 95 % | 7 d |
+
+A 4xx is **not** an error-budget event here: the API is authenticated and deny-by-default, so a
+rejected request is the control working. `aborted` scans are not failures either — an operator
+cancelling a scan is a decision. Both exclusions are stated in the definition files.
+
+### 52.1 Availability: the API answers
+
+*What fired:* `ArachneSloApiAvailabilityPageBurn` (fast) or `…TicketBurn` (slow).
+
+*What it means.* The fraction of requests answered outside 5xx is below 99.9 % over the window,
+and the deployment is spending its error budget faster than 14.4× (page) or 6× (slow ticket).
+
+*First moves.*
+
+1. `arachne metrics | grep arachne_api_requests_total` — which status class is moving: `5xx`
+   rising, or total traffic collapsing (a scrape-target problem, not an outage)?
+2. `kubectl logs` / `journalctl` for `level=ERROR` in the last hour; a 5xx from ARACHNE is
+   almost always a store or a credential problem, not the network.
+3. `arachne db current` — a half-applied migration is the classic cause of a 5xx spike.
+4. If the cause is a bad release: `arachne db upgrade --dry-run` before any rollback, and
+   `tests/unit/test_migrations.py` tells you which revisions can be reversed.
+
+*Do not:* silence the alert to get the budget back. The budget is the measurement; the fix is
+the response.
+
+### 52.2 Latency: the API is fast enough
+
+*What fired:* `ArachneSloApiLatencyPageBurn` (fast) or `…TicketBurn` (slow).
+
+*What it means.* Fewer than 99 % of requests are answered within 500 ms — the same 500 ms
+ceiling `python -m arachne.tools.envelope --gate` holds a release to.
+
+*First moves.*
+
+1. `python -m arachne.tools.envelope --gate` on the current build: is this a regression, or did
+   the estate grow past the measured envelope?
+2. `python -m arachne.tools.envelope` prints the hardware and dataset it measured on; a p95 that
+   moved without a dataset change is a regression against the committed
+   `benchmarks/envelope/envelope.json`.
+3. Check the read path: a report+analysis read is budgeted at 8 queries; the measured count is
+   in the envelope report. A rising count means an endpoint lost its batching.
+4. `arachne db tables` and the database's own slow-query log — an unindexed scan over
+   `findings` shows up here first.
+
+### 52.3 Scan completion: the queue drains
+
+*What fired:* `ArachneSloScanCompletionPageBurn` (fast) or `…TicketBurn` (slow).
+
+*What it means.* More than 5 % of finished scans are failing. Only `completed` and `failed`
+count: a queue that is merely long is not a completion failure.
+
+*First moves.*
+
+1. `arachne dr status` — queue depth, live leases and the scaling decision in one view.
+2. `arachne metrics | grep -E 'arachne_scans_total|arachne_queue_'` — failures by status, and
+   whether the farm is scaled to the queue.
+3. `arachne scans list` (or the UI) for the failing scans, then `arachne report` on one of them:
+   a systematic failure names its cause in the audit trail.
+4. If the failures are target-side (timeouts against one estate), it is a scope or an attestation
+   conversation, not a capacity one.
+
+### 52.4 The alerts, and what to do at 3 a.m.
+
+Each objective gets two burn-rate alerts, the multi-window pair from the SRE workbook:
+
+| Rule | Threshold | For | Severity |
+|---|---|---|---|
+| `…PageBurn` | 14.4× the budget (2 % of a 30-day budget in 1 h) | 2 m | `page` |
+| `…TicketBurn` | 6× the budget (5 % in 6 h) | 15 m | `ticket` |
+
+The burn rate is `(1 - SLI) / error_budget`, computed by a recording rule the same file
+defines, so what the alert compares against its threshold is the arithmetically meaningful
+quantity rather than a ratio to convert in your head. Both alerts carry `slo`, `service` and
+`owner` labels and a `runbook_url` pointing at the relevant subsection above.
+
+**At 3 a.m., the fast alert is the one to act on.** It fires within minutes of a real outage and
+it is designed to be rare; the slow alert is a ticket you triage in the morning. If a fast alert
+fires and the service looks fine, suspect the *measurement* — a scrape target that stopped being
+scraped shows up as a collapsing denominator — before you suspect the alert.
+
+### 52.5 Changing an objective
+
+1. Edit the definition in `deploy/observability/slos/`.
+2. `python -m arachne.ops.slo --render` to regenerate the alerts.
+3. `arachne slo check` — it fails if a definition names a metric the endpoint does not expose,
+   if the objective window is not the window the query measures, or if the committed rules and
+   the definitions disagree.
+4. Update the subsection above if the response changed. An alert whose runbook is wrong is worse
+   than no alert.
+
+## 53. Mutation testing the safety core (WP-18, REQ-QUAL-008)
+
+Coverage says a line ran. Mutation says the assertion would have noticed if the line were
+wrong. On the scope gate, the proof ladder, the audit chain and the SQL proof helper, "the test
+would not notice" is the one answer that is unacceptable — so the same mutants the gate uses in
+CI are available to you:
+
+```bash
+python -m arachne.fuzz.mutate --list                 # every mutant, no tests run
+python -m arachne.fuzz.mutate --sample 12 --check     # the pull-request subset, gated
+python -m arachne.fuzz.mutate --check --json          # the full run, gated
+```
+
+**It needs the project's interpreter on `PATH`** (`source .venv/bin/activate`). Each mutant is
+run in a subprocess with `python -m pytest`; if that `python` cannot import this project the
+gate refuses to start and says so, rather than reporting a screen of errored mutants.
+
+**How a mutant is judged.** The module's source is parsed, one node is altered, and the real
+test suite runs against the altered module — nothing is stubbed, and the working tree is never
+touched. The verdicts:
+
+* **killed** — at least one test failed. The suite noticed.
+* **survived** — the run passed. The suite did not notice; this is the finding.
+* **timeout** — the mutant hung the suite. Counted as killed: the suite did notice.
+* **error** — the mutant could not be collected. Counted as neither: crediting a crash as
+  detection would inflate the score. A mutant the loader never managed to install also lands
+  here, so a broken gate cannot look like a strong one.
+* **allowed** — a curated entry in `[tool.arachne.mutation.allowlist]` in `pyproject.toml`: a
+  mutant that is genuinely equivalent to the original, so no test could ever kill it. Every
+  entry carries a written reason, and the gate **fails when an entry no longer matches a
+  mutant** — an allowlist that only grows is how a gate stops being a gate.
+
+**Responding to a survivor.** A surviving mutant is a test gap, and the fix is a test, not an
+allowlist entry. Read the mutant's location, ask what assertion would have failed, and add it.
+Allowlisting is for mutants that cannot change behaviour — a `frozen=True` flag, say — and only
+with the reason written down.
+
+**Bounded runtime.** `--sample N` takes every k-th mutant deterministically for a pull request;
+the nightly job runs the whole set. `--budget-seconds` stops a run and says it stopped early
+rather than holding a job open.
+

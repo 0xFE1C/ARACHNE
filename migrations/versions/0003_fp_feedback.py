@@ -1,5 +1,6 @@
 """add fp_feedback: operator false-positive feedback for the confidence tuner (F-05-07)
 
+reversible: true
 Revision ID: 0003
 Revises: 0002
 Create Date: 2026-10-28

@@ -1,0 +1,31 @@
+# ARACHNE SLO — scan completion (REQ-OPS-007).
+#
+# The indicator is the fraction of *finished* scans that finished successfully: completed
+# divided by completed-plus-failed. This is the queue's health from the customer's side —
+# "when I ask for a scan, does it come back with a result".
+#
+# Two deliberate exclusions, both stated rather than hidden:
+#   * Scans still pending or running are not in the denominator. A scan that has not finished
+#     has not failed, and counting it would make a long queue look like an outage.
+#   * `aborted` is not a failure. An operator cancelling a scan is a decision, not a defect
+#     (`ScanStatus.ABORTED`, core/lifecycle.py).
+#
+# The counter is per-process (`arachne_scans_total`), so the fraction is over every worker
+# that is being scraped; a scan farm that is only partly scraped measures only that part.
+id: scan-completion
+title: Scan completion
+service: arachne-scan-farm
+owner: platform
+description: >-
+  Fraction of finished scans that completed rather than failed, over the objective window.
+  Bounded by the scan farm's scrape coverage: a worker that is not scraped contributes
+  nothing to either side of the ratio.
+objective:
+  target: 0.95
+  window: 7d
+indicator:
+  type: ratio
+  sli_query: 'sum(rate(arachne_scans_total{status="completed"}[{{window}}])) / sum(rate(arachne_scans_total{status=~"completed|failed"}[{{window}}]))'
+runbook:
+  doc: docs/operator-guide.md
+  section: "52.3 Scan completion: the queue drains"

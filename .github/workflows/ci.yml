@@ -132,7 +132,7 @@ jobs:
       - run: python -m pytest tests -m "not perf" -q --cov --cov-report=term-missing
 
   migrations:
-    name: migrations on a brand-new database
+    name: "migrations: reversibility, dry run, populated upgrade (REQ-OPS-008)"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -144,6 +144,62 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: arachne db upgrade
       - run: arachne db current
+      # Every migration declares whether it is reversible, and an undeclared one fails here
+      # rather than during a rollout (REQ-OPS-008).
+      - run: arachne db migrations --check
+      # The dry run must print SQL and change nothing: the revision is compared before and
+      # after, so a dry run that quietly applied would fail this step.
+      - name: the dry run prints SQL and leaves the database alone
+        run: |
+          before=$(arachne db current --database-url "sqlite:///dryrun.db" || true)
+          arachne db upgrade 0015 --database-url "sqlite:///dryrun.db"
+          arachne db upgrade --dry-run --database-url "sqlite:///dryrun.db" | tee /tmp/dry-run.sql
+          grep -q "ADD COLUMN" /tmp/dry-run.sql
+          at=$(arachne db current --database-url "sqlite:///dryrun.db")
+          echo "$at" | grep -q "0015"
+          test -n "$before"
+      # REQ-OPS-008's acceptance criterion: an upgrade from two versions back on a database
+      # that already holds rows. The unit test seeds it through the ORM.
+      - run: python -m pytest tests/unit/test_migrations.py -q
+      # The queue-depth autoscaling manifests, against the metric the API really exposes.
+      - run: python -m pytest tests/test_autoscale_manifests.py -q
+
+  mutation:
+    name: mutation testing on the safety core (REQ-QUAL-008)
+    runs-on: ubuntu-latest
+    # A bounded subset on a pull request; the nightly rehearsal workflow runs the full set.
+    # The ceiling is a backstop against a mutant that hangs the suite, not the budget.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      # Every mutant runs the real suite in a subprocess, so the interpreter on PATH must be
+      # the one that has this project installed — it is, because pip installed it above.
+      - run: python -m arachne.fuzz.mutate --sample 12 --check
+      - run: python -m pytest tests/unit/test_mutation_gate.py -q
+
+  observability:
+    name: SLOs and error budgets (REQ-OPS-007)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      # The metric contract and the generated rules: a definition that measures a metric the
+      # endpoint does not expose fails here, as does a rules file out of step with the
+      # definitions. The same contract is asserted from a unit test; this is the operator's
+      # own command.
+      - run: python -m arachne.ops.slo --check
+      - run: python -m pytest tests/unit/test_slo_contract.py -q
 
   credentials:
     name: no default credentials (REQ-OPS-006)
@@ -185,6 +241,31 @@ jobs:
       # passes throwaway values that are generated here and never committed.
       - run: helm lint deploy/helm/arachne --set api.auth.apiKeys="ui:viewer:render-only-smoke"
       - run: helm template arachne deploy/helm/arachne --set api.auth.apiKeys="ui:viewer:render-only-smoke" > /dev/null
+      # REQ-OPS-009: with queue-depth autoscaling enabled the chart must render an
+      # HorizontalPodAutoscaler on the documented metric, and lint clean with it on.
+      - name: the queue-depth HPA renders against the documented metric
+        run: |
+          helm lint deploy/helm/arachne \
+            --set api.auth.apiKeys="ui:viewer:render-only-smoke" \
+            --set autoscaling.enabled=true
+          helm template arachne deploy/helm/arachne \
+            --set api.auth.apiKeys="ui:viewer:render-only-smoke" \
+            --set autoscaling.enabled=true > /tmp/hpa.yaml
+          grep -q "^kind: HorizontalPodAutoscaler" /tmp/hpa.yaml
+          grep -q "arachne_queue_depth" /tmp/hpa.yaml
+          grep -q "status: queued" /tmp/hpa.yaml
+          # The ScaledObject must NOT render at the same time: both scalers own the replica
+          # count, so a chart that emitted both would let two controllers fight over it.
+          ! grep -q "^kind: ScaledObject" /tmp/hpa.yaml
+      - name: the KEDA ScaledObject renders instead when KEDA owns the pool
+        run: |
+          helm template arachne deploy/helm/arachne \
+            --set api.auth.apiKeys="ui:viewer:render-only-smoke" \
+            --set autoscaling.enabled=true \
+            --set autoscaling.keda.enabled=true > /tmp/keda.yaml
+          grep -q "^kind: ScaledObject" /tmp/keda.yaml
+          grep -q "arachne_queue_depth" /tmp/keda.yaml
+          ! grep -q "^kind: HorizontalPodAutoscaler" /tmp/keda.yaml
 
   docker:
     name: compose smoke

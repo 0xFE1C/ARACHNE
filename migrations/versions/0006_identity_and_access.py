@@ -1,5 +1,6 @@
 """enterprise identity & access — area IDAM (S17)
 
+reversible: true
 Revision ID: 0006
 Revises: 0005
 Create Date: 2026-10-30

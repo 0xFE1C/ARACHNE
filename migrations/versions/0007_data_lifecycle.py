@@ -1,5 +1,6 @@
 """data lifecycle, evidence storage and observability — area DATA/OPS (S20)
 
+reversible: true
 Revision ID: 0007
 Revises: 0006
 Create Date: 2026-10-30

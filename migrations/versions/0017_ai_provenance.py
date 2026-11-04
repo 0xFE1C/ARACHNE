@@ -26,6 +26,7 @@ one place that decides whether a row may call itself AI-authored: a row whose pa
 :class:`~arachne.ai.provenance.ProvenanceRecord`, so reaching that branch means some other code
 wrote the payload — and a scan must not fail over it.
 
+reversible: true
 Revision ID: 0017
 Revises: 0016
 Create Date: 2026-11-04

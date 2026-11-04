@@ -1,0 +1,30 @@
+# ARACHNE SLO — API availability (REQ-OPS-007).
+#
+# The indicator is the fraction of answered HTTP requests that were NOT 5xx, measured over
+# the objective window. The API middleware records `arachne_api_requests_total` with a
+# bounded `status` label (2xx/4xx/5xx/other — core/metrics.py), so "5xx" is both the signal
+# an operator means by "broken" and a label value the endpoint really emits; the contract
+# test (tests/unit/test_slo_contract.py) fails if either stops being true.
+#
+# A 4xx is NOT an error-budget event: a scanner is authenticated and deny-by-default, so a
+# rejected request is the control working, not the service failing.
+id: api-availability
+title: API availability
+service: arachne-api
+owner: platform
+description: >-
+  Fraction of HTTP requests answered with a status outside 5xx, over the objective window.
+  A request that never reaches the process (network, TLS, load balancer) is not counted by
+  this indicator; the deployment's own health probes cover "is it up at all".
+objective:
+  target: 0.999
+  window: 30d
+indicator:
+  type: ratio
+  # `{{window}}` is substituted with the objective window (and with each burn window when
+  # the alert rules are generated). Numerator and denominator must use the same window,
+  # which the loader enforces.
+  sli_query: 'sum(rate(arachne_api_requests_total{status!="5xx"}[{{window}}])) / sum(rate(arachne_api_requests_total[{{window}}]))'
+runbook:
+  doc: docs/operator-guide.md
+  section: "52.1 Availability: the API answers"

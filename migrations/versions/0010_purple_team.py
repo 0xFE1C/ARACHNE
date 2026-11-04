@@ -1,5 +1,6 @@
 """detection validation (purple team): campaigns, runs and defender alerts
 
+reversible: true
 Revision ID: 0010
 Revises: 0009
 Create Date: 2026-10-31

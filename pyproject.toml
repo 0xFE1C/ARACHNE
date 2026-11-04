@@ -150,6 +150,14 @@ ignore = [
 # vocabulary, an enumerated runner allowlist, AST-asserted call shape), so repeating a
 # noqa on each of the runners' branches would add noise, not information.
 "src/arachne/fix/gitops.py" = ["S603", "S607"]
+# The mutation gate (REQ-QUAL-008) runs the test suite in a subprocess, once per mutant, with
+# the interpreter by name (`python -m pytest` — the same shape tools/wp_check.py uses to run
+# the quality gates). The argv is a fixed list of literals and nothing is spliced into it: the
+# mutant's identity and its test scope travel in the environment. Resolving the interpreter
+# from PATH is the point — it is the operator's interpreter — and `preflight` refuses to start
+# when that interpreter cannot import this project, so a wrong PATH is one clear error rather
+# than a whole gate's worth of noise.
+"src/arachne/fuzz/mutate.py" = ["S603", "S607"]
 "migrations/**" = ["INP001", "I001"]
 # The documentation checker asks the checkout's own `git` whether a cited commit exists
 # (`git cat-file -t`). That is deliberately the operator's git, resolved from PATH rather
@@ -221,6 +229,83 @@ markers = [
   "report_qa: golden-file report validation ",
   "perf: wall-clock benchmark of a synthetic 50-host/200-endpoint heuristic scan (G-06)",
 ]
+
+# ---------------------------------------------------------------- mutation testing
+# REQ-QUAL-008: coverage says a line ran, mutation says the assertion would notice. The gate
+# targets the safety core, holds a minimum score, and fails on an allowlist entry that no
+# longer matches a mutant (an allowlist that keeps growing without being pruned is how a gate
+# stops being a gate).
+#
+# Each target names the tests that judge it. The scope travels to pytest through the
+# environment, never on a command line. A narrower scope can only produce *more* survivors,
+# never fewer, so choosing it cannot flatter the score.
+[tool.arachne.mutation]
+# The full-run floor. The measured score at this commit is **0.8021** (227 killed, 56
+# survived, 283 scored) over the four modules, so the floor is the measured value rounded down
+# to the report precision — the same rule the coverage floor uses — which leaves a one-mutant
+# margin for a different interpreter. It is a floor and it ratchets up, never down: the 56
+# survivors are real places where the safety core's assertions would not notice a wrong line,
+# and closing them (a work package allowed to touch the safety suites) is what raises this.
+min_score = 0.80
+# The pull-request subset: every k-th mutant, deterministic. The nightly job runs them all.
+sample = 12
+# A twelve-mutant sample cannot resolve a few points, so the subset is held to a separate,
+# looser floor and it is a smoke test rather than a measurement. The arithmetic, so it is not
+# a number someone picked: with a true kill rate of 0.80, a sample of 12 clears 6 killed
+# (0.50) with 99.6% probability, so a red sample is evidence of a broken gate rather than of
+# ordinary variance. The full run is the measurement.
+min_score_sample = 0.50
+timeout_seconds = 300
+budget_seconds = 5400
+
+[[tool.arachne.mutation.target]]
+path = "src/arachne/core/safety.py"
+tests = [
+  "tests/test_safety.py",
+  "tests/unit/test_safety_policy.py",
+  "tests/unit/test_scope.py",
+  "tests/unit/test_target.py",
+  "tests/test_ipv6_safety.py",
+]
+
+[[tool.arachne.mutation.target]]
+path = "src/arachne/core/proof.py"
+tests = [
+  "tests/test_proof_safety.py",
+  "tests/unit/test_proof_model.py",
+  "tests/unit/test_oob_hardening.py",
+  "tests/unit/test_verification_record.py",
+]
+
+[[tool.arachne.mutation.target]]
+path = "src/arachne/core/integrity.py"
+tests = [
+  "tests/unit/test_audit.py",
+  "tests/unit/test_integrity_chain.py",
+  "tests/unit/test_evidence_custody.py",
+  "tests/unit/test_residue_attestation.py",
+  "tests/unit/test_pii_retention.py",
+  "tests/unit/test_backup.py",
+]
+
+[[tool.arachne.mutation.target]]
+path = "src/arachne/proof/sql.py"
+tests = [
+  "tests/unit/test_proof_model.py",
+  "tests/test_proof_safety.py",
+  "tests/unit/test_m3_checks.py",
+]
+
+# Every entry needs a reason, and the gate fails when one no longer matches a mutant. An
+# allowlist is for mutants that are genuinely equivalent to the original, not for survivors
+# nobody has looked at yet.
+#
+# It is EMPTY, and that is the measured result rather than an oversight: the first full run
+# over all 283 mutants produced no mutant whose behaviour could not differ from the original.
+# Every survivor below is a place where the safety core's tests would not notice a wrong line,
+# which is what the gate exists to say. The mechanism (a mandatory reason, plus a failure when
+# an entry no longer matches a mutant) is in place for the first genuinely equivalent mutant
+# anyone finds.
 
 # ---------------------------------------------------------------- coverage
 [tool.coverage.run]

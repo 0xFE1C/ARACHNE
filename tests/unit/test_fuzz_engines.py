@@ -180,17 +180,27 @@ def test_the_default_dependency_set_is_unchanged_by_area_fuzz() -> None:
 
 
 def test_the_fuzz_package_is_pure_python() -> None:
-    """No fuzzing library, no compiler toolchain: the shipped engine is standard library only."""
+    """No fuzzing library, no compiler toolchain: the shipped engine is standard library only.
+
+    The package's *import surface* is read from its own ``__init__`` rather than from
+    ``sys.modules``: the mutation tooling also lives in this package (it is fault injection,
+    not fuzzing), so a session that had imported it would make this assertion depend on test
+    order instead of on what importing the package actually does.
+    """
+    import ast
     import sys
+    from pathlib import Path
 
-    import arachne.fuzz  # noqa: F401 - the import is the point
-
-    submodules = {
-        name.split(".")[-1]
-        for name in sys.modules
-        if name.startswith("arachne.fuzz.") and not name.startswith("arachne.fuzz.__")
+    package = Path(__file__).resolve().parents[2] / "src" / "arachne" / "fuzz"
+    tree = ast.parse((package / "__init__.py").read_text(encoding="utf-8"))
+    imported = {
+        node.module.rsplit(".", 1)[-1]
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom)
+        and node.module
+        and node.module.startswith("arachne.fuzz.")
     }
-    assert submodules == {
+    assert imported == {
         "attestation",
         "bounds",
         "candidates",
@@ -203,12 +213,20 @@ def test_the_fuzz_package_is_pure_python() -> None:
         "runner",
         "wire",
     }
-    third_party = {
-        name.split(".")[0]
-        for name in sys.modules
-        if name.split(".")[0] not in sys.stdlib_module_names
-    }
-    assert "atheris" not in third_party and "hypothesis" not in third_party
+    # And nothing in the package imports a fuzzing library or a coverage-guided engine: the
+    # engine ships as standard library plus the project's own runtime dependencies.
+    banned = {"atheris", "hypothesis", "boofuzz", "afl", "pyfuzzer", "libfuzzer"}
+    for path in sorted(package.glob("*.py")):
+        module_tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(module_tree):
+            roots: set[str] = set()
+            if isinstance(node, ast.Import):
+                roots = {alias.name.split(".")[0] for alias in node.names}
+            elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+                roots = {node.module.split(".")[0]}
+            offenders = roots & banned
+            assert not offenders, f"{path.name} imports {', '.join(sorted(offenders))}"
+    assert "atheris" not in sys.modules and "hypothesis" not in sys.modules
 
 
 def _outcome(case) -> CaseOutcome:  # type: ignore[no-untyped-def]

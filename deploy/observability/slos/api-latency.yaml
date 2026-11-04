@@ -1,0 +1,29 @@
+# ARACHNE SLO — API latency (REQ-OPS-007).
+#
+# The indicator is the fraction of HTTP requests served within the latency threshold,
+# measured from the API's own latency histogram. The threshold is one of the histogram's
+# declared bucket bounds (`API_BUCKETS` in core/metrics.py), which the contract test
+# asserts — an SLO that asked for a bucket the histogram does not have would be a number
+# nobody can measure.
+#
+# 500 ms is the published API budget: it is the same ceiling `benchmarks/envelope/envelope.json`
+# is gated against (`python -m arachne.tools.envelope --gate`), so the SLO and the release
+# gate cannot drift apart without one of them failing.
+id: api-latency
+title: API latency (500 ms)
+service: arachne-api
+owner: platform
+description: >-
+  Fraction of HTTP requests answered within 500 ms. The measurement is the histogram's own
+  500 ms bucket over the request count, so it is the same number an operator sees on the
+  dashboard — not a re-aggregation of samples.
+objective:
+  target: 0.99
+  window: 30d
+indicator:
+  type: ratio
+  threshold_seconds: 0.5
+  sli_query: 'sum(rate(arachne_api_request_duration_seconds_bucket{le="0.5"}[{{window}}])) / sum(rate(arachne_api_request_duration_seconds_count[{{window}}]))'
+runbook:
+  doc: docs/operator-guide.md
+  section: "52.2 Latency: the API is fast enough"

@@ -21,7 +21,8 @@ HTTP_CLIENT_MODULE = "core/http.py"
 #: asserted: ``test_pdf_backend_process_call_is_fixed_argv_with_timeout``,
 #: ``test_plugin_installer_process_call_is_fixed_argv_with_timeout``,
 #: ``test_documentation_tools_call_fixed_argv_with_a_timeout``,
-#: ``test_the_handoff_tool_calls_fixed_argv_with_a_timeout``, and for the S27 fix
+#: ``test_the_handoff_tool_calls_fixed_argv_with_a_timeout``,
+#: ``test_the_mutation_runner_calls_fixed_argv_with_a_timeout``, and for the S27 fix
 #: engine ``test_fix_safety.py::test_every_process_call_is_a_sequence_with_no_shell_and_a_timeout``
 #: (which additionally asserts that every argv[0] is a literal from the runner allowlist).
 SHELL_EXEMPT_MODULES = frozenset(
@@ -38,6 +39,11 @@ SHELL_EXEMPT_MODULES = frozenset(
         # gates (`ruff`, `mypy`, `pytest`) in a fresh process. Every program name is a literal
         # (REQ-QUAL-013).
         "tools/wp_check.py",
+        # The mutation gate runs the covering test suite once per mutant, with the interpreter
+        # by name and a fixed list of literals. The mutant's identity and its test scope travel
+        # in the environment, so nothing is spliced into an argv — and the gate refuses to
+        # start when that interpreter cannot import this project (REQ-QUAL-008).
+        "fuzz/mutate.py",
     }
 )
 
@@ -165,6 +171,60 @@ def test_pdf_backend_process_call_is_fixed_argv_with_timeout() -> None:
     # The executable is looked up on PATH, never taken from input.
     source = path.read_text(encoding="utf-8")
     assert "shutil.which(" in source, "backend resolution must go through shutil.which"
+
+
+def test_the_mutation_runner_calls_fixed_argv_with_a_timeout() -> None:
+    """The mutation gate's process calls, asserted rather than trusted (REQ-QUAL-008).
+
+    It runs pytest once per mutant, so it needs the exemption — and it earns it the same way
+    the other exempt modules do. Four properties, each read from the AST:
+
+    1. every ``subprocess.run`` receives a sequence literal, never a command string;
+    2. ``shell`` is either absent or the literal ``False`` (never ``True``, never a variable);
+    3. ``timeout`` is always set, with a non-literal value from the config;
+    4. every argv element is a string literal — the mutant's identity and its test scope
+       travel in the environment, so nothing derived from a file can name a program.
+    """
+    path = SRC / "fuzz/mutate.py"
+    assert path.is_file(), "fuzz/mutate.py is missing; drop the exemption"
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+
+    run_calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "run"
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "subprocess"
+    ]
+    assert run_calls, "the exempt module no longer calls subprocess.run; drop the exemption"
+
+    for call in run_calls:
+        assert call.args, "subprocess.run must be given an argv"
+        argv = call.args[0]
+        assert not isinstance(argv, ast.Constant), (
+            "subprocess.run must never receive a command string (shell-style invocation)"
+        )
+        assert isinstance(argv, ast.List), "the argv must be written out as a list literal"
+        for element in argv.elts:
+            assert isinstance(element, ast.Constant) and isinstance(element.value, str), (
+                f"argv elements must be string literals, found {type(element).__name__}"
+            )
+        keywords = {keyword.arg: keyword.value for keyword in call.keywords}
+        if "shell" in keywords:
+            shell = keywords["shell"]
+            assert isinstance(shell, ast.Constant) and shell.value is False, (
+                "subprocess.run must never enable a shell"
+            )
+        assert "timeout" in keywords, "subprocess.run must always set a timeout"
+
+    # The mutant and its scope travel in the environment, never in the argv.
+    source = path.read_text(encoding="utf-8")
+    for variable in ("MODULE_ENV", "SOURCE_ENV", "TESTS_ENV", "STATUS_ENV"):
+        assert f"environment[{variable}]" in source, (
+            f"{variable} must be set on the environment, not spliced into the argv"
+        )
 
 
 def test_plugin_installer_process_call_is_fixed_argv_with_timeout() -> None:

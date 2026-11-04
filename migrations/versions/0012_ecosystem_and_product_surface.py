@@ -1,5 +1,6 @@
 """ecosystem & product surface: tenant-scoped quality, per-tenant locale, pack reviews
 
+reversible: true
 Revision ID: 0012
 Revises: 0011
 Create Date: 2026-10-31

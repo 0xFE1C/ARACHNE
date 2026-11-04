@@ -1,0 +1,321 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Fraction of HTTP requests answered with a status outside 5xx, over the objective window. A request that never reaches the process (network, TLS, load balancer) is not counted by this indicator; the deployment's own health probes cover \"is it up at all\". Objective 99.9% over 30d. Runbook: docs/operator-guide.md#521-availability-the-api-answers",
+      "fieldConfig": {
+        "defaults": {
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0.999
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(arachne_api_requests_total{status!=\"5xx\"}[30d])) / sum(rate(arachne_api_requests_total[30d]))",
+          "legendFormat": "SLI",
+          "refId": "A"
+        }
+      ],
+      "title": "API availability \u2014 current",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Fraction of HTTP requests answered with a status outside 5xx, over the objective window. A request that never reaches the process (network, TLS, load balancer) is not counted by this indicator; the deployment's own health probes cover \"is it up at all\". Objective 99.9% over 30d. Runbook: docs/operator-guide.md#521-availability-the-api-answers",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "expr": "arachne:slo_api_availability:burn_rate_1h",
+          "legendFormat": "1h (14.4x = page)",
+          "refId": "A"
+        },
+        {
+          "expr": "arachne:slo_api_availability:burn_rate_6h",
+          "legendFormat": "6h (6x = ticket)",
+          "refId": "B"
+        }
+      ],
+      "title": "API availability \u2014 budget burn rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Fraction of HTTP requests answered within 500 ms. The measurement is the histogram's own 500 ms bucket over the request count, so it is the same number an operator sees on the dashboard \u2014 not a re-aggregation of samples. Objective 99% over 30d. Runbook: docs/operator-guide.md#522-latency-the-api-is-fast-enough",
+      "fieldConfig": {
+        "defaults": {
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0.99
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 4,
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(arachne_api_request_duration_seconds_bucket{le=\"0.5\"}[30d])) / sum(rate(arachne_api_request_duration_seconds_count[30d]))",
+          "legendFormat": "SLI",
+          "refId": "A"
+        }
+      ],
+      "title": "API latency (500 ms) \u2014 current",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Fraction of HTTP requests answered within 500 ms. The measurement is the histogram's own 500 ms bucket over the request count, so it is the same number an operator sees on the dashboard \u2014 not a re-aggregation of samples. Objective 99% over 30d. Runbook: docs/operator-guide.md#522-latency-the-api-is-fast-enough",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "expr": "arachne:slo_api_latency:burn_rate_1h",
+          "legendFormat": "1h (14.4x = page)",
+          "refId": "A"
+        },
+        {
+          "expr": "arachne:slo_api_latency:burn_rate_6h",
+          "legendFormat": "6h (6x = ticket)",
+          "refId": "B"
+        }
+      ],
+      "title": "API latency (500 ms) \u2014 budget burn rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Fraction of finished scans that completed rather than failed, over the objective window. Bounded by the scan farm's scrape coverage: a worker that is not scraped contributes nothing to either side of the ratio. Objective 95% over 7d. Runbook: docs/operator-guide.md#523-scan-completion-the-queue-drains",
+      "fieldConfig": {
+        "defaults": {
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0.95
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "id": 4,
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(arachne_scans_total{status=\"completed\"}[7d])) / sum(rate(arachne_scans_total{status=~\"completed|failed\"}[7d]))",
+          "legendFormat": "SLI",
+          "refId": "A"
+        }
+      ],
+      "title": "Scan completion \u2014 current",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Fraction of finished scans that completed rather than failed, over the objective window. Bounded by the scan farm's scrape coverage: a worker that is not scraped contributes nothing to either side of the ratio. Objective 95% over 7d. Runbook: docs/operator-guide.md#523-scan-completion-the-queue-drains",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "expr": "arachne:slo_scan_completion:burn_rate_1h",
+          "legendFormat": "1h (14.4x = page)",
+          "refId": "A"
+        },
+        {
+          "expr": "arachne:slo_scan_completion:burn_rate_6h",
+          "legendFormat": "6h (6x = ticket)",
+          "refId": "B"
+        }
+      ],
+      "title": "Scan completion \u2014 budget burn rate",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": [
+    "arachne",
+    "slo",
+    "generated"
+  ],
+  "templating": {
+    "list": [
+      {
+        "label": "Prometheus",
+        "name": "datasource",
+        "query": "prometheus",
+        "type": "datasource"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "timezone": "utc",
+  "title": "ARACHNE \u2014 service-level objectives",
+  "uid": "arachne-slo",
+  "version": 1
+}

@@ -24,6 +24,7 @@ as "clean" (:func:`arachne.proof.residue.attestation_is_clean`). Nothing is rewr
 nothing is backfilled — a backfilled attestation would be a signature over a claim nobody
 made at the time.
 
+reversible: true
 Revision ID: 0016
 Revises: 0015
 Create Date: 2026-11-03

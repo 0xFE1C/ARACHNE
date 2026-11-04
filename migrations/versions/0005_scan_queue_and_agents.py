@@ -1,5 +1,6 @@
 """scan work queue and agent fleet — area SCALE (S16)
 
+reversible: true
 Revision ID: 0005
 Revises: 0004
 Create Date: 2026-10-30

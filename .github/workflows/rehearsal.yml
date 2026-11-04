@@ -1,0 +1,110 @@
+# The nightly operational rehearsal: the disaster-recovery restore (REQ-OPS-010) and the full
+# mutation run over the safety core (REQ-QUAL-008).
+#
+# Both are too slow for a pull request and both are measurements rather than gates on a diff,
+# so they run on a schedule in a non-production environment and leave an artefact behind:
+# a JSON line per rehearsal, and the mutation report. A failure pages with the stage (or the
+# surviving mutant) named.
+name: Nightly rehearsal
+
+on:
+  schedule:
+    # 03:17 UTC — an arbitrary off-the-hour time, so the job does not pile onto the top of the
+    # hour with everything else on GitHub.
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rehearsal-${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  disaster-recovery:
+    name: disaster-recovery rehearsal (REQ-OPS-010)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # A deployment of its own: a fresh SQLite database plus a local evidence directory. The
+      # rehearsal restores into a scratch database and never writes to this one.
+      ARACHNE_DATABASE_URL: "sqlite:///rehearsal-live.db"
+      ARACHNE_EVIDENCE_DIR: "rehearsal-evidence"
+      ARACHNE_LOG_LEVEL: "INFO"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      # A deployment with something in it: the schema, an estate, and a real audit chain. The
+      # rehearsal has to have rows to compare and a chain to verify, or it proves nothing.
+      - run: arachne db upgrade
+      - name: seed the estate and the chain
+        run: |
+          python - <<'PY'
+          from arachne.core.audit import AuditAction
+          from arachne.core.config import get_settings
+          from arachne.data.models import Finding, Scan, Target
+          from arachne.data.services import build_services
+
+          services = build_services(get_settings())
+          try:
+              with services.session_factory.begin() as session:
+                  target = Target(name="ci-estate", scope_json={"hosts": ["lab.example.net"]})
+                  session.add(target)
+                  session.flush()
+                  scan = Scan(target_id=target.id, status="completed")
+                  session.add(scan)
+                  session.flush()
+                  session.add(Finding(scan_id=scan.id, title="ci finding", status="open"))
+              for index in range(5):
+                  services.auditor.record(
+                      AuditAction.SCAN_CREATED, target="lab.example.net", meta={"index": index}
+                  )
+          finally:
+              services.close()
+          PY
+      # The rehearsal: back up, restore into a scratch database, compare row counts, verify the
+      # restored chain, and record the measured RTO and RPO. It exits non-zero and names the
+      # stage that broke.
+      - run: arachne dr rehearse --record dr-rehearsals.jsonl
+      - run: arachne dr rehearse --history --record dr-rehearsals.jsonl
+      - name: fail if the last run did not pass
+        run: python -c "import json,sys; runs=[json.loads(l) for l in open('dr-rehearsals.jsonl') if l.strip()]; last=runs[-1]; print(last['verdict'], last['measured_rto_seconds'], last['measured_rpo_seconds'], last['failed_stage']); sys.exit(0 if last['verdict']=='passed' else 1)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dr-rehearsal-record
+          path: dr-rehearsals.jsonl
+
+  mutation:
+    name: full mutation run on the safety core (REQ-QUAL-008)
+    runs-on: ubuntu-latest
+    # Every mutant runs the covering suite in a subprocess: hundreds of mutants, minutes each
+    # in aggregate. The budget the gate itself honours is in the mutation table of
+    # pyproject.toml; this is the job's backstop.
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      # --sample 0 is the whole set: a pull request runs a bounded subset, the nightly run is
+      # the measurement the score is reported from.
+      - run: python -m arachne.fuzz.mutate --sample 0 --check --json > mutation-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-report
+          path: mutation-report.json

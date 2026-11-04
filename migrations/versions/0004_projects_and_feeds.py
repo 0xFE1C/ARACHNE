@@ -1,5 +1,6 @@
 """add projects (multi-tenancy) and feeds (CVE/EPSS ingestion) — F-07-06, F-09-03
 
+reversible: true
 Revision ID: 0004
 Revises: 0003
 Create Date: 2026-10-29

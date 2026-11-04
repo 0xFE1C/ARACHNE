@@ -1,5 +1,6 @@
 """resilience & evidence integrity: the chain, the seals, the leases, the packs
 
+reversible: true
 Revision ID: 0011
 Revises: 0010
 Create Date: 2026-10-31

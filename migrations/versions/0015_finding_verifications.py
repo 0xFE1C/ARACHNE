@@ -22,6 +22,7 @@ Additive in the strict sense the work package asks for:
 Nothing about an existing table changes except the one column, so an S28 database upgrades
 in place and downgrades cleanly.
 
+reversible: true
 Revision ID: 0015
 Revises: 0014
 Create Date: 2026-11-03

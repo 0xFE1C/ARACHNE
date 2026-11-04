@@ -1,5 +1,6 @@
 """continuous exposure management: drift baselines, fix verifications, asset criticality
 
+reversible: true
 Revision ID: 0009
 Revises: 0008
 Create Date: 2026-10-31

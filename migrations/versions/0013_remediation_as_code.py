@@ -8,6 +8,7 @@ Additive and self-contained, so an S26 database upgrades in place: a fresh table
 own foreign keys (``findings``/``scans``, both ``ON DELETE SET NULL`` so a retention prune
 cannot erase the audit trail), and no change to any existing table.
 
+reversible: true
 Revision ID: 0013
 Revises: 0012
 Create Date: 2026-10-31

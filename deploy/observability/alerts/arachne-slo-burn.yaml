@@ -1,0 +1,148 @@
+# ARACHNE error-budget burn alerts — GENERATED, do not edit by hand (REQ-OPS-007).
+#
+# `python -m arachne.ops.slo --render` writes this file from the definitions in
+# deploy/observability/slos/; `--check` fails when the two disagree, so the objective and
+# the alert that guards it can never drift apart.
+#
+# Two rates per objective, the multi-window pair the SRE workbook recommends:
+#   * fast (14.4x over 1h, 2% of a 30-day budget) — page now.
+#   * slow (6x over 6h, 5% of a 30-day budget) — a ticket, before it becomes a page.
+#
+# Recording rules first: the burn rate is `(1 - sli) / error_budget`, so what the alert
+# compares against its threshold is the arithmetically meaningful quantity, not a ratio
+# an operator has to convert in their head at 3 a.m.
+groups:
+- name: arachne-slo-burn
+  rules:
+  - record: arachne:slo_api_availability:sli_1h
+    expr: sum(rate(arachne_api_requests_total{status!="5xx"}[1h])) / sum(rate(arachne_api_requests_total[1h]))
+    labels:
+      slo: api-availability
+      service: arachne-api
+  - record: arachne:slo_api_availability:burn_rate_1h
+    expr: (1 - arachne:slo_api_availability:sli_1h) / 0.001
+    labels:
+      slo: api-availability
+      service: arachne-api
+  - record: arachne:slo_api_availability:sli_6h
+    expr: sum(rate(arachne_api_requests_total{status!="5xx"}[6h])) / sum(rate(arachne_api_requests_total[6h]))
+    labels:
+      slo: api-availability
+      service: arachne-api
+  - record: arachne:slo_api_availability:burn_rate_6h
+    expr: (1 - arachne:slo_api_availability:sli_6h) / 0.001
+    labels:
+      slo: api-availability
+      service: arachne-api
+  - alert: ArachneSloApiAvailabilityPageBurn
+    expr: arachne:slo_api_availability:burn_rate_1h > 14.4
+    for: 2m
+    labels:
+      severity: page
+      slo: api-availability
+      service: arachne-api
+      owner: platform
+    annotations:
+      summary: 'API availability: burning the error budget 14.4x faster than allowed over 1h'
+      description: 'The 30d budget of 0.1% is being spent at 14.4x over 1h. Objective: 99.9%. Query: sum(rate(arachne_api_requests_total{status!="5xx"}[30d])) / sum(rate(arachne_api_requests_total[30d]))'
+      runbook_url: docs/operator-guide.md#521-availability-the-api-answers
+  - alert: ArachneSloApiAvailabilityTicketBurn
+    expr: arachne:slo_api_availability:burn_rate_6h > 6
+    for: 15m
+    labels:
+      severity: ticket
+      slo: api-availability
+      service: arachne-api
+      owner: platform
+    annotations:
+      summary: 'API availability: burning the error budget 6x faster than allowed over 6h'
+      description: 'The 30d budget of 0.1% is being spent at 6x over 6h. Objective: 99.9%. Query: sum(rate(arachne_api_requests_total{status!="5xx"}[30d])) / sum(rate(arachne_api_requests_total[30d]))'
+      runbook_url: docs/operator-guide.md#521-availability-the-api-answers
+  - record: arachne:slo_api_latency:sli_1h
+    expr: sum(rate(arachne_api_request_duration_seconds_bucket{le="0.5"}[1h])) / sum(rate(arachne_api_request_duration_seconds_count[1h]))
+    labels:
+      slo: api-latency
+      service: arachne-api
+  - record: arachne:slo_api_latency:burn_rate_1h
+    expr: (1 - arachne:slo_api_latency:sli_1h) / 0.01
+    labels:
+      slo: api-latency
+      service: arachne-api
+  - record: arachne:slo_api_latency:sli_6h
+    expr: sum(rate(arachne_api_request_duration_seconds_bucket{le="0.5"}[6h])) / sum(rate(arachne_api_request_duration_seconds_count[6h]))
+    labels:
+      slo: api-latency
+      service: arachne-api
+  - record: arachne:slo_api_latency:burn_rate_6h
+    expr: (1 - arachne:slo_api_latency:sli_6h) / 0.01
+    labels:
+      slo: api-latency
+      service: arachne-api
+  - alert: ArachneSloApiLatencyPageBurn
+    expr: arachne:slo_api_latency:burn_rate_1h > 14.4
+    for: 2m
+    labels:
+      severity: page
+      slo: api-latency
+      service: arachne-api
+      owner: platform
+    annotations:
+      summary: 'API latency (500 ms): burning the error budget 14.4x faster than allowed over 1h'
+      description: 'The 30d budget of 1% is being spent at 14.4x over 1h. Objective: 99%. Query: sum(rate(arachne_api_request_duration_seconds_bucket{le="0.5"}[30d])) / sum(rate(arachne_api_request_duration_seconds_count[30d]))'
+      runbook_url: docs/operator-guide.md#522-latency-the-api-is-fast-enough
+  - alert: ArachneSloApiLatencyTicketBurn
+    expr: arachne:slo_api_latency:burn_rate_6h > 6
+    for: 15m
+    labels:
+      severity: ticket
+      slo: api-latency
+      service: arachne-api
+      owner: platform
+    annotations:
+      summary: 'API latency (500 ms): burning the error budget 6x faster than allowed over 6h'
+      description: 'The 30d budget of 1% is being spent at 6x over 6h. Objective: 99%. Query: sum(rate(arachne_api_request_duration_seconds_bucket{le="0.5"}[30d])) / sum(rate(arachne_api_request_duration_seconds_count[30d]))'
+      runbook_url: docs/operator-guide.md#522-latency-the-api-is-fast-enough
+  - record: arachne:slo_scan_completion:sli_1h
+    expr: sum(rate(arachne_scans_total{status="completed"}[1h])) / sum(rate(arachne_scans_total{status=~"completed|failed"}[1h]))
+    labels:
+      slo: scan-completion
+      service: arachne-scan-farm
+  - record: arachne:slo_scan_completion:burn_rate_1h
+    expr: (1 - arachne:slo_scan_completion:sli_1h) / 0.05
+    labels:
+      slo: scan-completion
+      service: arachne-scan-farm
+  - record: arachne:slo_scan_completion:sli_6h
+    expr: sum(rate(arachne_scans_total{status="completed"}[6h])) / sum(rate(arachne_scans_total{status=~"completed|failed"}[6h]))
+    labels:
+      slo: scan-completion
+      service: arachne-scan-farm
+  - record: arachne:slo_scan_completion:burn_rate_6h
+    expr: (1 - arachne:slo_scan_completion:sli_6h) / 0.05
+    labels:
+      slo: scan-completion
+      service: arachne-scan-farm
+  - alert: ArachneSloScanCompletionPageBurn
+    expr: arachne:slo_scan_completion:burn_rate_1h > 14.4
+    for: 2m
+    labels:
+      severity: page
+      slo: scan-completion
+      service: arachne-scan-farm
+      owner: platform
+    annotations:
+      summary: 'Scan completion: burning the error budget 14.4x faster than allowed over 1h'
+      description: 'The 7d budget of 5% is being spent at 14.4x over 1h. Objective: 95%. Query: sum(rate(arachne_scans_total{status="completed"}[7d])) / sum(rate(arachne_scans_total{status=~"completed|failed"}[7d]))'
+      runbook_url: docs/operator-guide.md#523-scan-completion-the-queue-drains
+  - alert: ArachneSloScanCompletionTicketBurn
+    expr: arachne:slo_scan_completion:burn_rate_6h > 6
+    for: 15m
+    labels:
+      severity: ticket
+      slo: scan-completion
+      service: arachne-scan-farm
+      owner: platform
+    annotations:
+      summary: 'Scan completion: burning the error budget 6x faster than allowed over 6h'
+      description: 'The 7d budget of 5% is being spent at 6x over 6h. Objective: 95%. Query: sum(rate(arachne_scans_total{status="completed"}[7d])) / sum(rate(arachne_scans_total{status=~"completed|failed"}[7d]))'
+      runbook_url: docs/operator-guide.md#523-scan-completion-the-queue-drains

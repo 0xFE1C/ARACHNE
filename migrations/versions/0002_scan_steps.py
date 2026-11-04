@@ -1,5 +1,6 @@
 """add scan_steps: per-step progress for resumable scans (F-01-04)
 
+reversible: true
 Revision ID: 0002
 Revises: 0001
 Create Date: 2026-10-28

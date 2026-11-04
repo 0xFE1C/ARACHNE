@@ -55,7 +55,25 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations against a live connection."""
+    """Run migrations against a live connection.
+
+    A caller may hand one in through ``config.attributes["connection"]`` — the documented
+    Alembic pattern, and what ``arachne db upgrade --dry-run`` uses to capture the SQL against
+    a throwaway snapshot of the database instead of against the database itself. The caller
+    owns that connection's lifetime; this function does not close it.
+    """
+    provided = config.attributes.get("connection")
+    if provided is not None:
+        context.configure(
+            connection=provided,
+            target_metadata=target_metadata,
+            compare_type=True,
+            compare_server_default=True,
+        )
+        with context.begin_transaction():
+            context.run_migrations()
+        return
+
     section = config.get_section(config.config_ini_section, {})
     section["sqlalchemy.url"] = _database_url()
     connectable = engine_from_config(

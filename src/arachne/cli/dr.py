@@ -9,6 +9,10 @@
              RTO and prints it, so the documented number has evidence behind it.
 ``status``   the HA view: the leader leases (which replica holds each singleton job) and the
              queue depth with the replica count the autoscaler's arithmetic wants.
+``rehearse`` the whole procedure, unattended (WP-18, REQ-OPS-010): back up, restore into a
+             scratch database, compare row counts, verify the restored audit chain, and
+             record the measured RTO and RPO — so "the restore works" is a measurement per
+             run rather than an assumption. A broken stage names itself and exits non-zero.
 
 The bundle is verified before it is used — signature, artifact digests and per-table row
 counts — so a truncated or edited bundle is refused rather than half-restored.
@@ -30,6 +34,12 @@ from arachne.data.services import build_services
 from arachne.resil.autoscale import ScaleToZeroPolicy, queue_depth_source
 from arachne.resil.backup import create_bundle, read_bundle, restore_bundle
 from arachne.resil.migrations import check_expand_only
+from arachne.resil.rehearsal import (
+    RehearsalError,
+    record_rehearsal,
+    recorded_runs,
+    rehearse,
+)
 
 __all__ = ["dr_app"]
 
@@ -173,6 +183,65 @@ def dr_restore(
     )
     for note in report.notes:
         typer.echo(f"  note: {note}")
+
+
+@dr_app.command("rehearse")
+def dr_rehearse(
+    record: Annotated[
+        Path,
+        typer.Option(
+            "--record",
+            help="Append one JSON line per run to this file (REQ-OPS-010).",
+        ),
+    ] = Path("var/dr/rehearsals.jsonl"),
+    rto_seconds: Annotated[
+        int, typer.Option("--rto-seconds", min=0, help="The RTO objective to hold the run to.")
+    ] = 3600,
+    rpo_seconds: Annotated[
+        int, typer.Option("--rpo-seconds", min=0, help="The RPO objective to hold the run to.")
+    ] = 86400,
+    keep_scratch: Annotated[
+        bool, typer.Option("--keep-scratch", help="Keep the bundle and the scratch database.")
+    ] = False,
+    history: Annotated[
+        bool, typer.Option("--history", help="Print the recorded runs instead of rehearsing.")
+    ] = False,
+    json_output: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = False,
+) -> None:
+    """Rehearse the restore into a scratch database and record the measured RTO and RPO."""
+    if history:
+        runs = recorded_runs(record)
+        if json_output:
+            typer.echo(json.dumps(list(runs), indent=2))
+            return
+        if not runs:
+            typer.echo(f"no recorded rehearsals in {record}")
+            return
+        for run in runs:
+            typer.echo(
+                f"{run.get('finished_at')}  {run.get('verdict')}  "
+                f"RTO {run.get('measured_rto_seconds')}s  RPO {run.get('measured_rpo_seconds')}s  "
+                f"failed_stage={run.get('failed_stage')}"
+            )
+        return
+    try:
+        report = rehearse(
+            rto_seconds=rto_seconds, rpo_seconds=rpo_seconds, keep_scratch=keep_scratch
+        )
+    except RehearsalError as exc:
+        typer.echo(f"REFUSED: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    written = record_rehearsal(report, record)
+    if json_output:
+        typer.echo(json.dumps(report.to_dict(), indent=2))
+    else:
+        for stage in report.stages:
+            mark = "ok  " if stage.ok else "FAIL"
+            typer.echo(f"  {mark} {stage.name:<12} {stage.seconds:6.2f}s  {stage.detail}")
+        typer.echo(report.summary())
+        typer.echo(f"recorded in {written}")
+    if not report.ok:
+        raise typer.Exit(code=1)
 
 
 @dr_app.command("status")

@@ -135,6 +135,20 @@ a browser engine inside the scanner is a new attack surface and the operator opt
 - **Air-gapped mode**, enforced at the request boundary: an air-gapped deployment refuses its
   first outbound request and audits the refusal.
 - **Helm chart** and **Terraform module**; Docker and compose files for a demo stack.
+- **Service-level objectives as code**: availability, API latency and scan completion, each with
+  a target, a window, a measurement query and fast and slow error-budget burn alerts. The alert
+  rules are generated from the definitions, and a contract test resolves every metric, label and
+  histogram bucket they name against the families `GET /metrics` actually exposes.
+- **Upgrade safety**: every migration declares in its docstring whether it is reversible, and
+  the declaration is tested by running the downgrade; `arachne db upgrade --dry-run` prints the
+  SQL without touching the database; a migration that does not declare itself reversible is
+  refused until `--allow-destructive` acknowledges it.
+- **A rehearsed restore**: `arachne dr rehearse` backs a deployment up, restores it into a
+  scratch database, compares row counts, verifies the restored audit chain, and records the
+  measured RTO and RPO per run — failing with the stage named when a stage breaks.
+- **Mutation testing over the safety core** (scope gate, proof ladder, audit chain, SQL proof
+  helper) with a minimum score, a scored allowlist of equivalent mutants, and a bounded subset
+  on a pull request and the full set nightly.
 - Reports as **Markdown, HTML, JSON, PDF and SARIF**, with executive summary, OWASP mapping,
   evidence appendix and a diff against the previous scan.
 
@@ -155,10 +169,10 @@ a browser engine inside the scanner is a new attack surface and the operator opt
 
 | What | Result |
 |---|---|
-| Tests | **5,240** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Tests | **5,329** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
 | Primary safety suite | **59 tests** in `tests/test_safety.py`; **328** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol and mobile fixtures with planted false-positive traps |
-| Strict type checking | clean under `mypy --strict` across the **414** Python modules in `src/` |
+| Strict type checking | clean under `mypy --strict` across the **420** Python modules in `src/` |
 | Lint | clean over the whole repository (the badge's scope is the tree, not `src/` and `tests/`) |
 | Research coverage | **148/175 (84.6%)** of the corpus's numbered methods have an implementing check |
 

@@ -14,6 +14,7 @@ Additive and self-contained, so an S27 database upgrades in place: a fresh table
 foreign key (``scans.id``) is ``ON DELETE SET NULL`` so a retention prune cannot erase the
 trend, and no change to any existing table.
 
+reversible: true
 Revision ID: 0014
 Revises: 0013
 Create Date: 2026-10-31

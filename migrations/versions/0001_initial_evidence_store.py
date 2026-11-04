@@ -3,6 +3,7 @@
 Creates the nine core tables: targets, scans, assets, checks, findings, evidences,
 analysis_log, audit_log, scans_diff.
 
+reversible: true
 Revision ID: 0001
 Revises:
 Create Date: 2026-10-28
