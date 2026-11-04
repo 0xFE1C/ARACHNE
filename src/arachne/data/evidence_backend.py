@@ -17,10 +17,12 @@ the *logical* payload — never of whatever the backend happens to store.
 
 **Async interface, honestly implemented.** Uploads happen on the scan's event loop and an
 object-store write is genuine network I/O, so the protocol is async. The local backend's
-methods delegate to synchronous helpers: its I/O is one small file write, and a thread hop
-would cost more than it saves. The object-store upload is the real thing — SigV4-signed,
-multipart above a threshold, and over the shared
-:class:`~arachne.core.http.ScopedHttpClient` rather than a second egress path.
+methods run their filesystem work in a worker thread (:func:`asyncio.to_thread`): a
+``read_bytes``/``unlink`` is fast in isolation but still blocking syscalls, and a scan that
+stores hundreds of evidence objects beside API traffic would stall the loop for each one
+(REQ-SCALE-013, WP-17). The object-store upload is the real thing — SigV4-signed, multipart
+above a threshold, and over the shared :class:`~arachne.core.http.ScopedHttpClient` rather
+than a second egress path.
 
 Compression is applied while the payload is consumed, but the *container* is assembled before
 it is sent, because S3 requires the body digest (``x-amz-content-sha256``) and the length
@@ -32,6 +34,7 @@ needs to know the length first.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import hmac
 import os
@@ -230,12 +233,12 @@ class LocalEvidenceBackend:
 
     # ------------------------------------------------------------------ writes
     async def put(self, data: bytes, *, content_type: str = "application/json") -> StoredObject:
-        return self._put_stream([data])
+        return await asyncio.to_thread(self._put_stream, [data])
 
     async def put_stream(
         self, chunks: Iterable[bytes], *, content_type: str = "application/json"
     ) -> StoredObject:
-        return self._put_stream(chunks)
+        return await asyncio.to_thread(self._put_stream, chunks)
 
     def _put_stream(self, chunks: Iterable[bytes]) -> StoredObject:
         self.directory.mkdir(parents=True, exist_ok=True)
@@ -293,6 +296,10 @@ class LocalEvidenceBackend:
 
     # ------------------------------------------------------------------ reads
     async def get(self, key: str) -> bytes:
+        return await asyncio.to_thread(self._get_sync, key)
+
+    def _get_sync(self, key: str) -> bytes:
+        """The blocking read, run in a worker thread so the event loop is never stalled."""
         path = self.path_for(key)
         try:
             raw = path.read_bytes()
@@ -309,6 +316,9 @@ class LocalEvidenceBackend:
         return payload
 
     async def delete(self, key: str) -> bool:
+        return await asyncio.to_thread(self._delete_sync, key)
+
+    def _delete_sync(self, key: str) -> bool:
         path = self.path_for(key)
         try:
             path.unlink()
@@ -320,7 +330,8 @@ class LocalEvidenceBackend:
         return True
 
     async def exists(self, key: str) -> bool:
-        return self.path_for(key).is_file()
+        path = self.path_for(key)
+        return await asyncio.to_thread(path.is_file)
 
     def presign(self, key: str, *, ttl_s: int = 900, filename: str | None = None) -> str | None:
         """The local backend mints no URL: the API streams the file itself."""

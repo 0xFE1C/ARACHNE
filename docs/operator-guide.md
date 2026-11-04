@@ -3984,3 +3984,58 @@ Three properties worth knowing as an operator:
   report entry shows the record as `unverified`, so a stale severity cannot outlive its proof.
   The audit trail carries both records: `finding.verification_recorded` for the parent and
   `finding.reverified` for the new one.
+
+---
+
+## 51. Performance envelope and false-positive rate (WP-17, REQ-SCALE-009/012/013, REQ-QUAL-009)
+
+The full detail, the method and the caveats are in [performance.md](performance.md). What an
+operator needs here:
+
+**The published envelope** (measured 2026-11-04, AMD Ryzen 5 5600H, 12 CPUs, 15,380 MiB,
+CPython 3.14.9, SQLite, heuristic engine, 10 scans / 100 findings):
+
+| Endpoint | p95 at 50 req/s |
+|---|---:|
+| `GET /api/v1/scans` | 20.60 ms |
+| `GET /api/v1/findings` | 18.90 ms |
+| `GET /api/v1/targets` | 12.58 ms |
+| `GET /api/v1/modules` | 12.83 ms |
+
+Scan throughput on the reference lab: **87.8 checks per minute per agent**; peak RSS growth
+during that scan 14.6 MiB against a 1,024 MiB ceiling. The budget for every endpoint is p95
+≤ 500 ms.
+
+**Re-measure it with one command**, and commit the result with the release:
+
+```bash
+python -m arachne.tools.envelope --write benchmarks/envelope/envelope.json
+python -m arachne.tools.envelope --gate      # 0 = inside budget and the committed margin
+```
+
+`--skip-scan` measures the API only; `--duration` and `--rate` change the load.
+
+**The false-positive rate** is measured on the in-repo ground-truth corpus
+(`tests/lab/web_lab.py`, suite `arachne-lab` 1.0):
+
+```bash
+python -m arachne.tools.benchmark --lab --write-baseline   # measure and commit
+python -m arachne.tools.benchmark --lab --gate             # release gate
+```
+
+The published figure is **0 false positives / 15 scored candidates = 0.0 %**, against a
+release ceiling of **2 %**. The denominator is the scored candidates only (true positives +
+false positives); the 14 candidates outside the corpus's ground truth are reported as
+*unscored* and are deliberately not counted as false positives — see
+[performance.md](performance.md) §6 for why, and for the honest reading of a small-corpus
+zero.
+
+**Read replicas.** Set `ARACHNE_DATABASE_REPLICA_URLS` (comma-separated) to serve the
+read-only catalogue/listing endpoints from a replica. Writes always go to the primary; reads
+through a replica may lag the last write. A replica that stops answering degrades to the
+primary with a `db.read_replica_fallback` log line and the
+`arachne_read_replica_failovers_total{replica=...}` counter, retried once per 30-second
+cooldown rather than once per request.
+
+**Release checklist.** `tests/perf` green, both gates above passing, and the two
+`benchmarks/` JSON files committed. The full list is in [performance.md](performance.md) §8.

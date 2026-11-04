@@ -511,14 +511,29 @@ def gate(
     directory: str | Path,
     max_detection_drop: float = 0.02,
     max_fp_rise: float = 0.02,
+    max_fp_rate: float | None = 0.02,
 ) -> GateReport:
-    """Compare one measured result against its committed baseline (the CI gate)."""
+    """Compare one measured result against its committed baseline (the CI gate).
+
+    ``max_fp_rate`` is an **absolute** ceiling, not a relative one: REQ-QUAL-009 makes the
+    published false-positive rate a release criterion at or below 2 per cent, so a run that
+    stays at its own (bad) baseline still fails. Pass ``None`` to check only for a
+    regression against the baseline.
+    """
+    ceiling = (
+        (
+            f"false-positive rate {current.numbers.fp_rate:.1%} is over the {max_fp_rate:.0%} "
+            "release ceiling (REQ-QUAL-009)",
+        )
+        if max_fp_rate is not None and current.numbers.fp_rate > max_fp_rate
+        else ()
+    )
     baseline = load_baseline(directory, current.suite)
     if baseline is None:
         return GateReport(
             suite=current.suite,
             measured=True,
-            problems=(f"no committed baseline at {Path(directory) / current.suite}",),
+            problems=(f"no committed baseline at {Path(directory) / current.suite}", *ceiling),
             score=current.numbers,
         )
     regressions = compare(
@@ -528,6 +543,7 @@ def gate(
         suite=current.suite,
         measured=True,
         regressions=regressions,
+        problems=ceiling,
         score=current.numbers,
     )
 

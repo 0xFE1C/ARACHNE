@@ -24,6 +24,7 @@ Three rules keep the UI a *view* and never a dependency of the scanner:
 
 from __future__ import annotations
 
+import asyncio
 import secrets
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
@@ -251,9 +252,14 @@ async def login(request: Request, context: ContextDep) -> Response:
     form = await _form(request)
     key = (form.get("key") or "").strip()
     next_path = form.get("next") or "/ui/"
-    principal = context.credentials.verify_key(key)
+    # REQ-SCALE-013 (WP-17): the credential store and the audit sink are synchronous and
+    # touch a file/database. Called inline from this ``async def`` they block every other
+    # request on the loop for the duration of that I/O; a worker thread keeps the loop free
+    # while the answer is identical.
+    principal = await asyncio.to_thread(context.credentials.verify_key, key)
     if principal is None:
-        context.auditor.record(
+        await asyncio.to_thread(
+            context.auditor.record,
             AuditAction.API_DENIED,
             outcome=AuditOutcome.BLOCKED,
             target="/ui/login",
@@ -866,7 +872,10 @@ async def import_feed_ui(request: Request, context: ContextDep) -> Response:
     name = (form.get("name") or "").strip()
     content = form.get("content") or ""
     try:
-        context.services.feeds.import_text(
+        # REQ-SCALE-013 (WP-17): the feed store is synchronous; a database write on the loop
+        # blocks every other UI request while it runs.
+        await asyncio.to_thread(
+            context.services.feeds.import_text,
             content,
             kind=kind,
             name=name or kind,
@@ -876,7 +885,8 @@ async def import_feed_ui(request: Request, context: ContextDep) -> Response:
         )
     except ConfigurationError as exc:
         return RedirectResponse(f"/ui/feeds?error={quote(str(exc))}", status_code=303)
-    context.auditor.record(
+    await asyncio.to_thread(
+        context.auditor.record,
         AuditAction.FEED_IMPORTED,
         target=name or kind,
         meta={"kind": kind, "actor": principal.label},
@@ -890,7 +900,8 @@ async def delete_feed_ui(request: Request, feed_id: int, context: ContextDep) ->
     if isinstance(principal, RedirectResponse):
         return principal
     _require_write(request, principal, Role.SCANNER)
-    context.services.feeds.delete(feed_id)
+    # REQ-SCALE-013 (WP-17): synchronous delete moved off the event loop.
+    await asyncio.to_thread(context.services.feeds.delete, feed_id)
     return RedirectResponse("/ui/feeds", status_code=303)
 
 

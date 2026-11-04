@@ -67,6 +67,11 @@ _logger = get_logger("core.http")
 _RETRYABLE_STATUS = frozenset({502, 503, 504})
 _REDIRECT_STATUS = frozenset({301, 302, 303, 307, 308})
 _BINARY_SNIFF = b"\x00"
+#: The read granularity for a response body. Requesting an explicit chunk size from httpx
+#: bounds the per-chunk allocation regardless of what the transport or the peer hands back —
+#: without it, a transport that yields one enormous block would defeat the cap
+#: (REQ-SCALE-013). Peak body memory is therefore ``body_limit + one chunk``.
+_BODY_CHUNK = 64 * 1024
 
 
 @dataclass(frozen=True, slots=True)
@@ -298,6 +303,9 @@ class RawExchange:
     headers: dict[str, str] = field(default_factory=dict)
     content: bytes = b""
     truncated: bool = False
+    #: Bytes actually captured (at most ``body_limit``), not the full body length: the body
+    #: is read up to the cap and the stream is abandoned, so a larger number would require
+    #: reading everything the cap exists to keep out of memory (REQ-SCALE-013).
     body_bytes: int = 0
     elapsed_ms: float = 0.0
     attempts: int = 1
@@ -612,9 +620,10 @@ class ScopedHttpClient:
         )
         elapsed_ms = (time.monotonic() - started) * 1000.0
         limit = self.body_limit if max_bytes is None else max_bytes
-        raw = response.content
-        truncated = len(raw) > limit
-        payload = raw[:limit]
+        # REQ-SCALE-013: the cap is applied while the body is on the wire. The old shape
+        # assigned ``response.content`` (the whole body) and sliced it afterwards, so a
+        # hostile endpoint could allocate far past the limit before the slice applied.
+        payload, truncated = await self._read_capped(response, limit)
         status_code = response.status_code
         response_headers = {str(key): str(value) for key, value in response.headers.items()}
         await response.aclose()
@@ -656,7 +665,7 @@ class ScopedHttpClient:
             headers=response_headers,
             content=payload,
             truncated=truncated,
-            body_bytes=len(raw),
+            body_bytes=len(payload),
             elapsed_ms=round(elapsed_ms, 3),
             attempts=attempts,
         )
@@ -761,13 +770,19 @@ class ScopedHttpClient:
                 # Rate limits are never bypassed by retries .
                 await self.limiter.acquire(host_key)
             try:
-                response = await client.request(
+                # ``send(stream=True)`` returns as soon as the status line and headers are
+                # in; the body stays on the wire until :meth:`_read_capped` consumes it, so a
+                # response is never buffered beyond ``body_limit`` (REQ-SCALE-013). The
+                # previous ``client.request`` read the whole body first and truncated
+                # afterwards, which made ``body_limit`` a processing bound, not an allocation
+                # one.
+                request = client.build_request(
                     method,
                     resolved.url,
                     headers=dict(headers),
                     content=content,
-                    follow_redirects=False,
                 )
+                response = await client.send(request, stream=True, follow_redirects=False)
             except httpx.TimeoutException as exc:
                 last_error = exc
                 continue
@@ -804,7 +819,7 @@ class ScopedHttpClient:
         addresses: tuple[str, ...],
         waited_s: float,
     ) -> HttpExchange:
-        body, truncated, is_binary, secret_kinds, masked = self._read_body(response)
+        body, truncated, is_binary, secret_kinds, masked = await self._read_body(response)
         if masked and self.secrets_manifest is not None:
             # Masked fingerprints only: the raw match is discarded inside the redactor, and
             # the ledger is encrypted at rest (F-08-04, ADR-120.6).
@@ -861,17 +876,14 @@ class ScopedHttpClient:
         )
         return exchange
 
-    def _read_body(
+    async def _read_body(
         self, response: httpx.Response
     ) -> tuple[str, bool, bool, tuple[str, ...], tuple[tuple[str, str], ...]]:
-        limit = self.body_limit
-        raw = response.content
-        truncated = len(raw) > limit
-        payload = raw[:limit]
-        is_binary = _BINARY_SNIFF in payload[:1024]
+        raw, truncated = await self._read_capped(response, self.body_limit)
+        is_binary = _BINARY_SNIFF in raw[:1024]
         if is_binary:
             return f"[binary payload: {len(raw)} bytes]", truncated, True, (), ()
-        text = payload.decode(response.encoding or "utf-8", errors="replace")
+        text = raw.decode(response.encoding or "utf-8", errors="replace")
         if not self.redaction_enabled:
             return text, truncated, False, (), ()
         # The ledger is fed from the raw text *before* redaction (the only place a value
@@ -892,6 +904,29 @@ class ScopedHttpClient:
                 )
         redacted, kinds = redact_text_report(text)
         return redacted, truncated, False, kinds, masked
+
+    @staticmethod
+    async def _read_capped(response: httpx.Response, limit: int) -> tuple[bytes, bool]:
+        """Read at most ``limit + 1`` bytes from the stream; report whether more existed.
+
+        One byte past the cap is what makes ``truncated`` exact rather than a guess: a body
+        of exactly ``limit`` bytes is complete, one longer is truncated — the same flag the
+        old ``len(response.content) > limit`` produced. Bytes beyond the cap are never
+        appended, and ``chunk_size`` keeps the transport from handing over a larger block, so
+        peak allocation is the cap plus one chunk (REQ-SCALE-013).
+        """
+        buffer = bytearray()
+        truncated = False
+        async for chunk in response.aiter_bytes(chunk_size=_BODY_CHUNK):
+            if not chunk:
+                continue
+            buffer += chunk
+            if len(buffer) > limit:
+                truncated = True
+                break
+        if truncated:
+            return bytes(buffer[:limit]), True
+        return bytes(buffer), False
 
     # ------------------------------------------------------------------ redaction helpers
     def _redact_text(self, text: str) -> str:

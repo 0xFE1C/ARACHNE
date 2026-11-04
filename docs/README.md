@@ -12,6 +12,7 @@ you.
 | [getting-started.md](getting-started.md) | **Start here.** Install, migrate the database, run your first scan, start the API. |
 | [operator-guide.md](operator-guide.md) | The reference: every environment variable, every command, every runbook, with troubleshooting. |
 | [release-notes.md](release-notes.md) | What is in the current release — and its **known limitations**. Read this before you deploy anywhere that matters. |
+| [performance.md](performance.md) | The **measured** envelope: p95 latency per list endpoint at 50 req/s, checks per minute, memory ceilings, the hot-path query budget, and the published false-positive rate — with the one command that reproduces each figure. |
 | [research/](research/) | The method universe the detection programme is measured against: 175 numbered techniques across six chapters. The `research_ref` on every check cites one of them, and `../coverage_matrix.md` is the generated map of what is covered. |
 | [ci-integration.md](ci-integration.md) | Using ARACHNE as a CI gate: exit codes, thresholds, and wiring for GitHub Actions and GitLab. |
 | [security.txt](security.txt) | RFC 9116 security policy: how to report a vulnerability in ARACHNE itself. |

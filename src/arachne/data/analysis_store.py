@@ -428,6 +428,13 @@ class SqlAnalysisStore:
             return stored
 
     def list_analyses(self, scan_id: int) -> tuple[StoredAnalysis, ...]:
+        """Every analysis row of one scan, in a **constant** number of queries (REQ-SCALE-012).
+
+        The pre-WP-17 shape issued ``session.get(Finding, row.finding_id)`` inside the loop —
+        one SELECT per analysis row, on the report, reasoning, posture, fix and benchmark hot
+        paths. The findings those rows name are fetched in one ``IN`` query here; the result
+        is otherwise identical.
+        """
         with self._session_factory() as session:
             rows = session.scalars(
                 select(AnalysisLog)
@@ -436,9 +443,16 @@ class SqlAnalysisStore:
                 )
                 .order_by(AnalysisLog.id)
             ).all()
+            finding_ids = {int(row.finding_id) for row in rows if row.finding_id}
+            findings: dict[int, Finding] = {}
+            if finding_ids:
+                for finding_row in session.scalars(
+                    select(Finding).where(Finding.id.in_(finding_ids))
+                ):
+                    findings[int(finding_row.id)] = finding_row
             out: list[StoredAnalysis] = []
             for row in rows:
-                finding = session.get(Finding, row.finding_id) if row.finding_id else None
+                finding = findings.get(int(row.finding_id)) if row.finding_id else None
                 out.append(
                     StoredAnalysis(
                         finding_id=row.finding_id,

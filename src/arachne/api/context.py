@@ -10,7 +10,7 @@ around an in-memory database, which is what keeps the API tests fast and socket-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 import jinja2
 
@@ -23,6 +23,9 @@ from arachne.core.audit import Auditor, build_auditor
 from arachne.core.config import Settings
 from arachne.data.api_store import ApiQueryStore
 from arachne.data.services import ScanServices
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session, sessionmaker
 
 __all__ = ["AppContext"]
 
@@ -49,6 +52,11 @@ class AppContext:
     oidc: OidcProvider | None = None
     #: Registered routes' tags, kept for the UI's navigation.
     extras: dict[str, Any] = field(default_factory=dict)
+    #: A second query store whose sessions come from the deployment's read replicas when one
+    #: is configured (REQ-SCALE-011, WP-17). ``None`` means every read goes to the primary.
+    #: Only read-only routes may use it: a replica lags, so it must never serve the response
+    #: of a mutation.
+    read_queries: ApiQueryStore | None = None
 
     def close(self) -> None:
         if self.owns_services:
@@ -79,6 +87,13 @@ class AppContext:
             burst=settings.api.rate_limit_burst,
         )
         queries = ApiQueryStore(services.session_factory)
+        # A configured read replica serves the *read-only* query store; the primary still
+        # serves writes and every endpoint that must be read-your-writes (REQ-SCALE-011).
+        read_queries = (
+            ApiQueryStore(cast("sessionmaker[Session]", services.read_replicas))
+            if services.read_replicas is not None
+            else None
+        )
         effective_notifier = notifier
         if effective_notifier is None:
             from arachne.api.webhooks import WebhookNotifier
@@ -101,4 +116,5 @@ class AppContext:
             templates=templates,
             owns_services=owns_services,
             oidc=oidc,
+            read_queries=read_queries,
         )

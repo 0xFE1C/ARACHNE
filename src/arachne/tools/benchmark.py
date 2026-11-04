@@ -88,6 +88,16 @@ def run(
     max_fp_rise: Annotated[
         float, typer.Option("--max-fp-rise", help="Tolerated false-positive-rate rise.")
     ] = 0.02,
+    max_fp_rate: Annotated[
+        float,
+        typer.Option(
+            "--max-fp-rate",
+            help=(
+                "Absolute false-positive-rate ceiling (REQ-QUAL-009; default 0.02 = 2 per cent). "
+                "A run over it fails even when it matches its own baseline."
+            ),
+        ),
+    ] = 0.02,
     as_json: Annotated[bool, typer.Option("--json", help="Emit the report as JSON.")] = False,
 ) -> None:
     """Measure the suites and (with ``--gate``) block on a regression."""
@@ -119,6 +129,7 @@ def run(
                     directory=_baseline_dir(),
                     max_detection_drop=max_detection_drop,
                     max_fp_rise=max_fp_rise,
+                    max_fp_rate=max_fp_rate,
                 )
                 if gate_results
                 else GateReport(suite=item.name, measured=True, score=result.numbers)
@@ -135,6 +146,7 @@ def run(
                     directory=_baseline_dir(),
                     max_detection_drop=max_detection_drop,
                     max_fp_rise=max_fp_rise,
+                    max_fp_rate=max_fp_rate,
                 )
                 if gate_results
                 else GateReport(suite=item.name, measured=True, score=result.numbers)

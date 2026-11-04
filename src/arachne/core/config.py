@@ -2438,6 +2438,11 @@ class Settings:
     #: is a fuzzing attestation, and it is absent by default, so an unconfigured
     #: deployment cannot fuzz at all.
     fuzz: FuzzSettings = field(default_factory=FuzzSettings)
+    #: Read replicas for the control plane's read-only endpoints (REQ-SCALE-011, WP-17).
+    #: Each entry is a database URL. Writes always go to ``database_url``; these are read
+    #: targets only, and a replica that cannot be reached degrades to the primary with a log
+    #: line and a counter. Empty (the default) means every read goes to the primary.
+    database_replica_urls: tuple[str, ...] = ()
 
     @property
     def feeds_dir(self) -> Path:
@@ -2496,6 +2501,7 @@ class Settings:
         return cls(
             database_url=_resolve_database_url(source),
             database_password_file=_env_str(source, "ARACHNE_DATABASE_PASSWORD_FILE") or None,
+            database_replica_urls=_env_list(source, "ARACHNE_DATABASE_REPLICA_URLS"),
             http=HttpSettings(
                 timeout_s=_env_float(source, "ARACHNE_HTTP_TIMEOUT_S", 15.0),
                 connect_timeout_s=_env_float(source, "ARACHNE_HTTP_CONNECT_TIMEOUT_S", 5.0),

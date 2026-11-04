@@ -248,6 +248,13 @@ METRIC_FAMILIES: Final[tuple[MetricFamily, ...]] = (
         "Payloads already present in the backend, written once (REQ-DATA-004).",
         ("backend",),
     ),
+    # --- read-replica health ------------------------------------------------ (REQ-SCALE-011)
+    _family(
+        "arachne_read_replica_failovers_total",
+        "counter",
+        "Reads that fell back to the primary because a replica did not answer, by replica.",
+        ("replica",),
+    ),
     # --- process identity -------------------------------------------------------
     _family(
         "arachne_build_info",

@@ -158,6 +158,11 @@ def scan_fixture() -> Iterator[dict[str, Any]]:
 
 
 @pytest.mark.perf
+# An explicit, reviewed timeout (REQ-QUAL-012's mechanism). The measured run is 30-37 s, so
+# the global 60 s cap left only a 1.7x margin against a busy machine — and a benchmark should
+# fail on its *assertion* (the 3,600 s G-06 budget), not on a wall-clock cap it legitimately
+# approaches. The timeout here is a hang guard, not the performance gate.
+@pytest.mark.timeout(300)
 async def test_g06_scan_50_hosts_200_endpoints_under_budget(
     scan_fixture: dict[str, Any],
 ) -> None:

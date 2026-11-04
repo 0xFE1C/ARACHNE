@@ -45,6 +45,7 @@ from arachne.data.purple_store import PurpleStore, SqlPurpleStore
 from arachne.data.quality_store import SqlQualityStore
 from arachne.data.queue_store import AgentRegistry, QueueBackend, WorkQueue
 from arachne.data.quota import StorageQuota
+from arachne.data.replica import ReadReplicaRouter, build_read_replica_router
 from arachne.data.retention import RetentionPruner
 from arachne.data.review_store import PackReviewStore
 from arachne.data.scan_store import SqlScanStateStore
@@ -147,9 +148,16 @@ class ScanServices:
     #: keeps no simulation trend: a what-if run still works (it is a pure computation over
     #: stored scan data), but continuous re-simulation has nowhere to record its points.
     simulations: SqlSimulationStore | None = None
+    #: Read-replica failover for the read-only endpoints (REQ-SCALE-011, WP-17). ``None``
+    #: means no replica is configured and every read goes to the primary.
+    read_replicas: ReadReplicaRouter | None = None
+    #: The engines behind ``read_replicas``, disposed with the primary's on ``close``.
+    replica_engines: tuple[Engine, ...] = ()
 
     def close(self) -> None:
         self.engine.dispose()
+        for engine in self.replica_engines:
+            engine.dispose()
 
 
 def require_schema(engine: Engine) -> None:
@@ -207,6 +215,7 @@ def build_services(settings: Settings | None = None, *, check_schema: bool = Tru
     if check_schema:
         require_schema(engine)
     factory = create_session_factory(engine)
+    read_replicas, replica_engines = _build_read_replicas(effective, factory)
     store = SqlScanStateStore(factory)
     target_store = SqlTargetStore(factory)
     # S25 (REQ-TRUST-005): the deployment key and the audit hash chain. The chain *is* the
@@ -300,7 +309,45 @@ def build_services(settings: Settings | None = None, *, check_schema: bool = Tru
         # S28 table, and it holds observations of a *computation* — no finding row is written
         # anywhere by area SIM, which is what keeps a simulated result out of every gate.
         simulations=SqlSimulationStore(factory),
+        # WP-17 (REQ-SCALE-011): the read-replica pool the API's read-only endpoints use.
+        # ``None`` when no replica is configured, so a single-database deployment is
+        # unchanged. The replica engines are kept on the stack so ``close`` disposes them.
+        read_replicas=read_replicas,
+        replica_engines=replica_engines,
     )
+
+
+def _build_read_replicas(
+    settings: Settings, primary: sessionmaker[Session]
+) -> tuple[ReadReplicaRouter | None, tuple[Engine, ...]]:
+    """The read-replica router and its engines (REQ-SCALE-011).
+
+    Each configured URL becomes its own engine and session factory. A replica URL identical
+    to the primary is refused as a configuration error: it would be a second pool over the
+    same database pretending to be a replica, which would make a "replica failure" test pass
+    while proving nothing.
+    """
+    urls = tuple(url.strip() for url in settings.database_replica_urls if url.strip())
+    if not urls:
+        return None, ()
+    engines: list[Engine] = []
+    factories: list[tuple[str, sessionmaker[Session]]] = []
+    try:
+        for index, url in enumerate(urls, start=1):
+            if url == settings.database_url:
+                msg = (
+                    "database_replica_urls names the primary database; a read replica must "
+                    "be a different endpoint"
+                )
+                raise ConfigurationError(msg)
+            engine = create_db_engine(url=url)
+            engines.append(engine)
+            factories.append((f"replica-{index}", create_session_factory(engine)))
+    except Exception:
+        for engine in engines:
+            engine.dispose()
+        raise
+    return build_read_replica_router(primary, factories), tuple(engines)
 
 
 def build_purple_runner(services: ScanServices) -> PurpleRunner:

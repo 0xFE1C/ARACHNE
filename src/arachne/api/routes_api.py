@@ -598,7 +598,11 @@ def list_modules(
     access, but no endpoint mutates deployment settings.
     """
     registry = context.services.registry
-    stored = {row.key: row for row in context.queries.list_checks()}
+    # REQ-SCALE-011: this endpoint is a pure read of the check catalogue, so it may be
+    # served from a read replica when the deployment configures one. The router falls back to
+    # the primary transparently if the replica is gone.
+    queries = context.read_queries or context.queries
+    stored = {row.key: row for row in queries.list_checks()}
     out: list[ModuleOut] = []
     for group in registry.groups:
         checks: list[dict[str, Any]] = []
