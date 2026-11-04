@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arachne.invalid/schemas/webhooks/scan.slack.v1.0.json",
+  "title": "ARACHNE webhook event scan.slack 1.0",
+  "description": "A scan-completion summary card posted to a Slack incoming webhook.",
+  "type": "object",
+  "required": [
+    "event",
+    "schema_version",
+    "text"
+  ],
+  "properties": {
+    "event": {
+      "type": "string",
+      "description": "the event name (REQ-ECOS-009)"
+    },
+    "schema_version": {
+      "type": "string",
+      "description": "the version of this event's shape"
+    },
+    "text": {
+      "description": "the rendered card, one message"
+    }
+  },
+  "additionalProperties": true
+}

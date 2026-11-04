@@ -1,0 +1,19 @@
+{
+  "asset": "https://target.example/admin",
+  "asset_kind": "url",
+  "check_id": "m4.dashboard-exposure",
+  "confidence": 95,
+  "cve": null,
+  "cvss": 7.5,
+  "cwe": "CWE-284",
+  "event": "finding",
+  "finding_id": "F-000002",
+  "module": "M4",
+  "remediation": "Block .env at the web-server layer and rotate the credentials.",
+  "scan_id": "scan_1",
+  "schema_version": "1.0",
+  "severity": "critical",
+  "status": "open",
+  "title": "Unauthenticated admin dashboard",
+  "ts": "2026-10-27T12:00:00+00:00"
+}

@@ -1,0 +1,11 @@
+{
+  "category": "vulnerability",
+  "comments": "Opened by ARACHNE scan scan_1 \u00b7 check m4.dashboard-exposure \u00b7 report: https://arachne.example/scans/scan_1",
+  "description": "ARACHNE found a critical issue on https://target.example/admin.\n\nUnauthenticated admin dashboard\nSeverity: critical \u00b7 Confidence: 95 \u00b7 CVSS: 7.5Check: m4.dashboard-exposure \u00b7 CWE-284\nWhat ARACHNE established\n  Block .env at the web-server layer and rotate the credentials.\n\nScan scan_1 of target.example (0.1.0, engine heuristic).\nFull report: https://arachne.example/scans/scan_1\n\nThis incident was opened automatically from a scan finding. Assign it for\nverification and remediation; the ARACHNE report carries the evidence.",
+  "event": "finding.servicenow",
+  "impact": 1,
+  "schema_version": "1.0",
+  "short_description": "[ARACHNE critical] Unauthenticated admin dashboard \u2014 target.example (scan scan_1)",
+  "subcategory": "arachne",
+  "urgency": 1
+}

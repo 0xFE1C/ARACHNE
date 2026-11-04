@@ -1,0 +1,60 @@
+{
+  "active": true,
+  "close_old_findings": true,
+  "engagement_name": "ARACHNE \u00b7 target.example",
+  "event": "scan.defectdojo",
+  "findings": [
+    {
+      "active": true,
+      "component_name": "M4",
+      "cwe": 284,
+      "date": "2026-10-27",
+      "description": "The file returned HTTP 200 and contained credentials.",
+      "false_p": false,
+      "file_path": "https://target.example/admin",
+      "mitigation": "Block .env at the web-server layer and rotate the credentials.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/200.html"
+      ],
+      "severity": "Critical",
+      "severity_justification": "admin-surface",
+      "tags": [
+        "M4",
+        "critical"
+      ],
+      "title": "Unauthenticated admin dashboard",
+      "unique_id_from_tool": "F-000002",
+      "verified": false,
+      "vuln_id_from_tool": "m4.dashboard-exposure"
+    },
+    {
+      "active": true,
+      "component_name": "M4",
+      "cwe": 200,
+      "date": "2026-10-27",
+      "description": "The file returned HTTP 200 and contained credentials.",
+      "false_p": false,
+      "file_path": "https://target.example/.env",
+      "mitigation": "Block .env at the web-server layer and rotate the credentials.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/200.html"
+      ],
+      "severity": "High",
+      "severity_justification": "env-file-exposure",
+      "tags": [
+        "M4",
+        "high"
+      ],
+      "title": "Sensitive environment file exposed",
+      "unique_id_from_tool": "F-000001",
+      "verified": false,
+      "vuln_id_from_tool": "m4.env-file-probe"
+    }
+  ],
+  "minimum_severity": "Info",
+  "product_name": "target.example",
+  "scan_date": "2026-10-27",
+  "scan_type": "ARACHNE Scan",
+  "schema_version": "1.0",
+  "verified": false
+}

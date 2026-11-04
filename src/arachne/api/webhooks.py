@@ -50,6 +50,12 @@ from typing import Any
 import jinja2
 
 from arachne import __version__
+from arachne.api.webhook_schemas import (
+    EVENT_HEADER,
+    SCHEMA_VERSION,
+    VERSION_HEADER,
+    require_event,
+)
 from arachne.core.audit import AuditAction, Auditor, AuditOutcome
 from arachne.core.config import SEVERITY_LEVELS, Settings, WebhookSettings
 from arachne.core.errors import ConfigurationError
@@ -94,11 +100,20 @@ class WebhookPostResult:
 
 @dataclass(frozen=True, slots=True)
 class WebhookPayload:
-    """One fully-rendered delivery: where to post it and what."""
+    """One fully-rendered delivery: where to post it, what, and which event shape it is.
+
+    ``event`` and ``schema_version`` are **required** (REQ-ECOS-009): every outbound payload names
+    the event it carries and the version of that event's shape, so a receiver can tell "a shape I
+    do not understand" from "a message I cannot parse". An unknown pair is refused *here*, at emit
+    time — a schema change that forgot to mint a version fails in ARACHNE's own process instead
+    of in a customer's ingest pipeline.
+    """
 
     name: str
     url: str
     body: dict[str, Any]
+    event: str
+    schema_version: str = SCHEMA_VERSION
     headers: Mapping[str, str] = field(default_factory=dict)
     summary: str = ""
     #: When set, posted verbatim instead of ``json.dumps(body)`` (the SIEM's NDJSON:
@@ -106,10 +121,23 @@ class WebhookPayload:
     raw_body: str | None = None
     content_type: str = "application/json"
 
+    def __post_init__(self) -> None:
+        # The emit-time gate: refuse an event/version this build does not have a schema for.
+        schema = require_event(self.event, self.schema_version)
+        if schema.destination != self.name:
+            msg = (
+                f"webhook event {schema.pair!r} belongs to the {schema.destination!r} "
+                f"destination but was rendered as {self.name!r}; the two must agree or a "
+                "receiver gets a payload whose event name lies about its shape"
+            )
+            raise ConfigurationError(msg)
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "url": self.url,
+            "event": self.event,
+            "schema_version": self.schema_version,
             "headers": dict.fromkeys(self.headers, "<redacted>"),
             "body": self.body if self.raw_body is None else f"<{self.content_type}>",
         }
@@ -150,7 +178,15 @@ def load_webhook_environment(templates_dir: str | None = None) -> jinja2.Environ
     if templates_dir:
         loaders.append(jinja2.FileSystemLoader(templates_dir))
     try:
-        contents = {item.name: item.read_text(encoding="utf-8") for item in bundled.iterdir()}
+        # Only files are templates: the directory also holds ``schemas/``, the published JSON
+        # Schema of each event (REQ-ECOS-009). Reading that subdirectory as a template would make
+        # an unrelated addition break every webhook, which is the kind of coupling that turns a
+        # data directory into a trap.
+        contents = {
+            item.name: item.read_text(encoding="utf-8")
+            for item in bundled.iterdir()
+            if item.is_file()
+        }
     except (FileNotFoundError, OSError) as exc:  # pragma: no cover - packaging failure
         msg = f"bundled webhook templates are missing: {exc}"
         raise ConfigurationError(msg) from exc
@@ -301,6 +337,27 @@ def _report_url(scan_id: str | int, settings: Settings) -> str:
     return f"{base}{path}" if base else path
 
 
+def _envelope(
+    body: Mapping[str, Any],
+    event: str,
+    headers: Mapping[str, str] | None = None,
+) -> tuple[dict[str, Any], dict[str, str]]:
+    """Stamp the event envelope onto a body and into the headers (REQ-ECOS-009).
+
+    Both, because the two destinations ARACHNE posts to that own their field set (Jira's issue
+    API, ServiceNow's table API) may drop a property they do not recognise: a receiver that keeps
+    the body's ``event``/``schema_version`` reads them there, and one that drops unknown body
+    properties can still read the headers. Nothing about the destination's own fields changes.
+    """
+    schema = require_event(event)
+    stamped = dict(body) | {"event": schema.name, "schema_version": schema.version}
+    merged = dict(headers or {}) | {
+        EVENT_HEADER: schema.name,
+        VERSION_HEADER: schema.version,
+    }
+    return stamped, merged
+
+
 def render_payloads(
     report: ReportData,
     settings: Settings,
@@ -324,29 +381,38 @@ def render_payloads(
 
     if hooks.slack_url is not None:
         text = environment.get_template("slack.txt.j2").render(**context)
+        body, headers = _envelope({"text": text}, "scan.slack")
         payloads.append(
             WebhookPayload(
                 name="slack",
                 url=hooks.slack_url.get_secret_value(),
-                body={"text": text},
+                body=body,
+                event="scan.slack",
+                headers=headers,
                 summary=_first_line(text),
             )
         )
 
     if hooks.teams_url is not None:
         text = environment.get_template("teams.txt.j2").render(**context)
+        card, teams_headers = _envelope(
+            {
+                "@type": "MessageCard",
+                "@context": "https://schema.org/extensions",
+                "summary": _first_line(text),
+                "themeColor": _theme_color(context["counts"]),
+                "title": f"ARACHNE scan {report.scan_id}: {report.target_name}",
+                "text": text,
+            },
+            "scan.teams",
+        )
         payloads.append(
             WebhookPayload(
                 name="teams",
                 url=hooks.teams_url.get_secret_value(),
-                body={
-                    "@type": "MessageCard",
-                    "@context": "https://schema.org/extensions",
-                    "summary": _first_line(text),
-                    "themeColor": _theme_color(context["counts"]),
-                    "title": f"ARACHNE scan {report.scan_id}: {report.target_name}",
-                    "text": text,
-                },
+                body=card,
+                event="scan.teams",
+                headers=teams_headers,
                 summary=_first_line(text),
             )
         )
@@ -363,22 +429,28 @@ def render_payloads(
             description = environment.get_template("jira_description.txt.j2").render(
                 finding=finding, **context
             )
+            issue, issue_headers = _envelope(
+                {
+                    "fields": {
+                        "project": {"key": hooks.jira_project},
+                        "summary": summary.strip(),
+                        "description": description.strip(),
+                        "issuetype": {"name": "Bug"},
+                        "priority": {"name": _jira_priority(str(finding["severity"]))},
+                        "labels": ["arachne", finding["severity"]],
+                    }
+                },
+                "finding.jira",
+                headers,
+            )
             payloads.append(
                 WebhookPayload(
                     name="jira",
                     url=endpoint,
-                    headers=headers,
+                    headers=issue_headers,
                     summary=_first_line(summary.strip()),
-                    body={
-                        "fields": {
-                            "project": {"key": hooks.jira_project},
-                            "summary": summary.strip(),
-                            "description": description.strip(),
-                            "issuetype": {"name": "Bug"},
-                            "priority": {"name": _jira_priority(str(finding["severity"]))},
-                            "labels": ["arachne", finding["severity"]],
-                        }
-                    },
+                    body=issue,
+                    event="finding.jira",
                 )
             )
 
@@ -391,24 +463,35 @@ def render_payloads(
         if hooks.defectdojo_token is not None:
             token = hooks.defectdojo_token.get_secret_value()
             dd_headers["Authorization"] = f"Token {token}"
+        document, dd_headers = _envelope(defectdojo_document(report), "scan.defectdojo", dd_headers)
         payloads.append(
             WebhookPayload(
                 name="defectdojo",
                 url=f"{base}/api/v2/import-scan/",
                 headers=dd_headers,
                 summary=f"{report.counts.total} finding(s) for scan {report.scan_id}",
-                body=defectdojo_document(report),
+                body=document,
+                event="scan.defectdojo",
             )
         )
 
     if hooks.siem_url is not None:
         records = siem_records(report, audit_events)
+        # The NDJSON payload's own envelope describes the export; every *record* inside it
+        # carries its own event name and version, because a SIEM collector indexes records, not
+        # HTTP bodies.
+        body, siem_headers = _envelope(
+            {"records": len(records), "event_types": sorted({item["event"] for item in records})},
+            "scan.export.siem",
+            _siem_headers(hooks),
+        )
         payloads.append(
             WebhookPayload(
                 name="siem",
                 url=hooks.siem_url.get_secret_value(),
-                body={"records": len(records)},
-                headers=_siem_headers(hooks),
+                body=body,
+                event="scan.export.siem",
+                headers=siem_headers,
                 summary=f"{len(records)} record(s) for scan {report.scan_id}",
                 raw_body="".join(
                     json.dumps(record, default=str, sort_keys=True) + "\n" for record in records
@@ -454,24 +537,30 @@ def _servicenow_payloads(
             finding=finding, **context
         )
         impact, urgency = _servicenow_priority(str(finding.get("severity") or "info"))
+        incident, incident_headers = _envelope(
+            {
+                "short_description": short.strip(),
+                "description": description.strip(),
+                "impact": impact,
+                "urgency": urgency,
+                "category": "vulnerability",
+                "subcategory": "arachne",
+                "comments": (
+                    f"Opened by ARACHNE scan {report.scan_id} · check "
+                    f"{finding.get('check_id') or 'n/a'} · report: {context['report_url']}"
+                ),
+            },
+            "finding.servicenow",
+            headers,
+        )
         payloads.append(
             WebhookPayload(
                 name="servicenow",
                 url=endpoint,
-                headers=headers,
+                headers=incident_headers,
                 summary=_first_line(short.strip()),
-                body={
-                    "short_description": short.strip(),
-                    "description": description.strip(),
-                    "impact": impact,
-                    "urgency": urgency,
-                    "category": "vulnerability",
-                    "subcategory": "arachne",
-                    "comments": (
-                        f"Opened by ARACHNE scan {report.scan_id} · check "
-                        f"{finding.get('check_id') or 'n/a'} · report: {context['report_url']}"
-                    ),
-                },
+                body=incident,
+                event="finding.servicenow",
             )
         )
     return payloads
@@ -518,9 +607,13 @@ def siem_records(
     no-secrets-in-logs test pins that a token cannot reach a record.
     """
     generated = report.cover.generated_at or datetime.now(UTC)
+    summary_version = require_event("scan.summary").version
+    finding_version = require_event("finding").version
+    audit_version = require_event("audit").version
     records: list[dict[str, Any]] = [
         {
             "event": "scan.summary",
+            "schema_version": summary_version,
             "ts": generated.isoformat(),
             "scan_id": str(report.scan_id),
             "target": report.target_name,
@@ -536,6 +629,7 @@ def siem_records(
         records.append(
             {
                 "event": "finding",
+                "schema_version": finding_version,
                 "ts": (finding.timestamps.last_seen or generated).isoformat(),
                 "scan_id": str(report.scan_id),
                 "finding_id": finding.id,
@@ -556,6 +650,7 @@ def siem_records(
     for event in audit_events:
         record = dict(event)
         record.setdefault("event", "audit")
+        record.setdefault("schema_version", audit_version)
         record.setdefault("ts", generated.isoformat())
         record["scan_id"] = str(record.get("scan_id") or report.scan_id)
         records.append(record)

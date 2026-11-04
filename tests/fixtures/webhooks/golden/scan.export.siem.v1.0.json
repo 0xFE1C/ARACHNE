@@ -1,0 +1,10 @@
+{
+  "event": "scan.export.siem",
+  "event_types": [
+    "audit",
+    "finding",
+    "scan.summary"
+  ],
+  "records": 4,
+  "schema_version": "1.0"
+}

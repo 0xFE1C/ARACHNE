@@ -1,4 +1,10 @@
-"""The plugin marketplace catalogue (F-09-01, S14)."""
+"""The plugin marketplace catalogue (F-09-01, S14) — the loading mechanics.
+
+The trust rules on top of them — the index signature, the rotation key set and the refusal of an
+entry pointing at an untrusted pack — are ``tests/unit/test_marketplace_signing.py``. Every
+catalogue built here from a *path* is loaded with ``allow_unsigned=True``, because what is under
+test is the parser, not the signature gate.
+"""
 
 from __future__ import annotations
 
@@ -23,6 +29,9 @@ def test_the_bundled_catalogue_lists_both_example_plugins() -> None:
     kinds = {entry.name: entry.kind for entry in catalogue.entries}
     assert kinds["arachne-example-check-plugin"] == "check"
     assert kinds["arachne-example-report-plugin"] == "report-format"
+    # Shipped inside the package, so it needs no runtime signature — and says so.
+    assert catalogue.verified is True
+    assert catalogue.trust == "bundled"
 
 
 def test_the_catalogue_entry_point_groups_match_the_registries() -> None:
@@ -74,7 +83,7 @@ plugins:
     entry_point_group: arachne.modules
 """
     )
-    catalogue = load_marketplace(path)
+    catalogue = load_marketplace(path, allow_unsigned=True)
     assert catalogue.version == "9"
     assert catalogue.get("LOCAL-PLUGIN") is not None  # case-insensitive lookup
     assert catalogue.to_dict()["source"].endswith("index.yaml")
@@ -99,7 +108,7 @@ def test_a_bad_catalogue_is_refused_with_the_reason(
     path = tmp_path / "index.yaml"
     path.write_text(document)
     with pytest.raises(ConfigurationError, match=message):
-        load_marketplace(path)
+        load_marketplace(path, allow_unsigned=True)
 
 
 def test_a_missing_catalogue_is_refused(tmp_path: Path) -> None:
@@ -110,5 +119,5 @@ def test_a_missing_catalogue_is_refused(tmp_path: Path) -> None:
 def test_an_empty_catalogue_is_valid(tmp_path: Path) -> None:
     path = tmp_path / "index.yaml"
     path.write_text("")
-    catalogue = load_marketplace(path)
+    catalogue = load_marketplace(path, allow_unsigned=True)
     assert catalogue == MarketplaceCatalog(source=str(path))

@@ -1,0 +1,17 @@
+{
+  "arachne_version": "0.1.0",
+  "counts": {
+    "critical": 1,
+    "high": 1,
+    "info": 0,
+    "low": 0,
+    "medium": 0
+  },
+  "engine": "heuristic",
+  "event": "scan.summary",
+  "scan_id": "scan_1",
+  "schema_version": "1.0",
+  "target": "target.example",
+  "total": 2,
+  "ts": "2026-10-27T12:00:00+00:00"
+}

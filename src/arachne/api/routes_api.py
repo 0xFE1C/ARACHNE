@@ -1040,10 +1040,17 @@ def plugin_marketplace(
     newest recorded review of those exact bytes passed every gate, ``rejected`` when it did
     not, and ``unreviewed`` when nothing has been reviewed.
     """
+    from arachne.core.signing import build_content_keyring
     from arachne.plugins.marketplace import load_marketplace
     from arachne.plugins.review import DECISION_LISTED
 
-    catalogue = load_marketplace(context.settings.plugins.marketplace)
+    # Fail-closed (REQ-ECOS-008): an index this deployment cannot verify raises rather than
+    # being served, because a served listing is a listing somebody may act on.
+    catalogue = load_marketplace(
+        context.settings.plugins.marketplace,
+        keyring=build_content_keyring(context.settings),
+        allow_unsigned=context.settings.plugins.allow_unsigned_index,
+    )
     rows = catalogue.listing(term=search)
     store = getattr(context.services, "pack_reviews", None)
     decisions: dict[tuple[str, str], str] = {}
@@ -1088,7 +1095,7 @@ def review_plugin(
     endpoint authorizes. A rejection is a 200 with ``listed: false`` and the reasons, because
     "this pack is hostile" is an *outcome* the caller asked for, not a request error.
     """
-    from arachne.core.signing import build_signer
+    from arachne.core.signing import build_content_keyring
     from arachne.plugins.review import review_pack_bytes
 
     path = Path(payload.pack).expanduser()
@@ -1098,7 +1105,7 @@ def review_plugin(
         raise HTTPException(status_code=400, detail=f"cannot read pack: {exc}") from exc
     report = review_pack_bytes(
         data,
-        signer=build_signer(context.settings),
+        keyring=build_content_keyring(context.settings),
         allow_unsigned=payload.allow_unsigned or context.settings.plugins.allow_unsigned_packs,
         source=str(path),
     )
@@ -1514,7 +1521,15 @@ async def run_schedule(
 # --------------------------------------------------------------------------- webhooks
 @api_router.get("/webhooks", tags=["webhooks"])
 def webhook_status(principal: AdminPrincipal, context: ContextDep) -> JSONResponse:
-    """Which integrations are configured (names and threshold, never URLs or tokens)."""
+    """Which integrations are configured (names and threshold, never URLs or tokens).
+
+    ``events`` publishes the versioned schema of every payload this deployment can emit
+    (REQ-ECOS-009), so a receiver can read``event`` and ``schema_version`` and the shape behind
+    them without reading ARACHNE's source. The same documents are on disk under
+    ``templates/webhooks/schemas/`` and in ``arachne events catalogue``.
+    """
+    from arachne.api.webhook_schemas import EVENT_HEADER, EVENTS, SCHEMA_VERSION, VERSION_HEADER
+
     hooks = context.settings.webhooks
     return JSONResponse(
         {
@@ -1523,6 +1538,9 @@ def webhook_status(principal: AdminPrincipal, context: ContextDep) -> JSONRespon
             "min_severity": hooks.min_severity,
             "max_findings": hooks.max_findings,
             "base_url_configured": bool(context.settings.api.base_url),
+            "event_headers": {EVENT_HEADER: "<event>", VERSION_HEADER: "<schema_version>"},
+            "events": [EVENTS[key].to_dict() for key in sorted(EVENTS)],
+            "schema_version": SCHEMA_VERSION,
         }
     )
 

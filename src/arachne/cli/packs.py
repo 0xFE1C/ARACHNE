@@ -28,7 +28,7 @@ import typer
 from arachne.core.audit import AuditAction, AuditOutcome
 from arachne.core.config import get_settings
 from arachne.core.errors import ArachneError, ContentPackError
-from arachne.core.signing import build_signer
+from arachne.core.signing import build_content_keyring, build_signer
 from arachne.data.services import build_services
 from arachne.resil.packs import (
     install_pack,
@@ -193,10 +193,12 @@ def packs_verify(
 ) -> None:
     """Verify a pack's signature and every file digest without installing anything."""
     settings = get_settings()
-    signer = build_signer(settings)
+    # The whole accepted key set, not just the deployment's own key: during a rotation the pack
+    # may legitimately be signed by the previous key (REQ-ECOS-008).
+    keyring = build_content_keyring(settings)
     require = settings.airgap.require_signature and not allow_unsigned
     try:
-        verified = read_pack_file(pack, signer=signer, require_signature=require)
+        verified = read_pack_file(pack, keyring=keyring, require_signature=require)
     except ArachneError as exc:
         typer.echo(f"REFUSED: {exc}", err=True)
         raise typer.Exit(code=1) from exc
@@ -233,11 +235,13 @@ def packs_import(
     "and did the pipeline pass it?". Both are required before content reaches a scan.
     """
     settings = get_settings()
-    signer = build_signer(settings)
+    # The accepted key set: a pack signed by either key of a rotation overlap imports
+    # (REQ-ECOS-008), while a key outside the set never does.
+    keyring = build_content_keyring(settings)
     require = settings.airgap.require_signature and not allow_unsigned
     services = build_services(settings)
     try:
-        verified = read_pack_file(pack, signer=signer, require_signature=require)
+        verified = read_pack_file(pack, keyring=keyring, require_signature=require)
         _require_listed_review(services, settings, verified)
         destination = content_dir or settings.content_dir
         result = install_pack(verified, content_dir=destination)

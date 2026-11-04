@@ -1758,6 +1758,7 @@ def plugins_page(request: Request, context: ContextDep) -> Response:
     principal = _principal_or_redirect(request, context)
     if isinstance(principal, RedirectResponse):
         return principal
+    from arachne.core.signing import build_content_keyring
     from arachne.plugins import installed_plugins
     from arachne.plugins.marketplace import load_marketplace
     from arachne.report import default_registry
@@ -1774,7 +1775,11 @@ def plugins_page(request: Request, context: ContextDep) -> Response:
         installed = {"checks": [], "report_formats": []}
         plugin_error = True
     try:
-        catalogue = load_marketplace(context.settings.plugins.marketplace)
+        catalogue = load_marketplace(
+            context.settings.plugins.marketplace,
+            keyring=build_content_keyring(context.settings),
+            allow_unsigned=context.settings.plugins.allow_unsigned_index,
+        )
         formats = default_registry().summary()
     except Exception:  # §4.13 error
         _logger.exception("the plugin list could not be read")

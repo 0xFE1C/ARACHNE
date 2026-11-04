@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arachne.invalid/schemas/webhooks/scan.defectdojo.v1.0.json",
+  "title": "ARACHNE webhook event scan.defectdojo 1.0",
+  "description": "A DefectDojo import document for a whole scan (the offline handoff, posted).",
+  "type": "object",
+  "required": [
+    "event",
+    "findings",
+    "scan_type",
+    "schema_version"
+  ],
+  "properties": {
+    "event": {
+      "type": "string",
+      "description": "the event name (REQ-ECOS-009)"
+    },
+    "schema_version": {
+      "type": "string",
+      "description": "the version of this event's shape"
+    },
+    "scan_type": {
+      "description": "the DefectDojo scan type"
+    },
+    "findings": {
+      "description": "the imported findings"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arachne.invalid/schemas/webhooks/scan.export.siem.v1.0.json",
+  "title": "ARACHNE webhook event scan.export.siem 1.0",
+  "description": "The envelope of the newline-delimited SIEM export. Each *record* inside it carries its own event name and version, because a collector indexes records, not HTTP bodies.",
+  "type": "object",
+  "required": [
+    "event",
+    "event_types",
+    "records",
+    "schema_version"
+  ],
+  "properties": {
+    "event": {
+      "type": "string",
+      "description": "the event name (REQ-ECOS-009)"
+    },
+    "schema_version": {
+      "type": "string",
+      "description": "the version of this event's shape"
+    },
+    "records": {
+      "description": "how many records follow"
+    },
+    "event_types": {
+      "description": "the record events present"
+    }
+  },
+  "additionalProperties": true
+}

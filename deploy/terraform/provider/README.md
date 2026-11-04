@@ -40,6 +40,37 @@ source and one resource — is decided and reviewable now, next to the Terraform
 | `go.mod` | Module definition. |
 | `Makefile` | `build` / `install` / `fmt` / `vet` / `test` targets. |
 
+## WP-16 decision: recovery deferred, and why
+
+`REQ-ECOS-010` asks this provider to cover **projects, targets, schedules and suppression rules
+with import support and acceptance tests against a fixture API**. WP-16 re-measured what the
+control plane actually serves before writing Go, and the answer is that the provider cannot be
+honest yet:
+
+| Resource | create | read | delete | update |
+| ---- | ------ | ---- | ------ | ------ |
+| projects | `POST /projects` | `GET /projects/{slug}` | `DELETE /projects/{slug}` | **only** `PUT /projects/{slug}/retention` and `PUT /projects/{slug}/storage` |
+| targets | `POST /targets` | `GET /targets/{id}` | `DELETE /targets/{id}` | **no endpoint** |
+| schedules | `POST /schedules` (an upsert, so it can replace the row) | `GET /schedules` | `DELETE /schedules/{id}` | **no PATCH/PUT endpoint** |
+| suppressions | `POST /suppressions` | `GET /suppressions` | `DELETE /suppressions/{id}` | **no endpoint** (a rule is revoked and re-created) |
+
+A provider that claimed create/read/update/delete against that surface would either call an
+endpoint the product does not serve — passing its own acceptance tests against a fixture server
+that implements fiction — or silently map "update" onto delete-and-recreate, which is not what
+Terraform users mean by it and would drop a suppression's recorded actor and reason. Neither is
+acceptable, so the work is **deferred with this decision recorded** rather than half-implemented.
+
+What would unblock it:
+
+1. a control-plane change adding `PATCH`/`PUT` for targets, schedules and suppressions (a DET/API
+   work package owns those routers, not this one);
+2. then a provider built with `import` (`ResourceWithImportState`) per resource, and acceptance
+   tests that drive the resource's CRUD methods against an in-process `httptest` fixture server —
+   no Terraform CLI and no network, which is what makes the tests runnable here at all.
+
+Until then the Terraform *module* (`../modules/arachne`) remains the supported deployment path;
+it is real, and it deploys ARACHNE today.
+
 ## Building (for a future provider, not needed here)
 
 ```sh

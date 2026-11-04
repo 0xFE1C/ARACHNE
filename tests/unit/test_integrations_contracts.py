@@ -22,6 +22,7 @@ import pytest
 from tests.helpers.api import StubPoster
 from tests.helpers.report import synthetic_report
 
+from arachne.api.webhook_schemas import ENVELOPE_KEYS, SCHEMA_VERSION
 from arachne.api.webhooks import (
     WebhookNotifier,
     build_webhook_sender,
@@ -229,7 +230,15 @@ def test_the_report_format_and_the_webhook_send_the_same_defectdojo_document(
     """
     webhook = next(p for p in render_payloads(report, _settings()) if p.name == "defectdojo")
     document = json.loads(render_defectdojo(report))
-    assert webhook.body == document
+    # The posted body is the same document plus the versioned envelope every webhook payload
+    # carries (REQ-ECOS-009); the file handover is not a webhook and carries no envelope.
+    assert webhook.body | {} == document | {
+        "event": "scan.defectdojo",
+        "schema_version": SCHEMA_VERSION,
+    }
+    assert {
+        key: value for key, value in webhook.body.items() if key not in ENVELOPE_KEYS
+    } == document
     assert document["findings"][0]["description"], (
         "the narrative (or remediation) is the description"
     )

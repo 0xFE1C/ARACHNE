@@ -1,0 +1,10 @@
+{
+  "@context": "https://schema.org/extensions",
+  "@type": "MessageCard",
+  "event": "scan.teams",
+  "schema_version": "1.0",
+  "summary": "ARACHNE scan scan_1 completed for target.example (engine heuristic).",
+  "text": "ARACHNE scan scan_1 completed for target.example (engine heuristic).\n\nSeverity: 1 critical \u00b7 1 high \u00b7 0 medium \u00b7 0 low \u00b7 0 info \u2014 2 finding(s).\nAt or above info: 2.\nTop findings:\n- [CRITICAL] Unauthenticated admin dashboard \u2014 https://target.example/admin\n- [HIGH] Sensitive environment file exposed \u2014 https://target.example/.env\nFull report: https://arachne.example/scans/scan_1",
+  "themeColor": "b60205",
+  "title": "ARACHNE scan scan_1: target.example"
+}

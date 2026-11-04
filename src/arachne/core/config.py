@@ -1926,6 +1926,12 @@ class PluginsSettings:
     #: Accept an unsigned content pack (S26). Off by default: an unsigned pack is refused by
     #: the review pipeline before any gate even runs.
     allow_unsigned_packs: bool = False
+    #: Accept a marketplace index this deployment cannot signature-verify (REQ-ECOS-008). Off by
+    #: default, and the bundled index is exempt because it ships inside the package. An
+    #: operator-supplied index (``ARACHNE_MARKETPLACE``, ``--index``) must be signed with a key in
+    #: :attr:`~arachne.core.config.IntegritySettings`'s key set; without one it is refused, since
+    #: a compromised index redirects trust before anything is downloaded.
+    allow_unsigned_index: bool = False
 
     def __post_init__(self) -> None:
         if self.install_timeout_s <= 0:
@@ -2194,6 +2200,16 @@ class IntegritySettings:
     key_file: str | None = None
     #: Non-secret label carried in every signature; defaults to a digest of the key.
     key_id: str | None = None
+    #: **Additional** content keys accepted for signature verification (REQ-ECOS-008). The set is
+    #: what makes a key rotation possible without a flag day: during the overlap both the old and
+    #: the new key verify, so every pack and marketplace index signed under either one still
+    #: loads. Signing always uses ``key`` — the deployment's own key — never an alternate, so a
+    #: rotation key can verify but never mint.
+    #:
+    #: ``ARACHNE_CONTENT_KEYS`` is a comma-separated list. Empty (the default) means the only
+    #: accepted key is ``ARACHNE_INTEGRITY_KEY``, and with neither set nothing verifies: a
+    #: deployment with no key refuses every signed artifact rather than accepting anything.
+    content_keys: tuple[SecretStr, ...] = ()
     seal_on_finish: bool = True
     require_signatures: bool = False
     anchor_every: int = 1000
@@ -2820,6 +2836,9 @@ class Settings:
                 allow_unsigned_packs=_env_bool(
                     source, "ARACHNE_PLUGIN_ALLOW_UNSIGNED", default=False
                 ),
+                allow_unsigned_index=_env_bool(
+                    source, "ARACHNE_PLUGIN_ALLOW_UNSIGNED_INDEX", default=False
+                ),
             ),
             distributed=DistributedSettings(
                 enabled=_env_bool(source, "ARACHNE_DISTRIBUTED", default=False),
@@ -2946,6 +2965,7 @@ class Settings:
                 or _env_file_secret(source, "ARACHNE_INTEGRITY_KEY_FILE"),
                 key_file=_env_str(source, "ARACHNE_INTEGRITY_KEY_FILE") or None,
                 key_id=_env_str(source, "ARACHNE_INTEGRITY_KEY_ID") or None,
+                content_keys=_content_keys(source),
                 seal_on_finish=_env_bool(source, "ARACHNE_INTEGRITY_SEAL", default=True),
                 require_signatures=_env_bool(
                     source, "ARACHNE_INTEGRITY_REQUIRE_SIGNATURES", default=False
@@ -3022,6 +3042,21 @@ def _env_secret(env: Mapping[str, str], key: str) -> SecretStr | None:
     """Read a credential from the environment (F-08-01). Never logged, never in a plan."""
     raw = _env_str(env, key)
     return SecretStr(raw) if raw else None
+
+
+def _content_keys(env: Mapping[str, str]) -> tuple[SecretStr, ...]:
+    """The rotation key set from ``ARACHNE_CONTENT_KEYS`` (REQ-ECOS-008).
+
+    Comma- or newline-separated key material, each entry wrapped in a :class:`SecretStr` so it
+    is never logged, never rendered in a plan and never reachable through ``repr`` of the
+    settings object. A blank entry is skipped rather than treated as a key: a stray comma must
+    not admit a short empty secret, which ``DeploymentSigner`` would refuse anyway.
+    """
+    raw = _env_str(env, "ARACHNE_CONTENT_KEYS")
+    if not raw:
+        return ()
+    parts = [item.strip() for item in raw.replace("\n", ",").split(",")]
+    return tuple(SecretStr(item) for item in parts if item)
 
 
 def _env_file_secret(env: Mapping[str, str], key: str) -> SecretStr | None:

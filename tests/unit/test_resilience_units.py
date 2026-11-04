@@ -160,10 +160,12 @@ def test_an_unsigned_pack_is_refused_by_default_and_accepted_explicitly(tmp_path
     archive, _, signature = build_pack({"checks": source / "plan"}, name="p", version="1")
     assert signature is None
     # With a key configured, an unsigned pack fails the signature check.
-    with pytest.raises(ContentPackError, match="signature does not verify"):
+    with pytest.raises(ContentPackError, match="carries no signature"):
         read_pack(archive, signer=DeploymentSigner(KEY))
-    # With no key configured, the failure names the configuration rather than the pack.
-    with pytest.raises(ContentPackError, match="no content key is configured"):
+    # It is the *artifact's* missing signature that is named, whether or not a key is configured:
+    # "sign it, or pass --allow-unsigned" is the same instruction either way, and
+    # `test_a_pack_with_no_key_configured_is_refused` covers the signed-but-unverifiable case.
+    with pytest.raises(ContentPackError, match="carries no signature"):
         read_pack(archive, signer=None)
     # The explicit exception accepts it and records that it was unsigned.
     pack = read_pack(archive, signer=DeploymentSigner(KEY), require_signature=False)

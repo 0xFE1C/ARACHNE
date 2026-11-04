@@ -1,0 +1,21 @@
+{
+  "event": "finding.jira",
+  "fields": {
+    "description": "h2. Unauthenticated admin dashboard\n\n*Severity:* CRITICAL (CVSS 7.5)*Confidence:* 95%\n*Module / check:* M4 / m4.dashboard-exposure\n*CWE:* CWE-284\n*Affected asset:* url https://target.example/admin\n*Status:* open\n\nh3. Remediation\nBlock .env at the web-server layer and rotate the credentials.\n\n----\nFound by ARACHNE scan scan_1 against target.example (engine heuristic, 0.1.0).\nFull report: https://arachne.example/scans/scan_1",
+    "issuetype": {
+      "name": "Bug"
+    },
+    "labels": [
+      "arachne",
+      "critical"
+    ],
+    "priority": {
+      "name": "Highest"
+    },
+    "project": {
+      "key": "SEC"
+    },
+    "summary": "[CRITICAL] Unauthenticated admin dashboard \u2014 https://target.example/admin"
+  },
+  "schema_version": "1.0"
+}

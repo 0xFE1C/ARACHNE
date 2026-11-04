@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arachne.invalid/schemas/webhooks/finding.v1.0.json",
+  "title": "ARACHNE webhook event finding 1.0",
+  "description": "One SIEM record per finding.",
+  "type": "object",
+  "required": [
+    "event",
+    "finding_id",
+    "schema_version",
+    "severity"
+  ],
+  "properties": {
+    "event": {
+      "type": "string",
+      "description": "the event name (REQ-ECOS-009)"
+    },
+    "schema_version": {
+      "type": "string",
+      "description": "the version of this event's shape"
+    },
+    "finding_id": {
+      "description": "the finding identifier"
+    },
+    "severity": {
+      "description": "the finding's severity"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,11 @@
+{
+  "action": "scan.finished",
+  "actor": "pytest",
+  "event": "audit",
+  "outcome": "allowed",
+  "reason": null,
+  "scan_id": "scan_1",
+  "schema_version": "1.0",
+  "target": "target.example",
+  "ts": "2026-10-27T12:00:00+00:00"
+}

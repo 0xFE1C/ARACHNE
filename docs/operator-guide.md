@@ -911,6 +911,114 @@ if admins should be able to install through `POST /api/v1/plugins/install`. The 
 a data file (`ARACHNE_MARKETPLACE` points at your own index), so the workflow works
 air-gapped.
 
+### 15.1 Signing: fail-closed packs and a signed index (REQ-ECOS-008, WP-16)
+
+Two artifacts carry trust into a deployment: a **content pack** and the **marketplace index**
+that points at packs. Both are signature-verified before anything is loaded, and **both are
+fail-closed**: with no key configured, nothing signed is accepted, because "no key" must never
+mean "accept anything".
+
+```bash
+# The deployment's own key. It signs packs and is the first key of the accepted set.
+export ARACHNE_INTEGRITY_KEY="$(arachne integrity generate)"   # or your own ≥16-char key
+
+# During a key rotation, accept the OLD key too — both verify until every artifact is re-signed.
+export ARACHNE_CONTENT_KEYS="old-key-1,old-key-2"             # comma- or newline-separated
+```
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `ARACHNE_INTEGRITY_KEY` | *(none)* | The deployment key: signs packs, indexes, audit heads and evidence. |
+| `ARACHNE_CONTENT_KEYS` | *(none)* | **Additional** keys accepted for verification only (rotation overlap). Never used to sign. |
+| `ARACHNE_PLUGIN_ALLOW_UNSIGNED` | `false` | Accept an unsigned *pack* (a lab). Recorded in the audit trail. |
+| `ARACHNE_PLUGIN_ALLOW_UNSIGNED_INDEX` | `false` | Accept an unsigned *index* from a path (a lab). Recorded by the caller. |
+
+**What changed in WP-16, and the migration.** Until WP-16 a marketplace index was read with no
+signature check at all, and a pack was refused only when its signature failed to verify. If you
+point `ARACHNE_MARKETPLACE` at your own index today, that index is now **refused** until it
+carries a signature:
+
+```
+REFUSED: /etc/arachne/marketplace/index.yaml carries no signature. A marketplace index
+redirects trust — a compromised one points its verified entries anywhere — so an
+operator-supplied index must carry a 'signature' field signed with a key in this deployment's
+content key set. Sign it, or set ARACHNE_PLUGIN_ALLOW_UNSIGNED_INDEX=true to accept it anyway
+(an explicit, documented exception)
+```
+
+To migrate, sign the index with a key in your set:
+
+```python
+# Signing an index is one call; `sign_index` covers the document without its own signature.
+import yaml
+from pathlib import Path
+from arachne.core.signing import build_content_keyring
+from arachne.plugins.marketplace import sign_index
+
+path = Path("/etc/arachne/marketplace/index.yaml")
+document = yaml.safe_load(path.read_text())
+signer = build_content_keyring().signer  # the primary key: the one that signs
+path.write_text(yaml.safe_dump(sign_index(document, signer), sort_keys=False))
+# `arachne plugin marketplace` then reports "signature-verified" instead of refusing.
+```
+
+Set `ARACHNE_PLUGIN_ALLOW_UNSIGNED_INDEX=true` only as a temporary measure on a lab host: it is
+recorded, printed as `UNSIGNED (not verified)` in `arachne plugin marketplace`, and no entry
+from such an index can be installed by name (see below). The **bundled** index is exempt — it
+ships inside the package, so its integrity is the package's, not a runtime signature's.
+
+**Installing from the catalogue, before anything is downloaded.** `arachne plugin install
+--entry <name>` resolves the source from the index and refuses, in this order, an entry that is
+not trustworthy: an index that is not signature-verified; an entry not marked reviewed by the
+maintainers; an entry claiming review but naming no `pack_key_id`; and a pack whose signing key
+is outside your accepted set. Nothing is fetched until all four pass, which is the point — a
+compromised index cannot make your host download anything.
+
+```bash
+arachne plugin install --entry arachne-example-check-plugin --dry-run   # verify, then print pip
+```
+
+**Rotation without a flag day.** Add the new key to `ARACHNE_CONTENT_KEYS` *before* re-signing
+anything: both keys verify during the overlap, so packs and indexes signed under either one keep
+loading. When every artifact is re-signed, drop the old key. Signing always uses
+`ARACHNE_INTEGRITY_KEY`, so a rotation key can verify but never mint.
+
+### 15.2 Writing a check: the SDK (REQ-ECOS-007, WP-16)
+
+The authoring path is one command and no reading:
+
+```bash
+arachne plugin new-check m4.header-missing --out ./my-check
+cd my-check && python -m pytest tests -q         # green before you edit anything
+# implement the claim, record the response that made you write it, then:
+arachne plugin conform conformance.yaml
+```
+
+`new-check` writes a check, its test, its framework-mapping entry, a positive fixture, a decoy
+fixture, a docs stub, the conformance manifest and a `pyproject.toml` that registers it under
+`arachne.modules`. The output is ruff- and mypy-clean and its own test passes with **zero
+edits** — the repository's suite asserts exactly that, so a scaffold that needs fixing fails the
+build rather than the author. `docs/plugin-developer-guide.md` §2 is the worked example, and
+`arachne plugin conform` is the gate a reviewer runs: it refuses a check with no framework
+mapping, an L2+ declaration without its opt-in, no decoy, or a finding with no
+verification-relevant evidence.
+
+### 15.3 Outbound event schemas (REQ-ECOS-009, WP-16)
+
+Every webhook payload — Slack, Teams, Jira, ServiceNow, DefectDojo and the SIEM export — carries
+`event` and `schema_version` in its body and the same two values in the `X-Arachne-Event` /
+`X-Arachne-Schema-Version` headers. A receiver can therefore recognise a shape it does not
+understand instead of failing to parse it. The schemas are published as JSON Schema:
+
+```bash
+arachne events catalogue                                  # every event, its version, its fields
+arachne events catalogue --write ./schemas                # the JSON Schema documents
+arachne events check captured-payload.json                # validate a recorded payload
+```
+
+A breaking change to a payload mints a **new event version** rather than changing a shape under
+the old one, so a receiver that pinned `finding.jira@1.0` keeps working.
+
 ## 16. White-label reports (MSSP)
 
 A branding document changes the cover, colours, logo, classification banner, footer and

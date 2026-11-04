@@ -40,7 +40,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Final
 
 from arachne.core.errors import ContentPackError
-from arachne.core.signing import DeploymentSigner, canonical_bytes
+from arachne.core.signing import DeploymentSigner, SigningKeyring, canonical_bytes
 
 __all__ = [
     "PACK_FORMAT",
@@ -307,6 +307,7 @@ def read_pack(
     data: bytes,
     *,
     signer: DeploymentSigner | None = None,
+    keyring: SigningKeyring | None = None,
     require_signature: bool = True,
     source: str | None = None,
 ) -> ContentPack:
@@ -315,6 +316,11 @@ def read_pack(
     The order matters: the manifest is parsed and its signature checked **before** any
     member is read, and every member's digest is checked before the pack is returned. A
     failure at any step means the caller receives nothing.
+
+    ``keyring`` is the deployment's *set* of accepted content keys (REQ-ECOS-008): a pack signed
+    by any of them verifies, which is what makes a key rotation possible without a flag day.
+    A bare ``signer`` is the single-key form the older call sites use; a keyring wins when both
+    are given, because it is strictly more permissive and the caller that built it meant it.
     """
     if len(data) > MAX_PACK_BYTES:
         msg = f"content pack is larger than the {MAX_PACK_BYTES} byte limit"
@@ -333,16 +339,36 @@ def read_pack(
     if PACK_SIGNATURE_NAME in members:
         signature = members[PACK_SIGNATURE_NAME].decode("ascii", errors="replace").strip()
     if require_signature:
-        if signer is None:
+        if signature is None:
             msg = (
-                "this pack must be signature-verified but no content key is configured "
-                "(ARACHNE_INTEGRITY_KEY); set the key or pass --allow-unsigned to accept it"
+                "the pack carries no signature, and an unsigned pack is refused. Sign it with "
+                "this deployment's content key (`arachne packs export --out ...`), or pass "
+                "--allow-unsigned to accept it as the deliberate exception it is"
             )
             raise ContentPackError(msg)
-        if not signer.verify(PACK_DOMAIN, manifest.digest.encode("ascii"), signature):
+        # An empty keyring is "no accepted key", not "accept anything": it is treated exactly
+        # like no signer at all (REQ-ECOS-008's fail-closed default).
+        verifier = keyring if (keyring is not None and keyring) else None
+        if verifier is None and signer is None:
             msg = (
-                "the content pack signature does not verify against the deployment's "
-                "content key: the manifest was edited, or the pack was signed elsewhere"
+                "this pack must be signature-verified but no content key is configured "
+                "(ARACHNE_INTEGRITY_KEY, or ARACHNE_CONTENT_KEYS during a rotation); set the key "
+                "or pass --allow-unsigned to accept it"
+            )
+            raise ContentPackError(msg)
+        signed_payload = manifest.digest.encode("ascii")
+        if verifier is not None:
+            verified = verifier.verify(PACK_DOMAIN, signed_payload, signature)
+            accepted = verifier.key_ids()
+        else:
+            assert signer is not None  # the branch above returned when both were unusable
+            verified = signer.verify(PACK_DOMAIN, signed_payload, signature)
+            accepted = (signer.key_id,)
+        if not verified:
+            msg = (
+                "the content pack signature does not verify against the deployment's content "
+                f"key set ({list(accepted)}): the manifest was edited, the pack was signed "
+                "elsewhere, or the key that signed it is no longer accepted"
             )
             raise ContentPackError(msg)
     files: dict[str, bytes] = {}
@@ -379,6 +405,7 @@ def read_pack_file(
     path: str | Path,
     *,
     signer: DeploymentSigner | None = None,
+    keyring: SigningKeyring | None = None,
     require_signature: bool = True,
 ) -> ContentPack:
     """Read and verify a pack from disk."""
@@ -388,7 +415,13 @@ def read_pack_file(
     except OSError as exc:
         msg = f"cannot read content pack {resolved}: {exc}"
         raise ContentPackError(msg) from exc
-    return read_pack(data, signer=signer, require_signature=require_signature, source=str(resolved))
+    return read_pack(
+        data,
+        signer=signer,
+        keyring=keyring,
+        require_signature=require_signature,
+        source=str(resolved),
+    )
 
 
 def _read_members(data: bytes) -> dict[str, bytes]:

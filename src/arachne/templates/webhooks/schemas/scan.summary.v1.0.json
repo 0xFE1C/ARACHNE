@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arachne.invalid/schemas/webhooks/scan.summary.v1.0.json",
+  "title": "ARACHNE webhook event scan.summary 1.0",
+  "description": "One SIEM record summarising a scan (the first record of the NDJSON export).",
+  "type": "object",
+  "required": [
+    "counts",
+    "event",
+    "scan_id",
+    "schema_version"
+  ],
+  "properties": {
+    "event": {
+      "type": "string",
+      "description": "the event name (REQ-ECOS-009)"
+    },
+    "schema_version": {
+      "type": "string",
+      "description": "the version of this event's shape"
+    },
+    "scan_id": {
+      "description": "the scan identifier"
+    },
+    "counts": {
+      "description": "findings per severity"
+    }
+  },
+  "additionalProperties": true
+}

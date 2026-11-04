@@ -51,7 +51,7 @@ from typing import Any, Final, Literal
 import yaml
 
 from arachne.core.errors import ContentPackError
-from arachne.core.signing import DeploymentSigner
+from arachne.core.signing import DeploymentSigner, SigningKeyring
 from arachne.resil.packs import ContentPack, read_pack
 
 __all__ = [
@@ -299,6 +299,7 @@ def review_pack_bytes(
     data: bytes,
     *,
     signer: DeploymentSigner | None = None,
+    keyring: SigningKeyring | None = None,
     catalogue: Any = None,
     trusted_key_ids: Iterable[str] = (),
     allow_unsigned: bool = False,
@@ -316,6 +317,9 @@ def review_pack_bytes(
     "tampered manifest", which is the difference between three different operator actions.
     File digests are still checked by :func:`~arachne.resil.packs.read_pack` — a pack whose
     members do not match its manifest never reaches a gate at all.
+
+    ``keyring`` is the deployment's accepted key *set* (REQ-ECOS-008), so a pack signed by either
+    key of a rotation overlap is listed; ``signer`` is the older single-key form.
     """
     try:
         pack = read_pack(data, signer=signer, require_signature=False, source=source)
@@ -324,6 +328,7 @@ def review_pack_bytes(
     return review_pack(
         pack,
         signer=signer,
+        keyring=keyring,
         catalogue=catalogue,
         trusted_key_ids=trusted_key_ids,
         allow_unsigned=allow_unsigned,
@@ -334,20 +339,25 @@ def review_pack(
     pack: ContentPack,
     *,
     signer: DeploymentSigner | None = None,
+    keyring: SigningKeyring | None = None,
     catalogue: Any = None,
     trusted_key_ids: Iterable[str] = (),
     allow_unsigned: bool = False,
 ) -> ReviewReport:
     """Run the three gates over a parsed pack and return the report.
 
-    ``signer`` is the *deployment's* content key: the signature gate verifies the pack against
-    it, so passing ``None`` means "no key configured", which refuses a signed pack the same way
-    it refuses an unsigned one — a deployment that cannot verify cannot list.
+    ``signer``/``keyring`` is the *deployment's* content key set: the signature gate verifies the
+    pack against it, so passing neither means "no key configured", which refuses a signed pack
+    the same way it refuses an unsigned one — a deployment that cannot verify cannot list.
     """
     kind = _declared_kind(pack)
     gates = (
         _signature_gate(
-            pack, signer=signer, trusted_key_ids=trusted_key_ids, allow_unsigned=allow_unsigned
+            pack,
+            signer=signer,
+            keyring=keyring,
+            trusted_key_ids=trusted_key_ids,
+            allow_unsigned=allow_unsigned,
         ),
         _safety_gate(pack),
         _parity_gate(pack, kind=kind, catalogue=catalogue),
@@ -367,6 +377,7 @@ def _signature_gate(
     pack: ContentPack,
     *,
     signer: DeploymentSigner | None,
+    keyring: SigningKeyring | None = None,
     trusted_key_ids: Iterable[str],
     allow_unsigned: bool,
 ) -> GateResult:
@@ -401,7 +412,7 @@ def _signature_gate(
                 ),
             ),
         )
-    if signer is None:
+    if signer is None and keyring is None:
         return GateResult(
             gate="signature",
             passed=False,
@@ -421,13 +432,22 @@ def _signature_gate(
     # importing it at module scope would make this module's import order matter.
     from arachne.resil.packs import PACK_DOMAIN
 
-    if not signer.verify(PACK_DOMAIN, pack.manifest.digest.encode("ascii"), pack.signature):
+    digest = pack.manifest.digest.encode("ascii")
+    if keyring is not None:
+        verified = keyring.verify(PACK_DOMAIN, digest, pack.signature)
+        accepted = keyring.key_ids()
+    else:
+        assert signer is not None  # the branch above returned when both were absent
+        verified = signer.verify(PACK_DOMAIN, digest, pack.signature)
+        accepted = (signer.key_id,)
+    if not verified:
         return GateResult(
             gate="signature",
             passed=False,
             detail=(
-                "the signature does not verify against this deployment's content key: the "
-                "manifest was edited, or the pack was signed by another deployment"
+                "the signature does not verify against any key this deployment accepts "
+                f"({list(accepted)}): the manifest was edited, or the pack was signed by "
+                "another deployment"
             ),
             findings=(
                 SafetyFinding(
@@ -456,7 +476,7 @@ def _signature_gate(
     return GateResult(
         gate="signature",
         passed=True,
-        detail=f"verifies against this deployment's content key (key id {pack.key_id})",
+        detail=f"verifies against an accepted content key (key id {pack.key_id})",
     )
 
 

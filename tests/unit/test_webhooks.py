@@ -14,6 +14,7 @@ import pytest
 from tests.helpers.api import StubPoster
 from tests.helpers.report import synthetic_report
 
+from arachne.api.webhook_schemas import SCHEMA_VERSION
 from arachne.api.webhooks import (
     WebhookNotifier,
     build_webhook_sender,
@@ -72,7 +73,12 @@ def test_all_four_integrations_render_their_documented_shapes(report: ReportData
     assert payloads[-1].name == "defectdojo"
 
     slack = payloads[0]
-    assert set(slack.body) == {"text"}
+    # The Slack card is the rendered text plus the versioned envelope every payload carries
+    # (REQ-ECOS-009): this is a shape a receiver can recognise, not an anonymous message.
+    assert set(slack.body) == {"text", "event", "schema_version"}
+    assert slack.event == "scan.slack"
+    assert slack.schema_version == SCHEMA_VERSION
+    assert slack.headers["X-Arachne-Event"] == "scan.slack"
     assert report.target_name in slack.body["text"]
     assert "/scans/" in slack.body["text"]  # the report link
 

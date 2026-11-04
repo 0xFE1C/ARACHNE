@@ -50,13 +50,85 @@ Three rules the framework enforces, so a plugin cannot quietly break the scanner
 
 ---
 
-## 2. Worked example: a new M4 check
+## 2. The fast path: `arachne plugin new-check` (REQ-ECOS-007)
+
+Everything this guide describes is now generated. Read this section, run one command, and come
+back only for the parts you actually need:
+
+```bash
+arachne plugin new-check m4.header-missing --out ./arachne-check-header-missing
+```
+
+It writes a complete, green plugin package:
+
+```
+pyproject.toml                              the entry point that registers it (arachne.modules)
+src/arachne_check_header_missing/__init__.py the check (AuthorCheck + metadata)
+tests/test_header_missing.py                its test: positive fires, decoy stays clean
+fixtures/header-missing/positive.json       the recorded response that makes it fire
+fixtures/header-missing/decoy.json          the false-positive trap it must stay silent on
+mappings/header-missing.yaml                the framework-mapping entry (REQ-DET-002)
+docs/header-missing.md                      the docs stub
+conformance.yaml                            what `arachne plugin conform` reads
+```
+
+Then:
+
+```bash
+cd arachne-check-header-missing
+python -m pytest tests -q          # 3 passed — before you edit anything
+# 1. replace MARKERS with the claim your check actually establishes
+# 2. record the response that made you write it as the positive fixture
+# 3. keep the decoy a fair trap (a 200 that names the concept and carries no marker)
+arachne plugin conform conformance.yaml
+```
+
+The generated output passes this repository's gates with **zero edits** — `ruff check`, `ruff
+format --check`, `mypy --strict` and the generated test — and the suite asserts that from a
+scaffolded tree, so a scaffold that needs fixing fails the build rather than you. Scaffolding
+the same id twice is byte-identical, and the scaffold refuses to overwrite a tree it already
+wrote unless you pass `--force`.
+
+### 2.1 The conformance kit: the four refusals
+
+`arachne plugin conform conformance.yaml` is what a reviewer runs. It **imports the candidate**,
+so it scans the source *first* and refuses a check that uses a capability a plugin is not
+granted (a process, a raw socket, dynamic code, FFI, unpickling) **without importing it at all**.
+Then it reports one gate per property, and four defect classes are refusals rather than advice:
+
+| Class | Refused when | What to do |
+|---|---|---|
+| `mapping` | no framework item, an id outside the pinned snapshot, or the mapping entry drifted from the metadata | name ≥1 WSTG/API/CWE/ATT&CK/LLM/ASI item in `check_framework` and regenerate the entry |
+| `proof` | L2+ declared without its opt-in, or L3/L4 without the state-change attestation | declare the lowest level at which the claim is decidable; `author_metadata` derives the flags from the level |
+| `decoy` | no decoy fixture, or the check fires on it | assign a fair trap and tighten the oracle — an exact token, not a word; not the payload you sent back |
+| `evidence` | no finding, or a finding with no verification-relevant evidence | attach the captured exchange (or banner, certificate, artifact) a human could confirm by hand |
+
+Three further defects come free once the check is loaded: a **collision** with a built-in check
+id, a **fixture gap** (the check asked for a URL the fixture does not record), and a
+**non-deterministic** verdict (two runs disagree). Every message says what to change. The exit
+code is 2 for a refusal, so CI can gate on it.
+
+### 2.2 Time from scaffold to a merged check
+
+The target (`05-detection-program.md` §6.3) is **under a day, and ≤2 hours once the author has
+done it twice**. What the SDK removes is the day of *reading*: nothing on this path requires
+opening the registry, the metadata constraints, the proof model or the report scheme.
+
+Measured on this repository, for a first check with no prior reading, the machinery is seconds
+rather than hours — `scaffold_check` writes the tree in well under a second, and the gates over
+its output (`ruff check`, `ruff format --check`, `mypy --strict`, the generated test suite) run
+in about five seconds together, which is what `tests/unit/test_check_sdk_scaffold.py` asserts
+rather than describes. What remains is the part no generator can do: implementing the claim,
+recording the response that made you write the check, choosing a decoy that traps the oracle
+instead of the author, and the review itself.
+
+## 3. Worked example: a new M4 check
 
 The example below is the real content of
 `examples/plugins/arachne_example_plugin/src/arachne_example_plugin/__init__.py` (trimmed
 comments; the file is the source of truth).
 
-### 2.1 The check
+### 3.1 The check
 
 ```python
 from __future__ import annotations
@@ -120,7 +192,7 @@ class ExampleVersionBanner(Module):
             )
 ```
 
-### 2.2 The module group
+### 3.2 The module group
 
 A group's id must be one of `M1`..`M6`, and every check it contains must declare that same
 `module`. Registering a group with an id that already exists **merges** into it (a plugin can
@@ -140,7 +212,7 @@ PLUGIN_GROUP = ModuleGroup(
 )
 ```
 
-### 2.3 The entry-point wiring
+### 3.3 The entry-point wiring
 
 The only ARACHNE-specific line in the plugin's packaging is the entry point:
 
@@ -153,7 +225,7 @@ The value may resolve to a `ModuleGroup`, a single `Module` subclass, or a seque
 either (the registry accepts all three). `ENTRY_POINT_GROUP`
 (`arachne.modules.registry.ENTRY_POINT_GROUP`) is `"arachne.modules"`.
 
-### 2.4 Install and confirm discovery
+### 3.4 Install and confirm discovery
 
 ```bash
 # In the same environment as ARACHNE. Either install it directly:
@@ -178,7 +250,7 @@ arachne scan --target examples/targets/lab-fixture.yaml --dry-run | grep example
 
 ---
 
-## 3. How discovery works
+## 4. How discovery works
 
 `ModuleRegistry.discover(*, include_entry_points=True, extra_groups=())`
 (`src/arachne/modules/registry.py`) does, in order:
@@ -214,7 +286,7 @@ version whenever a check's behaviour changes.
 
 ---
 
-## 4. Check metadata: field rules and validation
+## 5. Check metadata: field rules and validation
 
 `CheckMetadata` (`src/arachne/modules/base.py`) is validated on construction. Required
 fields and the rules enforced:
@@ -251,7 +323,7 @@ serves JavaScript) overrides `supports`.
 
 ---
 
-## 5. The context a check is given
+## 6. The context a check is given
 
 `CheckContext` (`src/arachne/modules/context.py`) is the only thing a check receives. The
 capabilities:
@@ -321,7 +393,7 @@ reports a disabled source the same way.
 
 ---
 
-## 6. Managed data: corpus, wordlists, prompts
+## 7. Managed data: corpus, wordlists, prompts
 
 Corpora, wordlists, rule/prompt/remediation templates and port/CVE tables are **data, not
 code** (F-09-04, ADR-04). A check reads them from `src/arachne/templates/...` and an operator
@@ -351,7 +423,7 @@ the repository.
 
 ---
 
-## 7. Writing tests
+## 8. Writing tests
 
 Check-level tests use the harness in
 [`tests/helpers/checks.py`](../tests/helpers/checks.py): `run_check(module, asset, *, http=...,
@@ -411,7 +483,7 @@ The reusable conventions live in `tests/unit/test_module_contract.py`,
 
 ---
 
-## 8. Rules you must not break
+## 9. Rules you must not break
 
 ### ADR-02 — checks detect, the analyzer decides severity
 
@@ -442,12 +514,14 @@ every source file and fails on `requests`, `httpx`, `urllib.request`, `urllib3`,
 
 ---
 
-## 9. Definition of Done checklist
+## 10. Definition of Done checklist
 
 Hold every plugin to this:
 
 - [ ] **Maps to a requirement ID** (F-### / M#-### / a research method); the `research_ref`
       is set and the check appears in `arachne coverage`.
+- [ ] **`arachne plugin conform conformance.yaml` passes** — the four refusal classes above, with
+      a decoy the check is silent on and evidence a reviewer can confirm by hand.
 - [ ] **Typed, reviewed, no `eval`/`exec`, no direct HTTP** outside the shared client
       (`mypy --strict` on `src/`, `tests/unit/test_http_hygiene.py` green,
       `tests/unit/test_no_eval_exec.py` green).
@@ -468,7 +542,7 @@ Also make sure:
 
 ---
 
-## 10. Packaging recap
+## 11. Packaging recap
 
 ```text
 my_arachne_plugin/
@@ -501,7 +575,7 @@ The worked example package is at
 
 ---
 
-## 11. Report-format plugins
+## 12. Report-format plugins
 
 A report format is an output renderer over the **same immutable DTO** the built-in formats
 read. The contract is `arachne.report.formats.ReportFormat`:
@@ -583,7 +657,7 @@ without any core change.
 
 ---
 
-## 12. Shipping a pack through the marketplace review pipeline (S26, REQ-ECOS-001)
+## 13. Shipping a pack through the marketplace review pipeline (S26, REQ-ECOS-001)
 
 Installing a wheel (§10, §11) is one delivery path. The other is a **content pack**: a signed
 archive a deployment reviews and then accepts, and the only path into an air-gapped estate
@@ -594,7 +668,7 @@ A pack reaches a running deployment through four steps: **build → verify → r
 first three happen on a connected build; the last happens in the estate, and it is the one that
 trusts.
 
-### 12.1 Build the content tree
+### 13.1 Build the content tree
 
 A pack is a gzipped tar with a canonical `manifest.json`, a detached signature over that
 manifest's digest, and the content under `content/<kind>/...`. The `<kind>` is the directory name
@@ -608,7 +682,7 @@ my-pack/
     └── my_checks.yaml          # the declared checks: name + proof level (+ requires_state_attestation)
 ```
 
-### 12.2 Pack it, with the parity metadata the review reads
+### 13.2 Pack it, with the parity metadata the review reads
 
 The manifest's `meta` is what the review's **parity** gate reads, so a pack that will be listed
 must declare it. `meta` is a build-time argument of the pack builder,
@@ -665,7 +739,7 @@ adds. Both must be genuine additions.
 > meta=...)`) is equivalent if you prefer to generate the declaration from your own packaging
 > metadata.
 
-### 12.3 Verify, then review
+### 13.3 Verify, then review
 
 ```bash
 # Does it verify? Installs nothing, so it is safe to run on any build.
@@ -679,7 +753,7 @@ lists the pack only when all three pass. `--publish` writes the verdict to the `
 store, so the estate's `arachne packs import` finds a *listed* review bound to the pack's digest.
 Exit code is `2` on a rejection, so a CI job can gate your pack the same way.
 
-### 12.4 What the safety gate will refuse
+### 13.4 What the safety gate will refuse
 
 The safety gate parses every `.py` member and walks the AST. **Blocking** (a pack that trips one
 is rejected):
@@ -706,7 +780,7 @@ and it must not be runnable on an authorization that never covered a state chang
 **This is a policy gate, not a sandbox.** Your pack still runs in-process after it is listed. Do
 not read "listed" as "confined".
 
-### 12.5 Common rejection reasons, and the fix
+### 13.5 Common rejection reasons, and the fix
 
 | Gate finding | Why it fired | Fix |
 |---|---|---|
@@ -723,7 +797,7 @@ not read "listed" as "confined".
 | `parity.check_id_malformed` | the id is not of the form `<module>.<name>` (`m4.my-check`) | rename it |
 | `parity.format_collision` | a declared report-format name collides with a built-in | rename yours |
 
-### 12.6 Import in the estate
+### 13.6 Import in the estate
 
 ```bash
 arachne packs import my-pack-1.0.0.tar.gz     # refuses without a listed review for this digest

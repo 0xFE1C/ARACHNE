@@ -36,6 +36,7 @@ from arachne.cli.analyze import analyze_command
 from arachne.cli.callback import callback_server_command
 from arachne.cli.compliance import compliance_app
 from arachne.cli.dr import dr_app
+from arachne.cli.events import events_app
 from arachne.cli.feeds import feeds_app
 from arachne.cli.fix import app as fix_app
 from arachne.cli.fp import fp_app
@@ -124,6 +125,8 @@ app.add_typer(iac_app, name="iac")
 app.add_typer(integrity_app, name="integrity")
 app.add_typer(packs_app, name="packs")
 app.add_typer(dr_app, name="dr")
+# WP-16 (REQ-ECOS-009): the versioned outbound webhook event catalogue.
+app.add_typer(events_app, name="events")
 # S27: remediation as code — propose, approve, submit, verify (area FIX).
 app.add_typer(fix_app, name="fix")
 # S28: simulation & what-if modeling — the estate model, hypothetical states and the

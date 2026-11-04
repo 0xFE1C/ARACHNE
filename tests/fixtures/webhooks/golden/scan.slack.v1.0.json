@@ -1,0 +1,5 @@
+{
+  "event": "scan.slack",
+  "schema_version": "1.0",
+  "text": ":rotating_light: *ARACHNE scan scan_1 completed* \u2014 target.example\nEngine: heuristic \u00b7 0.1.0 \u00b7 2026-10-27T12:00:00+00:00\nThreshold: info+ \u00b7 2 finding(s) at or above\nSeverity: *1* critical / *1* high / 0 medium / 0 low / 0 info (2 total)\nTop findings:\n\u2022 [CRITICAL] Unauthenticated admin dashboard (M4, CWE-284) \u2014 https://target.example/admin\n\u2022 [HIGH] Sensitive environment file exposed (M4, CWE-200) \u2014 https://target.example/.env\nReport: https://arachne.example/scans/scan_1"
+}
