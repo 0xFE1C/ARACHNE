@@ -206,6 +206,7 @@ class SmbAuth(NetworkCheck, Module):
         ),
         research_ref="ch02#16",
         framework=("WSTG-CONF-01", "CWE-1392"),
+        compliance=("CIS-4.7", "CIS-5.2", "ISO-A.8.5", "CSF-PR.AA-03", "PCI-8"),
         cwe="CWE-1392",
         target_kinds=_NETWORK_KINDS,
         severity_hint="medium",

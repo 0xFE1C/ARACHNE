@@ -75,6 +75,7 @@ class CloudPosture(EndpointCheck, Module):
         ),
         research_ref="ch05#1",
         framework=("WSTG-CONF-02", "API8:2023", "CWE-16"),
+        compliance=("ISO-A.8.32", "CSF-ID.RA-07"),
         cwe="CWE-16",
         target_kinds=(TargetKind.CLOUD, TargetKind.URL),
         severity_hint="high",

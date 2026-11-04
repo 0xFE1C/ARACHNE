@@ -1947,6 +1947,15 @@ version, target, score). `--gate` compares a run against that baseline and exits
 detection drop or an FP-rate rise beyond the tolerances (`--max-detection-drop`,
 `--max-fp-rise`), and refuses to compare across suite versions.
 
+**The published artifact is reproducible (WP-19, REQ-TRUST-010).** A committed result now
+carries the four things the claim needs — the **corpus version** (and its digest), the exact
+**command**, the **environment** (interpreter, platform, build epoch) and **raw per-case rows**,
+plus precision, recall and a per-case time-to-finding whose source is named — in
+`benchmarks/<suite>/results.json`, described suite by suite in `benchmarks/README.md`. The
+method, the degenerate cases and the reproduction procedure are in
+`docs/reproducible-benchmark.md`. Fixture rotation is recorded (`rotated_at`/`review_by` per
+suite) and a test fails when a suite is past its review date.
+
 | Suite | Source | Runnable here |
 |---|---|---|
 | `arachne-lab` | the repository's own ground-truth lab | yes — this is what CI gates on |
@@ -1986,12 +1995,31 @@ ARACHNE_REPORT_COMPLIANCE_FRAMEWORKS=iso27001,pci-dss arachne report --scan 7 -o
 arachne compliance export --scan 7 --framework iso27001 -o iso-evidence.json
 ```
 
-Four frameworks ship as data files (`src/arachne/templates/compliance/*.yaml`):
-**CIS Controls v8.1**, **PCI DSS v4.0**, **ISO/IEC 27001:2022 Annex A** and **NIST CSF
-2.0**. Each maps check ids onto the controls a finding is evidence about — `m3.sqli-oracle`
-speaks to ISO A.8.25, `m2.tls-deep-scan` to PCI 4.2, and so on. The map is validated by
-`tests/unit/test_compliance_map.py`, which fails the build if any `checks:` entry names a
-check the catalogue does not ship: a control can never claim coverage from a typo.
+Four frameworks ship: **CIS Controls v8.1**, **PCI DSS v4.0**, **ISO/IEC 27001:2022 Annex A**
+and **NIST CSF 2.0**. Each maps check ids onto the controls a finding is evidence about —
+`m3.sqli-oracle` speaks to ISO A.8.25, `m2.tls-deep-scan` to PCI 4, and so on.
+
+**The maps are generated, not maintained (WP-19, REQ-TRUST-009).** The source of truth is each
+check's `compliance=` declaration in `src/arachne/modules/`, validated at import against a
+pinned, complete inventory of the framework (`src/arachne/data/compliance/*.json` — each one
+records its source, retrieval date and cross-check). `python -m arachne.tools.compliance --write`
+regenerates the four YAML files and `--check` fails when a committed map and the registry
+disagree, so hand-editing a map is a build failure rather than a silent drift:
+
+```bash
+python -m arachne.tools.compliance            # the ratios and targets
+python -m arachne.tools.compliance --check    # exit 1 when a map is stale
+```
+
+The reach, counted from the registry: **CIS 64 of 153 safeguards, ISO/IEC 27001 46 of 93
+controls, NIST CSF 42 of 106 subcategories, PCI DSS 11 of 12 requirements.** PCI requirement 9
+(physical access to cardholder data) is the exception and is *named*, not claimed: no check
+produces an artefact for facility entry, media handling or point-of-interaction tampering, and
+the map lists it under `outside_assessed_set` with that reason.
+
+Every unmapped control is listed there — `assessed + outside` is always the framework's own
+total — so a report can never be read as "the framework is covered". The same list travels in
+`arachne compliance export`, so an auditor sees exactly what no check can speak to.
 
 Turning a framework on (`ARACHNE_REPORT_COMPLIANCE_FRAMEWORKS=cis,pci-dss,...`, a
 comma list, or per-report `--framework` on the export) adds an appendix section to every
@@ -2019,7 +2047,9 @@ Nothing is re-derived later: attach the file to the audit ticket and it stands a
 Custom maps: point `ARACHNE_REPORT_COMPLIANCE_MAPS` at a directory with your own
 `<framework>.yaml` (override a bundled one by name or add another). The same schema test
 validates a supplied reference set; report time treats an unknown check id as "never ran"
-(an honest gap) rather than failing the report.
+(an honest gap) rather than failing the report. A generated map carries an
+`outside_assessed_set` block; the loader refuses a map whose assessed and outside sets do not
+add up to the framework total, so a custom map cannot quietly drop a control either.
 
 ## 29. Integrations: DefectDojo, Jira, ServiceNow, SIEM, chat (S22, area OPS)
 
@@ -2094,12 +2124,14 @@ A tagged release (`v*`) runs `.github/workflows/release.yml`, which
 
 1. runs `pip-audit --strict` **as a release blocker** (on ordinary pushes CI's
    `dependencies` job stays advisory);
-2. generates the CycloneDX 1.5 SBOM with `python -m arachne.tools.sbom` and attaches it
-   to the release;
+2. generates the CycloneDX 1.5 SBOM with `python -m arachne.tools.sbom` **and validates it
+   against the vendored official schema** before attaching it to the release (WP-19);
 3. builds the image, pushes it to GHCR **by digest**, signs the digest with **cosign
    keyless** (the signature's identity is the repository's GitHub OIDC claim — there is
    no long-lived key to rotate or leak), and attests the SBOM to the same digest;
-4. generates SLSA-style build provenance (`actions/attest-build-provenance`).
+4. generates **SLSA v1.2 Build L3** provenance with `actions/attest-build-provenance` (the
+   GitHub-hosted runner is the hardened build platform and signs the provenance with the
+   workflow's OIDC identity), then verifies its own attestation round-trips with cosign.
 
 Verify before you deploy:
 
@@ -2107,6 +2139,10 @@ Verify before you deploy:
 cosign verify <image>@<digest> \
   --certificate-identity-regexp '^https://github.com/<owner>/<repo>/' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
+cosign verify-attestation --type slsaprovenance1 <image>@<digest> \
+  --certificate-identity-regexp '^https://github.com/<owner>/<repo>/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+gh attestation verify oci://<image>@<digest> --repo <owner>/<repo>
 ```
 
 Tool versions are pinned (cosign via `COSIGN_VERSION`, actions by major tag,
@@ -2114,7 +2150,16 @@ Tool versions are pinned (cosign via `COSIGN_VERSION`, actions by major tag,
 the build's deterministic and non-deterministic parts and how to reproduce an image.
 The SBOM is a product artifact: any operator can run the generator against their own
 installed environment, and its output is byte-identical for the same environment and
-timestamp (`SOURCE_DATE_EPOCH` honoured).
+timestamp (`SOURCE_DATE_EPOCH` honoured). `python -m arachne.tools.sbom --check <file>`
+validates any CycloneDX 1.5 document offline.
+
+**Local provenance, and its limits.** `python -m arachne.tools.provenance` emits the same
+SLSA v1.2 in-toto statement for artefacts you build yourself, and `--verify` re-derives every
+subject digest — useful for an air-gapped or self-hosted build. It is **not** SLSA Build L3:
+nothing isolates the builder and nothing stops the document being edited afterwards, so it
+defaults to an honest local builder id rather than impersonating a platform.
+`docs/slsa-provenance.md` states exactly which L3 requirements each path does and does not
+meet.
 
 ## 32. Continuous exposure management (S23, area POSTURE)
 
@@ -2267,6 +2312,24 @@ out-of-band token, one allowlisted `echo`), emitted verbatim under the ordinary 
 inside the window. A test that cannot be distinguished from an attack is not a test this
 project runs, and `tests/unit/test_purple_attack.py::test_no_evasion_anywhere_in_the_purple_package`
 fails the build if evasion-capable code ever appears in the package.
+
+**What is replayable, and against which taxonomy (WP-19, REQ-VALID-007).** The catalogue
+(`src/arachne/templates/purple/attck-map.yaml`, override with `ARACHNE_PURPLE_MAP`) covers
+**41 actions exercising 36 ATT&CK Enterprise v20 techniques across 10 tactics** — from active
+scanning and credential discovery through injection, cloud-storage collection and defense
+impairment. Every entry names a registered check and the proof level the catalogue declares for
+it; the planner refuses a map that disagrees with the registry, so an action cannot claim to sit
+lower on the ladder than it does.
+
+The vocabulary is the release's, not a hand-kept list: the pinned snapshot carries ATT&CK v20's
+complete technique set (706 techniques) and its **15 tactics**, in which Defense Evasion no
+longer exists — v20 split it into **Stealth** and **Defense Impairment**. An action's technique
+must exist in the release, and the tactic it files itself under must be one the release assigns
+that technique. **No action is filed under Stealth**: these tests are designed to be seen, and
+filing one there would describe an evasion capability the product refuses to have. (ATT&CK
+assigns T1078 Valid Accounts Stealth among four tactics; the catalogue uses its
+initial-access/persistence assignment for a plain logon test.) A map violating either rule is
+refused when it is loaded, operator overrides included.
 
 ### 33.1 The coordinated window: an attestation class (REQ-VALID-001)
 
@@ -2827,6 +2890,50 @@ Issues print as `[<check>.<kind>] <subject>: <detail>`, so `[evidence.mismatch] 
 Exit codes: `0` intact, `1` not intact (issues on stderr), `2` the command could not run (no key
 when `--require-signatures` was given). Every run is itself audited (`integrity.verified` or
 `integrity.tamper`).
+
+### 37.1 Verifying without the power to forge: Ed25519 (WP-19, REQ-TRUST-008)
+
+An HMAC deployment key means the verifier holds the signing key. If a third party — an auditor,
+a customer, a regulator — must be able to check the chain, that is exactly the property they
+must not have: they could fabricate a row and its signature. The asymmetric option fixes it.
+
+**On the host that signs** (generate a pair first; keep the seed like any other secret):
+
+```bash
+python -c "from arachne.core.signing import generate_keypair; print(*generate_keypair(), sep='\n')"
+export ARACHNE_INTEGRITY_ALGORITHM=ed25519
+export ARACHNE_INTEGRITY_ED25519_KEY_FILE=/run/secrets/arachne-integrity-ed25519-seed
+export ARACHNE_INTEGRITY_ED25519_PUBLIC_KEY=<the 64-hex public half>   # optional: cross-checked
+```
+
+**On the auditor's machine** (the public key only — this deployment verifies and refuses to
+sign, which is the point):
+
+```bash
+export ARACHNE_INTEGRITY_ALGORITHM=ed25519
+export ARACHNE_INTEGRITY_ED25519_PUBLIC_KEY=<the public half>
+arachne verify-chain --require-signatures
+```
+
+What the auditor can and cannot do is worth stating plainly: they can confirm that every link,
+anchor, row signature and seal was produced by the holder of the seed, and they cannot produce
+one (`Ed25519Signer.sign` refuses on a public-key-only instance, and nothing derives a seed from
+a public key). Signatures read `<scheme>:<key id>:<hex>` — `ed25519:` for this scheme, `v1:` for
+the historical HMAC tag (still minted, so upgrading a reader does not invalidate a stored row).
+The key id is a digest prefix of the public key, so an auditor can name the key whose absence
+would explain a refusal.
+
+**The dual period.** Migrating is not a flag day: set `ARACHNE_INTEGRITY_ALGORITHM=ed25519`
+*and keep* `ARACHNE_INTEGRITY_KEY`. New rows sign with Ed25519 while `verify-chain` keeps
+verifying with both keys, so every row and anchor written before the switch still passes. Drop
+the HMAC key once your retention window has passed the last pre-switch row; `verify-chain
+--require-signatures` will tell you if you were early.
+
+Two operational notes. The Ed25519 implementation is pure Python and **not constant-time**
+(`docs/adr/370-trust-hardening-and-purple-breadth.md`): keep the seed off hosts you do not trust
+against a local timing attacker. And a public-key-only deployment writes **unsigned** seals and
+anchors — it is a verifier, not a signer — so it should never be the process that finishes
+scans.
 
 ## 38. Evidence residency (S25, REQ-RESIL-004)
 

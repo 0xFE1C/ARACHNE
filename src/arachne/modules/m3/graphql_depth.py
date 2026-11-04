@@ -304,6 +304,7 @@ class GraphQLDepthAbuse(WebCheck, Module):
         ),
         research_ref="ch03#32",
         framework=("WSTG-APIT-01", "API4:2023", "CWE-770"),
+        compliance=("ISO-A.8.6", "CSF-PR.IR-04"),
         cwe="CWE-770",
         target_kinds=(TargetKind.URL,),
         severity_hint="low",

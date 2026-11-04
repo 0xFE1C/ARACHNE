@@ -70,6 +70,86 @@ def test_the_four_required_frameworks_ship() -> None:
     assert set(BUNDLED_FRAMEWORKS) == {"cis", "pci-dss", "iso27001", "nist-csf"}
 
 
+# ------------------------------------------- generation and the target ratios (REQ-TRUST-009)
+def test_the_maps_are_generated_from_check_metadata_not_hand_maintained() -> None:
+    """The requirement's mechanism clause, enforced: a hand-edited map fails the build."""
+    from arachne.tools.compliance import _stale, generate_all
+
+    assert _stale(generate_all()) == []
+
+
+def test_every_shipped_control_is_a_pinned_control_of_its_framework() -> None:
+    """REQ-TRUST-009's dangling-id property, in the *control* direction this time."""
+    from arachne.modules.compliance_map import inventory
+
+    for name in BUNDLED_FRAMEWORKS:
+        pinned = inventory(name)
+        map_data = load_compliance_framework(name)
+        known = pinned.ids
+        for control in map_data.controls:
+            assert f"{_PREFIX[name]}-{control.id}" in known, f"{name}: unknown control {control.id}"
+        for outside in map_data.outside_assessed_set:
+            assert f"{_PREFIX[name]}-{outside.id}" in known, f"{name}: unknown {outside.id}"
+            assert outside.reason.strip(), f"{name}:{outside.id} carries no reason"
+
+
+_PREFIX = {"cis": "CIS", "iso27001": "ISO", "nist-csf": "CSF", "pci-dss": "PCI"}
+
+
+@pytest.mark.parametrize("name", ["cis", "iso27001", "nist-csf", "pci-dss"])
+def test_the_framework_declares_its_own_total_and_names_every_control(name: str) -> None:
+    """The gap is named, not implied: assessed + outside is the whole framework, always."""
+    map_data = load_compliance_framework(name)
+    assert map_data.total_controls > 0
+    assert map_data.fully_modelled, (
+        f"{name}: {map_data.assessed} assessed + {len(map_data.outside_assessed_set)} outside "
+        f"!= {map_data.total_controls} — a control was omitted"
+    )
+    assert map_data.outside_assessed_set or map_data.assessed == map_data.total_controls
+
+
+def test_the_three_frameworks_meet_their_target_ratio() -> None:
+    """REQ-TRUST-009's counts, asserted from the registry through the generator."""
+    from arachne.modules.compliance_map import TARGET_RATIOS
+    from arachne.tools.compliance import ratios
+
+    table = ratios()
+    for name in ("cis", "iso27001", "nist-csf"):
+        target, total = TARGET_RATIOS[name]
+        assert table[name]["total"] == total, f"{name}: the denominator moved"
+        assert table[name]["assessed"] >= target, (
+            f"{name}: {table[name]['assessed']} assessed against a target of {target}"
+        )
+
+
+def test_pci_dss_is_eleven_of_twelve_and_names_the_requirement_it_cannot_assess() -> None:
+    """The one target the catalogue cannot reach, pinned as a *named* shortfall.
+
+    REQ-TRUST-009 asks for PCI DSS 12 of 12. Eleven are reachable: requirement 9 restricts
+    physical access to cardholder data (facility entry, visitor management, media handling,
+    point-of-interaction tamper protection) and no ARACHNE check produces an artefact for any
+    of it — the scanner has no physical or host-agent sensor, and inventing a mapping would
+    tell an auditor a control was assessed when it was not. So the twelfth is *reported*:
+    named with its reason, exactly as the requirement's own second clause asks. If a future
+    check makes requirement 9 assessable, this test notices and the target is then met.
+    """
+    from arachne.modules.compliance_map import TARGET_RATIOS
+    from arachne.tools.compliance import ratios
+
+    table = ratios()
+    target, total = TARGET_RATIOS["pci-dss"]
+    assert total == 12
+    assert table["pci-dss"]["total"] == 12
+    assert table["pci-dss"]["assessed"] >= 11
+    map_data = load_compliance_framework("pci-dss")
+    outside = {control.id for control in map_data.outside_assessed_set}
+    if table["pci-dss"]["assessed"] < target:
+        assert outside == {"9"}, sorted(outside)
+        control = next(c for c in map_data.outside_assessed_set if c.id == "9")
+        assert "physical" in control.reason.lower()
+        assert control.title == "Restrict Physical Access to Cardholder Data"
+
+
 def test_framework_aliases_resolve_to_canonical_names() -> None:
     assert canonical_framework("PCI_DSS") == "pci-dss"
     assert canonical_framework("CIS-Controls") == "cis"

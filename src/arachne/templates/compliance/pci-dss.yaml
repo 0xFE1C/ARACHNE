@@ -1,92 +1,140 @@
-# ARACHNE compliance map — PCI DSS v4.0 (S22, REQ-TRUST-001).
+# GENERATED FILE — do not edit by hand.
 #
-# Same contract as cis.yaml: check ids must exist in the shipped planning catalogue
-# (no dangling ids — `tests/unit/test_compliance_map.py` fails the build otherwise),
-# control ids are unique, and `total_controls` states the framework's own size so a
-# framework report can name the gap explicitly instead of implying coverage.
+# `python -m arachne.tools.compliance --write` regenerates it from every check's
+# `compliance=` declaration (REQ-TRUST-009); `--check` fails when this file and the
+# registry disagree, which is what makes 'generated, not maintained' enforceable.
 #
-# PCI DSS v4.0 has 12 top-level requirements; the controls here are mapped at
-# requirement granularity, with the sub-requirement detail a finding speaks to named
-# in the title. Payment-page script integrity (6.4.3/11.6) and wireless controls
-# (11.2) have no ARACHNE check today and are therefore absent — the report shows
-# them as outside the assessed set, which is the honest statement.
-
-framework: pci-dss
-name: PCI DSS
-edition: v4.0
-kind: requirement
+# PCI DSS v4.0 — 12 requirements.
+# Assessed: 11 requirement(s) reached by at least one check (target 12 of 12).
+# Outside the assessed set: 1 requirement(s), each named below with a
+# reason — an unmapped control is reported, never omitted.
+#
+# Source: PCI DSS v4.0 (PCI Security Standards Council, March 2022), https://www.pcisecuritystandards.org/documents/PCI-DSS-v4_0.pdf (live URL is gated behind the PCI SSC document agreement; retrieved from the Internet Archive capture of that official URL, timestamp 20220404115505, https://web.archive.org/web/20220404115505id_/https://www.pcisecuritystandards.org/documents/PCI-DSS-v4_0.pdf)
+# Retrieved: 2026-11-05. Cross-check: The 12 'Requirement N:' headings of the official v4.0 PDF, one for each number 1..12, with requirement 4's wrapped heading rejoined.
+#
+# A control id is a real control of this edition (validated against the pinned
+# inventory), and every `checks:` entry is a registered check id, so neither direction
+# of the join can be a typo. A check's evidence is *about* a control; it is never proof
+# of conformity.
+framework: "pci-dss"
+name: "PCI DSS"
+edition: "v4.0"
+kind: "requirement"
 total_controls: 12
-map_version: "1.0"
+map_version: "2.0"
 controls:
-  - id: "2.2"
-    title: System components are configured and managed securely (insecure services removed)
+  - id: "1"
+    title: "Install and Maintain Network Security Controls"
     checks:
-      - m2.legacy-services
       - m2.ftp-anonymous
-      - m4.tls-config-review
-
-  - id: "4.2"
-    title: Strong cryptography protects cardholder data during transmission (TLS 1.2+)
+      - m2.legacy-services
+      - m2.port-scan
+      - m2.rdp-vnc-detect
+  - id: "2"
+    title: "Apply Secure Configurations to All System Components"
     checks:
+      - m2.ftp-anonymous
+      - m2.legacy-services
+      - m4.debug-endpoints
+      - m4.default-credentials
+      - m4.directory-listing
+      - m4.tls-config-review
+      - m4.webdav-verbs
+  - id: "3"
+    title: "Protect Stored Account Data"
+    checks:
+      - m4.backup-file-hunt
+      - m4.bucket-exposure
+      - m4.datastore-surface
+      - m5.firebase-rules
+      - m5.managed-datastores
+      - m5.supabase-rls
+  - id: "4"
+    title: "Protect Cardholder Data with Strong Cryptography During Transmission Over Open, Public Networks"
+    checks:
+      - m2.smtp-transport
       - m2.tls-deep-scan
       - m4.tls-config-review
-
-  - id: "6.2"
-    title: Software is developed in accordance with PCI DSS secure coding guidance
+  - id: "5"
+    title: "Protect All Systems and Networks from Malicious Software"
     checks:
-      - m3.sqli-oracle
-      - m3.xss-oracle
-      - m3.cmdi-oracle
-      - m3.ssti-oracle
-      - m3.xxe-oracle
-      - m3.nosql-oracle
-      - m3.traversal-oracle
-
-  - id: "6.3"
-    title: Security vulnerabilities are identified and managed; bespoke components inventoried
+      - m3.upload-audit
+      - m6.sigma-hunt-rules
+      - m6.webshell-yara
+  - id: "6"
+    title: "Develop and Maintain Secure Systems and Software"
     checks:
       - m2.cve-correlate
+      - m3.argument-injection
+      - m3.business-logic-audit
+      - m3.cmdi-oracle
+      - m3.code-injection-oracle
+      - m3.cors-audit
+      - m3.crlf-injection
+      - m3.csrf-audit
+      - m3.deser-audit
+      - m3.file-inclusion
+      - m3.hpp-oracle
+      - m3.input-validation-audit
+      - m3.ldap-injection
+      - m3.mass-assign-audit
+      - m3.nosql-oracle
+      - m3.proto-pollution
+      - m3.security-headers
+      - m3.sqli-oracle
+      - m3.ssti-oracle
+      - m3.traversal-oracle
+      - m3.xpath-injection
+      - m3.xss-oracle
+      - m3.xxe-oracle
       - m5.dep-confusion
       - m5.sbom-review
-      - m6.secret-scan-at-scale
-
-  - id: "6.4"
-    title: Public-facing web applications are protected against attacks
+  - id: "7"
+    title: "Restrict Access to System Components and Cardholder Data by Business Need to Know"
     checks:
-      - m3.security-headers
-      - m3.csrf-audit
-      - m3.cors-audit
-      - m3.upload-audit
-
-  - id: "8.2"
-    title: User accounts and authentication factors are managed
+      - m3.authz-bypass
+      - m3.idor-oracle
+      - m3.mass-assign-audit
+      - m4.dashboard-exposure
+      - m4.unauth-api-audit
+      - m5.iam-review
+  - id: "8"
+    title: "Identify Users and Authenticate Access to System Components"
     checks:
+      - m2.smb-auth
       - m3.auth-session-audit
       - m3.jwt-audit
-      - m3.session-logout
-      - m4.user-enumeration
-
-  - id: "8.3"
-    title: Strong authentication is established and implemented
-    checks:
       - m3.oauth-flow-audit
       - m3.saml-audit
-      - m3.jwt-audit
-
-  - id: "10.2"
-    title: Auditable events are recorded and audit logs are protected
+      - m3.session-logout
+      - m4.default-credentials
+      - m4.user-enumeration
+  - id: "10"
+    title: "Log and Monitor All Access to System Components and Cardholder Data"
     checks:
       - m3.auth-session-audit
-
-  - id: "11.3"
-    title: Vulnerabilities are identified by internal and external scans
+      - m6.sigma-hunt-rules
+  - id: "11"
+    title: "Test Security of Systems and Networks Regularly"
     checks:
       - m2.cve-correlate
-      - m6.exploit-match
+      - m3.cmdi-oob
+      - m3.rce-echo
+      - m3.sqli-oob
+      - m3.state-marker
+      - m3.xxe-oob
       - m6.cve-epss-correlation
-
-  - id: "11.5"
-    title: Intrusions and unexpected changes are detected
+      - m6.exploit-match
+      - m6.template-scan
+  - id: "12"
+    title: "Support Information Security with Organizational Policies and Programs"
     checks:
-      - m6.webshell-yara
-      - m5.tfstate-exposure
+      - m1.subdomain-passive
+      - m2.host-discovery
+      - m2.service-fingerprint
+      - m3.api-surface
+      - m4.api-doc-exposure
+outside_assessed_set:
+  - id: "9"
+    title: "Restrict Physical Access to Cardholder Data"
+    reason: "physical access controls (facility entry, visitor management, media handling and point-of-interaction tamper protection): there is no network-observable artefact, and ARACHNE ships no physical or host-agent check"

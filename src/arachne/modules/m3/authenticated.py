@@ -223,6 +223,7 @@ class SessionLogout(WebCheck, Module):
         ),
         research_ref="ch03#19",
         framework=("WSTG-SESS-06", "CWE-613"),
+        compliance=("CIS-6.2", "CIS-8.1", "ISO-A.8.5", "CSF-PR.AA-03", "PCI-8"),
         cwe="CWE-613",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",

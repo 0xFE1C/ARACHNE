@@ -139,8 +139,12 @@ def test_frameworks_lists_the_bundled_maps() -> None:
     out = result.output
     for framework in ("cis", "iso27001", "nist-csf", "pci-dss"):
         assert framework in out
-    assert "of 93 controls mapped" in out
-    assert "of 153 safeguards mapped" in out
+    # The ratio, the target and the named gap (REQ-TRUST-009) — not just a count.
+    assert "of 93 controls assessed" in out
+    assert "of 153 safeguards assessed" in out
+    assert "outside the assessed set" in out
+    assert "target 60" in out and "target 45" in out and "target 40" in out
+    assert "target 12" in out, "PCI's target is stated even where the catalogue falls short"
 
 
 def test_the_export_writes_a_self_contained_document(
@@ -169,7 +173,17 @@ def test_the_export_writes_a_self_contained_document(
     assert document["framework"]["edition"] == "2022"
     coverage = document["coverage"]
     assert coverage["total_controls"] == 93
-    assert coverage["mapped"] == 16 and coverage["unmapped"] == 77
+    # The numbers come from the map the deployment ships, so growing the mapping (WP-19) does
+    # not require editing this test — a stale hard-coded count is how a doc number rots.
+    from arachne.report.compliance import load_compliance_framework
+
+    iso_map = load_compliance_framework("iso27001")
+    assert coverage["mapped"] == iso_map.assessed
+    assert coverage["unmapped"] == iso_map.total_controls - iso_map.assessed
+    # Every unassessed Annex A control is named with a reason, in the export itself.
+    assert coverage["outside_assessed_set"] == len(iso_map.outside_assessed_set)
+    assert len(document["outside_assessed_set"]) == len(iso_map.outside_assessed_set)
+    assert all(row["reason"].strip() for row in document["outside_assessed_set"])
     assert coverage["fail"] >= 1, "the env-file finding fails A.5.17"
     note = coverage["note"]
     assert "not proof of conformity" in note and "cannot be assessed by any scan" in note

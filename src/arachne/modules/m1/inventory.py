@@ -155,6 +155,7 @@ class PassiveDns(Module):
         ),
         research_ref="ch01#11",
         framework=("WSTG-INFO-04",),
+        compliance=("CIS-1.1", "CIS-1.5", "ISO-A.5.9", "CSF-ID.AM-01"),
         target_kinds=_DOMAIN_KINDS,
         severity_hint="info",
         type="passive",
@@ -243,6 +244,7 @@ class SubdomainPassive(Module):
         ),
         research_ref="ch01#13",
         framework=("WSTG-INFO-04",),
+        compliance=("CIS-1.1", "ISO-A.5.9", "CSF-ID.AM-01", "PCI-12"),
         target_kinds=_DOMAIN_KINDS,
         severity_hint="info",
         type="passive",
@@ -346,6 +348,7 @@ class WebArchiveHarvest(Module):
         ),
         research_ref="ch01#14-16",
         framework=("WSTG-INFO-01", "CWE-200"),
+        compliance=("CIS-1.5", "CSF-ID.AM-01"),
         cwe="CWE-200",
         # Domain-scoped on purpose: a URL target already belongs to a declared host, so
         # letting the check run against both would harvest the same archive twice and raise

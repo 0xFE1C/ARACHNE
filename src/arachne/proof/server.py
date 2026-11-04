@@ -31,7 +31,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
 from arachne.core.audit import Auditor, build_auditor
-from arachne.core.signing import DeploymentSigner
+from arachne.core.signing import Signer
 from arachne.proof.oob import CallbackService
 
 __all__ = ["CallbackServerHandle", "scan_gate_for_services", "start_callback_server"]
@@ -67,7 +67,7 @@ def start_callback_server(
     port: int = 0,
     auditor: Auditor | None = None,
     service: CallbackService | None = None,
-    signer: DeploymentSigner | None = None,
+    signer: Signer | None = None,
     scan_gate: Callable[[str], str | None] | None = None,
 ) -> CallbackServerHandle:
     """Bind and start the facade; ``port=0`` picks an ephemeral port (tests).

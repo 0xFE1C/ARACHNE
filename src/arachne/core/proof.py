@@ -40,7 +40,7 @@ from enum import StrEnum
 from typing import Final
 
 from arachne.core.errors import ConfigurationError, SafetyError
-from arachne.core.signing import DeploymentSigner
+from arachne.core.signing import Signer
 
 __all__ = [
     "ALLOWED_COMMANDS",
@@ -244,7 +244,7 @@ class CallbackToken:
 OOB_DOMAIN: Final = "arachne.oob"
 
 
-def per_scan_secret(signer: DeploymentSigner | None, scan_id: str | int) -> str | None:
+def per_scan_secret(signer: Signer | None, scan_id: str | int) -> str | None:
     """The per-scan callback secret, derived from the deployment key (REQ-PROOF-019).
 
     Derived rather than stored or transmitted: the scanner that issues a token and the

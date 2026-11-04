@@ -28,7 +28,7 @@ from arachne.core.audit import AuditAction, AuditOutcome
 from arachne.core.config import get_settings
 from arachne.core.errors import ArachneError
 from arachne.core.integrity import IntegrityReport
-from arachne.core.signing import build_signer
+from arachne.core.signing import build_signer, build_verifier
 from arachne.data.services import build_integrity_verifier, build_services
 
 __all__ = ["integrity_app", "verify_chain_command"]
@@ -65,10 +65,16 @@ def verify_chain_command(
         verifier = build_integrity_verifier(services)
         if require_signatures:
             verifier.require_signatures = True
+        # "Has keys" means the *verifier* holds one, not that this process can sign: an auditor
+        # configures only the Ed25519 public key and must be able to run this command
+        # (REQ-TRUST-008). `signer` answers the narrower question "can this host sign?".
         signer = build_signer(settings)
-        if verifier.require_signatures and signer is None:
+        verifies_with_keys = verifier.signer is not None
+        if verifier.require_signatures and not verifies_with_keys:
             typer.echo(
-                "error: --require-signatures was given but ARACHNE_INTEGRITY_KEY is not set",
+                "error: --require-signatures was given but no integrity key is configured; set "
+                "ARACHNE_INTEGRITY_KEY, or ARACHNE_INTEGRITY_ED25519_PUBLIC_KEY to verify with a "
+                "public key alone",
                 err=True,
             )
             raise typer.Exit(code=2)
@@ -84,12 +90,14 @@ def verify_chain_command(
                 "modified": len(report.modified),
                 "deleted": len(report.deleted),
                 "checked": report.checked,
-                "signed": signer is not None,
+                "signed": verifies_with_keys,
+                "can_sign": signer is not None,
+                "scheme": signer.scheme if signer is not None else None,
             },
         )
     finally:
         services.close()
-    _emit_report(report, json_output=json_output, signed=signer is not None)
+    _emit_report(report, json_output=json_output, signed=verifies_with_keys)
     if not report.ok:
         raise typer.Exit(code=1)
 
@@ -170,11 +178,21 @@ def integrity_status(
     services = build_services(settings)
     try:
         signer = build_signer(settings)
+        # What this deployment can *verify* with, which is the wider question: an auditor
+        # configures only a public key (REQ-TRUST-008) and is configured for all that.
+        ring = build_verifier(settings)
         anchors = services.integrity.anchors(limit=10) if services.integrity else ()
         seals = services.integrity.seals(limit=10) if services.integrity else ()
         head = _chain_head(services)
         key_info: dict[str, Any] = (
-            {"configured": True, "key_id": signer.key_id} if signer else {"configured": False}
+            {
+                "configured": True,
+                "key_id": ring.key_id or ", ".join(ring.key_ids()),
+                "schemes": list(ring.schemes()),
+                "can_sign": signer is not None,
+            }
+            if ring.signers
+            else {"configured": False}
         )
         payload: dict[str, Any] = {
             "integrity_key": key_info,

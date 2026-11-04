@@ -38,7 +38,7 @@ from arachne.core.integrity import (
 )
 from arachne.core.metrics import REGISTRY
 from arachne.core.results import CheckResult, Evidence, confidence_percent
-from arachne.core.signing import DeploymentSigner
+from arachne.core.signing import Signer
 from arachne.data.evidence_service import EVIDENCE_STUB_KEY, serialized_size
 from arachne.data.models import Asset as AssetRow
 from arachne.data.models import Check, Finding
@@ -397,7 +397,7 @@ class SqlFindingStore:
         self,
         session_factory: sessionmaker[Session],
         *,
-        signer: DeploymentSigner | None = None,
+        signer: Signer | None = None,
         region: str | None = None,
         auditor: Auditor | None = None,
     ) -> None:

@@ -17,7 +17,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+import pytest
+
 from arachne.core.audit import MemoryAuditChain
+from arachne.core.errors import ConfigurationError
 from arachne.core.integrity import (
     ANCHOR_DOMAIN,
     AUDIT_DOMAIN,
@@ -404,3 +407,192 @@ def test_the_reconstruction_matches_the_hashed_payload() -> None:
 
 def test_signature_domains_are_distinct_constants() -> None:
     assert len({AUDIT_DOMAIN, ANCHOR_DOMAIN, FINDING_DOMAIN, EVIDENCE_DOMAIN, SEAL_DOMAIN}) == 5
+
+
+# ------------------------------------------- the asymmetric option (WP-19, REQ-TRUST-008)
+def _ed25519_pair() -> tuple[str, str]:
+    """A deterministic keypair for these tests: seed and public key, both hex."""
+    from arachne.core.signing import generate_keypair
+
+    return generate_keypair()
+
+
+def _ed25519_chain(seed: str, count: int = 3) -> tuple[list[AuditLink], MemoryAuditChain]:
+    from arachne.core.signing import Ed25519Signer
+
+    chain = MemoryAuditChain(signer=Ed25519Signer(private_key=seed))
+    return _links(chain, count), chain
+
+
+def test_a_chain_signed_with_ed25519_verifies_with_the_public_key_alone() -> None:
+    """REQ-TRUST-008's first criterion: a verifier that holds no signing material verifies.
+
+    The ring here is built from the *public* key only. It confirms every link and cannot mint
+    one — which is the property an HMAC cannot offer, and the whole reason for the option.
+    """
+    from arachne.core.signing import Ed25519Signer, SigningKeyring
+
+    seed, public = _ed25519_pair()
+    links, _ = _ed25519_chain(seed)
+
+    auditor = SigningKeyring([Ed25519Signer(public_key=public)])
+    assert auditor.can_sign is False
+    assert auditor.schemes() == ("ed25519",)
+    report = verify_audit_chain(links, signer=auditor, require_signature=True)
+    assert report.ok, report.summary()
+    assert report.checked == {"audit_rows": len(links)}
+    # The key id travels in every signature and resolves to the key it names.
+    assert all(link.signature is not None for link in links)
+    assert {str(link.signature).split(":")[1] for link in links} == {auditor.key_ids()[0]}
+    assert auditor.admits(auditor.key_ids()[0])
+
+
+def test_a_verifier_holding_only_the_public_key_cannot_forge() -> None:
+    """REQ-TRUST-008's second criterion: the forging attempt fails, twice over.
+
+    Attempt one is the direct one: ask the public-key-only signer for a signature. Attempt two
+    is the interesting one — take a *valid* signature, seed a signer with the public key as if it
+    were a private key, and try to reproduce it: the two keys derive different public keys, so
+    the result verifies under neither. A third attempt edits a real signature in place.
+    """
+    from arachne.core.errors import ConfigurationError
+    from arachne.core.signing import Ed25519Signer
+
+    seed, public = _ed25519_pair()
+    real = Ed25519Signer(private_key=seed)
+    auditor = Ed25519Signer(public_key=public)
+    signature = real.sign(AUDIT_DOMAIN, b"payload")
+
+    with pytest.raises(ConfigurationError, match="holds only the public key"):
+        auditor.sign(AUDIT_DOMAIN, b"payload")
+
+    # Seeding a signer with the public key produces a *different* keypair, not a forgery.
+    forged = Ed25519Signer(private_key=public)
+    assert forged.key_id != real.key_id
+    assert auditor.verify(AUDIT_DOMAIN, b"payload", forged.sign(AUDIT_DOMAIN, b"payload")) is False
+
+    # And a real signature cannot be edited into a different one.
+    tampered = signature[:-1] + ("0" if signature[-1] != "0" else "1")
+    assert auditor.verify(AUDIT_DOMAIN, b"payload", tampered) is False
+    assert auditor.verify(AUDIT_DOMAIN, b"other", signature) is False
+
+
+def test_a_chain_stays_verifiable_across_a_scheme_change() -> None:
+    """REQ-TRUST-008's third criterion: the documented dual period, exercised both ways.
+
+    A deployment mid-migration holds an HMAC key *and* an Ed25519 key. A chain signed before the
+    cutover (HMAC) and one signed after (Ed25519) are both verified by that one ring, and neither
+    scheme's signature verifies against the other's key — so the migration is a retention window
+    rather than a flag day.
+    """
+    from arachne.core.signing import Ed25519Signer, SigningKeyring
+
+    seed, _public = _ed25519_pair()
+    before = MemoryAuditChain(signer=_signer())
+    during = MemoryAuditChain(signer=Ed25519Signer(private_key=seed))
+    dual_ring = SigningKeyring([Ed25519Signer(private_key=seed), _signer()])
+
+    before_links = _links(before, 2)
+    during_links = _links(during, 2)
+    assert str(before_links[0].signature).startswith("v1:")
+    assert str(during_links[0].signature).startswith("ed25519:")
+
+    assert verify_audit_chain(before_links, signer=dual_ring, require_signature=True).ok
+    assert verify_audit_chain(during_links, signer=dual_ring, require_signature=True).ok
+    assert dual_ring.schemes() == ("ed25519", "hmac-sha256")
+
+    # The two schemes are not interchangeable: each verifier refuses the other's signature.
+    hmac_only = SigningKeyring([_signer()])
+    assert not verify_audit_chain(during_links, signer=hmac_only, require_signature=True).ok
+    assert (
+        Ed25519Signer(private_key=seed).verify(
+            AUDIT_DOMAIN, b"x", _signer().sign(AUDIT_DOMAIN, b"x")
+        )
+        is False
+    )
+
+
+def test_an_upgrade_to_ed25519_does_not_invalidate_the_stored_hmac_rows() -> None:
+    """The same dual period, through the *configuration* rather than a hand-built ring.
+
+    ``build_verifier`` is what ``arachne verify-chain`` uses, so this is the path an operator
+    actually takes: switch ``algorithm`` to ed25519, keep the old HMAC key configured, and the
+    pre-switch rows still verify while new ones are signed under the new scheme.
+    """
+    from pydantic import SecretStr
+
+    from arachne.core.config import IntegritySettings, Settings
+    from arachne.core.signing import build_signer, build_verifier, generate_keypair
+
+    seed, public = generate_keypair()
+    legacy_key = "s25-unit-test-legacy-hmac-key-01"
+    settings = Settings(
+        database_url="sqlite:///:memory:",
+        integrity=IntegritySettings(
+            key=SecretStr(legacy_key),
+            algorithm="ed25519",
+            ed25519_private_key=SecretStr(seed),
+            ed25519_public_key=SecretStr(public),
+        ),
+    )
+    old_rows = _links(MemoryAuditChain(signer=DeploymentSigner(legacy_key)), 2)
+    signing = build_signer(settings)
+    assert signing is not None and signing.scheme == "ed25519"
+    new_rows = _links(MemoryAuditChain(signer=signing), 2)
+
+    verifier = build_verifier(settings)
+    assert verifier.schemes() == ("ed25519", "hmac-sha256")
+    assert verify_audit_chain(old_rows, signer=verifier, require_signature=True).ok
+    assert verify_audit_chain(new_rows, signer=verifier, require_signature=True).ok
+
+
+def test_the_auditor_shape_cannot_sign_and_reports_itself_as_such() -> None:
+    """A public-key-only deployment is a legal, *verifying* state — and must not pretend to sign."""
+    from pydantic import SecretStr
+
+    from arachne.core.config import IntegritySettings, Settings
+    from arachne.core.signing import build_signer, build_verifier, generate_keypair
+
+    _, public = generate_keypair()
+    settings = Settings(
+        database_url="sqlite:///:memory:",
+        integrity=IntegritySettings(algorithm="ed25519", ed25519_public_key=SecretStr(public)),
+    )
+    assert build_signer(settings) is None
+    verifier = build_verifier(settings)
+    assert verifier.can_sign is False
+    assert verifier.key_id == ""
+    with pytest.raises(ConfigurationError, match="no signing key"):
+        verifier.sign(AUDIT_DOMAIN, b"x")
+
+
+def test_the_scheme_cannot_be_confused_by_a_mismatched_key_id() -> None:
+    """The key id is checked before the arithmetic, in both schemes."""
+    from arachne.core.signing import Ed25519Signer, SigningKeyring, scheme_of
+
+    seed, public = _ed25519_pair()
+    real = Ed25519Signer(private_key=seed)
+    signature = real.sign(AUDIT_DOMAIN, b"payload")
+    other = SigningKeyring([Ed25519Signer(private_key=bytes(31) + b"\x07")])
+    assert other.verify(AUDIT_DOMAIN, b"payload", signature) is False
+    assert Ed25519Signer(public_key=public).verify(AUDIT_DOMAIN, b"payload", signature) is True
+    # The historical tag spells the same scheme; an unknown tag is refused outright.
+    assert scheme_of("v1") == "hmac-sha256" == scheme_of("hmac-sha256")
+    assert scheme_of("ed25519") == "ed25519"
+    assert scheme_of("rsa") is None
+
+
+def test_a_key_id_that_does_not_match_the_signature_is_refused() -> None:
+    """A signature relabelled with another key's id must not verify under that key."""
+    seed, public = _ed25519_pair()
+    from arachne.core.signing import Ed25519Signer
+
+    signer = Ed25519Signer(private_key=seed, key_id="auditor-2026")
+    signature = signer.sign(AUDIT_DOMAIN, b"payload")
+    assert signature.split(":")[1] == "auditor-2026"
+    assert (
+        Ed25519Signer(public_key=public, key_id="someone-else").verify(
+            AUDIT_DOMAIN, b"payload", signature
+        )
+        is False
+    )

@@ -87,6 +87,7 @@ class SecretScanAtScale(Module):
         name="secret-scan-at-scale",
         research_ref="ch06#8",
         framework=("WSTG-INFO-05", "CWE-798"),
+        compliance=("CSF-PR.PS-06",),
         cwe="CWE-798",
         target_kinds=(TargetKind.GIT, TargetKind.CLOUD, TargetKind.URL),
         severity_hint="high",

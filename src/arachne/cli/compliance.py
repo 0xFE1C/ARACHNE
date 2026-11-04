@@ -26,8 +26,13 @@ import typer
 from arachne import __version__
 from arachne.core.config import get_settings
 from arachne.core.errors import ConfigurationError, ReportError
+from arachne.modules.compliance_map import TARGET_RATIOS
 
 __all__ = ["compliance_app"]
+
+#: How many unassessed controls ``frameworks`` prints before summarising the rest. The full list
+#: is in the export and in the generated map file, which is where an auditor reads it.
+OUTSIDE_PREVIEW = 5
 
 compliance_app = typer.Typer(
     name="compliance",
@@ -54,11 +59,24 @@ def frameworks_command() -> None:
             typer.echo(f"{name}: unavailable ({exc})", err=True)
             continue
         origin = "custom" if maps_dir else "bundled"
+        # REQ-TRUST-009: the ratio first, then the gap by name — "16 of 93 mapped" used to leave
+        # the reader to guess what the other 77 were.
         typer.echo(
             f"{name:10s} {map_data.name} ({map_data.edition}) — "
-            f"{len(map_data.controls)} of {map_data.total_controls} {plural(map_data.kind)} mapped "
+            f"{map_data.assessed} of {map_data.total_controls} {plural(map_data.kind)} assessed "
+            f"(target {TARGET_RATIOS[name][0]}), "
+            f"{len(map_data.outside_assessed_set)} outside the assessed set "
             f"[{origin}, map v{map_data.map_version}]"
         )
+        if map_data.outside_assessed_set:
+            for control in map_data.outside_assessed_set[:OUTSIDE_PREVIEW]:
+                typer.echo(f"             · {control.id}: {control.reason}")
+            remaining = len(map_data.outside_assessed_set) - OUTSIDE_PREVIEW
+            if remaining > 0:
+                typer.echo(
+                    f"             · ...and {remaining} more, in "
+                    f"`arachne compliance export` and templates/compliance/{name}.yaml"
+                )
 
 
 @compliance_app.command("export")

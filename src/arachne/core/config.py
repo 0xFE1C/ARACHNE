@@ -2179,15 +2179,29 @@ PII_KNOWN_CATEGORIES: Final[tuple[str, ...]] = (
 )
 
 
+#: The signing schemes this build implements (REQ-TRUST-008). ``hmac`` is a shared secret
+#: (the historical default); ``ed25519`` is asymmetric, so a verifier can hold only the public
+#: key and still cannot forge.
+INTEGRITY_ALGORITHMS: Final[tuple[str, ...]] = ("hmac", "ed25519")
+
+
 @dataclass(frozen=True, slots=True)
 class IntegritySettings:
-    """Tamper-evident audit and signed evidence (S25, REQ-TRUST-005).
+    """Tamper-evident audit and signed evidence (S25, REQ-TRUST-005; WP-19, REQ-TRUST-008).
 
     ``key`` (``ARACHNE_INTEGRITY_KEY``, or a file via ``ARACHNE_INTEGRITY_KEY_FILE``) is the
     deployment key that signs the audit chain heads, the per-row signatures and the scan
     seals. It is **optional**: without it the hash chain still exists and still detects an
     edited row, but ``arachne verify-chain --require-signatures`` refuses to report "intact"
     (see ADR-300.5 for why absence is a refusal, not a pass).
+
+    ``algorithm`` selects *how* those signatures are made. ``hmac`` (the default) is the shared
+    secret this module has always used; ``ed25519`` makes the deployment sign with an asymmetric
+    key so an auditor holding only ``ed25519_public_key`` can verify a chain and cannot forge
+    one (REQ-TRUST-008). During the migration both halves stay configured: new rows are signed
+    with the selected algorithm and ``build_verifier`` keeps the other key in its ring, so rows
+    written before the switch still verify. The dual period is a retention window, not a flag
+    day — see ``core.signing``.
 
     ``seal_on_finish`` writes a signed manifest when a scan completes, which is what makes a
     *deleted* finding or evidence row detectable. ``anchor_every`` auto-writes an anchor
@@ -2213,15 +2227,50 @@ class IntegritySettings:
     seal_on_finish: bool = True
     require_signatures: bool = False
     anchor_every: int = 1000
+    #: ``hmac`` (default) or ``ed25519`` — the scheme this deployment signs with.
+    #: ``ARACHNE_INTEGRITY_ALGORITHM``.
+    algorithm: str = "hmac"
+    #: The Ed25519 private key (a 32-byte seed, hex or base64). ``ARACHNE_INTEGRITY_ED25519_KEY``
+    #: or a file via ``ARACHNE_INTEGRITY_ED25519_KEY_FILE``. A deployment without it cannot sign
+    #: in this scheme, which is a legal (unsigned) state, not an error.
+    ed25519_private_key: SecretStr | None = None
+    #: The Ed25519 **public** key: what an auditor is given.
+    #: ``ARACHNE_INTEGRITY_ED25519_PUBLIC_KEY``. With this and no private key the deployment
+    #: verifies and cannot sign — the point of the asymmetric scheme. When both are set they
+    #: must belong to the same keypair.
+    ed25519_public_key: SecretStr | None = None
+    #: Non-secret label for the Ed25519 key; defaults to a digest of its public key.
+    ed25519_key_id: str | None = None
 
     def __post_init__(self) -> None:
         if self.anchor_every < 0:
             msg = "integrity.anchor_every must be >= 0 (0 disables automatic anchoring)"
             raise ConfigurationError(msg)
+        algorithm = self.algorithm.strip().lower()
+        if algorithm not in INTEGRITY_ALGORITHMS:
+            msg = (
+                f"integrity.algorithm {self.algorithm!r} is not a signing scheme; this build "
+                f"supports {', '.join(INTEGRITY_ALGORITHMS)}"
+            )
+            raise ConfigurationError(msg)
+        object.__setattr__(self, "algorithm", algorithm)
+        if algorithm == "ed25519" and self.key is not None and self.ed25519_private_key is None:
+            # Not a silent failure: the operator asked for Ed25519 and configured only the HMAC
+            # key, so nothing would sign. Refuse at configuration time, naming both variables.
+            msg = (
+                "integrity.algorithm is 'ed25519' but only ARACHNE_INTEGRITY_KEY is set: set "
+                "ARACHNE_INTEGRITY_ED25519_KEY (the seed) or clear the algorithm back to 'hmac'"
+            )
+            raise ConfigurationError(msg)
 
     @property
     def configured(self) -> bool:
-        return self.key is not None or self.key_file is not None
+        return (
+            self.key is not None
+            or self.key_file is not None
+            or self.ed25519_private_key is not None
+            or self.ed25519_public_key is not None
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -2977,6 +3026,17 @@ class Settings:
                     source, "ARACHNE_INTEGRITY_REQUIRE_SIGNATURES", default=False
                 ),
                 anchor_every=_env_int(source, "ARACHNE_INTEGRITY_ANCHOR_EVERY", 1000),
+                # REQ-TRUST-008: the asymmetric option. The seed (private half) signs; the public
+                # half is what an auditor is given and is enough to verify without the power to
+                # forge. Both may be present (the dual period); a seed and a public key that do
+                # not belong to the same keypair are refused by ``core.signing``.
+                algorithm=(_env_str(source, "ARACHNE_INTEGRITY_ALGORITHM") or "hmac")
+                .strip()
+                .lower(),
+                ed25519_private_key=_env_secret(source, "ARACHNE_INTEGRITY_ED25519_KEY")
+                or _env_file_secret(source, "ARACHNE_INTEGRITY_ED25519_KEY_FILE"),
+                ed25519_public_key=_env_secret(source, "ARACHNE_INTEGRITY_ED25519_PUBLIC_KEY"),
+                ed25519_key_id=_env_str(source, "ARACHNE_INTEGRITY_ED25519_KEY_ID") or None,
             ),
             airgap=AirgapSettings(
                 enabled=_env_bool(source, "ARACHNE_AIRGAPPED", default=False),

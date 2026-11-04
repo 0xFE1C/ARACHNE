@@ -42,7 +42,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from arachne.core.errors import ConfigurationError
-from arachne.core.signing import DeploymentSigner, SigningKeyring, canonical_bytes
+from arachne.core.signing import Signer, SigningKeyring, canonical_bytes
 
 __all__ = [
     "CATALOG_RESOURCE",
@@ -258,7 +258,7 @@ def index_payload(document: Mapping[str, Any]) -> bytes:
     )
 
 
-def sign_index(document: Mapping[str, Any], signer: DeploymentSigner) -> dict[str, Any]:
+def sign_index(document: Mapping[str, Any], signer: Signer) -> dict[str, Any]:
     """Return ``document`` with its index signature added — the operator's signing step.
 
     Exposed because signing an index must not require reverse-engineering the format: hand this

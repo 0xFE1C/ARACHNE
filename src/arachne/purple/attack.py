@@ -19,6 +19,16 @@ The map ships as data (``templates/purple/attck-map.yaml``), so which actions ar
 replayable is an operational choice rather than a code change — but it is *cross-checked*
 against the registry: an action naming a check that does not exist, or claiming a proof
 level the catalogue does not declare, is refused. The map cannot lie about the ladder.
+
+The vocabulary is **ATT&CK Enterprise v20** (REQ-VALID-007): 15 tactics, including the
+v20 split of Defense Evasion into **Stealth** and **Defense Impairment**, and each of the
+706 technique ids checked against the same pinned snapshot a check's ``framework`` mapping
+is checked against (:mod:`arachne.modules.framework_map`). An action's tactic must be one
+of the tactics the release assigns its technique, so the catalogue cannot file a credential
+technique under discovery. **No action is filed under Stealth**: ARACHNE's tests are
+designed to be seen (see :data:`NO_EVASION_POLICY`), and filing one there would describe an
+evasion capability the product refuses to have. (ATT&CK v20 assigns T1078 Valid Accounts
+*Stealth* among four tactics — the actions use its initial-access/persistence assignment.)
 """
 
 from __future__ import annotations
@@ -33,9 +43,12 @@ from typing import Any
 import yaml
 
 from arachne.core.errors import ConfigurationError
+from arachne.modules.framework_map import attack_tactics, framework, item_error
 
 __all__ = [
     "ATTACK_MAP_VERSION",
+    "ATTACK_TACTIC_IDS",
+    "ATTACK_VERSION",
     "NO_EVASION_POLICY",
     "TACTICS",
     "TACTIC_LABELS",
@@ -46,46 +59,28 @@ __all__ = [
     "normalize_technique",
     "technique_matches",
     "technique_parent",
+    "technique_tactics",
 ]
 
 #: Bumped when the shipped map's shape or vocabulary changes.
-ATTACK_MAP_VERSION = "1.0"
+ATTACK_MAP_VERSION = "2.0"
 
-#: The ATT&CK enterprise tactic vocabulary (v14 names, lowercase, hyphenated). Coverage is
-#: reported per tactic, so the set is fixed here rather than free text in the map.
-TACTICS: tuple[str, ...] = (
-    "reconnaissance",
-    "resource-development",
-    "initial-access",
-    "execution",
-    "persistence",
-    "privilege-escalation",
-    "defense-evasion",
-    "credential-access",
-    "discovery",
-    "lateral-movement",
-    "collection",
-    "command-and-control",
-    "exfiltration",
-    "impact",
-)
+#: The ATT&CK release the tactic vocabulary and the technique ids are pinned to. Read from the
+#: same vendored snapshot ``REQ-DET-002`` validates every check's mapping against, so the
+#: catalogue cannot quietly name a release it is not validated against.
+ATTACK_VERSION = framework("ATT&CK").version
 
-TACTIC_LABELS: Mapping[str, str] = {
-    "reconnaissance": "Reconnaissance",
-    "resource-development": "Resource Development",
-    "initial-access": "Initial Access",
-    "execution": "Execution",
-    "persistence": "Persistence",
-    "privilege-escalation": "Privilege Escalation",
-    "defense-evasion": "Defense Evasion",
-    "credential-access": "Credential Access",
-    "discovery": "Discovery",
-    "lateral-movement": "Lateral Movement",
-    "collection": "Collection",
-    "command-and-control": "Command and Control",
-    "exfiltration": "Exfiltration",
-    "impact": "Impact",
-}
+#: The tactic vocabulary, taken from the pinned release rather than kept here. Coverage is
+#: reported per tactic, so the set must be the release's: v20 has **15** Enterprise tactics,
+#: because Defense Evasion (TA0005, v18-era) was split into **Stealth** and **Defense
+#: Impairment** (TA0112). A v18-era list would refuse a valid v20 tactic and mislabel the rest.
+_PINNED_TACTICS = attack_tactics()
+TACTICS: tuple[str, ...] = tuple(tactic.shortname for tactic in _PINNED_TACTICS)
+
+TACTIC_LABELS: Mapping[str, str] = {tactic.shortname: tactic.title for tactic in _PINNED_TACTICS}
+
+#: Tactic short name → the release's tactic id (``stealth`` → ``TA0005``), for the report.
+ATTACK_TACTIC_IDS: Mapping[str, str] = {tactic.shortname: tactic.id for tactic in _PINNED_TACTICS}
 
 #: The one hard rule of this area, quoted where operators will read it.
 #:
@@ -128,6 +123,20 @@ def normalize_technique(value: str) -> str:
 def technique_parent(value: str) -> str:
     """``T1059.004`` → ``T1059``; a parent id is returned unchanged."""
     return normalize_technique(value).split(".", 1)[0]
+
+
+def technique_tactics(technique: str) -> tuple[str, ...]:
+    """The tactics the pinned release assigns ``technique``, or ``()`` when it is unknown.
+
+    This is the check behind "every action exercises the technique it claims": a catalogue
+    entry naming ``T1110.001`` under ``initial-access`` is refused, because the release files
+    password guessing under credential access. It is deliberately a lookup into the pinned
+    snapshot rather than a list kept beside the map — the two cannot drift apart.
+    """
+    normalized = normalize_technique(technique)
+    spec = framework("ATT&CK")
+    item = spec.item(f"ATT&CK-{normalized}") or spec.item(f"ATT&CK-{technique_parent(normalized)}")
+    return item.tactics if item is not None else ()
 
 
 def technique_matches(emitted: str, observed: str) -> bool:
@@ -229,6 +238,24 @@ def _parse_action(raw: Mapping[str, Any], *, index: int) -> ReplayAction:
         except ValueError as exc:
             msg = f"purple map {where} ({check}): {exc}"
             raise ConfigurationError(msg) from exc
+    # REQ-VALID-007: an action's technique must exist in the pinned release, and the tactic it
+    # files itself under must be one the release assigns that technique. Both are checked here
+    # rather than in a test, so an operator's own map (ARACHNE_PURPLE_MAP) is held to the same
+    # rule as the shipped one and the catalogue cannot mislabel where an action sits.
+    assigned: set[str] = set()
+    for technique in techniques:
+        problem = item_error(f"ATT&CK-{technique}")
+        if problem is not None:
+            msg = f"purple map {where} ({check}): {problem}"
+            raise ConfigurationError(msg)
+        assigned.update(technique_tactics(technique))
+    if tactic not in assigned:
+        msg = (
+            f"purple map {where} ({check}): tactic {tactic!r} is not one ATT&CK "
+            f"{ATTACK_VERSION} assigns {', '.join(techniques)} (assigned: "
+            f"{', '.join(sorted(assigned)) or 'none'})"
+        )
+        raise ConfigurationError(msg)
     severity = str(raw.get("severity") or "medium").strip().lower()
     if severity not in _SEVERITIES:
         msg = f"purple map {where} ({check}): severity {severity!r} is not on the ladder"

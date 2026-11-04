@@ -90,6 +90,7 @@ class SqliOracle(WebCheck, Module):
         ),
         research_ref="ch03#1",
         framework=("WSTG-INPV-05", "CWE-89"),
+        compliance=("CIS-16.1", "ISO-A.8.25", "CSF-PR.PS-06", "PCI-6"),
         cwe="CWE-89",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",

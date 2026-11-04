@@ -45,7 +45,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from arachne.core.errors import BackupError
 from arachne.core.logging import get_logger
-from arachne.core.signing import DeploymentSigner, canonical_bytes
+from arachne.core.signing import Signer, canonical_bytes
 
 __all__ = [
     "BUNDLE_FORMAT",
@@ -338,7 +338,7 @@ def create_bundle(
     session_factory: sessionmaker[Session],
     settings: Any,
     out_dir: str | Path,
-    signer: DeploymentSigner | None = None,
+    signer: Signer | None = None,
     evidence_dir: str | Path | None = None,
     keys: Iterable[str | Path] = (),
     rpo_seconds: int = DEFAULT_RPO_SECONDS,
@@ -451,7 +451,7 @@ def create_bundle(
     return report
 
 
-def _sign_manifest(signer: DeploymentSigner, manifest: Mapping[str, Any]) -> str:
+def _sign_manifest(signer: Signer, manifest: Mapping[str, Any]) -> str:
     body = {key: value for key, value in manifest.items() if key != "signature"}
     return signer.sign(BACKUP_DOMAIN, canonical_bytes(body))
 
@@ -512,7 +512,7 @@ def _copy_tree(source: Path, destination: Path) -> tuple[int, int]:
 def read_bundle(
     path: str | Path,
     *,
-    signer: DeploymentSigner | None = None,
+    signer: Signer | None = None,
     require_signature: bool = False,
     verify_artifacts: bool = True,
 ) -> Bundle:

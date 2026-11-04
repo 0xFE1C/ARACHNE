@@ -1,5 +1,5 @@
-version: "1.0"
-# The purple-team replay catalogue (S24, area VALID, REQ-VALID-001/004).
+version: "2.0"
+# The purple-team replay catalogue (S24 area VALID; REQ-VALID-001/004, REQ-VALID-007).
 #
 # Each entry says: this proof action exercises *this* ATT&CK technique, and running it
 # produces *this* telemetry. The telemetry block is fed to the same M6 Sigma matcher the
@@ -8,14 +8,137 @@ version: "1.0"
 #
 # Hard rule of the whole area: these tests are designed to be SEEN. The payloads ARACHNE
 # emits are the proof ladder's own declared payloads (a calm marker, an OOB token, one
-# allowlisted `echo`), emitted verbatim and carrying the run nonce. Nothing here encodes,
-# obfuscates or fragments anything, and nothing here is an exploitation tool: the action
-# only replays a proof ARACHNE already knows how to make safely, and the point is that a
-# defender sees it.
+# allowlisted `echo`, a read-only probe), emitted verbatim and carrying the run nonce.
+# Nothing here encodes, obfuscates or fragments anything, and nothing here is an
+# exploitation tool: the action only replays a proof ARACHNE already knows how to make
+# safely, and the point is that a defender sees it.
+#
+# Vocabulary: ATT&CK Enterprise **v20**, 15 tactics. Every `techniques` id is validated
+# against the pinned release snapshot (data/frameworks/attack-enterprise-v20.json), and
+# every `tactic` must be one of the tactics that release assigns the technique — so an
+# entry cannot file a credential technique under discovery. Two consequences of v20 worth
+# naming: `defense-evasion` no longer exists (it split into `stealth` and
+# `defense-impairment`), and **no action here is filed under `stealth`** — ARACHNE's tests
+# are designed to be seen, and filing one there would describe an evasion capability the
+# product refuses to have (see `NO_EVASION_POLICY` in arachne/purple/attack.py). ATT&CK v20
+# assigns T1078 Valid Accounts *Stealth* among four tactics; the actions below use its
+# initial-access/persistence assignment, which is a plain logon test and not an evasion.
 #
 # `level` must equal the proof level the module catalogue declares for the check; the
 # planner refuses a map that disagrees with the registry.
+#
+# The tactic a technique is filed under here is the tactic this *action* exercises, and it
+# is always one of the tactics ATT&CK v20 assigns that technique (a technique may belong to
+# several; T1078, for instance, is filed under Stealth, Persistence, Privilege Escalation
+# and Initial Access, and the actions below use it as Initial Access and Persistence).
 actions:
+  # ------------------------------------------------------------------ reconnaissance
+  - check: m2.port-scan
+    title: TCP port sweep of the declared target
+    level: L1
+    tactic: reconnaissance
+    techniques: [T1595]
+    severity: low
+    notes: >-
+      One TCP connect per port on a bounded list. The telemetry an estate sees is what this
+      declares: a burst of refused/denied connections from one source, one per port, in
+      order — the fingerprint of an active scan rather than of a user.
+    telemetry:
+      summary: Firewall denials — one refused TCP connect per port, ordered
+      logsource: {product: linux, category: firewall}
+      event:
+        EventID: netfilter-drop
+        Protocol: TCP
+        Action: DROP
+        SourceIP: 192.0.2.10
+        DstPort: 8080
+        RepeatedSameSource: true
+
+  - check: m2.service-fingerprint
+    title: Service banner grab and version match
+    level: L1
+    tactic: reconnaissance
+    techniques: [T1595.002]
+    severity: low
+    notes: >-
+      Reads a handful of service banners and matches them against a version table. It is a
+      vulnerability scan in the narrowest sense — the banner comparison is the vulnerability
+      test — so the declared event is the repeated banner fetch a defender can rate-limit.
+    telemetry:
+      summary: Web access log — repeated identical banner-grabbing requests from one source
+      logsource: {product: linux, category: webserver}
+      event:
+        EventID: web-access
+        RequestMethod: GET
+        url_path: /
+        Status: 200
+        UserAgent: arachne-scanner/0.1
+        RequestsFromSameSource: 12
+
+  - check: m2.os-fingerprint
+    title: Operating-system fingerprint from stack behaviour
+    level: L1
+    tactic: reconnaissance
+    techniques: [T1592]
+    severity: low
+    notes: >-
+      Infers the remote OS from TTL, window size and option ordering. Nothing is written to
+      the target; the observable is a short burst of probes whose parameters vary per
+      technique, which is exactly how OS fingerprinting looks on the wire.
+    telemetry:
+      summary: Network flow log — parameter-varying probes against one host
+      logsource: {product: linux, category: network_flow}
+      event:
+        EventID: flow-probe
+        Protocol: TCP
+        DstPort: 443
+        TtlVaried: true
+        WindowSizeVaried: true
+        Bytes: 60
+
+  - check: m2.dns-active
+    title: Active DNS enumeration (zone, record and SRV queries)
+    level: L1
+    tactic: reconnaissance
+    techniques: [T1590]
+    severity: low
+    notes: >-
+      Asks the authoritative server the questions a resolver never asks: SOA, NS, MX, TXT,
+      SRV and an AXFR attempt. A denied zone transfer is the interesting log line — it is
+      evidence the estate noticed rather than evidence of success.
+    telemetry:
+      summary: Authoritative DNS query log — SOA/NS/TXT/SRV sweep and a refused AXFR
+      logsource: {product: dns, category: dns_query}
+      event:
+        EventID: dns-query
+        QueryType: AXFR
+        QueryName: example.test
+        ResponseCode: REFUSED
+        QueriesPerMinute: 40
+
+  - check: m2.kerberos-enum
+    title: Kerberos principal enumeration (AS-REQ without a ticket)
+    level: L1
+    tactic: reconnaissance
+    techniques: [T1589]
+    severity: medium
+    notes: >-
+      Asks the KDC for a ticket for candidate principal names and reads the difference
+      between "no such principal" and "pre-authentication required" — the classic
+      user-enumeration oracle. Pre-auth is expected to be enforced, so this is a rule-miss
+      against the shipped AS-REP roasting rule (which keys on PreAuthType 0), and the report
+      says so rather than flattering the rule set.
+    telemetry:
+      summary: Kerberos KDC event — repeated AS-REQ for distinct principal names
+      logsource: {product: windows, service: security}
+      event:
+        EventID: 4768
+        TicketOptions: "0x40810010"
+        PreAuthType: 1
+        TargetUserName: svc-backup
+        SourceIP: 192.0.2.10
+
+  # ------------------------------------------------------------------ initial access
   - check: m3.sqli-oracle
     title: In-band SQL injection oracle
     level: L1
@@ -68,6 +191,105 @@ actions:
         ContentType: application/xml
         Status: 200
 
+  - check: m3.xss-oracle
+    title: Reflected cross-site scripting oracle
+    level: L1
+    tactic: initial-access
+    techniques: [T1189]
+    severity: high
+    notes: >-
+      A single benign script marker reflected unencoded into the response. The technique is
+      drive-by compromise because that is what an XSS in a victim-visited page is *for*: the
+      hosted marker is what the victim's browser would run.
+    telemetry:
+      summary: Web access-log line for a request whose parameter carries a script marker
+      logsource: {product: linux, category: webserver}
+      event:
+        EventID: web-access
+        RequestMethod: GET
+        url_query: "q=%3Cscript%3Earachne-TESTTOKEN%3C%2Fscript%3E"
+        Status: 200
+        ReflectedInBody: true
+
+  - check: m4.default-credentials
+    title: Vendor default credential acceptance
+    level: L1
+    tactic: initial-access
+    techniques: [T1078.001]
+    severity: critical
+    notes: >-
+      One authentication attempt per (product, default pair) from the shipped corpus, inside
+      the active-checks opt-in. A successful logon with a shipped default is the loudest
+      possible first-breach telemetry, which is the point of the test.
+    telemetry:
+      summary: Application authentication log — a successful logon with a vendor default
+      logsource: {product: linux, category: application}
+      event:
+        EventID: app-auth
+        Outcome: success
+        UserName: admin
+        SourceIP: 192.0.2.10
+        PriorFailuresFromSource: 3
+
+  - check: m2.legacy-services
+    title: Legacy or plaintext remote service reachable
+    level: L1
+    tactic: initial-access
+    techniques: [T1133]
+    severity: high
+    notes: >-
+      Reaches the declared target on legacy service ports (Telnet, r-services, cleartext
+      management) and reads only the banner. Whether the estate accepts the connection at all
+      is the security property, so the firewall's ACCEPT line is the proof.
+    telemetry:
+      summary: Firewall acceptance — inbound connection to a legacy remote-service port
+      logsource: {product: linux, category: firewall}
+      event:
+        EventID: netfilter-accept
+        Protocol: TCP
+        DstPort: 23
+        SourceIP: 192.0.2.10
+        Action: ACCEPT
+
+  - check: m2.ftp-anonymous
+    title: Anonymous FTP login accepted
+    level: L1
+    tactic: initial-access
+    techniques: [T1078]
+    severity: high
+    notes: >-
+      Logs in as `anonymous` with a syntactically valid address and issues no command beyond
+      PWD. A valid-account logon is exactly what the FTP daemon records when this succeeds.
+    telemetry:
+      summary: FTP service log — anonymous login accepted from a scanning source
+      logsource: {product: linux, category: ftp}
+      event:
+        EventID: ftp-logon
+        UserName: anonymous
+        Outcome: success
+        SourceIP: 192.0.2.10
+
+  - check: m5.dep-confusion
+    title: Dependency-confusion or typosquatting candidate resolved
+    level: L1
+    tactic: initial-access
+    techniques: [T1195.002]
+    severity: high
+    notes: >-
+      Resolves an internal package name against the public index and reports whether an
+      unclaimed/foreign package answers. The declared telemetry is the registry fetch
+      pattern a supply-chain monitor would alert on, not a package install.
+    telemetry:
+      summary: Package registry log — a private-looking name resolved from the public index
+      logsource: {product: linux, category: package_registry}
+      event:
+        EventID: registry-download
+        PackageName: internal-config-loader
+        Registry: public
+        PackageScope: private
+        Outcome: found
+
+  # ------------------------------------------------------------------------- execution
   - check: m3.cmdi-oob
     title: Out-of-band command injection
     level: L2
@@ -121,6 +343,389 @@ actions:
         Image: /bin/sh
         CommandLine: "sh -c echo arachne-TESTTOKEN"
 
+  - check: m3.code-injection-oracle
+    title: Server-side code evaluation oracle
+    level: L1
+    tactic: execution
+    techniques: [T1059]
+    severity: critical
+    notes: >-
+      An arithmetic expression in the parameter and the *same* expression echoed back
+      evaluated — a differential that proves the server evaluated the input rather than
+      stored it. The payload computes a constant; it never reads, writes or shells.
+    telemetry:
+      summary: Process-creation event — a request handler spawned an interpreter
+      logsource: {product: linux, category: process_creation}
+      event:
+        EventID: 1
+        ParentImage: /usr/sbin/php-fpm
+        Image: /usr/bin/php
+        CommandLine: "php -r exit(7*7)"
+
+  - check: m3.argument-injection
+    title: Command-argument injection into a spawned process
+    level: L1
+    tactic: execution
+    techniques: [T1059.004]
+    severity: high
+    notes: >-
+      A leading-dash argument on a parameter a backend tool forwards to the shell. The
+      declared payload is the allowlisted marker argument, emitted once.
+    telemetry:
+      summary: Process-creation event — a worker invoked a Unix shell with a marker argument
+      logsource: {product: linux, category: process_creation}
+      event:
+        EventID: 1
+        ParentImage: /usr/sbin/php-fpm
+        Image: /bin/bash
+        CommandLine: "bash -c echo arachne-TESTTOKEN"
+
+  - check: m3.dom-xss
+    title: DOM sink reachable from a controllable source
+    level: L1
+    tactic: execution
+    techniques: [T1059.007]
+    severity: high
+    notes: >-
+      The instrumentation proves that a value the caller controls reaches a JavaScript sink
+      in the *victim's* browser — script execution in the client, not on the server. The
+      injected value is a marker, and the run nonce makes the execution attributable.
+    telemetry:
+      summary: Browser console event — a marker value reached an eval/innerHTML sink
+      logsource: {product: linux, category: browser}
+      event:
+        EventID: browser-sink
+        Sink: innerHTML
+        Source: location.hash
+        Marker: arachne-TESTTOKEN
+        Page: /search
+
+  - check: m5.docker-socket
+    title: Container daemon API reachable without authentication
+    level: L1
+    tactic: execution
+    techniques: [T1609]
+    severity: critical
+    notes: >-
+      One `GET /version` and one `GET /containers/json` against the daemon API — read-only,
+      and enough to prove every container-cli operation would be accepted. Nothing is
+      started, stopped or created; the proof was already there before ARACHNE looked.
+    telemetry:
+      summary: Container daemon log — unauthenticated API calls from a remote source
+      logsource: {product: linux, category: container_runtime}
+      event:
+        EventID: docker-api
+        RequestMethod: GET
+        url_path: /containers/json
+        Status: 200
+        RemoteAddr: 192.0.2.10
+
+  # ----------------------------------------------------------------------- persistence
+  - check: m3.upload-audit
+    title: Unrestricted file upload to a web-served path
+    level: L1
+    tactic: persistence
+    techniques: [T1505.003]
+    severity: critical
+    notes: >-
+      Uploads a benign marker file and fetches it back to prove the target serves what was
+      written. That read-back is an upload *capability*, which is how a web shell gets
+      planted; the file is a text marker under a non-executable name, it is not a shell, and
+      the residue ledger records it for cleanup.
+    telemetry:
+      summary: File-creation event under the web root, followed by a fetch of the same path
+      logsource: {product: linux, category: file_event}
+      event:
+        EventID: file-create
+        TargetFilename: /srv/www/uploads/arachne-marker.txt
+        Image: /usr/sbin/php-fpm
+        FollowedByFetch: true
+
+  # ------------------------------------------------------------------------- discovery
+  - check: m2.host-discovery
+    title: Live-host sweep of the declared network
+    level: L1
+    tactic: discovery
+    techniques: [T1018]
+    severity: low
+    notes: >-
+      ICMP echo and one TCP SYN per candidate address inside the declared network only —
+      never a discovered address (the check does not run on what it finds). A sweep of a
+      single /24 by one source is the declared event.
+    telemetry:
+      summary: Firewall log — ICMP/TCP sweep across a contiguous address range
+      logsource: {product: linux, category: firewall}
+      event:
+        EventID: netfilter-drop
+        Protocol: ICMP
+        SourceIP: 192.0.2.10
+        DstAddresses: 254
+        Action: DROP
+
+  - check: m2.smb-enum
+    title: SMB share and session enumeration
+    level: L1
+    tactic: discovery
+    techniques: [T1135]
+    severity: medium
+    notes: >-
+      Listens and asks for the share list and the domain/session lists over SMB. On Windows
+      this is a share-enumeration burst against one server; nothing is mounted and nothing
+      is read.
+    telemetry:
+      summary: Windows share-access event — share enumeration from a scanning source
+      logsource: {product: windows, service: security}
+      event:
+        EventID: 5140
+        ShareName: IPC$
+        SubjectUserName: anonymous
+        SourceIP: 192.0.2.10
+
+  - check: m2.snmp-enum
+    title: SNMP community-string read of system information
+    level: L1
+    tactic: discovery
+    techniques: [T1082]
+    severity: medium
+    notes: >-
+      Reads sysDescr, sysName and the interface table under the configured community string,
+      inside the active-checks opt-in. The device's own SNMP log records the GET burst.
+    telemetry:
+      summary: Device log — SNMP GET burst for sysDescr/sysName/ifTable
+      logsource: {product: network, category: snmp}
+      event:
+        EventID: snmp-get
+        Community: public
+        Oid: 1.3.6.1.2.1.1.1.0
+        SourceIP: 192.0.2.10
+        RequestsPerMinute: 30
+
+  - check: m3.api-surface
+    title: API and hidden endpoint surface enumeration
+    level: L1
+    tactic: discovery
+    techniques: [T1083]
+    severity: medium
+    notes: >-
+      A bounded wordlist walk whose interesting output is the *shape* of the response code
+      run: a long stretch of 404s interrupted by 200s is directory discovery, and it is what
+      a WAF or access-log correlator sees.
+    telemetry:
+      summary: Web access log — a wordlist walk with a 404/200 boundary
+      logsource: {product: linux, category: webserver}
+      event:
+        EventID: web-access
+        RequestMethod: GET
+        Status: 404
+        RequestsFromSameSource: 400
+        StatusChangesTo: 200
+
+  - check: m5.iam-review
+    title: Cloud IAM account and policy inventory read
+    level: L1
+    tactic: discovery
+    techniques: [T1087.004]
+    severity: medium
+    notes: >-
+      Read-only policy and account listings through the provider's own API with the
+      credential the operator supplied. Account discovery is the first thing an attacker
+      does with a stolen cloud key, so the CloudTrail reads are the declared telemetry.
+    telemetry:
+      summary: Cloud audit log — ListUsers and policy-read calls from one principal
+      logsource: {product: aws, category: cloud_audit}
+      event:
+        EventID: cloudtrail
+        EventName: ListUsers
+        UserIdentityType: AssumedRole
+        SourceIPAddress: 192.0.2.10
+        ReadOnly: true
+
+  - check: m5.bucket-enumerator
+    title: Public storage bucket listing
+    level: L1
+    tactic: discovery
+    techniques: [T1619]
+    severity: high
+    notes: >-
+      Two unauthenticated requests per candidate name: a bucket-existence probe and a
+      listing query. A 200 on the listing endpoint is the finding, and it is also the
+      loudest thing an object-store access log can record.
+    telemetry:
+      summary: Object-store access log — anonymous ListObjects against one bucket
+      logsource: {product: aws, category: cloud_storage}
+      event:
+        EventID: s3-access
+        Operation: REST.GET.BUCKET
+        Requester: anonymous
+        BucketName: acme-public
+        HTTPStatus: 200
+
+  - check: m4.dashboard-exposure
+    title: Administrative or monitoring dashboard reachable
+    level: L1
+    tactic: discovery
+    techniques: [T1538]
+    severity: high
+    notes: >-
+      Fetches a fixed set of well-known dashboard paths and matches each product's own
+      login/landing markers. A control-plane dashboard answering an unauthenticated caller is
+      a cloud-service-dashboard discovery in one request, and the dashboard's own access log
+      is the evidence.
+    telemetry:
+      summary: Web access log — unauthenticated request to a monitoring dashboard path
+      logsource: {product: linux, category: webserver}
+      event:
+        EventID: web-access
+        RequestMethod: GET
+        url_path: /grafana/login
+        Status: 200
+        Authenticated: false
+
+  # ------------------------------------------------------------------ credential access
+  - check: m4.env-file-probe
+    title: Environment or configuration file exposed
+    level: L1
+    tactic: credential-access
+    techniques: [T1552.001]
+    severity: critical
+    notes: >-
+      Requests a fixed list of configuration paths (`.env`, `config.php.bak`, `wp-config.php~`)
+      and confirms the answer is a real file rather than a themed 404. Credentials in files
+      is the technique; the access-log line is the telemetry.
+    telemetry:
+      summary: Web access log — request for a configuration file path
+      logsource: {product: linux, category: webserver}
+      event:
+        EventID: web-access
+        RequestMethod: GET
+        url_path: /.env
+        Status: 200
+        ContentType: text/plain
+
+  - check: m4.key-exposure
+    title: Private key material reachable over HTTP
+    level: L1
+    tactic: credential-access
+    techniques: [T1552.004]
+    severity: critical
+    notes: >-
+      Fetches key-shaped paths and validates the body against the PEM header and base64
+      structure, so a themed error page is not a finding. The key itself is never stored: the
+      evidence records the path, the header and a digest.
+    telemetry:
+      summary: Web access log — request for a PEM private-key path
+      logsource: {product: linux, category: webserver}
+      event:
+        EventID: web-access
+        RequestMethod: GET
+        url_path: /server.key
+        Status: 200
+        ContentType: application/x-pem-file
+
+  - check: m2.smb-auth
+    title: SMB credential verification against a declared account
+    level: L1
+    tactic: credential-access
+    techniques: [T1110.001]
+    severity: high
+    notes: >-
+      A bounded set of authentication attempts with the credentials the operator declared in
+      the vault (or the corpus' documented default pairs), inside the opt-in. An
+      authentication attempt that fails and is logged as such is the whole point — it is
+      password guessing's visible half, and the ordinary rate limit applies to it.
+    telemetry:
+      summary: Windows logon event — repeated failed credential attempts from one source
+      logsource: {product: windows, service: security}
+      event:
+        EventID: 4625
+        LogonType: 3
+        AccountName: svc-backup
+        SourceIP: 192.0.2.10
+        FailureCount: 4
+
+  - check: m2.adcs-enum
+    title: AD CS misconfiguration enumeration (read-only)
+    level: L1
+    tactic: credential-access
+    techniques: [T1649]
+    severity: high
+    notes: >-
+      Reads the certificate-authority objects over LDAP and evaluates the published ESC
+      conditions against the templates' own attributes. It requests no certificate and
+      forges nothing — the technique is named because the *misconfiguration* is the
+      certificate-theft primitive, and the report says exactly that.
+    telemetry:
+      summary: Directory-service log — LDAP search of the certificate-services container
+      logsource: {product: windows, service: directory_service}
+      event:
+        EventID: 1644
+        Operation: Search
+        SearchBase: CN=Certificate Templates,CN=Public Key Services,CN=Services,DC=example,DC=test
+        SourceIP: 192.0.2.10
+
+  # -------------------------------------------------------------------------- collection
+  - check: m4.bucket-exposure
+    title: Publicly readable object-storage bucket
+    level: L1
+    tactic: collection
+    techniques: [T1530]
+    severity: high
+    notes: >-
+      One anonymous listing of the bucket named by the target. Collecting data from cloud
+      storage is done exactly this way — an anonymous GET of the bucket's own listing API —
+      and the bucket's access log records it.
+    telemetry:
+      summary: Object-store access log — anonymous listing of a bucket
+      logsource: {product: aws, category: cloud_storage}
+      event:
+        EventID: s3-access
+        Operation: REST.GET.BUCKET
+        Requester: anonymous
+        BucketName: acme-assets
+        HTTPStatus: 200
+
+  - check: m4.vcs-exposure
+    title: Exposed version-control metadata
+    level: L1
+    tactic: collection
+    techniques: [T1213.003]
+    severity: high
+    notes: >-
+      Fetches `/.git/HEAD`, `/.git/config` and `/.svn/entries` and requires the file's own
+      format markers, so a custom 404 is not a finding. A served repository is a code
+      repository collection step; nothing is cloned and history is not walked.
+    telemetry:
+      summary: Web access log — request for version-control metadata
+      logsource: {product: linux, category: webserver}
+      event:
+        EventID: web-access
+        RequestMethod: GET
+        url_path: /.git/config
+        Status: 200
+        ContentType: text/plain
+
+  - check: m5.tfstate-exposure
+    title: Terraform state or IaC variable file exposed
+    level: L1
+    tactic: collection
+    techniques: [T1602]
+    severity: critical
+    notes: >-
+      Fetches the conventional state and variable paths and confirms the body parses as state
+      (or carries the variable file's shape). State holds every resource attribute a provider
+      wrote, which is a configuration repository in one file — a digest is recorded, never
+      the body.
+    telemetry:
+      summary: Web access log — request for a Terraform state or variable file
+      logsource: {product: linux, category: webserver}
+      event:
+        EventID: web-access
+        RequestMethod: GET
+        url_path: /terraform.tfstate
+        Status: 200
+        ContentType: application/json
+
+  # ------------------------------------------------------------------------------ impact
   - check: m3.state-marker
     title: Minimal reversible state change (L4)
     level: L4
@@ -139,3 +744,108 @@ actions:
         Operation: INSERT
         Table: arachne_poc
         Application: arachne
+
+  # -------------------------------------------------------------------- lateral movement
+  - check: m2.rdp-vnc-detect
+    title: Remote desktop service reachable and negotiating
+    level: L1
+    tactic: lateral-movement
+    techniques: [T1021.001]
+    severity: medium
+    notes: >-
+      Completes the RDP negotiation (X.224) far enough to identify the service and then
+      disconnects without an authentication attempt — VNC is identified by its banner. An
+      exposed remote-desktop endpoint is the lateral-movement channel; the connection log on
+      the endpoint is the telemetry.
+    telemetry:
+      summary: Windows logon/connection log — RDP negotiation from a remote source
+      logsource: {product: windows, service: security}
+      event:
+        EventID: 4624
+        LogonType: 10
+        AccountName: "-"
+        SourceIP: 192.0.2.10
+        Protocol: RDP
+        NegotiationOnly: true
+
+  - check: m2.ssh-enum
+    title: SSH service enumeration (algorithms, auth methods, banner)
+    level: L1
+    tactic: lateral-movement
+    techniques: [T1021.004]
+    severity: low
+    notes: >-
+      Reads the SSH identification string and asks the pre-auth question for the service's
+      authentication methods. No authentication is attempted, so the server's own log shows
+      the banner exchange and nothing else — which is exactly the footprint of a lateral
+      movement reconnaissance step.
+    telemetry:
+      summary: SSHD log — pre-auth banner exchange and algorithm negotiation
+      logsource: {product: linux, category: authentication}
+      event:
+        EventID: sshd
+        Process: sshd
+        Banner: SSH-2.0-OpenSSH_9.6
+        PreAuthOnly: true
+        SourceIP: 192.0.2.10
+
+  # ------------------------------------------------------------------ defense impairment
+  - check: m4.tls-config-review
+    title: Weak or absent transport encryption configuration
+    level: L1
+    tactic: defense-impairment
+    techniques: [T1600]
+    severity: high
+    notes: >-
+      Enumerates the protocols and cipher suites the endpoint actually accepts and reports
+      the ones that are broken (SSLv3, RC4, 3DES, NULL). Weakened encryption is the
+      technique: this is not ARACHNE attacking the cipher, it is the endpoint's own
+      negotiation showing the weakness, and the two handshake records are the evidence.
+    telemetry:
+      summary: TLS endpoint log — handshake accepted on a deprecated protocol/cipher
+      logsource: {product: linux, category: webserver}
+      event:
+        EventID: tls-handshake
+        Protocol: SSLV3
+        CipherSuite: RC4-SHA
+        Status: accepted
+        SourceIP: 192.0.2.10
+
+  - check: m3.jwt-audit
+    title: JWT verification bypass (alg, signature, claim handling)
+    level: L1
+    tactic: defense-impairment
+    techniques: [T1553]
+    severity: critical
+    notes: >-
+      Presents the token the operator declared with an altered header and observes whether
+      the endpoint accepts it — a trusted token's signature check is subverted when it does.
+      The token is the caller's own; nothing is forged for a third party.
+    telemetry:
+      summary: Application log — a request with a token whose signature was not verified
+      logsource: {product: linux, category: application}
+      event:
+        EventID: app-auth
+        Outcome: success
+        TokenAlg: none
+        SignatureVerified: false
+        SourceIP: 192.0.2.10
+
+  - check: m3.session-logout
+    title: Session remains valid after logout
+    level: L1
+    tactic: defense-impairment
+    techniques: [T1556]
+    severity: high
+    notes: >-
+      Within the authenticated surface: log out, then replay the same session identifier
+      once. A session that still works is a modified authentication process — the endpoint's
+      own auth log carries both events, which is the pair this declares.
+    telemetry:
+      summary: Application log — session reuse after a logout was recorded
+      logsource: {product: linux, category: application}
+      event:
+        EventID: app-session
+        Action: reuse-after-logout
+        Outcome: accepted
+        SessionId_sha256: arachne-TESTTOKEN

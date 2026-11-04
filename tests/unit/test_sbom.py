@@ -14,7 +14,14 @@ from typing import Any
 import pytest
 
 from arachne import __version__
-from arachne.tools.sbom import CYCLONEDX_SPEC_VERSION, generate_sbom, main
+from arachne.tools.sbom import (
+    CYCLONEDX_SPEC_VERSION,
+    SbomValidationError,
+    generate_sbom,
+    load_schema,
+    main,
+    validate_sbom,
+)
 
 STAMP = "2026-10-31T00:00:00+00:00"
 
@@ -148,3 +155,106 @@ def test_a_missing_dependency_is_a_loud_error(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(sbom_module.metadata, "distribution", missing)
     with pytest.raises(SystemExit, match="httpx"):
         generate_sbom(timestamp=STAMP)
+
+
+def test_the_vendored_schema_is_the_official_cyclonedx_1_5_schema() -> None:
+    """The shipped validator's schema is the published CycloneDX 1.5 document."""
+    schema = load_schema()
+    assert schema["$id"] == "http://cyclonedx.org/schema/bom-1.5.schema.json"
+    assert schema["properties"]["bomFormat"]["enum"] == ["CycloneDX"]
+    assert schema["required"] == ["bomFormat", "specVersion"]
+
+
+def test_a_generated_document_is_schema_valid(sbom: dict[str, Any]) -> None:
+    """REQ-TRUST-011: the release SBOM must pass CycloneDX schema validation."""
+    validate_sbom(sbom)
+
+
+def test_a_corrupted_document_fails_validation(sbom: dict[str, Any]) -> None:
+    import copy
+
+    corrupted = copy.deepcopy(sbom)
+    corrupted["bomFormat"] = "SPDX"
+    with pytest.raises(SbomValidationError, match="not valid CycloneDX"):
+        validate_sbom(corrupted)
+
+
+def test_a_wrongly_typed_reference_fails_validation(sbom: dict[str, Any]) -> None:
+    import copy
+
+    corrupted = copy.deepcopy(sbom)
+    corrupted["components"][0]["version"] = 123  # a version is a string in CycloneDX
+    with pytest.raises(SbomValidationError, match="not valid CycloneDX"):
+        validate_sbom(corrupted)
+
+
+def test_a_missing_validator_is_an_actionable_error(
+    monkeypatch: pytest.MonkeyPatch, sbom: dict[str, Any]
+) -> None:
+    """An absent jsonschema must fail loudly, never report a silent pass."""
+    from arachne.tools import sbom as sbom_module
+
+    def unavailable(name: str, package: str | None = None) -> Any:
+        raise ModuleNotFoundError(f"No module named {name!r}")
+
+    monkeypatch.setattr(sbom_module.importlib, "import_module", unavailable)
+    with pytest.raises(SbomValidationError, match="jsonschema"):
+        validate_sbom(sbom)
+
+
+def test_the_check_cli_validates_and_rejects(
+    tmp_path: Any, sbom: dict[str, Any], capsys: pytest.CaptureFixture[str]
+) -> None:
+    good = tmp_path / "sbom.cdx.json"
+    good.write_text(json.dumps(sbom), encoding="utf-8")
+    assert main(["--check", str(good)]) == 0
+    assert sbom["bomFormat"] in capsys.readouterr().out
+
+    bad = tmp_path / "corrupt.cdx.json"
+    bad.write_text(json.dumps({**sbom, "bomFormat": "SPDX"}), encoding="utf-8")
+    assert main(["--check", str(bad)]) == 1
+    assert "failed validation" in capsys.readouterr().err
+
+    not_json = tmp_path / "not-json.cdx.json"
+    not_json.write_text("{", encoding="utf-8")
+    assert main(["--check", str(not_json)]) == 1
+
+
+def test_a_file_output_is_validated_by_default(
+    tmp_path: Any, monkeypatch: pytest.MonkeyPatch, sbom: dict[str, Any]
+) -> None:
+    from arachne.tools import sbom as sbom_module
+
+    validated: list[Any] = []
+    real = sbom_module.validate_sbom
+    monkeypatch.setattr(
+        sbom_module, "validate_sbom", lambda document: (validated.append(document), real(document))
+    )
+    assert main(["--output", str(tmp_path / "s.json"), "--timestamp", STAMP]) == 0
+    assert validated == [sbom]
+
+
+def test_a_stdout_output_is_not_validated_by_default(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from arachne.tools import sbom as sbom_module
+
+    validated: list[Any] = []
+    monkeypatch.setattr(sbom_module, "validate_sbom", lambda document: validated.append(document))
+    assert main(["--output", "-", "--timestamp", STAMP]) == 0
+    assert validated == []
+    assert json.loads(capsys.readouterr().out)["bomFormat"] == "CycloneDX"
+
+
+def test_a_failed_validation_fails_the_cli(
+    tmp_path: Any, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from arachne.tools import sbom as sbom_module
+
+    def reject(document: Any) -> None:
+        raise SbomValidationError("nope")
+
+    monkeypatch.setattr(sbom_module, "validate_sbom", reject)
+    assert main(["--output", str(tmp_path / "s.json"), "--timestamp", STAMP]) == 1
+    assert "failed validation" in capsys.readouterr().err
+    assert main(["--output", str(tmp_path / "s2.json"), "--no-validate", "--timestamp", STAMP]) == 0

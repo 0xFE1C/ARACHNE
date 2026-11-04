@@ -73,6 +73,7 @@ class XssOracle(WebCheck, Module):
         ),
         research_ref="ch03#3",
         framework=("WSTG-INPV-01", "WSTG-CLNT-03", "CWE-79"),
+        compliance=("CIS-16.1", "ISO-A.8.25", "CSF-PR.PS-06", "PCI-6"),
         cwe="CWE-79",
         target_kinds=(TargetKind.URL,),
         severity_hint="high",

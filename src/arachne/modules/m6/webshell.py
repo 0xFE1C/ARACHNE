@@ -195,6 +195,15 @@ class WebshellYara(Module):
         name="webshell-yara",
         research_ref="ch06#24",
         framework=("WSTG-INFO-05", "CWE-506"),
+        compliance=(
+            "CIS-10.1",
+            "CIS-10.7",
+            "CIS-18.4",
+            "CIS-7.7",
+            "ISO-A.8.7",
+            "CSF-DE.CM-09",
+            "PCI-5",
+        ),
         cwe="CWE-506",
         target_kinds=(
             TargetKind.URL,

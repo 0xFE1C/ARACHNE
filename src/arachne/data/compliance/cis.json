@@ -1,0 +1,953 @@
+{
+  "framework": "cis",
+  "name": "CIS Controls",
+  "edition": "v8.1",
+  "kind": "safeguard",
+  "total": 153,
+  "source": "CIS Critical Security Controls v8.1, OSCAL catalog published by the Center for Internet Security: https://bitbucket.org/cis-it-workspace/cis-controls-v8.1_oscal/src/main/src/catalogs/json/cis-controls-v8.1_catalog.json (catalog metadata version 8.1.2, last-modified 2025-04-09)",
+  "retrieved": "2026-11-05",
+  "notes": "Official CIS-published OSCAL serialization of the CIS Controls v8.1 (18 control groups, 153 safeguards). The OSCAL catalog's own metadata version is 8.1.2, i.e. a revision of the v8.1 document; safeguard content and ids are the v8.1 set. This is v8.1, not v8.0 (v8.0 has 146 safeguards and lacks e.g. 16.14 Threat Modeling), and it is the Controls framework, not the per-platform CIS Benchmarks. Titles are the OSCAL control titles, which are the official safeguard titles. OSCAL ids 'cisc-<group>.<safeguard>' were normalised to '<group>.<safeguard>'.",
+  "cross_check": "All 18 control-group titles compared against CIS's own controls list; the 18 per-group safeguard counts sum to 153; every group's safeguards are contiguous; 1.1 and 18.5 hand-checked against the published titles.",
+  "group_reasons": {
+    "1": "an asset-inventory process: the inventory itself is not something a scan of the target observes",
+    "2": "a software-inventory or allowlisting process, not a technical artefact a network scan produces",
+    "3": "a data-governance process (classification, retention, disposal or loss prevention): the process leaves no artefact a scan can observe",
+    "4": "a configuration safeguard on an endpoint or network device ARACHNE does not administer; it needs host-level access this scanner deliberately does not have",
+    "5": "an account-lifecycle process (dormant-account review, service-account inventory): it needs directory-administrator or HR data",
+    "6": "an access-governance process: granting and revoking access is an administrative act, not a network artefact",
+    "7": "a patch-management or remediation process step: patching is performed by the estate rather than observed by a scan",
+    "8": "a log-collection or log-retention activity in the operator's own estate",
+    "9": "a browser, mail-client or DNS-filter configuration on managed endpoints",
+    "10": "an endpoint anti-malware deployment or signature-management safeguard",
+    "11": "a backup, recovery or recovery-testing process",
+    "12": "a network-infrastructure management process for devices ARACHNE does not administer",
+    "13": "a security-monitoring or traffic-filtering capability deployed in the estate",
+    "14": "a security-awareness training activity for the workforce",
+    "15": "a service-provider governance process (contracts, classification, decommissioning)",
+    "16": "an application-security process step (threat modelling, developer training, root-cause analysis) with no artefact a scan produces",
+    "17": "an incident-response process activity",
+    "18": "a penetration-test programme activity performed by the estate"
+  },
+  "default_reason": "no shipped ARACHNE check produces evidence about this control",
+  "group_key": "group",
+  "controls": [
+    {
+      "id": "1.1",
+      "title": "Establish and Maintain Detailed Enterprise Asset Inventory",
+      "group": "1",
+      "group_title": "Inventory and Control of Enterprise Assets"
+    },
+    {
+      "id": "1.2",
+      "title": "Address Unauthorized Assets",
+      "group": "1",
+      "group_title": "Inventory and Control of Enterprise Assets"
+    },
+    {
+      "id": "1.3",
+      "title": "Utilize an Active Discovery Tool",
+      "group": "1",
+      "group_title": "Inventory and Control of Enterprise Assets"
+    },
+    {
+      "id": "1.4",
+      "title": "Use Dynamic Host Configuration Protocol (DHCP) Logging to Update Enterprise Asset Inventory",
+      "group": "1",
+      "group_title": "Inventory and Control of Enterprise Assets"
+    },
+    {
+      "id": "1.5",
+      "title": "Use a Passive Asset Discovery Tool",
+      "group": "1",
+      "group_title": "Inventory and Control of Enterprise Assets"
+    },
+    {
+      "id": "2.1",
+      "title": "Establish and Maintain a Software Inventory",
+      "group": "2",
+      "group_title": "Inventory and Control of Software Assets"
+    },
+    {
+      "id": "2.2",
+      "title": "Ensure Authorized Software is Currently Supported",
+      "group": "2",
+      "group_title": "Inventory and Control of Software Assets"
+    },
+    {
+      "id": "2.3",
+      "title": "Address Unauthorized Software",
+      "group": "2",
+      "group_title": "Inventory and Control of Software Assets"
+    },
+    {
+      "id": "2.4",
+      "title": "Utilize Automated Software Inventory Tools",
+      "group": "2",
+      "group_title": "Inventory and Control of Software Assets"
+    },
+    {
+      "id": "2.5",
+      "title": "Allowlist Authorized Software",
+      "group": "2",
+      "group_title": "Inventory and Control of Software Assets"
+    },
+    {
+      "id": "2.6",
+      "title": "Allowlist Authorized Libraries",
+      "group": "2",
+      "group_title": "Inventory and Control of Software Assets"
+    },
+    {
+      "id": "2.7",
+      "title": "Allowlist Authorized Scripts",
+      "group": "2",
+      "group_title": "Inventory and Control of Software Assets"
+    },
+    {
+      "id": "3.1",
+      "title": "Establish and Maintain a Data Management Process",
+      "group": "3",
+      "group_title": "Data Protection"
+    },
+    {
+      "id": "3.2",
+      "title": "Establish and Maintain a Data Inventory",
+      "group": "3",
+      "group_title": "Data Protection"
+    },
+    {
+      "id": "3.3",
+      "title": "Configure Data Access Control Lists",
+      "group": "3",
+      "group_title": "Data Protection"
+    },
+    {
+      "id": "3.4",
+      "title": "Enforce Data Retention",
+      "group": "3",
+      "group_title": "Data Protection"
+    },
+    {
+      "id": "3.5",
+      "title": "Securely Dispose of Data",
+      "group": "3",
+      "group_title": "Data Protection"
+    },
+    {
+      "id": "3.6",
+      "title": "Encrypt Data on End-User Devices",
+      "group": "3",
+      "group_title": "Data Protection"
+    },
+    {
+      "id": "3.7",
+      "title": "Establish and Maintain a Data Classification Scheme",
+      "group": "3",
+      "group_title": "Data Protection"
+    },
+    {
+      "id": "3.8",
+      "title": "Document Data Flows",
+      "group": "3",
+      "group_title": "Data Protection"
+    },
+    {
+      "id": "3.9",
+      "title": "Encrypt Data on Removable Media",
+      "group": "3",
+      "group_title": "Data Protection"
+    },
+    {
+      "id": "3.10",
+      "title": "Encrypt Sensitive Data in Transit",
+      "group": "3",
+      "group_title": "Data Protection"
+    },
+    {
+      "id": "3.11",
+      "title": "Encrypt Sensitive Data at Rest",
+      "group": "3",
+      "group_title": "Data Protection"
+    },
+    {
+      "id": "3.12",
+      "title": "Segment Data Processing and Storage Based on Sensitivity",
+      "group": "3",
+      "group_title": "Data Protection"
+    },
+    {
+      "id": "3.13",
+      "title": "Deploy a Data Loss Prevention Solution",
+      "group": "3",
+      "group_title": "Data Protection"
+    },
+    {
+      "id": "3.14",
+      "title": "Log Sensitive Data Access",
+      "group": "3",
+      "group_title": "Data Protection"
+    },
+    {
+      "id": "4.1",
+      "title": "Establish and Maintain a Secure Configuration Process",
+      "group": "4",
+      "group_title": "Secure Configuration of Enterprise Assets and Software"
+    },
+    {
+      "id": "4.2",
+      "title": "Establish and Maintain a Secure Configuration Process for Network Infrastructure",
+      "group": "4",
+      "group_title": "Secure Configuration of Enterprise Assets and Software"
+    },
+    {
+      "id": "4.3",
+      "title": "Configure Automatic Session Locking on Enterprise Assets",
+      "group": "4",
+      "group_title": "Secure Configuration of Enterprise Assets and Software"
+    },
+    {
+      "id": "4.4",
+      "title": "Implement and Manage a Firewall on Servers",
+      "group": "4",
+      "group_title": "Secure Configuration of Enterprise Assets and Software"
+    },
+    {
+      "id": "4.5",
+      "title": "Implement and Manage a Firewall on End-User Devices",
+      "group": "4",
+      "group_title": "Secure Configuration of Enterprise Assets and Software"
+    },
+    {
+      "id": "4.6",
+      "title": "Securely Manage Enterprise Assets and Software",
+      "group": "4",
+      "group_title": "Secure Configuration of Enterprise Assets and Software"
+    },
+    {
+      "id": "4.7",
+      "title": "Manage Default Accounts on Enterprise Assets and Software",
+      "group": "4",
+      "group_title": "Secure Configuration of Enterprise Assets and Software"
+    },
+    {
+      "id": "4.8",
+      "title": "Uninstall or Disable Unnecessary Services on Enterprise Assets and Software",
+      "group": "4",
+      "group_title": "Secure Configuration of Enterprise Assets and Software"
+    },
+    {
+      "id": "4.9",
+      "title": "Configure Trusted DNS Servers on Enterprise Assets",
+      "group": "4",
+      "group_title": "Secure Configuration of Enterprise Assets and Software"
+    },
+    {
+      "id": "4.10",
+      "title": "Enforce Automatic Device Lockout on Portable End-User Devices",
+      "group": "4",
+      "group_title": "Secure Configuration of Enterprise Assets and Software"
+    },
+    {
+      "id": "4.11",
+      "title": "Enforce Remote Wipe Capability on Portable End-User Devices",
+      "group": "4",
+      "group_title": "Secure Configuration of Enterprise Assets and Software"
+    },
+    {
+      "id": "4.12",
+      "title": "Separate Enterprise Workspaces on Mobile End-User Devices",
+      "group": "4",
+      "group_title": "Secure Configuration of Enterprise Assets and Software"
+    },
+    {
+      "id": "5.1",
+      "title": "Establish and Maintain an Inventory of Accounts",
+      "group": "5",
+      "group_title": "Account Management"
+    },
+    {
+      "id": "5.2",
+      "title": "Use Unique Passwords",
+      "group": "5",
+      "group_title": "Account Management"
+    },
+    {
+      "id": "5.3",
+      "title": "Disable Dormant Accounts",
+      "group": "5",
+      "group_title": "Account Management"
+    },
+    {
+      "id": "5.4",
+      "title": "Restrict Administrator Privileges to Dedicated Administrator Accounts",
+      "group": "5",
+      "group_title": "Account Management"
+    },
+    {
+      "id": "5.5",
+      "title": "Establish and Maintain an Inventory of Service Accounts",
+      "group": "5",
+      "group_title": "Account Management"
+    },
+    {
+      "id": "5.6",
+      "title": "Centralize Account Management",
+      "group": "5",
+      "group_title": "Account Management"
+    },
+    {
+      "id": "6.1",
+      "title": "Establish an Access Granting Process",
+      "group": "6",
+      "group_title": "Access Control Management"
+    },
+    {
+      "id": "6.2",
+      "title": "Establish an Access Revoking Process",
+      "group": "6",
+      "group_title": "Access Control Management"
+    },
+    {
+      "id": "6.3",
+      "title": "Require MFA for Externally-Exposed Applications",
+      "group": "6",
+      "group_title": "Access Control Management"
+    },
+    {
+      "id": "6.4",
+      "title": "Require MFA for Remote Network Access",
+      "group": "6",
+      "group_title": "Access Control Management"
+    },
+    {
+      "id": "6.5",
+      "title": "Require MFA for Administrative Access",
+      "group": "6",
+      "group_title": "Access Control Management"
+    },
+    {
+      "id": "6.6",
+      "title": "Establish and Maintain an Inventory of Authentication and Authorization Systems",
+      "group": "6",
+      "group_title": "Access Control Management"
+    },
+    {
+      "id": "6.7",
+      "title": "Centralize Access Control",
+      "group": "6",
+      "group_title": "Access Control Management"
+    },
+    {
+      "id": "6.8",
+      "title": "Define and Maintain Role-Based Access Control",
+      "group": "6",
+      "group_title": "Access Control Management"
+    },
+    {
+      "id": "7.1",
+      "title": "Establish and Maintain a Vulnerability Management Process",
+      "group": "7",
+      "group_title": "Continuous Vulnerability Management"
+    },
+    {
+      "id": "7.2",
+      "title": "Establish and Maintain a Remediation Process",
+      "group": "7",
+      "group_title": "Continuous Vulnerability Management"
+    },
+    {
+      "id": "7.3",
+      "title": "Perform Automated Operating System Patch Management",
+      "group": "7",
+      "group_title": "Continuous Vulnerability Management"
+    },
+    {
+      "id": "7.4",
+      "title": "Perform Automated Application Patch Management",
+      "group": "7",
+      "group_title": "Continuous Vulnerability Management"
+    },
+    {
+      "id": "7.5",
+      "title": "Perform Automated Vulnerability Scans of Internal Enterprise Assets",
+      "group": "7",
+      "group_title": "Continuous Vulnerability Management"
+    },
+    {
+      "id": "7.6",
+      "title": "Perform Automated Vulnerability Scans of Externally-Exposed Enterprise Assets",
+      "group": "7",
+      "group_title": "Continuous Vulnerability Management"
+    },
+    {
+      "id": "7.7",
+      "title": "Remediate Detected Vulnerabilities",
+      "group": "7",
+      "group_title": "Continuous Vulnerability Management"
+    },
+    {
+      "id": "8.1",
+      "title": "Establish and Maintain an Audit Log Management Process",
+      "group": "8",
+      "group_title": "Audit Log Management"
+    },
+    {
+      "id": "8.2",
+      "title": "Collect Audit Logs",
+      "group": "8",
+      "group_title": "Audit Log Management"
+    },
+    {
+      "id": "8.3",
+      "title": "Ensure Adequate Audit Log Storage",
+      "group": "8",
+      "group_title": "Audit Log Management"
+    },
+    {
+      "id": "8.4",
+      "title": "Standardize Time Synchronization",
+      "group": "8",
+      "group_title": "Audit Log Management"
+    },
+    {
+      "id": "8.5",
+      "title": "Collect Detailed Audit Logs",
+      "group": "8",
+      "group_title": "Audit Log Management"
+    },
+    {
+      "id": "8.6",
+      "title": "Collect DNS Query Audit Logs",
+      "group": "8",
+      "group_title": "Audit Log Management"
+    },
+    {
+      "id": "8.7",
+      "title": "Collect URL Request Audit Logs",
+      "group": "8",
+      "group_title": "Audit Log Management"
+    },
+    {
+      "id": "8.8",
+      "title": "Collect Command-Line Audit Logs",
+      "group": "8",
+      "group_title": "Audit Log Management"
+    },
+    {
+      "id": "8.9",
+      "title": "Centralize Audit Logs",
+      "group": "8",
+      "group_title": "Audit Log Management"
+    },
+    {
+      "id": "8.10",
+      "title": "Retain Audit Logs",
+      "group": "8",
+      "group_title": "Audit Log Management"
+    },
+    {
+      "id": "8.11",
+      "title": "Conduct Audit Log Reviews",
+      "group": "8",
+      "group_title": "Audit Log Management"
+    },
+    {
+      "id": "8.12",
+      "title": "Collect Service Provider Logs",
+      "group": "8",
+      "group_title": "Audit Log Management"
+    },
+    {
+      "id": "9.1",
+      "title": "Ensure Use of Only Fully Supported Browsers and Email Clients",
+      "group": "9",
+      "group_title": "Email and Web Browser Protections"
+    },
+    {
+      "id": "9.2",
+      "title": "Use DNS Filtering Services",
+      "group": "9",
+      "group_title": "Email and Web Browser Protections"
+    },
+    {
+      "id": "9.3",
+      "title": "Maintain and Enforce Network-Based URL Filters",
+      "group": "9",
+      "group_title": "Email and Web Browser Protections"
+    },
+    {
+      "id": "9.4",
+      "title": "Restrict Unnecessary or Unauthorized Browser and Email Client Extensions",
+      "group": "9",
+      "group_title": "Email and Web Browser Protections"
+    },
+    {
+      "id": "9.5",
+      "title": "Implement DMARC",
+      "group": "9",
+      "group_title": "Email and Web Browser Protections"
+    },
+    {
+      "id": "9.6",
+      "title": "Block Unnecessary File Types",
+      "group": "9",
+      "group_title": "Email and Web Browser Protections"
+    },
+    {
+      "id": "9.7",
+      "title": "Deploy and Maintain Email Server Anti-Malware Protections",
+      "group": "9",
+      "group_title": "Email and Web Browser Protections"
+    },
+    {
+      "id": "10.1",
+      "title": "Deploy and Maintain Anti-Malware Software",
+      "group": "10",
+      "group_title": "Malware Defenses"
+    },
+    {
+      "id": "10.2",
+      "title": "Configure Automatic Anti-Malware Signature Updates",
+      "group": "10",
+      "group_title": "Malware Defenses"
+    },
+    {
+      "id": "10.3",
+      "title": "Disable Autorun and Autoplay for Removable Media",
+      "group": "10",
+      "group_title": "Malware Defenses"
+    },
+    {
+      "id": "10.4",
+      "title": "Configure Automatic Anti-Malware Scanning of Removable Media",
+      "group": "10",
+      "group_title": "Malware Defenses"
+    },
+    {
+      "id": "10.5",
+      "title": "Enable Anti-Exploitation Features",
+      "group": "10",
+      "group_title": "Malware Defenses"
+    },
+    {
+      "id": "10.6",
+      "title": "Centrally Manage Anti-Malware Software",
+      "group": "10",
+      "group_title": "Malware Defenses"
+    },
+    {
+      "id": "10.7",
+      "title": "Use Behavior-Based Anti-Malware Software",
+      "group": "10",
+      "group_title": "Malware Defenses"
+    },
+    {
+      "id": "11.1",
+      "title": "Establish and Maintain a Data Recovery Process",
+      "group": "11",
+      "group_title": "Data Recovery"
+    },
+    {
+      "id": "11.2",
+      "title": "Perform Automated Backups",
+      "group": "11",
+      "group_title": "Data Recovery"
+    },
+    {
+      "id": "11.3",
+      "title": "Protect Recovery Data",
+      "group": "11",
+      "group_title": "Data Recovery"
+    },
+    {
+      "id": "11.4",
+      "title": "Establish and Maintain an Isolated Instance of Recovery Data",
+      "group": "11",
+      "group_title": "Data Recovery"
+    },
+    {
+      "id": "11.5",
+      "title": "Test Data Recovery",
+      "group": "11",
+      "group_title": "Data Recovery"
+    },
+    {
+      "id": "12.1",
+      "title": "Ensure Network Infrastructure is Up-to-Date",
+      "group": "12",
+      "group_title": "Network Infrastructure Management"
+    },
+    {
+      "id": "12.2",
+      "title": "Establish and Maintain a Secure Network Architecture",
+      "group": "12",
+      "group_title": "Network Infrastructure Management"
+    },
+    {
+      "id": "12.3",
+      "title": "Securely Manage Network Infrastructure",
+      "group": "12",
+      "group_title": "Network Infrastructure Management"
+    },
+    {
+      "id": "12.4",
+      "title": "Establish and Maintain Architecture Diagram(s)",
+      "group": "12",
+      "group_title": "Network Infrastructure Management"
+    },
+    {
+      "id": "12.5",
+      "title": "Centralize Network Authentication, Authorization, and Auditing (AAA)",
+      "group": "12",
+      "group_title": "Network Infrastructure Management"
+    },
+    {
+      "id": "12.6",
+      "title": "Use of Secure Network Management and Communication Protocols",
+      "group": "12",
+      "group_title": "Network Infrastructure Management"
+    },
+    {
+      "id": "12.7",
+      "title": "Ensure Remote Devices Utilize a VPN and are Connecting to an Enterprise's AAA Infrastructure",
+      "group": "12",
+      "group_title": "Network Infrastructure Management"
+    },
+    {
+      "id": "12.8",
+      "title": "Establish and Maintain Dedicated Computing Resources for All Administrative Work",
+      "group": "12",
+      "group_title": "Network Infrastructure Management"
+    },
+    {
+      "id": "13.1",
+      "title": "Centralize Security Event Alerting",
+      "group": "13",
+      "group_title": "Network Monitoring and Defense"
+    },
+    {
+      "id": "13.2",
+      "title": "Deploy a Host-Based Intrusion Detection Solution",
+      "group": "13",
+      "group_title": "Network Monitoring and Defense"
+    },
+    {
+      "id": "13.3",
+      "title": "Deploy a Network Intrusion Detection Solution",
+      "group": "13",
+      "group_title": "Network Monitoring and Defense"
+    },
+    {
+      "id": "13.4",
+      "title": "Perform Traffic Filtering Between Network Segments",
+      "group": "13",
+      "group_title": "Network Monitoring and Defense"
+    },
+    {
+      "id": "13.5",
+      "title": "Manage Access Control for Remote Assets",
+      "group": "13",
+      "group_title": "Network Monitoring and Defense"
+    },
+    {
+      "id": "13.6",
+      "title": "Collect Network Traffic Flow Logs",
+      "group": "13",
+      "group_title": "Network Monitoring and Defense"
+    },
+    {
+      "id": "13.7",
+      "title": "Deploy a Host-Based Intrusion Prevention Solution",
+      "group": "13",
+      "group_title": "Network Monitoring and Defense"
+    },
+    {
+      "id": "13.8",
+      "title": "Deploy a Network Intrusion Prevention Solution",
+      "group": "13",
+      "group_title": "Network Monitoring and Defense"
+    },
+    {
+      "id": "13.9",
+      "title": "Deploy Port-Level Access Control",
+      "group": "13",
+      "group_title": "Network Monitoring and Defense"
+    },
+    {
+      "id": "13.10",
+      "title": "Perform Application Layer Filtering",
+      "group": "13",
+      "group_title": "Network Monitoring and Defense"
+    },
+    {
+      "id": "13.11",
+      "title": "Tune Security Event Alerting Thresholds",
+      "group": "13",
+      "group_title": "Network Monitoring and Defense"
+    },
+    {
+      "id": "14.1",
+      "title": "Establish and Maintain a Security Awareness Program",
+      "group": "14",
+      "group_title": "Security Awareness and Skills Training"
+    },
+    {
+      "id": "14.2",
+      "title": "Train Workforce Members to Recognize Social Engineering Attacks",
+      "group": "14",
+      "group_title": "Security Awareness and Skills Training"
+    },
+    {
+      "id": "14.3",
+      "title": "Train Workforce Members on Authentication Best Practices",
+      "group": "14",
+      "group_title": "Security Awareness and Skills Training"
+    },
+    {
+      "id": "14.4",
+      "title": "Train Workforce on Data Handling Best Practices",
+      "group": "14",
+      "group_title": "Security Awareness and Skills Training"
+    },
+    {
+      "id": "14.5",
+      "title": "Train Workforce Members on Causes of Unintentional Data Exposure",
+      "group": "14",
+      "group_title": "Security Awareness and Skills Training"
+    },
+    {
+      "id": "14.6",
+      "title": "Train Workforce Members on Recognizing and Reporting Security Incidents",
+      "group": "14",
+      "group_title": "Security Awareness and Skills Training"
+    },
+    {
+      "id": "14.7",
+      "title": "Train Workforce on How to Identify and Report if Their Enterprise Assets are Missing Security Updates",
+      "group": "14",
+      "group_title": "Security Awareness and Skills Training"
+    },
+    {
+      "id": "14.8",
+      "title": "Train Workforce on the Dangers of Connecting to and Transmitting Enterprise Data Over Insecure Networks",
+      "group": "14",
+      "group_title": "Security Awareness and Skills Training"
+    },
+    {
+      "id": "14.9",
+      "title": "Conduct Role-Specific Security Awareness and Skills Training",
+      "group": "14",
+      "group_title": "Security Awareness and Skills Training"
+    },
+    {
+      "id": "15.1",
+      "title": "Establish and Maintain an Inventory of Service Providers",
+      "group": "15",
+      "group_title": "Service Provider Management"
+    },
+    {
+      "id": "15.2",
+      "title": "Establish and Maintain a Service Provider Management Policy",
+      "group": "15",
+      "group_title": "Service Provider Management"
+    },
+    {
+      "id": "15.3",
+      "title": "Classify Service Providers",
+      "group": "15",
+      "group_title": "Service Provider Management"
+    },
+    {
+      "id": "15.4",
+      "title": "Ensure Service Provider Contracts Include Security Requirements",
+      "group": "15",
+      "group_title": "Service Provider Management"
+    },
+    {
+      "id": "15.5",
+      "title": "Assess Service Providers",
+      "group": "15",
+      "group_title": "Service Provider Management"
+    },
+    {
+      "id": "15.6",
+      "title": "Monitor Service Providers",
+      "group": "15",
+      "group_title": "Service Provider Management"
+    },
+    {
+      "id": "15.7",
+      "title": "Securely Decommission Service Providers",
+      "group": "15",
+      "group_title": "Service Provider Management"
+    },
+    {
+      "id": "16.1",
+      "title": "Establish and Maintain a Secure Application Development Process",
+      "group": "16",
+      "group_title": "Application Software Security"
+    },
+    {
+      "id": "16.2",
+      "title": "Establish and Maintain a Process to Accept and Address Software Vulnerabilities",
+      "group": "16",
+      "group_title": "Application Software Security"
+    },
+    {
+      "id": "16.3",
+      "title": "Perform Root Cause Analysis on Security Vulnerabilities",
+      "group": "16",
+      "group_title": "Application Software Security"
+    },
+    {
+      "id": "16.4",
+      "title": "Establish and Manage an Inventory of Third-Party Software Components",
+      "group": "16",
+      "group_title": "Application Software Security"
+    },
+    {
+      "id": "16.5",
+      "title": "Use Up-to-Date and Trusted Third-Party Software Components",
+      "group": "16",
+      "group_title": "Application Software Security"
+    },
+    {
+      "id": "16.6",
+      "title": "Establish and Maintain a Severity Rating System and Process for Application Vulnerabilities",
+      "group": "16",
+      "group_title": "Application Software Security"
+    },
+    {
+      "id": "16.7",
+      "title": "Use Standard Hardening Configuration Templates for Application Infrastructure",
+      "group": "16",
+      "group_title": "Application Software Security"
+    },
+    {
+      "id": "16.8",
+      "title": "Separate Production and Non-Production Systems",
+      "group": "16",
+      "group_title": "Application Software Security"
+    },
+    {
+      "id": "16.9",
+      "title": "Train Developers in Application Security Concepts and Secure Coding",
+      "group": "16",
+      "group_title": "Application Software Security"
+    },
+    {
+      "id": "16.10",
+      "title": "Apply Secure Design Principles in Application Architectures",
+      "group": "16",
+      "group_title": "Application Software Security"
+    },
+    {
+      "id": "16.11",
+      "title": "Leverage Vetted Modules or Services for Application Security Components",
+      "group": "16",
+      "group_title": "Application Software Security"
+    },
+    {
+      "id": "16.12",
+      "title": "Implement Code-Level Security Checks",
+      "group": "16",
+      "group_title": "Application Software Security"
+    },
+    {
+      "id": "16.13",
+      "title": "Conduct Application Penetration Testing",
+      "group": "16",
+      "group_title": "Application Software Security"
+    },
+    {
+      "id": "16.14",
+      "title": "Conduct Threat Modeling",
+      "group": "16",
+      "group_title": "Application Software Security"
+    },
+    {
+      "id": "17.1",
+      "title": "Designate Personnel to Manage Incident Handling",
+      "group": "17",
+      "group_title": "Incident Response Management"
+    },
+    {
+      "id": "17.2",
+      "title": "Establish and Maintain Contact Information for Reporting Security Incidents",
+      "group": "17",
+      "group_title": "Incident Response Management"
+    },
+    {
+      "id": "17.3",
+      "title": "Establish and Maintain an Enterprise Process for Reporting Incidents",
+      "group": "17",
+      "group_title": "Incident Response Management"
+    },
+    {
+      "id": "17.4",
+      "title": "Establish and Maintain an Incident Response Process",
+      "group": "17",
+      "group_title": "Incident Response Management"
+    },
+    {
+      "id": "17.5",
+      "title": "Assign Key Roles and Responsibilities",
+      "group": "17",
+      "group_title": "Incident Response Management"
+    },
+    {
+      "id": "17.6",
+      "title": "Define Mechanisms for Communicating During Incident Response",
+      "group": "17",
+      "group_title": "Incident Response Management"
+    },
+    {
+      "id": "17.7",
+      "title": "Conduct Routine Incident Response Exercises",
+      "group": "17",
+      "group_title": "Incident Response Management"
+    },
+    {
+      "id": "17.8",
+      "title": "Conduct Post-Incident Reviews",
+      "group": "17",
+      "group_title": "Incident Response Management"
+    },
+    {
+      "id": "17.9",
+      "title": "Establish and Maintain Security Incident Thresholds",
+      "group": "17",
+      "group_title": "Incident Response Management"
+    },
+    {
+      "id": "18.1",
+      "title": "Establish and Maintain a Penetration Testing Program",
+      "group": "18",
+      "group_title": "Penetration Testing"
+    },
+    {
+      "id": "18.2",
+      "title": "Perform Periodic External Penetration Tests",
+      "group": "18",
+      "group_title": "Penetration Testing"
+    },
+    {
+      "id": "18.3",
+      "title": "Remediate Penetration Test Findings",
+      "group": "18",
+      "group_title": "Penetration Testing"
+    },
+    {
+      "id": "18.4",
+      "title": "Validate Security Measures",
+      "group": "18",
+      "group_title": "Penetration Testing"
+    },
+    {
+      "id": "18.5",
+      "title": "Perform Periodic Internal Penetration Tests",
+      "group": "18",
+      "group_title": "Penetration Testing"
+    }
+  ]
+}

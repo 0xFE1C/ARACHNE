@@ -1,0 +1,90 @@
+{
+  "framework": "pci-dss",
+  "name": "PCI DSS",
+  "edition": "v4.0",
+  "kind": "requirement",
+  "total": 12,
+  "source": "PCI DSS v4.0 (PCI Security Standards Council, March 2022), https://www.pcisecuritystandards.org/documents/PCI-DSS-v4_0.pdf (live URL is gated behind the PCI SSC document agreement; retrieved from the Internet Archive capture of that official URL, timestamp 20220404115505, https://web.archive.org/web/20220404115505id_/https://www.pcisecuritystandards.org/documents/PCI-DSS-v4_0.pdf)",
+  "retrieved": "2026-11-05",
+  "notes": "Top-level requirements only (the 12 numbered requirements), not the ~300 sub-requirements. Titles extracted verbatim from the 'Requirement N:' section headings in the official v4.0 PDF. PCI DSS v4.0 was superseded by v4.0.1 (June 2024); this file is deliberately the v4.0 edition requested. Do not confuse the 12 requirements with the 6 'goals' or the sub-requirement numbering (e.g. 6.4.3). This list is flat: each requirement is its own group, so group_title repeats the requirement title.",
+  "cross_check": "The 12 'Requirement N:' headings of the official v4.0 PDF, one for each number 1..12, with requirement 4's wrapped heading rejoined.",
+  "group_reasons": {
+    "9": "physical access controls (facility entry, visitor management, media handling and point-of-interaction tamper protection): there is no network-observable artefact, and ARACHNE ships no physical or host-agent check"
+  },
+  "default_reason": "no shipped ARACHNE check produces evidence about this control",
+  "group_key": "id",
+  "controls": [
+    {
+      "id": "1",
+      "title": "Install and Maintain Network Security Controls",
+      "group": "1",
+      "group_title": "Install and Maintain Network Security Controls"
+    },
+    {
+      "id": "2",
+      "title": "Apply Secure Configurations to All System Components",
+      "group": "2",
+      "group_title": "Apply Secure Configurations to All System Components"
+    },
+    {
+      "id": "3",
+      "title": "Protect Stored Account Data",
+      "group": "3",
+      "group_title": "Protect Stored Account Data"
+    },
+    {
+      "id": "4",
+      "title": "Protect Cardholder Data with Strong Cryptography During Transmission Over Open, Public Networks",
+      "group": "4",
+      "group_title": "Protect Cardholder Data with Strong Cryptography During Transmission Over Open, Public Networks"
+    },
+    {
+      "id": "5",
+      "title": "Protect All Systems and Networks from Malicious Software",
+      "group": "5",
+      "group_title": "Protect All Systems and Networks from Malicious Software"
+    },
+    {
+      "id": "6",
+      "title": "Develop and Maintain Secure Systems and Software",
+      "group": "6",
+      "group_title": "Develop and Maintain Secure Systems and Software"
+    },
+    {
+      "id": "7",
+      "title": "Restrict Access to System Components and Cardholder Data by Business Need to Know",
+      "group": "7",
+      "group_title": "Restrict Access to System Components and Cardholder Data by Business Need to Know"
+    },
+    {
+      "id": "8",
+      "title": "Identify Users and Authenticate Access to System Components",
+      "group": "8",
+      "group_title": "Identify Users and Authenticate Access to System Components"
+    },
+    {
+      "id": "9",
+      "title": "Restrict Physical Access to Cardholder Data",
+      "group": "9",
+      "group_title": "Restrict Physical Access to Cardholder Data"
+    },
+    {
+      "id": "10",
+      "title": "Log and Monitor All Access to System Components and Cardholder Data",
+      "group": "10",
+      "group_title": "Log and Monitor All Access to System Components and Cardholder Data"
+    },
+    {
+      "id": "11",
+      "title": "Test Security of Systems and Networks Regularly",
+      "group": "11",
+      "group_title": "Test Security of Systems and Networks Regularly"
+    },
+    {
+      "id": "12",
+      "title": "Support Information Security with Organizational Policies and Programs",
+      "group": "12",
+      "group_title": "Support Information Security with Organizational Policies and Programs"
+    }
+  ]
+}

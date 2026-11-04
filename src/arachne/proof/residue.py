@@ -45,7 +45,7 @@ from arachne.core.integrity import (
     sign_attestation,
     verify_attestation,
 )
-from arachne.core.signing import DeploymentSigner
+from arachne.core.signing import Signer
 from arachne.proof.ledger import StateChangeRecord
 
 __all__ = [
@@ -65,7 +65,7 @@ def build_residue_attestation(
     scan_id: int | str,
     proof_state: Mapping[str, Any] | None,
     generated_at: datetime | None = None,
-    signer: DeploymentSigner | None = None,
+    signer: Signer | None = None,
 ) -> dict[str, Any]:
     """Build (and sign) one scan's residue attestation from its proof journal.
 
@@ -127,7 +127,7 @@ def attestation_is_clean(attestation: Mapping[str, Any] | None) -> bool:
 
 
 def verify_residue_attestation(
-    attestation: Mapping[str, Any], *, signer: DeploymentSigner | None
+    attestation: Mapping[str, Any], *, signer: Signer | None
 ) -> tuple[bool, str]:
     """``(ok, detail)`` for a stored attestation — what a third party checks.
 

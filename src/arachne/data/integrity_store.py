@@ -66,7 +66,7 @@ from arachne.core.integrity import (
     verify_seal,
 )
 from arachne.core.logging import get_logger
-from arachne.core.signing import DeploymentSigner
+from arachne.core.signing import Signer
 from arachne.data.models import AuditLog, Evidence, Finding, IntegrityAnchor, IntegritySeal, Scan
 from arachne.data.scan_store import as_utc
 
@@ -171,7 +171,7 @@ class SqlAuditChain:
         self,
         session_factory: sessionmaker[Session],
         *,
-        signer: DeploymentSigner | None = None,
+        signer: Signer | None = None,
     ) -> None:
         self._session_factory = session_factory
         self._signer = signer
@@ -234,7 +234,7 @@ class IntegrityService:
         self,
         session_factory: sessionmaker[Session],
         *,
-        signer: DeploymentSigner | None = None,
+        signer: Signer | None = None,
         auditor: Auditor | None = None,
         anchor_every: int = 0,
         require_signatures: bool = False,
@@ -399,7 +399,7 @@ class IntegrityVerifier:
         self,
         session_factory: sessionmaker[Session],
         *,
-        signer: DeploymentSigner | None = None,
+        signer: Signer | None = None,
         require_signatures: bool = False,
     ) -> None:
         self._session_factory = session_factory

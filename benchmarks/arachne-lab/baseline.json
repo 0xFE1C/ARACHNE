@@ -1,6 +1,287 @@
 {
   "arachne_version": "0.1.0",
-  "measured_at": "2026-11-04T09:37:27.675448+00:00",
+  "cases": [
+    {
+      "check_id": "m3.sqli-oracle",
+      "elapsed_seconds": 3.236,
+      "expect": "tp",
+      "marker": "/product",
+      "matched": true,
+      "matched_by": [
+        "14"
+      ],
+      "timing_source": "candidate.created_at minus scan.started_at"
+    },
+    {
+      "check_id": "m3.xss-oracle",
+      "elapsed_seconds": 7.354,
+      "expect": "tp",
+      "marker": "/search",
+      "matched": true,
+      "matched_by": [
+        "15"
+      ],
+      "timing_source": "candidate.created_at minus scan.started_at"
+    },
+    {
+      "check_id": "m3.xss-oracle",
+      "elapsed_seconds": 7.441,
+      "expect": "tp",
+      "marker": "/profile",
+      "matched": true,
+      "matched_by": [
+        "16"
+      ],
+      "timing_source": "candidate.created_at minus scan.started_at"
+    },
+    {
+      "check_id": "m3.traversal-oracle",
+      "elapsed_seconds": 8.091,
+      "expect": "tp",
+      "marker": "/download",
+      "matched": true,
+      "matched_by": [
+        "17"
+      ],
+      "timing_source": "candidate.created_at minus scan.started_at"
+    },
+    {
+      "check_id": "m3.upload-audit",
+      "elapsed_seconds": null,
+      "expect": "tp",
+      "marker": "/upload",
+      "matched": false,
+      "matched_by": [],
+      "timing_source": "not matched: there is no finding to time"
+    },
+    {
+      "check_id": "m3.open-redirect",
+      "elapsed_seconds": 8.7,
+      "expect": "tp",
+      "marker": "/redirect",
+      "matched": true,
+      "matched_by": [
+        "18"
+      ],
+      "timing_source": "candidate.created_at minus scan.started_at"
+    },
+    {
+      "check_id": "m3.idor-oracle",
+      "elapsed_seconds": 12.413,
+      "expect": "tp",
+      "marker": "/api/user?",
+      "matched": true,
+      "matched_by": [
+        "23"
+      ],
+      "timing_source": "candidate.created_at minus scan.started_at"
+    },
+    {
+      "check_id": "m3.csrf-audit",
+      "elapsed_seconds": 2.542,
+      "expect": "tp",
+      "marker": "/account/settings",
+      "matched": true,
+      "matched_by": [
+        "13"
+      ],
+      "timing_source": "candidate.created_at minus scan.started_at"
+    },
+    {
+      "check_id": "m3.csrf-audit",
+      "elapsed_seconds": 2.542,
+      "expect": "tp",
+      "marker": "/login",
+      "matched": true,
+      "matched_by": [
+        "12"
+      ],
+      "timing_source": "candidate.created_at minus scan.started_at"
+    },
+    {
+      "check_id": "m3.csrf-audit",
+      "elapsed_seconds": 2.541,
+      "expect": "tp",
+      "marker": "/upload",
+      "matched": true,
+      "matched_by": [
+        "11"
+      ],
+      "timing_source": "candidate.created_at minus scan.started_at"
+    },
+    {
+      "check_id": "m3.cors-audit",
+      "elapsed_seconds": 9.018,
+      "expect": "tp",
+      "marker": "/api/config",
+      "matched": true,
+      "matched_by": [
+        "19",
+        "20"
+      ],
+      "timing_source": "candidate.created_at minus scan.started_at"
+    },
+    {
+      "check_id": "m3.rate-limit-audit",
+      "elapsed_seconds": 13.927,
+      "expect": "tp",
+      "marker": "/login",
+      "matched": true,
+      "matched_by": [
+        "34"
+      ],
+      "timing_source": "candidate.created_at minus scan.started_at"
+    },
+    {
+      "check_id": "m3.auth-session-audit",
+      "elapsed_seconds": 12.543,
+      "expect": "tp",
+      "marker": "/login",
+      "matched": true,
+      "matched_by": [
+        "25",
+        "26"
+      ],
+      "timing_source": "candidate.created_at minus scan.started_at"
+    },
+    {
+      "check_id": "m3.auth-session-audit",
+      "elapsed_seconds": 12.543,
+      "expect": "tp",
+      "marker": "127.0.0.1:",
+      "matched": true,
+      "matched_by": [
+        "24",
+        "25",
+        "26"
+      ],
+      "timing_source": "candidate.created_at minus scan.started_at"
+    },
+    {
+      "check_id": "m3.security-headers",
+      "elapsed_seconds": 0.809,
+      "expect": "tp",
+      "marker": "127.0.0.1:",
+      "matched": true,
+      "matched_by": [
+        "1",
+        "2"
+      ],
+      "timing_source": "candidate.created_at minus scan.started_at"
+    },
+    {
+      "check_id": "m3.api-surface",
+      "elapsed_seconds": 0.868,
+      "expect": "tp",
+      "marker": "/admin",
+      "matched": true,
+      "matched_by": [
+        "3",
+        "42"
+      ],
+      "timing_source": "candidate.created_at minus scan.started_at"
+    },
+    {
+      "check_id": "m3.xss-oracle",
+      "elapsed_seconds": null,
+      "expect": "fp",
+      "marker": "/safe-search",
+      "matched": false,
+      "matched_by": [],
+      "timing_source": "not matched: there is no finding to time"
+    },
+    {
+      "check_id": "m3.xss-oracle",
+      "elapsed_seconds": null,
+      "expect": "fp",
+      "marker": "/product",
+      "matched": false,
+      "matched_by": [],
+      "timing_source": "not matched: there is no finding to time"
+    },
+    {
+      "check_id": "m3.traversal-oracle",
+      "elapsed_seconds": null,
+      "expect": "fp",
+      "marker": "/hardened-download",
+      "matched": false,
+      "matched_by": [],
+      "timing_source": "not matched: there is no finding to time"
+    },
+    {
+      "check_id": "m3.open-redirect",
+      "elapsed_seconds": null,
+      "expect": "fp",
+      "marker": "/api/safe-redirect",
+      "matched": false,
+      "matched_by": [],
+      "timing_source": "not matched: there is no finding to time"
+    },
+    {
+      "check_id": "m3.cors-audit",
+      "elapsed_seconds": null,
+      "expect": "fp",
+      "marker": "/api/config-fixed",
+      "matched": false,
+      "matched_by": [],
+      "timing_source": "not matched: there is no finding to time"
+    },
+    {
+      "check_id": "m3.csrf-audit",
+      "elapsed_seconds": null,
+      "expect": "fp",
+      "marker": "/notes-fixed",
+      "matched": false,
+      "matched_by": [],
+      "timing_source": "not matched: there is no finding to time"
+    },
+    {
+      "check_id": "m3.upload-audit",
+      "elapsed_seconds": null,
+      "expect": "fp",
+      "marker": "/upload-hardened",
+      "matched": false,
+      "matched_by": [],
+      "timing_source": "not matched: there is no finding to time"
+    },
+    {
+      "check_id": "m3.idor-oracle",
+      "elapsed_seconds": null,
+      "expect": "fp",
+      "marker": "/api/user-fixed",
+      "matched": false,
+      "matched_by": [],
+      "timing_source": "not matched: there is no finding to time"
+    },
+    {
+      "check_id": "m3.rate-limit-audit",
+      "elapsed_seconds": null,
+      "expect": "fp",
+      "marker": "/login-fast",
+      "matched": false,
+      "matched_by": [],
+      "timing_source": "not matched: there is no finding to time"
+    },
+    {
+      "check_id": "m3.api-surface",
+      "elapsed_seconds": null,
+      "expect": "fp",
+      "marker": "/api/v1",
+      "matched": false,
+      "matched_by": [],
+      "timing_source": "not matched: there is no finding to time"
+    }
+  ],
+  "command": "python -m arachne.tools.benchmark --lab --gate",
+  "corpus_version": "arachne-lab@1.0+54504f855bf96d59",
+  "environment": {
+    "arachne_version": "0.1.0",
+    "platform": "Linux-7.2.11-arch1-1-x86_64",
+    "python_implementation": "CPython",
+    "python_version": "3.14.9",
+    "source_date_epoch": null
+  },
+  "measured_at": "2026-11-04T18:24:39.131415+00:00",
   "score": {
     "candidates": 15,
     "detection": 0.9375,
@@ -11,11 +292,22 @@
       "m3.upload-audit:/upload"
     ],
     "planted": 16,
+    "precision": 1.0,
+    "recall": 0.9375,
     "true_positives": 15,
     "unscored": 14
   },
   "source": "lab",
   "suite": "arachne-lab",
   "suite_version": "1.0",
-  "target": "in-repo web lab (tests/lab/web_lab.py)"
+  "target": "in-repo web lab (tests/lab/web_lab.py)",
+  "timing": {
+    "cases_matched": 15,
+    "cases_total": 26,
+    "cases_with_time": 15,
+    "per_case_available": true,
+    "per_case_source": "candidate.created_at minus scan.started_at",
+    "scan_seconds": 25.342,
+    "scan_started_at": "2026-11-04T18:24:13.311428+00:00"
+  }
 }

@@ -82,6 +82,7 @@ class SnmpEnum(NetworkCheck, Module):
         ),
         research_ref="ch02#15",
         framework=("WSTG-CONF-01", "CWE-306"),
+        compliance=("CIS-1.1",),
         cwe="CWE-306",
         target_kinds=target_kinds_for_network_probes(),
         severity_hint="high",

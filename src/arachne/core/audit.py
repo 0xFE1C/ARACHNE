@@ -31,7 +31,7 @@ from arachne.core.integrity import (
 )
 from arachne.core.logging import get_logger
 from arachne.core.redaction import redact_mapping, redact_text, redact_url
-from arachne.core.signing import DeploymentSigner
+from arachne.core.signing import Signer
 
 __all__ = [
     "AUDIT_SCHEMA_VERSION",
@@ -556,7 +556,7 @@ class MemoryAuditChain:
     database. Thread-safe: the ``Auditor`` may be shared by a scan's worker threads.
     """
 
-    def __init__(self, *, signer: DeploymentSigner | None = None, start_seq: int = 1) -> None:
+    def __init__(self, *, signer: Signer | None = None, start_seq: int = 1) -> None:
         self.links: list[dict[str, Any]] = []
         self._signer = signer
         self._seq = start_seq

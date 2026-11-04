@@ -176,6 +176,8 @@ def _score(*, detection: float, fp_rate: float = 0.0) -> BenchmarkScore:
         false_positives=false_positives,
         candidates=candidates,
         fp_rate=round(false_positives / candidates, 4) if candidates else 0.0,
+        precision=round(true_positives / candidates, 4) if candidates else 0.0,
+        recall=round(true_positives / planted, 4) if planted else 0.0,
     )
 
 

@@ -152,6 +152,40 @@ a browser engine inside the scanner is a new attack surface and the operator opt
 - Reports as **Markdown, HTML, JSON, PDF and SARIF**, with executive summary, OWASP mapping,
   evidence appendix and a diff against the previous scan.
 
+**Trust, compliance and detection validation (WP-19)**
+
+- **Ed25519 alongside HMAC.** A deployment can sign its audit chain, row signatures and seals
+  with an asymmetric key (`ARACHNE_INTEGRITY_ALGORITHM=ed25519`), and an auditor who holds
+  **only the public key** verifies them and *cannot* forge one — the limitation ADR-300.5
+  recorded is closed (REQ-TRUST-008). The signature format is unchanged (still
+  `<scheme>:<key id>:<hex>`; HMAC keeps its historical `v1` tag), so stored rows stay valid;
+  `arachne verify-chain` verifies either scheme through one keyring, and a documented **dual
+  period** lets a deployment switch without invalidating anything written before the cutover.
+  The primitive is pure Python, replayed against the **RFC 8032 §7.1** test vectors and
+  cross-checked against `cryptography` where that developer dependency happens to be installed.
+- **Compliance maps are generated, not maintained.** Each check declares the compliance
+  controls its evidence bears on, and `python -m arachne.tools.compliance` generates the four
+  published maps from that metadata — `--check` fails when a committed map and the registry
+  disagree (REQ-TRUST-009). The complete control inventories are vendored with their
+  provenance, so reach is counted against the frameworks' own totals: **CIS 64/153, ISO/IEC
+  27001 46/93, NIST CSF 42/106, PCI DSS 11/12**, and every control no check can speak to is
+  named in `outside_assessed_set` with a reason instead of being omitted.
+- **The purple catalogue covers 36 ATT&CK v20 techniques across 10 tactics** (41 replayable
+  proof actions, up from 3 techniques), with the tactic vocabulary read from the pinned v20
+  release — 15 tactics, including the split of Defense Evasion into **Stealth** and **Defense
+  Impairment** (REQ-VALID-007). An action's technique must exist in the release and its tactic
+  must be one the release assigns that technique; no action is filed under Stealth, because
+  these tests are designed to be seen.
+- **A reproducible public benchmark**: the committed result states the corpus version and its
+  digest, the exact command, the environment and the **raw per-case rows** — with precision,
+  recall and a per-case time-to-finding whose source is named — and fixture rotation is
+  recorded with a review date a test enforces (REQ-TRUST-010).
+- **SLSA v1.2 Build L3 provenance and a validated SBOM**: the release workflow generates the
+  SBOM with the shipped tool and validates it against the vendored official CycloneDX 1.5
+  schema, and GitHub's attestation provides the L3 platform, which the workflow verifies with
+  cosign before the release completes (REQ-TRUST-011). A shipped offline tool emits the same
+  in-toto statement for a self-hosted build and says plainly that it is not L3.
+
 **Beyond scanning**
 
 - **Detection validation**: nonce-tagged proof actions replayed against your SIEM's alerts,
@@ -169,10 +203,10 @@ a browser engine inside the scanner is a new attack surface and the operator opt
 
 | What | Result |
 |---|---|
-| Tests | **5,329** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
-| Primary safety suite | **59 tests** in `tests/test_safety.py`; **328** in the safety files |
+| Tests | **5,424** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Primary safety suite | **59 tests** in `tests/test_safety.py`; **336** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol and mobile fixtures with planted false-positive traps |
-| Strict type checking | clean under `mypy --strict` across the **420** Python modules in `src/` |
+| Strict type checking | clean under `mypy --strict` across the **424** Python modules in `src/` |
 | Lint | clean over the whole repository (the badge's scope is the tree, not `src/` and `tests/`) |
 | Research coverage | **148/175 (84.6%)** of the corpus's numbered methods have an implementing check |
 
@@ -262,6 +296,32 @@ discover. Each is a candidate for a future release.
     provenance (provider, model, prompt hash, template version) in the reasoning record instead,
     because a hypothesis is a proposal, not an analysis of a finding; the citation requirement
     applies to the five stages that produce analysis content.
+
+**Trust, compliance and detection validation (WP-19) — the limits of the new evidence**
+
+23. **PCI DSS requirement 9 is assessed by no check, and the map says so.** Eleven of the
+    twelve requirements are reachable (REQ-TRUST-009 asks for twelve); requirement 9 restricts
+    *physical* access to cardholder data — facility entry, visitor management, media handling,
+    point-of-interaction tamper protection — and a network scanner produces no artefact for any
+    of it. The control is listed in `outside_assessed_set` with that reason rather than mapped to
+    something that would make an auditor believe it had been assessed. Closing it needs a
+    physical/host-agent control, not another web check.
+24. **The ISO/IEC 27001:2022 Annex A inventory is secondary-sourced.** The standard is
+    paywalled, so the 93 ids and short titles come from a widely used open-source library,
+    cross-checked against a second independent dataset (93/93 ids identical; five title spellings
+    reconciled). The file records this. Diff it against a licensed copy before treating it as an
+    audited denominator; CIS v8.1, NIST CSF 2.0 and PCI DSS v4.0 come from the standards bodies'
+    own publications.
+25. **The Ed25519 implementation is not constant-time.** It is pure Python (the runtime has no
+    cryptography dependency), and scalar multiplication is square-and-multiply over Python
+    integers. Correctness is pinned by the RFC 8032 test vectors and an independent
+    implementation, but a local attacker who can time the signing process is out of scope of
+    that mitigation: keep the seed off hosts you do not trust for that threat
+    (`docs/adr/370-trust-hardening-and-purple-breadth.md`).
+26. **The purple catalogue covers 36 of the 65 ATT&CK techniques the landscape analysis calls a
+    scanner's honest in-scope denominator** (and 36 of MITRE's 706 Enterprise techniques). The
+    remaining in-scope techniques are mostly ones where ARACHNE has no replayable action — a
+    detection test needs a safe proof payload, not only a check.
 
 **Developer experience**
 

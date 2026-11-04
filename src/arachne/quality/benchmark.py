@@ -27,14 +27,34 @@ Two kinds of suite ship, and the difference is recorded rather than hidden:
 does); ``source: recorded`` holds results captured against an externally hosted target (OWASP
 Benchmark, Juice Shop, DVWA) with the exact command to reproduce them. A recorded baseline still
 gates: its scores are compared, and its internal consistency is checked.
+
+**Reproducibility (REQ-TRUST-010).** A score nobody can re-derive is a claim, not a
+measurement, so the committed result carries everything a third party needs: the corpus version
+(:func:`suite_digest` names the exact case list), the command that produced it, the environment
+the interpreter reported, and the **raw per-case rows** — one row per suite case, saying whether
+it matched and which candidate matched it — not only the aggregates. :func:`environment_snapshot`
+records the python/platform/build fingerprint and deliberately never the hostname or user, and
+:func:`deterministic_projection` strips the wall-clock and environment noise so a reproduction
+that differs only in timing compares equal.
+
+**Rotation.** A benchmark whose fixtures never change measures memorisation, so each suite
+records when it was last rotated and when it is next due (:func:`rotation_problems` fails a run
+past ``review_by``). :func:`stamp_rotation` is the mechanism that writes those fields.
+
+**Time-to-finding.** Precision and recall sit beside the existing detection/FP numbers, and the
+measured scan's wall-clock seconds are recorded. Where a per-case time-to-finding is available
+(the store timestamps each candidate) it is recorded; where it is not, the artefact says so
+rather than inventing one. :func:`measure_with_cases` never fabricates a number.
 """
 
 from __future__ import annotations
 
 import json
+import os
+import platform
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from fnmatch import fnmatchcase
 from importlib.resources import files
 from pathlib import Path
@@ -47,22 +67,44 @@ from arachne.core.errors import ConfigurationError
 
 __all__ = [
     "BENCHMARK_SUITE_RESOURCE",
+    "ROTATION_INTERVAL_DAYS",
     "BenchmarkCase",
     "BenchmarkResult",
     "BenchmarkScore",
     "BenchmarkSuite",
+    "CaseResult",
     "Regression",
     "compare",
+    "deterministic_projection",
+    "environment_snapshot",
     "load_baseline",
     "load_suite",
     "load_suites",
     "measure",
+    "measure_with_cases",
     "result_from_score",
+    "rotation_problems",
+    "stamp_rotation",
+    "suite_file_path",
+    "timing_document",
     "write_result",
 ]
 
 #: Where the shipped suites live inside the package.
 BENCHMARK_SUITE_RESOURCE: Final = ("benchmark", "suites")
+
+#: Every suite must be reviewed at least annually (REQ-TRUST-010): a fixture set that never
+#: changes stops measuring detection and starts measuring memorisation. The window is 365
+#: days, so a rotation recorded on a leap day cannot quietly buy an extra year.
+ROTATION_INTERVAL_DAYS: Final = 365
+
+#: The managed rotation block :func:`stamp_rotation` writes at the end of a suite file. Markers
+#: rather than a full YAML rewrite, so the hand-written WHY comments above the cases survive a
+#: rotation.
+ROTATION_MARKER_START: Final = (
+    "# --- rotation (managed by `python -m arachne.tools.benchmark --rotate`) ---"
+)
+ROTATION_MARKER_END: Final = "# --- end rotation ---"
 
 _MODEL = ConfigDict(frozen=True, extra="forbid")
 
@@ -97,6 +139,14 @@ class BenchmarkSuite(BaseModel):
     #: How an operator reproduces a recorded suite against the real target.
     reproduce: str = Field(default="", max_length=1000)
     notes: str = Field(default="", max_length=2000)
+    #: When the fixture set was last rotated and when the next review is due (REQ-TRUST-010).
+    #: ``None`` is a suite that has never been stamped; :func:`rotation_problems` reports that
+    #: as a problem rather than treating it as "not due yet".
+    rotated_at: date | None = None
+    review_by: date | None = None
+    #: ``<iso-date>: <what changed>``, oldest first. Kept in the suite file so the rotation is
+    #: a repository fact, not a sentence in a changelog.
+    rotation_history: tuple[str, ...] = ()
     cases: tuple[BenchmarkCase, ...] = Field(min_length=1)
 
     @property
@@ -106,6 +156,32 @@ class BenchmarkSuite(BaseModel):
     @property
     def traps(self) -> tuple[BenchmarkCase, ...]:
         return tuple(case for case in self.cases if case.expect == "fp")
+
+
+class CaseResult(BaseModel):
+    """One suite case's raw outcome in a measured run (REQ-TRUST-010's "raw per-case").
+
+    One row per case — planted or trap — so a reader can recompute the aggregates without
+    trusting them, and can see *which* candidate matched. ``matched_by`` carries the stored
+    candidate ids (not just a count), and ``elapsed_seconds`` is the wall-clock time from scan
+    start to the first matching candidate when the store timestamps candidates;
+    ``timing_source`` says where that number came from, or why there is none.
+    """
+
+    model_config = _MODEL
+
+    check_id: str = Field(min_length=3, max_length=128)
+    marker: str = Field(min_length=1, max_length=512)
+    expect: Expectation = "tp"
+    matched: bool = False
+    matched_by: tuple[str, ...] = ()
+    elapsed_seconds: float | None = None
+    timing_source: str = ""
+
+    @property
+    def case(self) -> str:
+        """``check|marker`` — the stable key a third party can join on."""
+        return f"{self.check_id}|{self.marker}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -125,6 +201,15 @@ class BenchmarkScore:
     unscored: int = 0
     missed: tuple[str, ...] = ()
     fp_examples: tuple[str, ...] = ()
+    #: ``precision = tp / (tp + fp)`` — of the scored candidates, the fraction that hit a
+    #: planted case. Degenerate (0.0) when there were no scored candidates: no positive
+    #: prediction means precision is undefined, not perfect.
+    precision: float = 0.0
+    #: ``recall = tp / planted`` — the fraction of the planted cases that were found. This is
+    #: the same quantity as ``detection``; both names are kept because "detection rate" is what
+    #: the gate already compares and "recall" is what the benchmark claim publishes. Degenerate
+    #: (0.0) when the suite plants no cases.
+    recall: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -134,6 +219,8 @@ class BenchmarkScore:
             "false_positives": self.false_positives,
             "candidates": self.candidates,
             "fp_rate": round(self.fp_rate, 4),
+            "precision": round(self.precision, 4),
+            "recall": round(self.recall, 4),
             "unscored": self.unscored,
             "missed": list(self.missed),
             "fp_examples": list(self.fp_examples),
@@ -141,21 +228,43 @@ class BenchmarkScore:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> BenchmarkScore:
+        true_positives = int(payload.get("true_positives") or 0)
+        planted = int(payload.get("planted") or 0)
+        false_positives = int(payload.get("false_positives") or 0)
+        candidates = int(payload.get("candidates") or 0)
+        # A baseline written before precision/recall existed still loads: derive them from the
+        # counts it already carries rather than defaulting them to zero and flagging it.
+        scored = true_positives + false_positives
+        stored_precision = payload.get("precision")
+        stored_recall = payload.get("recall")
+        precision = (
+            float(stored_precision)
+            if stored_precision is not None
+            else (round(true_positives / scored, 4) if scored else 0.0)
+        )
+        recall = (
+            float(stored_recall)
+            if stored_recall is not None
+            else (round(true_positives / planted, 4) if planted else 0.0)
+        )
         return cls(
             detection=float(payload.get("detection") or 0.0),
-            true_positives=int(payload.get("true_positives") or 0),
-            planted=int(payload.get("planted") or 0),
-            false_positives=int(payload.get("false_positives") or 0),
-            candidates=int(payload.get("candidates") or 0),
+            true_positives=true_positives,
+            planted=planted,
+            false_positives=false_positives,
+            candidates=candidates,
             fp_rate=float(payload.get("fp_rate") or 0.0),
             unscored=int(payload.get("unscored") or 0),
             missed=tuple(str(item) for item in payload.get("missed") or ()),
             fp_examples=tuple(str(item) for item in payload.get("fp_examples") or ()),
+            precision=precision,
+            recall=recall,
         )
 
     def record(self) -> str:
         return (
             f"detection {self.true_positives}/{self.planted} ({self.detection:.0%}); "
+            f"precision {self.precision:.0%}; recall {self.recall:.0%}; "
             f"FP {self.false_positives}/{self.candidates} ({self.fp_rate:.0%})"
             + (f"; unscored {self.unscored}" if self.unscored else "")
             + (f"; missed: {list(self.missed)}" if self.missed else "")
@@ -163,7 +272,12 @@ class BenchmarkScore:
 
 
 class BenchmarkResult(BaseModel):
-    """A committed score: the suite, the target, and the numbers that were measured."""
+    """A committed score: the corpus, the target, the environment and the raw rows.
+
+    Every field added for REQ-TRUST-010 has a default, so a baseline committed before the
+    reproducibility work still validates and still gates; it simply reports empty ``command``,
+    ``environment``, ``timing`` and ``cases``.
+    """
 
     model_config = _MODEL
 
@@ -174,6 +288,18 @@ class BenchmarkResult(BaseModel):
     source: str = "lab"
     measured_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     score: dict[str, Any] = Field(default_factory=dict)
+    #: ``<suite>@<version>+<digest>`` — the version of the *corpus* (the case list), which is
+    #: what makes "the same benchmark" meaningful. Prominent because the requirement names it
+    #: first; ``suite``/``suite_version`` stay for compatibility with older readers.
+    corpus_version: str = ""
+    #: The exact command that reproduces this result (the suite's documented ``reproduce``).
+    command: str = ""
+    #: python/platform/interpreter/build fingerprint. Never the hostname or the user.
+    environment: dict[str, Any] = Field(default_factory=dict)
+    #: The measured scan's wall-clock seconds and the per-case timing source.
+    timing: dict[str, Any] = Field(default_factory=dict)
+    #: One row per suite case (REQ-TRUST-010's raw per-case results).
+    cases: tuple[CaseResult, ...] = ()
 
     @property
     def numbers(self) -> BenchmarkScore:
@@ -183,11 +309,16 @@ class BenchmarkResult(BaseModel):
         return {
             "suite": self.suite,
             "suite_version": self.suite_version,
+            "corpus_version": self.corpus_version,
             "arachne_version": self.arachne_version,
             "target": self.target,
             "source": self.source,
+            "command": self.command,
             "measured_at": self.measured_at.isoformat(),
+            "environment": self.environment,
+            "timing": self.timing,
             "score": self.score,
+            "cases": [case.model_dump(mode="json") for case in self.cases],
         }
 
 
@@ -255,11 +386,118 @@ def _read_yaml(path: Path) -> Any:
         raise ConfigurationError(f"{path}: not valid YAML: {exc}") from exc
 
 
+# --------------------------------------------------------------------------- rotation
+
+
+def suite_file_path(name: str) -> Path:
+    """The editable path of a shipped suite (a checkout's ``templates/`` directory)."""
+    return (
+        Path(__file__).resolve().parents[1] / "templates" / "benchmark" / "suites" / f"{name}.yaml"
+    )
+
+
+def rotation_problems(suite: BenchmarkSuite, *, today: date) -> tuple[str, ...]:
+    """Why ``suite`` is not compliant with the annual-rotation policy (REQ-TRUST-010).
+
+    An empty tuple means the suite states a ``rotated_at``, a ``review_by`` no more than
+    :data:`ROTATION_INTERVAL_DAYS` later, and today is not past that review date. A suite with
+    no rotation record is a problem rather than "not due yet": silence is how a fixture set
+    stops rotating without anyone deciding to stop.
+    """
+    problems: list[str] = []
+    if suite.rotated_at is None:
+        problems.append(f"suite {suite.name} records no rotated_at")
+    if suite.review_by is None:
+        problems.append(f"suite {suite.name} records no review_by")
+        return tuple(problems)
+    if suite.rotated_at is not None:
+        if suite.review_by < suite.rotated_at:
+            problems.append(
+                f"suite {suite.name} has review_by {suite.review_by} before its rotation "
+                f"date {suite.rotated_at}"
+            )
+        interval = (suite.review_by - suite.rotated_at).days
+        if interval > ROTATION_INTERVAL_DAYS:
+            problems.append(
+                f"suite {suite.name} review window is {interval} days, more than the "
+                f"{ROTATION_INTERVAL_DAYS}-day annual maximum"
+            )
+    if today > suite.review_by:
+        problems.append(
+            f"suite {suite.name} is overdue for rotation: review_by {suite.review_by} is "
+            f"before today {today}"
+        )
+    return tuple(problems)
+
+
+def stamp_rotation(path: str | Path, *, rotated_at: date, note: str = "") -> date:
+    """Record a rotation in a suite file and return the new ``review_by`` date.
+
+    The managed block is appended at the end of the file, delimited by markers, so the
+    hand-written explanation at the top of a suite survives a rotation. The previous block is
+    replaced, and the prior history is carried forward (oldest first).
+    """
+    target = Path(path)
+    suite = load_suite(target.stem, path=target)
+    review_by = rotated_at + timedelta(days=ROTATION_INTERVAL_DAYS)
+    entry = f"{rotated_at.isoformat()}: {note}" if note else rotated_at.isoformat()
+    history = (*suite.rotation_history, entry)
+    kept = _strip_rotation_block(target.read_text(encoding="utf-8").splitlines())
+    while kept and not kept[-1].strip():
+        kept.pop()
+    block = _rotation_block(rotated_at=rotated_at, review_by=review_by, history=history)
+    target.write_text("\n".join([*kept, "", *block]) + "\n", encoding="utf-8")
+    return review_by
+
+
+def _rotation_block(*, rotated_at: date, review_by: date, history: Sequence[str]) -> list[str]:
+    lines = [
+        ROTATION_MARKER_START,
+        f"rotated_at: {_yaml_scalar(rotated_at.isoformat())}",
+        f"review_by: {_yaml_scalar(review_by.isoformat())}",
+    ]
+    if history:
+        lines.append("rotation_history:")
+        lines.extend(f"  - {_yaml_scalar(entry)}" for entry in history)
+    else:
+        lines.append("rotation_history: []")
+    lines.append(ROTATION_MARKER_END)
+    return lines
+
+
+def _strip_rotation_block(lines: list[str]) -> list[str]:
+    try:
+        start = lines.index(ROTATION_MARKER_START)
+        end = lines.index(ROTATION_MARKER_END, start)
+    except ValueError:
+        return lines
+    return [*lines[:start], *lines[end + 1 :]]
+
+
+def _yaml_scalar(value: str) -> str:
+    """Single-quote a scalar, doubling any quote in it (YAML 1.1's rule)."""
+    return "'" + value.replace("'", "''") + "'"
+
+
 # --------------------------------------------------------------------------- scoring
 
 
 def measure(records: Iterable[Any], suite: BenchmarkSuite) -> BenchmarkScore:
     """Score stored candidates against the suite's cases (the lab tests' arithmetic).
+
+    See :func:`measure_with_cases` for the rule this delegates to; this entry point keeps the
+    original signature for the tests and CI that only want the aggregates.
+    """
+    return measure_with_cases(records, suite)[0]
+
+
+def measure_with_cases(
+    records: Iterable[Any],
+    suite: BenchmarkSuite,
+    *,
+    scan_started_at: datetime | None = None,
+) -> tuple[BenchmarkScore, tuple[CaseResult, ...]]:
+    """Score stored candidates against the suite's cases, keeping the raw per-case rows.
 
     A candidate *matches* a case when its check id is the case's and the marker appears in its
     evidence payloads. That is the whole scoring rule, and it is the benchmark convention the
@@ -274,47 +512,124 @@ def measure(records: Iterable[Any], suite: BenchmarkSuite) -> BenchmarkScore:
 
     Only the checks the suite names are scored (the same scoping the S6 acceptance test applies
     to its core set), so a family the suite does not measure cannot move its numbers.
+
+    **Definitions (REQ-TRUST-010).** ``precision = tp / (tp + fp)`` and ``recall = tp /
+    planted``. ``precision`` is 0.0 when nothing was scored (no positive prediction — undefined,
+    not perfect); ``recall`` is 0.0 when the suite plants no cases. ``detection`` is the same
+    quantity as ``recall``.
+
+    **Time-to-finding.** When ``scan_started_at`` is given and a matching candidate carries a
+    ``created_at``, the case row records the seconds from scan start to that candidate. When the
+    store exposes no timestamp, the row records ``None`` and a ``timing_source`` saying why —
+    the harness never invents a per-case number.
     """
     scored_checks = {case.check_id for case in suite.cases}
-    matched: set[tuple[str, str]] = set()
-    false_positives: list[str] = []
+    #: key -> the (id, created_at) of every candidate that matched it, in scan order.
+    matched_planted: dict[tuple[str, str], list[tuple[str, datetime | None]]] = {}
+    matched_traps: dict[tuple[str, str], list[tuple[str, datetime | None]]] = {}
+    false_positive_blobs: list[str] = []
     unscored = 0
     for record in records:
         check_id = _check_id_of(record)
         if check_id not in scored_checks:
             continue
         blob = _blob(record)
-        hits = [
-            (case.check_id, case.marker)
-            for case in suite.planted
-            if case.check_id == check_id and case.marker in blob
+        planted_hits = [
+            case for case in suite.planted if case.check_id == check_id and case.marker in blob
         ]
-        if hits:
-            matched.update(hits)
+        if planted_hits:
+            for case in planted_hits:
+                matched_planted.setdefault((case.check_id, case.marker), []).append(
+                    (_candidate_id(record), getattr(record, "created_at", None))
+                )
             continue
-        trap = [
-            case.marker for case in suite.traps if case.check_id == check_id and case.marker in blob
+        trap_hits = [
+            case for case in suite.traps if case.check_id == check_id and case.marker in blob
         ]
-        if trap:
-            false_positives.append(f"{check_id}:trap={trap}")
+        if trap_hits:
+            for case in trap_hits:
+                matched_traps.setdefault((case.check_id, case.marker), []).append(
+                    (_candidate_id(record), getattr(record, "created_at", None))
+                )
+            false_positive_blobs.append(f"{check_id}:trap={[case.marker for case in trap_hits]}")
         else:
             unscored += 1
-    scored = len(matched) + len(false_positives)
-    return BenchmarkScore(
-        detection=round(len(matched) / len(suite.planted), 4) if suite.planted else 0.0,
-        true_positives=len(matched),
-        planted=len(suite.planted),
-        false_positives=len(false_positives),
+
+    true_positives = len(matched_planted)
+    false_positives = len(matched_traps)
+    scored = true_positives + false_positives
+    planted = len(suite.planted)
+    score = BenchmarkScore(
+        detection=round(true_positives / planted, 4) if planted else 0.0,
+        true_positives=true_positives,
+        planted=planted,
+        false_positives=false_positives,
         candidates=scored,
-        fp_rate=round(len(false_positives) / scored, 4) if scored else 0.0,
+        fp_rate=round(false_positives / scored, 4) if scored else 0.0,
         unscored=unscored,
         missed=tuple(
             f"{case.check_id}:{case.marker}"
             for case in suite.planted
-            if (case.check_id, case.marker) not in matched
+            if (case.check_id, case.marker) not in matched_planted
         ),
-        fp_examples=tuple(sorted(false_positives)[:6]),
+        fp_examples=tuple(sorted(false_positive_blobs)[:6]),
+        precision=round(true_positives / scored, 4) if scored else 0.0,
+        recall=round(true_positives / planted, 4) if planted else 0.0,
     )
+    cases = tuple(
+        _case_result(
+            case,
+            matches=(matched_planted if case.expect == "tp" else matched_traps).get(
+                (case.check_id, case.marker), []
+            ),
+            scan_started_at=scan_started_at,
+        )
+        for case in suite.cases
+    )
+    return score, cases
+
+
+def _case_result(
+    case: BenchmarkCase,
+    *,
+    matches: Sequence[tuple[str, datetime | None]],
+    scan_started_at: datetime | None,
+) -> CaseResult:
+    """One suite case's raw row, including the honest reason for a missing per-case time."""
+    elapsed: float | None = None
+    if not matches:
+        source = "not matched: there is no finding to time"
+    elif scan_started_at is None:
+        source = "unavailable: the scan's start time was not recorded"
+    elif all(created is None for _identifier, created in matches):
+        source = "unavailable: the store exposed no candidate created_at"
+    else:
+        for _identifier, created in matches:
+            if created is None:
+                continue
+            elapsed = round((_as_utc(created) - _as_utc(scan_started_at)).total_seconds(), 3)
+            break
+        source = "candidate.created_at minus scan.started_at"
+    return CaseResult(
+        check_id=case.check_id,
+        marker=case.marker,
+        expect=case.expect,
+        matched=bool(matches),
+        matched_by=tuple(identifier for identifier, _created in matches),
+        elapsed_seconds=elapsed,
+        timing_source=source,
+    )
+
+
+def _as_utc(moment: datetime) -> datetime:
+    """A naive timestamp from a store is UTC (every writer here stores UTC)."""
+    return moment if moment.tzinfo is not None else moment.replace(tzinfo=UTC)
+
+
+def _candidate_id(record: Any) -> str:
+    """The stored candidate's id as text, or ``"?"`` when the store minted none."""
+    identifier = getattr(record, "id", None)
+    return str(identifier) if identifier is not None else "?"
 
 
 def _check_id_of(record: Any) -> str:
@@ -344,16 +659,123 @@ def result_from_score(
     arachne_version: str = "",
     target: str = "",
     measured_at: datetime | None = None,
+    command: str = "",
+    environment: dict[str, Any] | None = None,
+    timing: dict[str, Any] | None = None,
+    cases: Sequence[CaseResult] = (),
 ) -> BenchmarkResult:
+    """Assemble the committed result document (REQ-TRUST-010's four named things)."""
     return BenchmarkResult(
         suite=suite.name,
         suite_version=suite.version,
+        corpus_version=f"{suite.name}@{suite.version}+{suite_digest(suite)}",
         arachne_version=arachne_version,
         target=target or suite.target,
         source=suite.source,
         measured_at=measured_at or datetime.now(UTC),
+        command=command or suite.reproduce,
+        environment=environment or {},
+        timing=timing or {},
         score=score.to_dict(),
+        cases=tuple(cases),
     )
+
+
+# --------------------------------------------------------------------------- publication
+
+
+def environment_snapshot(arachne_version: str) -> dict[str, Any]:
+    """The interpreter/build fingerprint a reproduction needs (REQ-TRUST-010).
+
+    Deliberately narrow: python version, implementation, a platform string built from
+    ``system/release/machine``, the ARACHNE version and ``SOURCE_DATE_EPOCH`` when set.
+    Hostname, user, working directory and environment variables generally are **not**
+    recorded — a benchmark artefact is published, and those identify a person or a machine.
+    """
+    return {
+        "python_version": platform.python_version(),
+        "python_implementation": platform.python_implementation(),
+        "platform": f"{platform.system()}-{platform.release()}-{platform.machine()}",
+        "arachne_version": arachne_version,
+        "source_date_epoch": os.environ.get("SOURCE_DATE_EPOCH") or None,
+    }
+
+
+def timing_document(
+    *,
+    scan_seconds: float,
+    scan_started_at: datetime | None,
+    cases: Sequence[CaseResult],
+) -> dict[str, Any]:
+    """The measured scan's timing, and an honest statement of what the store exposed.
+
+    ``scan_seconds`` is always measured (wall clock around the scan call). Per-case
+    time-to-finding exists only when a matched case has a candidate ``created_at`` *and* the
+    scan's start was recorded; when it does not, the document says so instead of filling in a
+    plausible-looking number.
+    """
+    matched = [case for case in cases if case.matched]
+    timed = [case for case in matched if case.elapsed_seconds is not None]
+    document: dict[str, Any] = {
+        "scan_seconds": round(scan_seconds, 3),
+        "scan_started_at": scan_started_at.isoformat() if scan_started_at else None,
+        "cases_total": len(cases),
+        "cases_matched": len(matched),
+        "cases_with_time": len(timed),
+        "per_case_source": "candidate.created_at minus scan.started_at",
+        "per_case_available": bool(matched) and len(timed) == len(matched),
+    }
+    if matched and len(timed) < len(matched):
+        document["note"] = (
+            f"{len(matched) - len(timed)} of {len(matched)} matched cases have no per-case "
+            "timestamp; see each case row's timing_source"
+        )
+    elif not matched:
+        document["note"] = "no matched case, so there is no time-to-finding to record"
+    return document
+
+
+def deterministic_projection(result: BenchmarkResult) -> dict[str, Any]:
+    """The parts of a result that a reproduction can compare byte-for-byte.
+
+    Everything a benchmark measures *about detection* is deterministic given the same corpus
+    and code: the corpus version, the aggregate numbers, and each case's ``(check, marker,
+    expectation, matched)``. The timestamp, environment, wall-clock timing and the store's
+    candidate ids are deliberately excluded — they are provenance, not measurement, and a
+    reproduction on another machine is allowed to differ in them.
+    """
+    numbers = result.numbers.to_dict()
+    return {
+        "suite": result.suite,
+        "suite_version": result.suite_version,
+        "corpus_version": result.corpus_version,
+        "score": {key: numbers[key] for key in _DETERMINISTIC_SCORE_KEYS},
+        "cases": [
+            {
+                "check_id": case.check_id,
+                "marker": case.marker,
+                "expect": case.expect,
+                "matched": case.matched,
+            }
+            for case in result.cases
+        ],
+    }
+
+
+#: The score fields a reproduction must reproduce; counts and rates, never provenance.
+_DETERMINISTIC_SCORE_KEYS: Final = (
+    "detection",
+    "true_positives",
+    "planted",
+    "false_positives",
+    "candidates",
+    "fp_rate",
+    "precision",
+    "recall",
+    "unscored",
+    "missed",
+    "fp_examples",
+)
 
 
 # --------------------------------------------------------------------------- the gate
@@ -452,8 +874,9 @@ def consistency_problems(result: BenchmarkResult) -> tuple[str, ...]:
 
     A recorded score cannot be re-measured in CI without the hosted target, but it can be
     checked for the arithmetic that makes it a score: the detection rate must equal its own
-    true-positive count over the planted count, and the FP rate must equal its own counts. A
-    hand-edited baseline that flatters the scanner fails here.
+    true-positive count over the planted count, the FP rate must equal its own counts, and
+    precision/recall must agree with the counts they are derived from. A hand-edited baseline
+    that flatters the scanner fails here.
     """
     problems: list[str] = []
     numbers = result.numbers
@@ -472,6 +895,20 @@ def consistency_problems(result: BenchmarkResult) -> tuple[str, ...]:
         problems.append(
             f"fp_rate {numbers.fp_rate} != {expected_fp} "
             f"({numbers.false_positives}/{numbers.candidates})"
+        )
+    expected_precision = (
+        round(numbers.true_positives / numbers.candidates, 4) if numbers.candidates else 0.0
+    )
+    if abs(numbers.precision - expected_precision) > 0.0005:
+        problems.append(
+            f"precision {numbers.precision} != {expected_precision} "
+            f"({numbers.true_positives}/{numbers.candidates})"
+        )
+    expected_recall = round(numbers.true_positives / numbers.planted, 4) if numbers.planted else 0.0
+    if abs(numbers.recall - expected_recall) > 0.0005:
+        problems.append(
+            f"recall {numbers.recall} != {expected_recall} "
+            f"({numbers.true_positives}/{numbers.planted})"
         )
     if numbers.true_positives > numbers.planted:
         problems.append("more true positives than planted cases")

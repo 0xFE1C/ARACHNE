@@ -4,7 +4,6617 @@
   "title": "MITRE ATT&CK Enterprise",
   "source": "https://attack.mitre.org/versions/v20/",
   "id_pattern": "^ATT&CK-T\\d{4}(?:\\.\\d{3})?$",
-  "range": {"min": 1000, "max": 1699},
-  "notes": "A technique id is ATT&CK-T<NNNN> with an optional .<NNN> sub-technique (REQ-DET-002). Only the shape and the technique-number band are pinned: the ledger's ATT&CK figure counts what a check names, and the purple replay catalogue (templates/purple/attck-map.yaml) remains the only other place a technique appears. A short id such as ATT&CK-T123 is refused.",
-  "items": []
+  "range": {
+    "min": 1000,
+    "max": 1700
+  },
+  "notes": "A technique id is ATT&CK-T<NNNN> with an optional .<NNN> sub-technique (REQ-DET-002). The item list is the complete Enterprise v20 technique set (706 techniques, 479 of them sub-techniques), extracted from MITRE's published v20 STIX bundle, so a technique id in a check's mapping or in the purple replay catalogue is validated against the release it claims (REQ-VALID-007) rather than against a number band. `tactics` is the v20 tactic vocabulary (15 tactics: Defense Evasion was split into Stealth and Defense Impairment in v18+); each item's `tactics` is the set MITRE assigns it, and `category` is the first of them. A short id such as ATT&CK-T123 is refused.",
+  "tactics": [
+    {
+      "id": "TA0001",
+      "shortname": "initial-access",
+      "title": "Initial Access"
+    },
+    {
+      "id": "TA0002",
+      "shortname": "execution",
+      "title": "Execution"
+    },
+    {
+      "id": "TA0003",
+      "shortname": "persistence",
+      "title": "Persistence"
+    },
+    {
+      "id": "TA0004",
+      "shortname": "privilege-escalation",
+      "title": "Privilege Escalation"
+    },
+    {
+      "id": "TA0005",
+      "shortname": "stealth",
+      "title": "Stealth"
+    },
+    {
+      "id": "TA0006",
+      "shortname": "credential-access",
+      "title": "Credential Access"
+    },
+    {
+      "id": "TA0007",
+      "shortname": "discovery",
+      "title": "Discovery"
+    },
+    {
+      "id": "TA0008",
+      "shortname": "lateral-movement",
+      "title": "Lateral Movement"
+    },
+    {
+      "id": "TA0009",
+      "shortname": "collection",
+      "title": "Collection"
+    },
+    {
+      "id": "TA0010",
+      "shortname": "exfiltration",
+      "title": "Exfiltration"
+    },
+    {
+      "id": "TA0011",
+      "shortname": "command-and-control",
+      "title": "Command and Control"
+    },
+    {
+      "id": "TA0040",
+      "shortname": "impact",
+      "title": "Impact"
+    },
+    {
+      "id": "TA0042",
+      "shortname": "resource-development",
+      "title": "Resource Development"
+    },
+    {
+      "id": "TA0043",
+      "shortname": "reconnaissance",
+      "title": "Reconnaissance"
+    },
+    {
+      "id": "TA0112",
+      "shortname": "defense-impairment",
+      "title": "Defense Impairment"
+    }
+  ],
+  "items": [
+    {
+      "id": "ATT&CK-T1001",
+      "title": "Data Obfuscation",
+      "category": "command-and-control",
+      "number": 1001,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1001.001",
+      "title": "Junk Data",
+      "category": "command-and-control",
+      "number": 1001,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1001.002",
+      "title": "Steganography",
+      "category": "command-and-control",
+      "number": 1001,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1001.003",
+      "title": "Protocol or Service Impersonation",
+      "category": "command-and-control",
+      "number": 1001,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1003",
+      "title": "OS Credential Dumping",
+      "category": "credential-access",
+      "number": 1003,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1003.001",
+      "title": "LSASS Memory",
+      "category": "credential-access",
+      "number": 1003,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1003.002",
+      "title": "Security Account Manager",
+      "category": "credential-access",
+      "number": 1003,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1003.003",
+      "title": "NTDS",
+      "category": "credential-access",
+      "number": 1003,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1003.004",
+      "title": "LSA Secrets",
+      "category": "credential-access",
+      "number": 1003,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1003.005",
+      "title": "Cached Domain Credentials",
+      "category": "credential-access",
+      "number": 1003,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1003.006",
+      "title": "DCSync",
+      "category": "credential-access",
+      "number": 1003,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1003.007",
+      "title": "Proc Filesystem",
+      "category": "credential-access",
+      "number": 1003,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1003.008",
+      "title": "/etc/passwd and /etc/shadow",
+      "category": "credential-access",
+      "number": 1003,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1005",
+      "title": "Data from Local System",
+      "category": "collection",
+      "number": 1005,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1006",
+      "title": "Direct Volume Access",
+      "category": "stealth",
+      "number": 1006,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1007",
+      "title": "System Service Discovery",
+      "category": "discovery",
+      "number": 1007,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1008",
+      "title": "Fallback Channels",
+      "category": "command-and-control",
+      "number": 1008,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1010",
+      "title": "Application Window Discovery",
+      "category": "discovery",
+      "number": 1010,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1011",
+      "title": "Exfiltration Over Other Network Medium",
+      "category": "exfiltration",
+      "number": 1011,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1011.001",
+      "title": "Exfiltration Over Bluetooth",
+      "category": "exfiltration",
+      "number": 1011,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1012",
+      "title": "Query Registry",
+      "category": "discovery",
+      "number": 1012,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1014",
+      "title": "Rootkit",
+      "category": "stealth",
+      "number": 1014,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1016",
+      "title": "System Network Configuration Discovery",
+      "category": "discovery",
+      "number": 1016,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1016.001",
+      "title": "Internet Connection Discovery",
+      "category": "discovery",
+      "number": 1016,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1016.002",
+      "title": "Wi-Fi Discovery",
+      "category": "discovery",
+      "number": 1016,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1018",
+      "title": "Remote System Discovery",
+      "category": "discovery",
+      "number": 1018,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1020",
+      "title": "Automated Exfiltration",
+      "category": "exfiltration",
+      "number": 1020,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1020.001",
+      "title": "Traffic Duplication",
+      "category": "exfiltration",
+      "number": 1020,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1021",
+      "title": "Remote Services",
+      "category": "lateral-movement",
+      "number": 1021,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1021.001",
+      "title": "Remote Desktop Protocol",
+      "category": "lateral-movement",
+      "number": 1021,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1021.002",
+      "title": "SMB/Windows Admin Shares",
+      "category": "lateral-movement",
+      "number": 1021,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1021.003",
+      "title": "Distributed Component Object Model",
+      "category": "lateral-movement",
+      "number": 1021,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1021.004",
+      "title": "SSH",
+      "category": "lateral-movement",
+      "number": 1021,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1021.005",
+      "title": "VNC",
+      "category": "lateral-movement",
+      "number": 1021,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1021.006",
+      "title": "Windows Remote Management",
+      "category": "lateral-movement",
+      "number": 1021,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1021.007",
+      "title": "Cloud Services",
+      "category": "lateral-movement",
+      "number": 1021,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1021.008",
+      "title": "Direct Cloud VM Connections",
+      "category": "lateral-movement",
+      "number": 1021,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1025",
+      "title": "Data from Removable Media",
+      "category": "collection",
+      "number": 1025,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027",
+      "title": "Obfuscated Files or Information",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.001",
+      "title": "Binary Padding",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.002",
+      "title": "Software Packing",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.003",
+      "title": "Steganography",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.004",
+      "title": "Compile After Delivery",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.005",
+      "title": "Indicator Removal from Tools",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.006",
+      "title": "HTML Smuggling",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.007",
+      "title": "Dynamic API Resolution",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.008",
+      "title": "Stripped Payloads",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.009",
+      "title": "Embedded Payloads",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.010",
+      "title": "Command Obfuscation",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.011",
+      "title": "Fileless Storage",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.012",
+      "title": "LNK Icon Smuggling",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.013",
+      "title": "Encrypted/Encoded File",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.014",
+      "title": "Polymorphic Code",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.015",
+      "title": "Compression",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.016",
+      "title": "Junk Code Insertion",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.017",
+      "title": "SVG Smuggling",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1027.018",
+      "title": "Invisible Unicode",
+      "category": "stealth",
+      "number": 1027,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1029",
+      "title": "Scheduled Transfer",
+      "category": "exfiltration",
+      "number": 1029,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1030",
+      "title": "Data Transfer Size Limits",
+      "category": "exfiltration",
+      "number": 1030,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1033",
+      "title": "System Owner/User Discovery",
+      "category": "discovery",
+      "number": 1033,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1036",
+      "title": "Masquerading",
+      "category": "stealth",
+      "number": 1036,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1036.001",
+      "title": "Invalid Code Signature",
+      "category": "stealth",
+      "number": 1036,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1036.002",
+      "title": "Right-to-Left Override",
+      "category": "stealth",
+      "number": 1036,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1036.003",
+      "title": "Rename Legitimate Utilities",
+      "category": "stealth",
+      "number": 1036,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1036.004",
+      "title": "Masquerade Task or Service",
+      "category": "stealth",
+      "number": 1036,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1036.005",
+      "title": "Match Legitimate Resource Name or Location",
+      "category": "stealth",
+      "number": 1036,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1036.006",
+      "title": "Space after Filename",
+      "category": "stealth",
+      "number": 1036,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1036.007",
+      "title": "Double File Extension",
+      "category": "stealth",
+      "number": 1036,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1036.008",
+      "title": "Masquerade File Type",
+      "category": "stealth",
+      "number": 1036,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1036.009",
+      "title": "Break Process Trees",
+      "category": "stealth",
+      "number": 1036,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1036.010",
+      "title": "Masquerade Account Name",
+      "category": "stealth",
+      "number": 1036,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1036.011",
+      "title": "Overwrite Process Arguments",
+      "category": "stealth",
+      "number": 1036,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1036.012",
+      "title": "Browser Fingerprint",
+      "category": "stealth",
+      "number": 1036,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1037",
+      "title": "Boot or Logon Initialization Scripts",
+      "category": "persistence",
+      "number": 1037,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1037.001",
+      "title": "Logon Script (Windows)",
+      "category": "persistence",
+      "number": 1037,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1037.002",
+      "title": "Login Hook",
+      "category": "persistence",
+      "number": 1037,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1037.003",
+      "title": "Network Logon Script",
+      "category": "persistence",
+      "number": 1037,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1037.004",
+      "title": "RC Scripts",
+      "category": "persistence",
+      "number": 1037,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1037.005",
+      "title": "Startup Items",
+      "category": "persistence",
+      "number": 1037,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1039",
+      "title": "Data from Network Shared Drive",
+      "category": "collection",
+      "number": 1039,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1040",
+      "title": "Network Sniffing",
+      "category": "credential-access",
+      "number": 1040,
+      "tactics": [
+        "credential-access",
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1041",
+      "title": "Exfiltration Over C2 Channel",
+      "category": "exfiltration",
+      "number": 1041,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1046",
+      "title": "Network Service Discovery",
+      "category": "discovery",
+      "number": 1046,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1047",
+      "title": "Windows Management Instrumentation",
+      "category": "execution",
+      "number": 1047,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1048",
+      "title": "Exfiltration Over Alternative Protocol",
+      "category": "exfiltration",
+      "number": 1048,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1048.001",
+      "title": "Exfiltration Over Symmetric Encrypted Non-C2 Protocol",
+      "category": "exfiltration",
+      "number": 1048,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1048.002",
+      "title": "Exfiltration Over Asymmetric Encrypted Non-C2 Protocol",
+      "category": "exfiltration",
+      "number": 1048,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1048.003",
+      "title": "Exfiltration Over Unencrypted Non-C2 Protocol",
+      "category": "exfiltration",
+      "number": 1048,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1049",
+      "title": "System Network Connections Discovery",
+      "category": "discovery",
+      "number": 1049,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1052",
+      "title": "Exfiltration Over Physical Medium",
+      "category": "exfiltration",
+      "number": 1052,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1052.001",
+      "title": "Exfiltration over USB",
+      "category": "exfiltration",
+      "number": 1052,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1053",
+      "title": "Scheduled Task/Job",
+      "category": "execution",
+      "number": 1053,
+      "tactics": [
+        "execution",
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1053.002",
+      "title": "At",
+      "category": "execution",
+      "number": 1053,
+      "tactics": [
+        "execution",
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1053.003",
+      "title": "Cron",
+      "category": "execution",
+      "number": 1053,
+      "tactics": [
+        "execution",
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1053.005",
+      "title": "Scheduled Task",
+      "category": "execution",
+      "number": 1053,
+      "tactics": [
+        "execution",
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1053.006",
+      "title": "Systemd Timers",
+      "category": "execution",
+      "number": 1053,
+      "tactics": [
+        "execution",
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1053.007",
+      "title": "Container Orchestration Job",
+      "category": "execution",
+      "number": 1053,
+      "tactics": [
+        "execution",
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1055",
+      "title": "Process Injection",
+      "category": "stealth",
+      "number": 1055,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1055.001",
+      "title": "Dynamic-link Library Injection",
+      "category": "stealth",
+      "number": 1055,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1055.002",
+      "title": "Portable Executable Injection",
+      "category": "stealth",
+      "number": 1055,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1055.003",
+      "title": "Thread Execution Hijacking",
+      "category": "stealth",
+      "number": 1055,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1055.004",
+      "title": "Asynchronous Procedure Call",
+      "category": "stealth",
+      "number": 1055,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1055.005",
+      "title": "Thread Local Storage",
+      "category": "stealth",
+      "number": 1055,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1055.008",
+      "title": "Ptrace System Calls",
+      "category": "stealth",
+      "number": 1055,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1055.009",
+      "title": "Proc Memory",
+      "category": "stealth",
+      "number": 1055,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1055.011",
+      "title": "Extra Window Memory Injection",
+      "category": "stealth",
+      "number": 1055,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1055.012",
+      "title": "Process Hollowing",
+      "category": "stealth",
+      "number": 1055,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1055.013",
+      "title": "Process Doppelgänging",
+      "category": "stealth",
+      "number": 1055,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1055.014",
+      "title": "VDSO Hijacking",
+      "category": "stealth",
+      "number": 1055,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1055.015",
+      "title": "ListPlanting",
+      "category": "stealth",
+      "number": 1055,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1056",
+      "title": "Input Capture",
+      "category": "collection",
+      "number": 1056,
+      "tactics": [
+        "collection",
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1056.001",
+      "title": "Keylogging",
+      "category": "collection",
+      "number": 1056,
+      "tactics": [
+        "collection",
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1056.002",
+      "title": "GUI Input Capture",
+      "category": "collection",
+      "number": 1056,
+      "tactics": [
+        "collection",
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1056.003",
+      "title": "Web Portal Capture",
+      "category": "collection",
+      "number": 1056,
+      "tactics": [
+        "collection",
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1056.004",
+      "title": "Credential API Hooking",
+      "category": "collection",
+      "number": 1056,
+      "tactics": [
+        "collection",
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1057",
+      "title": "Process Discovery",
+      "category": "discovery",
+      "number": 1057,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1059",
+      "title": "Command and Scripting Interpreter",
+      "category": "execution",
+      "number": 1059,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1059.001",
+      "title": "PowerShell",
+      "category": "execution",
+      "number": 1059,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1059.002",
+      "title": "AppleScript",
+      "category": "execution",
+      "number": 1059,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1059.003",
+      "title": "Windows Command Shell",
+      "category": "execution",
+      "number": 1059,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1059.004",
+      "title": "Unix Shell",
+      "category": "execution",
+      "number": 1059,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1059.005",
+      "title": "Visual Basic",
+      "category": "execution",
+      "number": 1059,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1059.006",
+      "title": "Python",
+      "category": "execution",
+      "number": 1059,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1059.007",
+      "title": "JavaScript",
+      "category": "execution",
+      "number": 1059,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1059.008",
+      "title": "Network Device CLI",
+      "category": "execution",
+      "number": 1059,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1059.009",
+      "title": "Cloud API",
+      "category": "execution",
+      "number": 1059,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1059.010",
+      "title": "AutoHotKey & AutoIT",
+      "category": "execution",
+      "number": 1059,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1059.011",
+      "title": "Lua",
+      "category": "execution",
+      "number": 1059,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1059.012",
+      "title": "Hypervisor CLI",
+      "category": "execution",
+      "number": 1059,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1059.013",
+      "title": "Container CLI/API",
+      "category": "execution",
+      "number": 1059,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1068",
+      "title": "Exploitation for Privilege Escalation",
+      "category": "privilege-escalation",
+      "number": 1068,
+      "tactics": [
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1069",
+      "title": "Permission Groups Discovery",
+      "category": "discovery",
+      "number": 1069,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1069.001",
+      "title": "Local Groups",
+      "category": "discovery",
+      "number": 1069,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1069.002",
+      "title": "Domain Groups",
+      "category": "discovery",
+      "number": 1069,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1069.003",
+      "title": "Cloud Groups",
+      "category": "discovery",
+      "number": 1069,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1070",
+      "title": "Indicator Removal",
+      "category": "stealth",
+      "number": 1070,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1070.003",
+      "title": "Clear Command History",
+      "category": "stealth",
+      "number": 1070,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1070.004",
+      "title": "File Deletion",
+      "category": "stealth",
+      "number": 1070,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1070.005",
+      "title": "Network Share Connection Removal",
+      "category": "stealth",
+      "number": 1070,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1070.006",
+      "title": "Timestomp",
+      "category": "stealth",
+      "number": 1070,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1070.007",
+      "title": "Clear Network Connection History and Configurations",
+      "category": "stealth",
+      "number": 1070,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1070.008",
+      "title": "Clear Mailbox Data",
+      "category": "stealth",
+      "number": 1070,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1070.009",
+      "title": "Clear Persistence",
+      "category": "stealth",
+      "number": 1070,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1070.010",
+      "title": "Relocate Malware",
+      "category": "stealth",
+      "number": 1070,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1071",
+      "title": "Application Layer Protocol",
+      "category": "command-and-control",
+      "number": 1071,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1071.001",
+      "title": "Web Protocols",
+      "category": "command-and-control",
+      "number": 1071,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1071.002",
+      "title": "File Transfer Protocols",
+      "category": "command-and-control",
+      "number": 1071,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1071.003",
+      "title": "Mail Protocols",
+      "category": "command-and-control",
+      "number": 1071,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1071.004",
+      "title": "DNS",
+      "category": "command-and-control",
+      "number": 1071,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1071.005",
+      "title": "Publish/Subscribe Protocols",
+      "category": "command-and-control",
+      "number": 1071,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1072",
+      "title": "Software Deployment Tools",
+      "category": "execution",
+      "number": 1072,
+      "tactics": [
+        "execution",
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1074",
+      "title": "Data Staged",
+      "category": "collection",
+      "number": 1074,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1074.001",
+      "title": "Local Data Staging",
+      "category": "collection",
+      "number": 1074,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1074.002",
+      "title": "Remote Data Staging",
+      "category": "collection",
+      "number": 1074,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1078",
+      "title": "Valid Accounts",
+      "category": "stealth",
+      "number": 1078,
+      "tactics": [
+        "stealth",
+        "persistence",
+        "privilege-escalation",
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1078.001",
+      "title": "Default Accounts",
+      "category": "stealth",
+      "number": 1078,
+      "tactics": [
+        "stealth",
+        "persistence",
+        "privilege-escalation",
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1078.002",
+      "title": "Domain Accounts",
+      "category": "stealth",
+      "number": 1078,
+      "tactics": [
+        "stealth",
+        "persistence",
+        "privilege-escalation",
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1078.003",
+      "title": "Local Accounts",
+      "category": "stealth",
+      "number": 1078,
+      "tactics": [
+        "stealth",
+        "persistence",
+        "privilege-escalation",
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1078.004",
+      "title": "Cloud Accounts",
+      "category": "stealth",
+      "number": 1078,
+      "tactics": [
+        "stealth",
+        "persistence",
+        "privilege-escalation",
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1080",
+      "title": "Taint Shared Content",
+      "category": "lateral-movement",
+      "number": 1080,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1082",
+      "title": "System Information Discovery",
+      "category": "discovery",
+      "number": 1082,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1083",
+      "title": "File and Directory Discovery",
+      "category": "discovery",
+      "number": 1083,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1087",
+      "title": "Account Discovery",
+      "category": "discovery",
+      "number": 1087,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1087.001",
+      "title": "Local Account",
+      "category": "discovery",
+      "number": 1087,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1087.002",
+      "title": "Domain Account",
+      "category": "discovery",
+      "number": 1087,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1087.003",
+      "title": "Email Account",
+      "category": "discovery",
+      "number": 1087,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1087.004",
+      "title": "Cloud Account",
+      "category": "discovery",
+      "number": 1087,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1090",
+      "title": "Proxy",
+      "category": "command-and-control",
+      "number": 1090,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1090.001",
+      "title": "Internal Proxy",
+      "category": "command-and-control",
+      "number": 1090,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1090.002",
+      "title": "External Proxy",
+      "category": "command-and-control",
+      "number": 1090,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1090.003",
+      "title": "Multi-hop Proxy",
+      "category": "command-and-control",
+      "number": 1090,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1090.004",
+      "title": "Domain Fronting",
+      "category": "command-and-control",
+      "number": 1090,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1091",
+      "title": "Replication Through Removable Media",
+      "category": "lateral-movement",
+      "number": 1091,
+      "tactics": [
+        "lateral-movement",
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1092",
+      "title": "Communication Through Removable Media",
+      "category": "command-and-control",
+      "number": 1092,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1095",
+      "title": "Non-Application Layer Protocol",
+      "category": "command-and-control",
+      "number": 1095,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1098",
+      "title": "Account Manipulation",
+      "category": "persistence",
+      "number": 1098,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1098.001",
+      "title": "Additional Cloud Credentials",
+      "category": "persistence",
+      "number": 1098,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1098.002",
+      "title": "Additional Email Delegate Permissions",
+      "category": "persistence",
+      "number": 1098,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1098.003",
+      "title": "Additional Cloud Roles",
+      "category": "persistence",
+      "number": 1098,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1098.004",
+      "title": "SSH Authorized Keys",
+      "category": "persistence",
+      "number": 1098,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1098.005",
+      "title": "Device Registration",
+      "category": "persistence",
+      "number": 1098,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1098.006",
+      "title": "Additional Container Cluster Roles",
+      "category": "persistence",
+      "number": 1098,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1098.007",
+      "title": "Additional Local or Domain Groups",
+      "category": "persistence",
+      "number": 1098,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1102",
+      "title": "Web Service",
+      "category": "command-and-control",
+      "number": 1102,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1102.001",
+      "title": "Dead Drop Resolver",
+      "category": "command-and-control",
+      "number": 1102,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1102.002",
+      "title": "Bidirectional Communication",
+      "category": "command-and-control",
+      "number": 1102,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1102.003",
+      "title": "One-Way Communication",
+      "category": "command-and-control",
+      "number": 1102,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1104",
+      "title": "Multi-Stage Channels",
+      "category": "command-and-control",
+      "number": 1104,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1105",
+      "title": "Ingress Tool Transfer",
+      "category": "command-and-control",
+      "number": 1105,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1106",
+      "title": "Native API",
+      "category": "execution",
+      "number": 1106,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1110",
+      "title": "Brute Force",
+      "category": "credential-access",
+      "number": 1110,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1110.001",
+      "title": "Password Guessing",
+      "category": "credential-access",
+      "number": 1110,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1110.002",
+      "title": "Password Cracking",
+      "category": "credential-access",
+      "number": 1110,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1110.003",
+      "title": "Password Spraying",
+      "category": "credential-access",
+      "number": 1110,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1110.004",
+      "title": "Credential Stuffing",
+      "category": "credential-access",
+      "number": 1110,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1111",
+      "title": "Multi-Factor Authentication Interception",
+      "category": "credential-access",
+      "number": 1111,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1112",
+      "title": "Modify Registry",
+      "category": "defense-impairment",
+      "number": 1112,
+      "tactics": [
+        "defense-impairment",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1113",
+      "title": "Screen Capture",
+      "category": "collection",
+      "number": 1113,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1114",
+      "title": "Email Collection",
+      "category": "collection",
+      "number": 1114,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1114.001",
+      "title": "Local Email Collection",
+      "category": "collection",
+      "number": 1114,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1114.002",
+      "title": "Remote Email Collection",
+      "category": "collection",
+      "number": 1114,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1114.003",
+      "title": "Email Forwarding Rule",
+      "category": "collection",
+      "number": 1114,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1115",
+      "title": "Clipboard Data",
+      "category": "collection",
+      "number": 1115,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1119",
+      "title": "Automated Collection",
+      "category": "collection",
+      "number": 1119,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1120",
+      "title": "Peripheral Device Discovery",
+      "category": "discovery",
+      "number": 1120,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1123",
+      "title": "Audio Capture",
+      "category": "collection",
+      "number": 1123,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1124",
+      "title": "System Time Discovery",
+      "category": "discovery",
+      "number": 1124,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1125",
+      "title": "Video Capture",
+      "category": "collection",
+      "number": 1125,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1127",
+      "title": "Trusted Developer Utilities Proxy Execution",
+      "category": "stealth",
+      "number": 1127,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1127.001",
+      "title": "MSBuild",
+      "category": "stealth",
+      "number": 1127,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1127.002",
+      "title": "ClickOnce",
+      "category": "stealth",
+      "number": 1127,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1127.003",
+      "title": "JamPlus",
+      "category": "stealth",
+      "number": 1127,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1129",
+      "title": "Shared Modules",
+      "category": "execution",
+      "number": 1129,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1132",
+      "title": "Data Encoding",
+      "category": "command-and-control",
+      "number": 1132,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1132.001",
+      "title": "Standard Encoding",
+      "category": "command-and-control",
+      "number": 1132,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1132.002",
+      "title": "Non-Standard Encoding",
+      "category": "command-and-control",
+      "number": 1132,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1133",
+      "title": "External Remote Services",
+      "category": "persistence",
+      "number": 1133,
+      "tactics": [
+        "persistence",
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1134",
+      "title": "Access Token Manipulation",
+      "category": "stealth",
+      "number": 1134,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1134.001",
+      "title": "Token Impersonation/Theft",
+      "category": "stealth",
+      "number": 1134,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1134.002",
+      "title": "Create Process with Token",
+      "category": "stealth",
+      "number": 1134,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1134.003",
+      "title": "Make and Impersonate Token",
+      "category": "stealth",
+      "number": 1134,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1134.004",
+      "title": "Parent PID Spoofing",
+      "category": "stealth",
+      "number": 1134,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1134.005",
+      "title": "SID-History Injection",
+      "category": "stealth",
+      "number": 1134,
+      "tactics": [
+        "stealth",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1135",
+      "title": "Network Share Discovery",
+      "category": "discovery",
+      "number": 1135,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1136",
+      "title": "Create Account",
+      "category": "persistence",
+      "number": 1136,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1136.001",
+      "title": "Local Account",
+      "category": "persistence",
+      "number": 1136,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1136.002",
+      "title": "Domain Account",
+      "category": "persistence",
+      "number": 1136,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1136.003",
+      "title": "Cloud Account",
+      "category": "persistence",
+      "number": 1136,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1137",
+      "title": "Office Application Startup",
+      "category": "persistence",
+      "number": 1137,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1137.001",
+      "title": "Office Template Macros",
+      "category": "persistence",
+      "number": 1137,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1137.002",
+      "title": "Office Test",
+      "category": "persistence",
+      "number": 1137,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1137.003",
+      "title": "Outlook Forms",
+      "category": "persistence",
+      "number": 1137,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1137.004",
+      "title": "Outlook Home Page",
+      "category": "persistence",
+      "number": 1137,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1137.005",
+      "title": "Outlook Rules",
+      "category": "persistence",
+      "number": 1137,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1137.006",
+      "title": "Add-ins",
+      "category": "persistence",
+      "number": 1137,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1140",
+      "title": "Deobfuscate/Decode Files or Information",
+      "category": "stealth",
+      "number": 1140,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1176",
+      "title": "Software Extensions",
+      "category": "persistence",
+      "number": 1176,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1176.001",
+      "title": "Browser Extensions",
+      "category": "persistence",
+      "number": 1176,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1176.002",
+      "title": "IDE Extensions",
+      "category": "persistence",
+      "number": 1176,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1185",
+      "title": "Browser Session Hijacking",
+      "category": "collection",
+      "number": 1185,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1187",
+      "title": "Forced Authentication",
+      "category": "credential-access",
+      "number": 1187,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1189",
+      "title": "Drive-by Compromise",
+      "category": "initial-access",
+      "number": 1189,
+      "tactics": [
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1190",
+      "title": "Exploit Public-Facing Application",
+      "category": "initial-access",
+      "number": 1190,
+      "tactics": [
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1195",
+      "title": "Supply Chain Compromise",
+      "category": "initial-access",
+      "number": 1195,
+      "tactics": [
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1195.001",
+      "title": "Compromise Software Dependencies and Development Tools",
+      "category": "initial-access",
+      "number": 1195,
+      "tactics": [
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1195.002",
+      "title": "Compromise Software Supply Chain",
+      "category": "initial-access",
+      "number": 1195,
+      "tactics": [
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1195.003",
+      "title": "Compromise Hardware Supply Chain",
+      "category": "initial-access",
+      "number": 1195,
+      "tactics": [
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1197",
+      "title": "BITS Jobs",
+      "category": "stealth",
+      "number": 1197,
+      "tactics": [
+        "stealth",
+        "persistence",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1199",
+      "title": "Trusted Relationship",
+      "category": "initial-access",
+      "number": 1199,
+      "tactics": [
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1200",
+      "title": "Hardware Additions",
+      "category": "initial-access",
+      "number": 1200,
+      "tactics": [
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1201",
+      "title": "Password Policy Discovery",
+      "category": "discovery",
+      "number": 1201,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1202",
+      "title": "Indirect Command Execution",
+      "category": "stealth",
+      "number": 1202,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1203",
+      "title": "Exploitation for Client Execution",
+      "category": "execution",
+      "number": 1203,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1204",
+      "title": "User Execution",
+      "category": "execution",
+      "number": 1204,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1204.001",
+      "title": "Malicious Link",
+      "category": "execution",
+      "number": 1204,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1204.002",
+      "title": "Malicious File",
+      "category": "execution",
+      "number": 1204,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1204.003",
+      "title": "Malicious Image",
+      "category": "execution",
+      "number": 1204,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1204.004",
+      "title": "Malicious Copy and Paste",
+      "category": "execution",
+      "number": 1204,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1204.005",
+      "title": "Malicious Library",
+      "category": "execution",
+      "number": 1204,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1205",
+      "title": "Traffic Signaling",
+      "category": "stealth",
+      "number": 1205,
+      "tactics": [
+        "stealth",
+        "persistence",
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1205.001",
+      "title": "Port Knocking",
+      "category": "stealth",
+      "number": 1205,
+      "tactics": [
+        "stealth",
+        "persistence",
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1205.002",
+      "title": "Socket Filters",
+      "category": "stealth",
+      "number": 1205,
+      "tactics": [
+        "stealth",
+        "persistence",
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1207",
+      "title": "Rogue Domain Controller",
+      "category": "defense-impairment",
+      "number": 1207,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1210",
+      "title": "Exploitation of Remote Services",
+      "category": "lateral-movement",
+      "number": 1210,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1211",
+      "title": "Exploitation for Stealth",
+      "category": "stealth",
+      "number": 1211,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1212",
+      "title": "Exploitation for Credential Access",
+      "category": "credential-access",
+      "number": 1212,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1213",
+      "title": "Data from Information Repositories",
+      "category": "collection",
+      "number": 1213,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1213.001",
+      "title": "Confluence",
+      "category": "collection",
+      "number": 1213,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1213.002",
+      "title": "Sharepoint",
+      "category": "collection",
+      "number": 1213,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1213.003",
+      "title": "Code Repositories",
+      "category": "collection",
+      "number": 1213,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1213.004",
+      "title": "Customer Relationship Management Software",
+      "category": "collection",
+      "number": 1213,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1213.005",
+      "title": "Messaging Applications",
+      "category": "collection",
+      "number": 1213,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1213.006",
+      "title": "Databases",
+      "category": "collection",
+      "number": 1213,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1216",
+      "title": "System Script Proxy Execution",
+      "category": "stealth",
+      "number": 1216,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1216.001",
+      "title": "PubPrn",
+      "category": "stealth",
+      "number": 1216,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1216.002",
+      "title": "SyncAppvPublishingServer",
+      "category": "stealth",
+      "number": 1216,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1217",
+      "title": "Browser Information Discovery",
+      "category": "discovery",
+      "number": 1217,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1218",
+      "title": "System Binary Proxy Execution",
+      "category": "stealth",
+      "number": 1218,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1218.001",
+      "title": "Compiled HTML File",
+      "category": "stealth",
+      "number": 1218,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1218.002",
+      "title": "Control Panel",
+      "category": "stealth",
+      "number": 1218,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1218.003",
+      "title": "CMSTP",
+      "category": "stealth",
+      "number": 1218,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1218.004",
+      "title": "InstallUtil",
+      "category": "stealth",
+      "number": 1218,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1218.005",
+      "title": "Mshta",
+      "category": "stealth",
+      "number": 1218,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1218.007",
+      "title": "Msiexec",
+      "category": "stealth",
+      "number": 1218,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1218.008",
+      "title": "Odbcconf",
+      "category": "stealth",
+      "number": 1218,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1218.009",
+      "title": "Regsvcs/Regasm",
+      "category": "stealth",
+      "number": 1218,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1218.010",
+      "title": "Regsvr32",
+      "category": "stealth",
+      "number": 1218,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1218.011",
+      "title": "Rundll32",
+      "category": "stealth",
+      "number": 1218,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1218.012",
+      "title": "Verclsid",
+      "category": "stealth",
+      "number": 1218,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1218.013",
+      "title": "Mavinject",
+      "category": "stealth",
+      "number": 1218,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1218.014",
+      "title": "MMC",
+      "category": "stealth",
+      "number": 1218,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1218.015",
+      "title": "Electron Applications",
+      "category": "stealth",
+      "number": 1218,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1219",
+      "title": "Remote Access Tools",
+      "category": "command-and-control",
+      "number": 1219,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1219.001",
+      "title": "IDE Tunneling",
+      "category": "command-and-control",
+      "number": 1219,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1219.002",
+      "title": "Remote Desktop Software",
+      "category": "command-and-control",
+      "number": 1219,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1219.003",
+      "title": "Remote Access Hardware",
+      "category": "command-and-control",
+      "number": 1219,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1220",
+      "title": "XSL Script Processing",
+      "category": "stealth",
+      "number": 1220,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1221",
+      "title": "Template Injection",
+      "category": "stealth",
+      "number": 1221,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1222",
+      "title": "File and Directory Permissions Modification",
+      "category": "defense-impairment",
+      "number": 1222,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1222.001",
+      "title": "Windows Permissions",
+      "category": "defense-impairment",
+      "number": 1222,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1222.002",
+      "title": "Linux and Mac Permissions",
+      "category": "defense-impairment",
+      "number": 1222,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1480",
+      "title": "Execution Guardrails",
+      "category": "stealth",
+      "number": 1480,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1480.001",
+      "title": "Environmental Keying",
+      "category": "stealth",
+      "number": 1480,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1480.002",
+      "title": "Mutual Exclusion",
+      "category": "stealth",
+      "number": 1480,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1482",
+      "title": "Domain Trust Discovery",
+      "category": "discovery",
+      "number": 1482,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1484",
+      "title": "Domain or Tenant Policy Modification",
+      "category": "defense-impairment",
+      "number": 1484,
+      "tactics": [
+        "defense-impairment",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1484.001",
+      "title": "Group Policy Modification",
+      "category": "defense-impairment",
+      "number": 1484,
+      "tactics": [
+        "defense-impairment",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1484.002",
+      "title": "Trust Modification",
+      "category": "defense-impairment",
+      "number": 1484,
+      "tactics": [
+        "defense-impairment",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1485",
+      "title": "Data Destruction",
+      "category": "impact",
+      "number": 1485,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1485.001",
+      "title": "Lifecycle-Triggered Deletion",
+      "category": "impact",
+      "number": 1485,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1486",
+      "title": "Data Encrypted for Impact",
+      "category": "impact",
+      "number": 1486,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1489",
+      "title": "Service Stop",
+      "category": "impact",
+      "number": 1489,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1490",
+      "title": "Inhibit System Recovery",
+      "category": "impact",
+      "number": 1490,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1491",
+      "title": "Defacement",
+      "category": "impact",
+      "number": 1491,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1491.001",
+      "title": "Internal Defacement",
+      "category": "impact",
+      "number": 1491,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1491.002",
+      "title": "External Defacement",
+      "category": "impact",
+      "number": 1491,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1495",
+      "title": "Firmware Corruption",
+      "category": "impact",
+      "number": 1495,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1496",
+      "title": "Resource Hijacking",
+      "category": "impact",
+      "number": 1496,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1496.001",
+      "title": "Compute Hijacking",
+      "category": "impact",
+      "number": 1496,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1496.002",
+      "title": "Bandwidth Hijacking",
+      "category": "impact",
+      "number": 1496,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1496.003",
+      "title": "SMS Pumping",
+      "category": "impact",
+      "number": 1496,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1496.004",
+      "title": "Cloud Service Hijacking",
+      "category": "impact",
+      "number": 1496,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1497",
+      "title": "Virtualization/Sandbox Evasion",
+      "category": "stealth",
+      "number": 1497,
+      "tactics": [
+        "stealth",
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1497.001",
+      "title": "System Checks",
+      "category": "stealth",
+      "number": 1497,
+      "tactics": [
+        "stealth",
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1497.002",
+      "title": "User Activity Based Checks",
+      "category": "stealth",
+      "number": 1497,
+      "tactics": [
+        "stealth",
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1497.003",
+      "title": "Time Based Checks",
+      "category": "stealth",
+      "number": 1497,
+      "tactics": [
+        "stealth",
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1498",
+      "title": "Network Denial of Service",
+      "category": "impact",
+      "number": 1498,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1498.001",
+      "title": "Direct Network Flood",
+      "category": "impact",
+      "number": 1498,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1498.002",
+      "title": "Reflection Amplification",
+      "category": "impact",
+      "number": 1498,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1499",
+      "title": "Endpoint Denial of Service",
+      "category": "impact",
+      "number": 1499,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1499.001",
+      "title": "OS Exhaustion Flood",
+      "category": "impact",
+      "number": 1499,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1499.002",
+      "title": "Service Exhaustion Flood",
+      "category": "impact",
+      "number": 1499,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1499.003",
+      "title": "Application Exhaustion Flood",
+      "category": "impact",
+      "number": 1499,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1499.004",
+      "title": "Application or System Exploitation",
+      "category": "impact",
+      "number": 1499,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1505",
+      "title": "Server Software Component",
+      "category": "persistence",
+      "number": 1505,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1505.001",
+      "title": "SQL Stored Procedures",
+      "category": "persistence",
+      "number": 1505,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1505.002",
+      "title": "Transport Agent",
+      "category": "persistence",
+      "number": 1505,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1505.003",
+      "title": "Web Shell",
+      "category": "persistence",
+      "number": 1505,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1505.004",
+      "title": "IIS Components",
+      "category": "persistence",
+      "number": 1505,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1505.005",
+      "title": "Terminal Services DLL",
+      "category": "persistence",
+      "number": 1505,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1505.006",
+      "title": "vSphere Installation Bundles",
+      "category": "persistence",
+      "number": 1505,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1518",
+      "title": "Software Discovery",
+      "category": "discovery",
+      "number": 1518,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1518.001",
+      "title": "Security Software Discovery",
+      "category": "discovery",
+      "number": 1518,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1518.002",
+      "title": "Backup Software Discovery",
+      "category": "discovery",
+      "number": 1518,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1525",
+      "title": "Implant Internal Image",
+      "category": "persistence",
+      "number": 1525,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1526",
+      "title": "Cloud Service Discovery",
+      "category": "discovery",
+      "number": 1526,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1528",
+      "title": "Steal Application Access Token",
+      "category": "credential-access",
+      "number": 1528,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1529",
+      "title": "System Shutdown/Reboot",
+      "category": "impact",
+      "number": 1529,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1530",
+      "title": "Data from Cloud Storage",
+      "category": "collection",
+      "number": 1530,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1531",
+      "title": "Account Access Removal",
+      "category": "impact",
+      "number": 1531,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1534",
+      "title": "Internal Spearphishing",
+      "category": "lateral-movement",
+      "number": 1534,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1535",
+      "title": "Unused/Unsupported Cloud Regions",
+      "category": "stealth",
+      "number": 1535,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1537",
+      "title": "Transfer Data to Cloud Account",
+      "category": "exfiltration",
+      "number": 1537,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1538",
+      "title": "Cloud Service Dashboard",
+      "category": "discovery",
+      "number": 1538,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1539",
+      "title": "Steal Web Session Cookie",
+      "category": "credential-access",
+      "number": 1539,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1542",
+      "title": "Pre-OS Boot",
+      "category": "stealth",
+      "number": 1542,
+      "tactics": [
+        "stealth",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1542.001",
+      "title": "System Firmware",
+      "category": "stealth",
+      "number": 1542,
+      "tactics": [
+        "stealth",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1542.002",
+      "title": "Component Firmware",
+      "category": "stealth",
+      "number": 1542,
+      "tactics": [
+        "stealth",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1542.003",
+      "title": "Bootkit",
+      "category": "stealth",
+      "number": 1542,
+      "tactics": [
+        "stealth",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1542.004",
+      "title": "ROMMONkit",
+      "category": "stealth",
+      "number": 1542,
+      "tactics": [
+        "stealth",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1542.005",
+      "title": "TFTP Boot",
+      "category": "stealth",
+      "number": 1542,
+      "tactics": [
+        "stealth",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1543",
+      "title": "Create or Modify System Process",
+      "category": "persistence",
+      "number": 1543,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1543.001",
+      "title": "Launch Agent",
+      "category": "persistence",
+      "number": 1543,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1543.002",
+      "title": "Systemd Service",
+      "category": "persistence",
+      "number": 1543,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1543.003",
+      "title": "Windows Service",
+      "category": "persistence",
+      "number": 1543,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1543.004",
+      "title": "Launch Daemon",
+      "category": "persistence",
+      "number": 1543,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1543.005",
+      "title": "Container Service",
+      "category": "persistence",
+      "number": 1543,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546",
+      "title": "Event Triggered Execution",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.001",
+      "title": "Change Default File Association",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.002",
+      "title": "Screensaver",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.003",
+      "title": "Windows Management Instrumentation Event Subscription",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.004",
+      "title": "Unix Shell Configuration Modification",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.005",
+      "title": "Trap",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.006",
+      "title": "LC_LOAD_DYLIB Addition",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.007",
+      "title": "Netsh Helper DLL",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.008",
+      "title": "Accessibility Features",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.009",
+      "title": "AppCert DLLs",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.010",
+      "title": "AppInit DLLs",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.011",
+      "title": "Application Shimming",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.012",
+      "title": "Image File Execution Options Injection",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.013",
+      "title": "PowerShell Profile",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.014",
+      "title": "Emond",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.015",
+      "title": "Component Object Model Hijacking",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.016",
+      "title": "Installer Packages",
+      "category": "privilege-escalation",
+      "number": 1546,
+      "tactics": [
+        "privilege-escalation",
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.017",
+      "title": "Udev Rules",
+      "category": "persistence",
+      "number": 1546,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1546.018",
+      "title": "Python Startup Hooks",
+      "category": "persistence",
+      "number": 1546,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1547",
+      "title": "Boot or Logon Autostart Execution",
+      "category": "persistence",
+      "number": 1547,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1547.001",
+      "title": "Registry Run Keys / Startup Folder",
+      "category": "persistence",
+      "number": 1547,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1547.002",
+      "title": "Authentication Package",
+      "category": "persistence",
+      "number": 1547,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1547.003",
+      "title": "Time Providers",
+      "category": "persistence",
+      "number": 1547,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1547.004",
+      "title": "Winlogon Helper DLL",
+      "category": "persistence",
+      "number": 1547,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1547.005",
+      "title": "Security Support Provider",
+      "category": "persistence",
+      "number": 1547,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1547.006",
+      "title": "Kernel Modules and Extensions",
+      "category": "persistence",
+      "number": 1547,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1547.007",
+      "title": "Re-opened Applications",
+      "category": "persistence",
+      "number": 1547,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1547.008",
+      "title": "LSASS Driver",
+      "category": "persistence",
+      "number": 1547,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1547.009",
+      "title": "Shortcut Modification",
+      "category": "persistence",
+      "number": 1547,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1547.010",
+      "title": "Port Monitors",
+      "category": "persistence",
+      "number": 1547,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1547.012",
+      "title": "Print Processors",
+      "category": "persistence",
+      "number": 1547,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1547.013",
+      "title": "XDG Autostart Entries",
+      "category": "persistence",
+      "number": 1547,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1547.014",
+      "title": "Active Setup",
+      "category": "persistence",
+      "number": 1547,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1547.015",
+      "title": "Login Items",
+      "category": "persistence",
+      "number": 1547,
+      "tactics": [
+        "persistence",
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1548",
+      "title": "Abuse Elevation Control Mechanism",
+      "category": "privilege-escalation",
+      "number": 1548,
+      "tactics": [
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1548.001",
+      "title": "Setuid and Setgid",
+      "category": "privilege-escalation",
+      "number": 1548,
+      "tactics": [
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1548.002",
+      "title": "Bypass User Account Control",
+      "category": "privilege-escalation",
+      "number": 1548,
+      "tactics": [
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1548.003",
+      "title": "Sudo and Sudo Caching",
+      "category": "privilege-escalation",
+      "number": 1548,
+      "tactics": [
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1548.004",
+      "title": "Elevated Execution with Prompt",
+      "category": "privilege-escalation",
+      "number": 1548,
+      "tactics": [
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1548.005",
+      "title": "Temporary Elevated Cloud Access",
+      "category": "privilege-escalation",
+      "number": 1548,
+      "tactics": [
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1548.006",
+      "title": "TCC Manipulation",
+      "category": "privilege-escalation",
+      "number": 1548,
+      "tactics": [
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1550",
+      "title": "Use Alternate Authentication Material",
+      "category": "lateral-movement",
+      "number": 1550,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1550.001",
+      "title": "Application Access Token",
+      "category": "lateral-movement",
+      "number": 1550,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1550.002",
+      "title": "Pass the Hash",
+      "category": "lateral-movement",
+      "number": 1550,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1550.003",
+      "title": "Pass the Ticket",
+      "category": "lateral-movement",
+      "number": 1550,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1550.004",
+      "title": "Web Session Cookie",
+      "category": "lateral-movement",
+      "number": 1550,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1552",
+      "title": "Unsecured Credentials",
+      "category": "credential-access",
+      "number": 1552,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1552.001",
+      "title": "Credentials In Files",
+      "category": "credential-access",
+      "number": 1552,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1552.002",
+      "title": "Credentials in Registry",
+      "category": "credential-access",
+      "number": 1552,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1552.003",
+      "title": "Shell History",
+      "category": "credential-access",
+      "number": 1552,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1552.004",
+      "title": "Private Keys",
+      "category": "credential-access",
+      "number": 1552,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1552.005",
+      "title": "Cloud Instance Metadata API",
+      "category": "credential-access",
+      "number": 1552,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1552.006",
+      "title": "Group Policy Preferences",
+      "category": "credential-access",
+      "number": 1552,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1552.007",
+      "title": "Container API",
+      "category": "credential-access",
+      "number": 1552,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1552.008",
+      "title": "Chat Messages",
+      "category": "credential-access",
+      "number": 1552,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1553",
+      "title": "Subvert Trust Controls",
+      "category": "defense-impairment",
+      "number": 1553,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1553.001",
+      "title": "Gatekeeper Bypass",
+      "category": "defense-impairment",
+      "number": 1553,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1553.002",
+      "title": "Code Signing",
+      "category": "defense-impairment",
+      "number": 1553,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1553.003",
+      "title": "SIP and Trust Provider Hijacking",
+      "category": "defense-impairment",
+      "number": 1553,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1553.004",
+      "title": "Install Root Certificate",
+      "category": "defense-impairment",
+      "number": 1553,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1553.005",
+      "title": "Mark-of-the-Web Bypass",
+      "category": "defense-impairment",
+      "number": 1553,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1553.006",
+      "title": "Code Signing Policy Modification",
+      "category": "defense-impairment",
+      "number": 1553,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1554",
+      "title": "Compromise Host Software Binary",
+      "category": "persistence",
+      "number": 1554,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1555",
+      "title": "Credentials from Password Stores",
+      "category": "credential-access",
+      "number": 1555,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1555.001",
+      "title": "Keychain",
+      "category": "credential-access",
+      "number": 1555,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1555.002",
+      "title": "Securityd Memory",
+      "category": "credential-access",
+      "number": 1555,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1555.003",
+      "title": "Credentials from Web Browsers",
+      "category": "credential-access",
+      "number": 1555,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1555.004",
+      "title": "Windows Credential Manager",
+      "category": "credential-access",
+      "number": 1555,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1555.005",
+      "title": "Password Managers",
+      "category": "credential-access",
+      "number": 1555,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1555.006",
+      "title": "Cloud Secrets Management Stores",
+      "category": "credential-access",
+      "number": 1555,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1556",
+      "title": "Modify Authentication Process",
+      "category": "defense-impairment",
+      "number": 1556,
+      "tactics": [
+        "defense-impairment",
+        "persistence",
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1556.001",
+      "title": "Domain Controller Authentication",
+      "category": "defense-impairment",
+      "number": 1556,
+      "tactics": [
+        "defense-impairment",
+        "persistence",
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1556.002",
+      "title": "Password Filter DLL",
+      "category": "defense-impairment",
+      "number": 1556,
+      "tactics": [
+        "defense-impairment",
+        "persistence",
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1556.003",
+      "title": "Pluggable Authentication Modules",
+      "category": "defense-impairment",
+      "number": 1556,
+      "tactics": [
+        "defense-impairment",
+        "persistence",
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1556.004",
+      "title": "Network Device Authentication",
+      "category": "defense-impairment",
+      "number": 1556,
+      "tactics": [
+        "defense-impairment",
+        "persistence",
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1556.005",
+      "title": "Reversible Encryption",
+      "category": "defense-impairment",
+      "number": 1556,
+      "tactics": [
+        "defense-impairment",
+        "persistence",
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1556.006",
+      "title": "Multi-Factor Authentication",
+      "category": "defense-impairment",
+      "number": 1556,
+      "tactics": [
+        "defense-impairment",
+        "persistence",
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1556.007",
+      "title": "Hybrid Identity",
+      "category": "defense-impairment",
+      "number": 1556,
+      "tactics": [
+        "defense-impairment",
+        "persistence",
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1556.008",
+      "title": "Network Provider DLL",
+      "category": "defense-impairment",
+      "number": 1556,
+      "tactics": [
+        "defense-impairment",
+        "persistence",
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1556.009",
+      "title": "Conditional Access Policies",
+      "category": "defense-impairment",
+      "number": 1556,
+      "tactics": [
+        "defense-impairment",
+        "persistence",
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1557",
+      "title": "Adversary-in-the-Middle",
+      "category": "credential-access",
+      "number": 1557,
+      "tactics": [
+        "credential-access",
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1557.001",
+      "title": "Name Resolution Poisoning and SMB Relay",
+      "category": "credential-access",
+      "number": 1557,
+      "tactics": [
+        "credential-access",
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1557.002",
+      "title": "ARP Cache Poisoning",
+      "category": "credential-access",
+      "number": 1557,
+      "tactics": [
+        "credential-access",
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1557.003",
+      "title": "DHCP Spoofing",
+      "category": "credential-access",
+      "number": 1557,
+      "tactics": [
+        "credential-access",
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1557.004",
+      "title": "Evil Twin",
+      "category": "credential-access",
+      "number": 1557,
+      "tactics": [
+        "credential-access",
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1558",
+      "title": "Steal or Forge Kerberos Tickets",
+      "category": "credential-access",
+      "number": 1558,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1558.001",
+      "title": "Golden Ticket",
+      "category": "credential-access",
+      "number": 1558,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1558.002",
+      "title": "Silver Ticket",
+      "category": "credential-access",
+      "number": 1558,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1558.003",
+      "title": "Kerberoasting",
+      "category": "credential-access",
+      "number": 1558,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1558.004",
+      "title": "AS-REP Roasting",
+      "category": "credential-access",
+      "number": 1558,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1558.005",
+      "title": "Ccache Files",
+      "category": "credential-access",
+      "number": 1558,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1559",
+      "title": "Inter-Process Communication",
+      "category": "execution",
+      "number": 1559,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1559.001",
+      "title": "Component Object Model",
+      "category": "execution",
+      "number": 1559,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1559.002",
+      "title": "Dynamic Data Exchange",
+      "category": "execution",
+      "number": 1559,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1559.003",
+      "title": "XPC Services",
+      "category": "execution",
+      "number": 1559,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1560",
+      "title": "Archive Collected Data",
+      "category": "collection",
+      "number": 1560,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1560.001",
+      "title": "Archive via Utility",
+      "category": "collection",
+      "number": 1560,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1560.002",
+      "title": "Archive via Library",
+      "category": "collection",
+      "number": 1560,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1560.003",
+      "title": "Archive via Custom Method",
+      "category": "collection",
+      "number": 1560,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1561",
+      "title": "Disk Wipe",
+      "category": "impact",
+      "number": 1561,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1561.001",
+      "title": "Disk Content Wipe",
+      "category": "impact",
+      "number": 1561,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1561.002",
+      "title": "Disk Structure Wipe",
+      "category": "impact",
+      "number": 1561,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1563",
+      "title": "Remote Service Session Hijacking",
+      "category": "lateral-movement",
+      "number": 1563,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1563.001",
+      "title": "SSH Hijacking",
+      "category": "lateral-movement",
+      "number": 1563,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1563.002",
+      "title": "RDP Hijacking",
+      "category": "lateral-movement",
+      "number": 1563,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1564",
+      "title": "Hide Artifacts",
+      "category": "stealth",
+      "number": 1564,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1564.001",
+      "title": "Hidden Files and Directories",
+      "category": "stealth",
+      "number": 1564,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1564.002",
+      "title": "Hidden Users",
+      "category": "stealth",
+      "number": 1564,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1564.003",
+      "title": "Hidden Window",
+      "category": "stealth",
+      "number": 1564,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1564.004",
+      "title": "NTFS File Attributes",
+      "category": "stealth",
+      "number": 1564,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1564.005",
+      "title": "Hidden File System",
+      "category": "stealth",
+      "number": 1564,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1564.006",
+      "title": "Run Virtual Instance",
+      "category": "stealth",
+      "number": 1564,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1564.007",
+      "title": "VBA Stomping",
+      "category": "stealth",
+      "number": 1564,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1564.008",
+      "title": "Email Hiding Rules",
+      "category": "stealth",
+      "number": 1564,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1564.009",
+      "title": "Resource Forking",
+      "category": "stealth",
+      "number": 1564,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1564.010",
+      "title": "Process Argument Spoofing",
+      "category": "stealth",
+      "number": 1564,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1564.011",
+      "title": "Ignore Process Interrupts",
+      "category": "stealth",
+      "number": 1564,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1564.012",
+      "title": "File/Path Exclusions",
+      "category": "stealth",
+      "number": 1564,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1564.013",
+      "title": "Bind Mounts",
+      "category": "stealth",
+      "number": 1564,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1564.014",
+      "title": "Extended Attributes",
+      "category": "stealth",
+      "number": 1564,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1565",
+      "title": "Data Manipulation",
+      "category": "impact",
+      "number": 1565,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1565.001",
+      "title": "Stored Data Manipulation",
+      "category": "impact",
+      "number": 1565,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1565.002",
+      "title": "Transmitted Data Manipulation",
+      "category": "impact",
+      "number": 1565,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1565.003",
+      "title": "Runtime Data Manipulation",
+      "category": "impact",
+      "number": 1565,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1566",
+      "title": "Phishing",
+      "category": "initial-access",
+      "number": 1566,
+      "tactics": [
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1566.001",
+      "title": "Spearphishing Attachment",
+      "category": "initial-access",
+      "number": 1566,
+      "tactics": [
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1566.002",
+      "title": "Spearphishing Link",
+      "category": "initial-access",
+      "number": 1566,
+      "tactics": [
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1566.003",
+      "title": "Spearphishing via Service",
+      "category": "initial-access",
+      "number": 1566,
+      "tactics": [
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1566.004",
+      "title": "Spearphishing Voice",
+      "category": "initial-access",
+      "number": 1566,
+      "tactics": [
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1567",
+      "title": "Exfiltration Over Web Service",
+      "category": "exfiltration",
+      "number": 1567,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1567.001",
+      "title": "Exfiltration to Code Repository",
+      "category": "exfiltration",
+      "number": 1567,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1567.002",
+      "title": "Exfiltration to Cloud Storage",
+      "category": "exfiltration",
+      "number": 1567,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1567.003",
+      "title": "Exfiltration to Text Storage Sites",
+      "category": "exfiltration",
+      "number": 1567,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1567.004",
+      "title": "Exfiltration Over Webhook",
+      "category": "exfiltration",
+      "number": 1567,
+      "tactics": [
+        "exfiltration"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1568",
+      "title": "Dynamic Resolution",
+      "category": "command-and-control",
+      "number": 1568,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1568.001",
+      "title": "Fast Flux DNS",
+      "category": "command-and-control",
+      "number": 1568,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1568.002",
+      "title": "Domain Generation Algorithms",
+      "category": "command-and-control",
+      "number": 1568,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1568.003",
+      "title": "DNS Calculation",
+      "category": "command-and-control",
+      "number": 1568,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1569",
+      "title": "System Services",
+      "category": "execution",
+      "number": 1569,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1569.001",
+      "title": "Launchctl",
+      "category": "execution",
+      "number": 1569,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1569.002",
+      "title": "Service Execution",
+      "category": "execution",
+      "number": 1569,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1569.003",
+      "title": "Systemctl",
+      "category": "execution",
+      "number": 1569,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1570",
+      "title": "Lateral Tool Transfer",
+      "category": "lateral-movement",
+      "number": 1570,
+      "tactics": [
+        "lateral-movement"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1571",
+      "title": "Non-Standard Port",
+      "category": "command-and-control",
+      "number": 1571,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1572",
+      "title": "Protocol Tunneling",
+      "category": "command-and-control",
+      "number": 1572,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1573",
+      "title": "Encrypted Channel",
+      "category": "command-and-control",
+      "number": 1573,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1573.001",
+      "title": "Symmetric Cryptography",
+      "category": "command-and-control",
+      "number": 1573,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1573.002",
+      "title": "Asymmetric Cryptography",
+      "category": "command-and-control",
+      "number": 1573,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1574",
+      "title": "Hijack Execution Flow",
+      "category": "stealth",
+      "number": 1574,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1574.001",
+      "title": "DLL",
+      "category": "stealth",
+      "number": 1574,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1574.004",
+      "title": "Dylib Hijacking",
+      "category": "stealth",
+      "number": 1574,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1574.005",
+      "title": "Executable Installer File Permissions Weakness",
+      "category": "stealth",
+      "number": 1574,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1574.006",
+      "title": "Dynamic Linker Hijacking",
+      "category": "stealth",
+      "number": 1574,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1574.007",
+      "title": "Path Interception by PATH Environment Variable",
+      "category": "stealth",
+      "number": 1574,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1574.008",
+      "title": "Path Interception by Search Order Hijacking",
+      "category": "stealth",
+      "number": 1574,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1574.009",
+      "title": "Path Interception by Unquoted Path",
+      "category": "stealth",
+      "number": 1574,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1574.010",
+      "title": "Services File Permissions Weakness",
+      "category": "stealth",
+      "number": 1574,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1574.011",
+      "title": "Services Registry Permissions Weakness",
+      "category": "stealth",
+      "number": 1574,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1574.012",
+      "title": "COR_PROFILER",
+      "category": "stealth",
+      "number": 1574,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1574.013",
+      "title": "KernelCallbackTable",
+      "category": "stealth",
+      "number": 1574,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1574.014",
+      "title": "AppDomainManager",
+      "category": "stealth",
+      "number": 1574,
+      "tactics": [
+        "stealth",
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1578",
+      "title": "Modify Cloud Compute Infrastructure",
+      "category": "defense-impairment",
+      "number": 1578,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1578.001",
+      "title": "Create Snapshot",
+      "category": "defense-impairment",
+      "number": 1578,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1578.002",
+      "title": "Create Cloud Instance",
+      "category": "defense-impairment",
+      "number": 1578,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1578.003",
+      "title": "Delete Cloud Instance",
+      "category": "defense-impairment",
+      "number": 1578,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1578.004",
+      "title": "Revert Cloud Instance",
+      "category": "defense-impairment",
+      "number": 1578,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1578.005",
+      "title": "Modify Cloud Compute Configurations",
+      "category": "defense-impairment",
+      "number": 1578,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1580",
+      "title": "Cloud Infrastructure Discovery",
+      "category": "discovery",
+      "number": 1580,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1583",
+      "title": "Acquire Infrastructure",
+      "category": "resource-development",
+      "number": 1583,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1583.001",
+      "title": "Domains",
+      "category": "resource-development",
+      "number": 1583,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1583.002",
+      "title": "DNS Server",
+      "category": "resource-development",
+      "number": 1583,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1583.003",
+      "title": "Virtual Private Server",
+      "category": "resource-development",
+      "number": 1583,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1583.004",
+      "title": "Server",
+      "category": "resource-development",
+      "number": 1583,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1583.005",
+      "title": "Botnet",
+      "category": "resource-development",
+      "number": 1583,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1583.006",
+      "title": "Web Services",
+      "category": "resource-development",
+      "number": 1583,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1583.007",
+      "title": "Serverless",
+      "category": "resource-development",
+      "number": 1583,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1583.008",
+      "title": "Malvertising",
+      "category": "resource-development",
+      "number": 1583,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1584",
+      "title": "Compromise Infrastructure",
+      "category": "resource-development",
+      "number": 1584,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1584.001",
+      "title": "Domains",
+      "category": "resource-development",
+      "number": 1584,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1584.002",
+      "title": "DNS Server",
+      "category": "resource-development",
+      "number": 1584,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1584.003",
+      "title": "Virtual Private Server",
+      "category": "resource-development",
+      "number": 1584,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1584.004",
+      "title": "Server",
+      "category": "resource-development",
+      "number": 1584,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1584.005",
+      "title": "Botnet",
+      "category": "resource-development",
+      "number": 1584,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1584.006",
+      "title": "Web Services",
+      "category": "resource-development",
+      "number": 1584,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1584.007",
+      "title": "Serverless",
+      "category": "resource-development",
+      "number": 1584,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1584.008",
+      "title": "Network Devices",
+      "category": "resource-development",
+      "number": 1584,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1585",
+      "title": "Establish Accounts",
+      "category": "resource-development",
+      "number": 1585,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1585.001",
+      "title": "Social Media Accounts",
+      "category": "resource-development",
+      "number": 1585,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1585.002",
+      "title": "Email Accounts",
+      "category": "resource-development",
+      "number": 1585,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1585.003",
+      "title": "Cloud Accounts",
+      "category": "resource-development",
+      "number": 1585,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1586",
+      "title": "Compromise Accounts",
+      "category": "resource-development",
+      "number": 1586,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1586.001",
+      "title": "Social Media Accounts",
+      "category": "resource-development",
+      "number": 1586,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1586.002",
+      "title": "Email Accounts",
+      "category": "resource-development",
+      "number": 1586,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1586.003",
+      "title": "Cloud Accounts",
+      "category": "resource-development",
+      "number": 1586,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1587",
+      "title": "Develop Capabilities",
+      "category": "resource-development",
+      "number": 1587,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1587.001",
+      "title": "Malware",
+      "category": "resource-development",
+      "number": 1587,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1587.002",
+      "title": "Code Signing Certificates",
+      "category": "resource-development",
+      "number": 1587,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1587.003",
+      "title": "Digital Certificates",
+      "category": "resource-development",
+      "number": 1587,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1587.004",
+      "title": "Exploits",
+      "category": "resource-development",
+      "number": 1587,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1588",
+      "title": "Obtain Capabilities",
+      "category": "resource-development",
+      "number": 1588,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1588.001",
+      "title": "Malware",
+      "category": "resource-development",
+      "number": 1588,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1588.002",
+      "title": "Tool",
+      "category": "resource-development",
+      "number": 1588,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1588.003",
+      "title": "Code Signing Certificates",
+      "category": "resource-development",
+      "number": 1588,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1588.004",
+      "title": "Digital Certificates",
+      "category": "resource-development",
+      "number": 1588,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1588.005",
+      "title": "Exploits",
+      "category": "resource-development",
+      "number": 1588,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1588.006",
+      "title": "Vulnerabilities",
+      "category": "resource-development",
+      "number": 1588,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1588.007",
+      "title": "Artificial Intelligence",
+      "category": "resource-development",
+      "number": 1588,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1589",
+      "title": "Gather Victim Identity Information",
+      "category": "reconnaissance",
+      "number": 1589,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1589.001",
+      "title": "Credentials",
+      "category": "reconnaissance",
+      "number": 1589,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1589.002",
+      "title": "Email Addresses",
+      "category": "reconnaissance",
+      "number": 1589,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1589.003",
+      "title": "Employee Names",
+      "category": "reconnaissance",
+      "number": 1589,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1590",
+      "title": "Gather Victim Network Information",
+      "category": "reconnaissance",
+      "number": 1590,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1590.001",
+      "title": "Domain Properties",
+      "category": "reconnaissance",
+      "number": 1590,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1590.002",
+      "title": "DNS",
+      "category": "reconnaissance",
+      "number": 1590,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1590.003",
+      "title": "Network Trust Dependencies",
+      "category": "reconnaissance",
+      "number": 1590,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1590.004",
+      "title": "Network Topology",
+      "category": "reconnaissance",
+      "number": 1590,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1590.005",
+      "title": "IP Addresses",
+      "category": "reconnaissance",
+      "number": 1590,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1590.006",
+      "title": "Network Security Appliances",
+      "category": "reconnaissance",
+      "number": 1590,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1591",
+      "title": "Gather Victim Org Information",
+      "category": "reconnaissance",
+      "number": 1591,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1591.001",
+      "title": "Determine Physical Locations",
+      "category": "reconnaissance",
+      "number": 1591,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1591.002",
+      "title": "Business Relationships",
+      "category": "reconnaissance",
+      "number": 1591,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1591.003",
+      "title": "Identify Business Tempo",
+      "category": "reconnaissance",
+      "number": 1591,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1591.004",
+      "title": "Identify Roles",
+      "category": "reconnaissance",
+      "number": 1591,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1592",
+      "title": "Gather Victim Host Information",
+      "category": "reconnaissance",
+      "number": 1592,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1592.001",
+      "title": "Hardware",
+      "category": "reconnaissance",
+      "number": 1592,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1592.002",
+      "title": "Software",
+      "category": "reconnaissance",
+      "number": 1592,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1592.003",
+      "title": "Firmware",
+      "category": "reconnaissance",
+      "number": 1592,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1592.004",
+      "title": "Client Configurations",
+      "category": "reconnaissance",
+      "number": 1592,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1593",
+      "title": "Search Open Websites/Domains",
+      "category": "reconnaissance",
+      "number": 1593,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1593.001",
+      "title": "Social Media",
+      "category": "reconnaissance",
+      "number": 1593,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1593.002",
+      "title": "Search Engines",
+      "category": "reconnaissance",
+      "number": 1593,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1593.003",
+      "title": "Code Repositories",
+      "category": "reconnaissance",
+      "number": 1593,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1594",
+      "title": "Search Victim-Owned Websites",
+      "category": "reconnaissance",
+      "number": 1594,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1595",
+      "title": "Active Scanning",
+      "category": "reconnaissance",
+      "number": 1595,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1595.001",
+      "title": "Scanning IP Blocks",
+      "category": "reconnaissance",
+      "number": 1595,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1595.002",
+      "title": "Vulnerability Scanning",
+      "category": "reconnaissance",
+      "number": 1595,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1595.003",
+      "title": "Wordlist Scanning",
+      "category": "reconnaissance",
+      "number": 1595,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1596",
+      "title": "Search Open Technical Databases",
+      "category": "reconnaissance",
+      "number": 1596,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1596.001",
+      "title": "DNS/Passive DNS",
+      "category": "reconnaissance",
+      "number": 1596,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1596.002",
+      "title": "WHOIS",
+      "category": "reconnaissance",
+      "number": 1596,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1596.003",
+      "title": "Digital Certificates",
+      "category": "reconnaissance",
+      "number": 1596,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1596.004",
+      "title": "CDNs",
+      "category": "reconnaissance",
+      "number": 1596,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1596.005",
+      "title": "Scan Databases",
+      "category": "reconnaissance",
+      "number": 1596,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1597",
+      "title": "Search Closed Sources",
+      "category": "reconnaissance",
+      "number": 1597,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1597.001",
+      "title": "Threat Intel Vendors",
+      "category": "reconnaissance",
+      "number": 1597,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1597.002",
+      "title": "Purchase Technical Data",
+      "category": "reconnaissance",
+      "number": 1597,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1598",
+      "title": "Phishing for Information",
+      "category": "reconnaissance",
+      "number": 1598,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1598.001",
+      "title": "Spearphishing Service",
+      "category": "reconnaissance",
+      "number": 1598,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1598.002",
+      "title": "Spearphishing Attachment",
+      "category": "reconnaissance",
+      "number": 1598,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1598.003",
+      "title": "Spearphishing Link",
+      "category": "reconnaissance",
+      "number": 1598,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1598.004",
+      "title": "Spearphishing Voice",
+      "category": "reconnaissance",
+      "number": 1598,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1599",
+      "title": "Network Boundary Bridging",
+      "category": "defense-impairment",
+      "number": 1599,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1599.001",
+      "title": "Network Address Translation Traversal",
+      "category": "defense-impairment",
+      "number": 1599,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1600",
+      "title": "Weaken Encryption",
+      "category": "defense-impairment",
+      "number": 1600,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1600.001",
+      "title": "Reduce Key Space",
+      "category": "defense-impairment",
+      "number": 1600,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1600.002",
+      "title": "Disable Crypto Hardware",
+      "category": "defense-impairment",
+      "number": 1600,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1601",
+      "title": "Modify System Image",
+      "category": "defense-impairment",
+      "number": 1601,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1601.001",
+      "title": "Patch System Image",
+      "category": "defense-impairment",
+      "number": 1601,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1601.002",
+      "title": "Downgrade System Image",
+      "category": "defense-impairment",
+      "number": 1601,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1602",
+      "title": "Data from Configuration Repository",
+      "category": "collection",
+      "number": 1602,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1602.001",
+      "title": "SNMP (MIB Dump)",
+      "category": "collection",
+      "number": 1602,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1602.002",
+      "title": "Network Device Configuration Dump",
+      "category": "collection",
+      "number": 1602,
+      "tactics": [
+        "collection"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1606",
+      "title": "Forge Web Credentials",
+      "category": "credential-access",
+      "number": 1606,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1606.001",
+      "title": "Web Cookies",
+      "category": "credential-access",
+      "number": 1606,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1606.002",
+      "title": "SAML Tokens",
+      "category": "credential-access",
+      "number": 1606,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1608",
+      "title": "Stage Capabilities",
+      "category": "resource-development",
+      "number": 1608,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1608.001",
+      "title": "Upload Malware",
+      "category": "resource-development",
+      "number": 1608,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1608.002",
+      "title": "Upload Tool",
+      "category": "resource-development",
+      "number": 1608,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1608.003",
+      "title": "Install Digital Certificate",
+      "category": "resource-development",
+      "number": 1608,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1608.004",
+      "title": "Drive-by Target",
+      "category": "resource-development",
+      "number": 1608,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1608.005",
+      "title": "Link Target",
+      "category": "resource-development",
+      "number": 1608,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1608.006",
+      "title": "SEO Poisoning",
+      "category": "resource-development",
+      "number": 1608,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1608.007",
+      "title": "AI Result Poisoning",
+      "category": "resource-development",
+      "number": 1608,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1609",
+      "title": "Container Administration Command",
+      "category": "execution",
+      "number": 1609,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1610",
+      "title": "Deploy Container",
+      "category": "execution",
+      "number": 1610,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1611",
+      "title": "Escape to Host",
+      "category": "privilege-escalation",
+      "number": 1611,
+      "tactics": [
+        "privilege-escalation"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1612",
+      "title": "Build Image on Host",
+      "category": "stealth",
+      "number": 1612,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1613",
+      "title": "Container and Resource Discovery",
+      "category": "discovery",
+      "number": 1613,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1614",
+      "title": "System Location Discovery",
+      "category": "discovery",
+      "number": 1614,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1614.001",
+      "title": "System Language Discovery",
+      "category": "discovery",
+      "number": 1614,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1615",
+      "title": "Group Policy Discovery",
+      "category": "discovery",
+      "number": 1615,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1619",
+      "title": "Cloud Storage Object Discovery",
+      "category": "discovery",
+      "number": 1619,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1620",
+      "title": "Reflective Code Loading",
+      "category": "stealth",
+      "number": 1620,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1621",
+      "title": "Multi-Factor Authentication Request Generation",
+      "category": "credential-access",
+      "number": 1621,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1622",
+      "title": "Debugger Evasion",
+      "category": "stealth",
+      "number": 1622,
+      "tactics": [
+        "stealth",
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1647",
+      "title": "Plist File Modification",
+      "category": "defense-impairment",
+      "number": 1647,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1648",
+      "title": "Serverless Execution",
+      "category": "execution",
+      "number": 1648,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1649",
+      "title": "Steal or Forge Authentication Certificates",
+      "category": "credential-access",
+      "number": 1649,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1650",
+      "title": "Acquire Access",
+      "category": "resource-development",
+      "number": 1650,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1651",
+      "title": "Cloud Administration Command",
+      "category": "execution",
+      "number": 1651,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1652",
+      "title": "Device Driver Discovery",
+      "category": "discovery",
+      "number": 1652,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1653",
+      "title": "Power Settings",
+      "category": "persistence",
+      "number": 1653,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1654",
+      "title": "Log Enumeration",
+      "category": "discovery",
+      "number": 1654,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1657",
+      "title": "Financial Theft",
+      "category": "impact",
+      "number": 1657,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1659",
+      "title": "Content Injection",
+      "category": "initial-access",
+      "number": 1659,
+      "tactics": [
+        "initial-access",
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1665",
+      "title": "Hide Infrastructure",
+      "category": "command-and-control",
+      "number": 1665,
+      "tactics": [
+        "command-and-control"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1666",
+      "title": "Modify Cloud Resource Hierarchy",
+      "category": "defense-impairment",
+      "number": 1666,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1667",
+      "title": "Email Bombing",
+      "category": "impact",
+      "number": 1667,
+      "tactics": [
+        "impact"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1668",
+      "title": "Exclusive Control",
+      "category": "persistence",
+      "number": 1668,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1669",
+      "title": "Wi-Fi Networks",
+      "category": "initial-access",
+      "number": 1669,
+      "tactics": [
+        "initial-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1671",
+      "title": "Cloud Application Integration",
+      "category": "persistence",
+      "number": 1671,
+      "tactics": [
+        "persistence"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1673",
+      "title": "Virtual Machine Discovery",
+      "category": "discovery",
+      "number": 1673,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1674",
+      "title": "Input Injection",
+      "category": "execution",
+      "number": 1674,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1675",
+      "title": "ESXi Administration Command",
+      "category": "execution",
+      "number": 1675,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1677",
+      "title": "Poisoned Pipeline Execution",
+      "category": "execution",
+      "number": 1677,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1678",
+      "title": "Delay Execution",
+      "category": "stealth",
+      "number": 1678,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1679",
+      "title": "Selective Exclusion",
+      "category": "stealth",
+      "number": 1679,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1680",
+      "title": "Local Storage Discovery",
+      "category": "discovery",
+      "number": 1680,
+      "tactics": [
+        "discovery"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1681",
+      "title": "Search Threat Vendor Data",
+      "category": "reconnaissance",
+      "number": 1681,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1682",
+      "title": "Query Public AI Services",
+      "category": "reconnaissance",
+      "number": 1682,
+      "tactics": [
+        "reconnaissance"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1683",
+      "title": "Generate Content",
+      "category": "resource-development",
+      "number": 1683,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1683.001",
+      "title": "Written Content",
+      "category": "resource-development",
+      "number": 1683,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1683.002",
+      "title": "Audio-Visual Content",
+      "category": "resource-development",
+      "number": 1683,
+      "tactics": [
+        "resource-development"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1684",
+      "title": "Social Engineering",
+      "category": "stealth",
+      "number": 1684,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1684.001",
+      "title": "Impersonation",
+      "category": "stealth",
+      "number": 1684,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1684.002",
+      "title": "Email Spoofing",
+      "category": "stealth",
+      "number": 1684,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1685",
+      "title": "Disable or Modify Tools",
+      "category": "defense-impairment",
+      "number": 1685,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1685.001",
+      "title": "Disable or Modify Windows Event Log",
+      "category": "defense-impairment",
+      "number": 1685,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1685.002",
+      "title": "Disable or Modify Cloud Log",
+      "category": "defense-impairment",
+      "number": 1685,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1685.003",
+      "title": "Modify or Spoof Tool UI",
+      "category": "defense-impairment",
+      "number": 1685,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1685.004",
+      "title": "Disable or Modify Linux Audit System Log",
+      "category": "defense-impairment",
+      "number": 1685,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1685.005",
+      "title": "Clear Windows Event Logs",
+      "category": "defense-impairment",
+      "number": 1685,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1685.006",
+      "title": "Clear Linux or Mac System Logs",
+      "category": "defense-impairment",
+      "number": 1685,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1685.007",
+      "title": "Impair Autonomous Defenses",
+      "category": "defense-impairment",
+      "number": 1685,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1686",
+      "title": "Disable or Modify System Firewall",
+      "category": "defense-impairment",
+      "number": 1686,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1686.001",
+      "title": "Cloud Firewall",
+      "category": "defense-impairment",
+      "number": 1686,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1686.002",
+      "title": "Network Device Firewall",
+      "category": "defense-impairment",
+      "number": 1686,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1686.003",
+      "title": "Windows Host Firewall",
+      "category": "defense-impairment",
+      "number": 1686,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1687",
+      "title": "Exploitation for Defense Impairment",
+      "category": "defense-impairment",
+      "number": 1687,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1688",
+      "title": "Safe Mode Boot",
+      "category": "defense-impairment",
+      "number": 1688,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1689",
+      "title": "Downgrade Attack",
+      "category": "defense-impairment",
+      "number": 1689,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1690",
+      "title": "Prevent Command History Logging",
+      "category": "defense-impairment",
+      "number": 1690,
+      "tactics": [
+        "defense-impairment"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1696",
+      "title": "Anti-Automation Evasion",
+      "category": "stealth",
+      "number": 1696,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1696.001",
+      "title": "Automate CAPTCHA Completion",
+      "category": "stealth",
+      "number": 1696,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1696.002",
+      "title": "Avoid CAPTCHA",
+      "category": "stealth",
+      "number": 1696,
+      "tactics": [
+        "stealth"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1697",
+      "title": "Steal Application Specific Passwords",
+      "category": "credential-access",
+      "number": 1697,
+      "tactics": [
+        "credential-access"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1698",
+      "title": "Indirect Prompt Injection",
+      "category": "execution",
+      "number": 1698,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1699",
+      "title": "Direct Prompt Injection",
+      "category": "execution",
+      "number": 1699,
+      "tactics": [
+        "execution"
+      ]
+    },
+    {
+      "id": "ATT&CK-T1700",
+      "title": "AI-Enabled Exfiltration",
+      "category": "exfiltration",
+      "number": 1700,
+      "tactics": [
+        "exfiltration"
+      ]
+    }
+  ]
 }

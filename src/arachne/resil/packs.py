@@ -40,7 +40,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Final
 
 from arachne.core.errors import ContentPackError
-from arachne.core.signing import DeploymentSigner, SigningKeyring, canonical_bytes
+from arachne.core.signing import Signer, SigningKeyring, canonical_bytes
 
 __all__ = [
     "PACK_FORMAT",
@@ -198,7 +198,7 @@ def build_pack(
     *,
     name: str,
     version: str,
-    signer: DeploymentSigner | None = None,
+    signer: Signer | None = None,
     notes: str | None = None,
     meta: Mapping[str, Any] | None = None,
     exclude: Iterable[str] = (),
@@ -264,7 +264,7 @@ def write_pack(
     *,
     name: str,
     version: str,
-    signer: DeploymentSigner | None = None,
+    signer: Signer | None = None,
     notes: str | None = None,
     meta: Mapping[str, Any] | None = None,
 ) -> tuple[Path, PackManifest]:
@@ -306,7 +306,7 @@ def _add_bytes(archive: tarfile.TarFile, name: str, data: bytes) -> None:
 def read_pack(
     data: bytes,
     *,
-    signer: DeploymentSigner | None = None,
+    signer: Signer | None = None,
     keyring: SigningKeyring | None = None,
     require_signature: bool = True,
     source: str | None = None,
@@ -404,7 +404,7 @@ def read_pack(
 def read_pack_file(
     path: str | Path,
     *,
-    signer: DeploymentSigner | None = None,
+    signer: Signer | None = None,
     keyring: SigningKeyring | None = None,
     require_signature: bool = True,
 ) -> ContentPack:

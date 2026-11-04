@@ -79,6 +79,22 @@ def test_provenance_is_generated(release: dict) -> None:
     assert "subject-digest" in text
 
 
+def test_the_sbom_is_schema_validated_in_the_release(release: dict) -> None:
+    """REQ-TRUST-011: the shipped tool proves the SBOM passes the CycloneDX schema."""
+    text = _step_text(release["jobs"]["sbom"])
+    assert "--validate" in text, "the generated SBOM is validated before upload"
+    assert "--check sbom.cdx.json" in text, "the written artefact is re-checked"
+
+
+def test_the_slsa_provenance_is_verified_with_published_tooling(release: dict) -> None:
+    """REQ-TRUST-011: the L3 attestation round-trips through cosign verification."""
+    text = _step_text(release["jobs"]["image"])
+    assert "cosign verify-attestation" in text
+    assert "--type slsaprovenance1" in text
+    assert "--certificate-oidc-issuer" in text
+    assert "--certificate-identity-regexp" in text
+
+
 def test_pip_audit_blocks_the_release(release: dict) -> None:
     """REQ-TRUST-003: no continue-on-error anywhere in the release audit job."""
     audit = release["jobs"]["audit"]

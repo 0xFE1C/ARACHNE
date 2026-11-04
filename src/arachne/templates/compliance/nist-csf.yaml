@@ -1,114 +1,466 @@
-# ARACHNE compliance map — NIST Cybersecurity Framework 2.0 (S22, REQ-TRUST-001).
+# GENERATED FILE — do not edit by hand.
 #
-# Same contract as cis.yaml: check ids must exist in the shipped planning catalogue
-# (no dangling ids — `tests/unit/test_compliance_map.py` in the suite fails the build
-# otherwise), control ids are unique, and `total_controls` states the framework's
-# own size (106 subcategories in CSF 2.0) so a framework report can name the gap
-# explicitly instead of implying coverage.
+# `python -m arachne.tools.compliance --write` regenerates it from every check's
+# `compliance=` declaration (REQ-TRUST-009); `--check` fails when this file and the
+# registry disagree, which is what makes 'generated, not maintained' enforceable.
 #
-# CSF 2.0 has six Functions (GV, ID, PR, DE, RS, RC). ARACHNE's checks are evidence
-# about the ID (asset/risk identification) and PR (protect) Functions; the Detect,
-# Respond and Recover Functions describe an operator's capabilities, not a scanner's,
-# and are deliberately unmapped — the report shows them as outside the assessed set.
-
-framework: nist-csf
-name: NIST Cybersecurity Framework 2.0
+# NIST Cybersecurity Framework 2.0 — 106 subcategorys.
+# Assessed: 42 subcategory(s) reached by at least one check (target 40 of 106).
+# Outside the assessed set: 64 subcategory(s), each named below with a
+# reason — an unmapped control is reported, never omitted.
+#
+# Source: NIST CSWP 29, The NIST Cybersecurity Framework (CSF) 2.0, February 26, 2024, Appendix A (CSF Core) - https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf
+# Retrieved: 2026-11-05. Cross-check: All 106 ids compared against an independent community CSV; 105 of 106 statements are textually identical, and GV.OC-04 follows the official PDF. Function counts (GV 31, ID 21, PR 22, DE 11, RS 13, RC 8) sum to 106.
+#
+# A control id is a real control of this edition (validated against the pinned
+# inventory), and every `checks:` entry is a registered check id, so neither direction
+# of the join can be a typo. A check's evidence is *about* a control; it is never proof
+# of conformity.
+framework: "nist-csf"
+name: "NIST Cybersecurity Framework"
 edition: "2.0"
-kind: subcategory
+kind: "subcategory"
 total_controls: 106
-map_version: "1.0"
+map_version: "2.0"
 controls:
-  - id: ID.AM-01
-    title: Inventories of hardware and services are established and maintained
+  - id: "DE.CM-01"
+    title: "Networks and network services are monitored to find potentially adverse events"
+    checks:
+      - m1.service-exposure-drift
+      - m6.sigma-hunt-rules
+      - m6.template-scan
+  - id: "ID.AM-01"
+    title: "Inventories of hardware managed by the organization are maintained"
     checks:
       - m1.passive-dns
       - m1.subdomain-passive
       - m1.webarchive-harvest
       - m2.host-discovery
-      - m2.service-fingerprint
       - m2.http-fingerprint
-
-  - id: ID.AM-02
-    title: Inventories of software and platforms are established and maintained
-    checks:
-      - m2.os-fingerprint
       - m2.service-fingerprint
-      - m3.api-surface
-
-  - id: ID.RA-01
-    title: Vulnerabilities in assets are identified, validated and recorded
+  - id: "ID.RA-01"
+    title: "Vulnerabilities in assets are identified, validated, and recorded"
     checks:
       - m2.cve-correlate
       - m6.cve-epss-correlation
       - m6.exploit-match
-
-  - id: PR.AA-01
-    title: Identities and credentials are issued, managed and revoked
+  - id: "PR.AA-01"
+    title: "Identities and credentials for authorized users, services, and hardware are managed by the organization"
     checks:
       - m3.auth-session-audit
       - m3.jwt-audit
       - m3.oauth-flow-audit
       - m3.saml-audit
-
-  - id: PR.AA-03
-    title: Users, services and hardware are authenticated
+  - id: "PR.DS-01"
+    title: "The confidentiality, integrity, and availability of data-at-rest are protected"
+    checks:
+      - m4.bucket-exposure
+      - m4.datastore-surface
+      - m5.firebase-rules
+      - m5.managed-datastores
+      - m5.supabase-rls
+  - id: "PR.IR-01"
+    title: "Networks and environments are protected from unauthorized logical access and usage"
+    checks:
+      - m3.cors-audit
+      - m3.ssrf-probe
+      - m4.metadata-ssrf
+      - m5.imds-ssrf
+  - id: "PR.PS-01"
+    title: "Configuration management practices are established and applied"
+    checks:
+      - m4.cookie-flag-audit
+      - m4.cors-config-review
+      - m4.security-header-review
+      - m4.tls-config-review
+      - m5.k8s-exposure
+      - m5.tfstate-exposure
+  - id: "DE.AE-02"
+    title: "Potentially adverse events are analyzed to better understand associated activities"
+    checks:
+      - m6.ad-attack-path
+      - m6.sigma-hunt-rules
+  - id: "ID.AM-02"
+    title: "Inventories of software, services, and systems managed by the organization are maintained"
+    checks:
+      - m2.os-fingerprint
+      - m2.service-fingerprint
+      - m3.api-surface
+  - id: "ID.IM-02"
+    title: "Improvements are identified from security tests and exercises, including those done in coordination with suppliers and relevant third parties"
+    checks:
+      - m3.cmdi-oob
+      - m3.sqli-oob
+      - m3.state-marker
+  - id: "ID.RA-02"
+    title: "Cyber threat intelligence is received from information sharing forums and sources"
+    checks:
+      - m1.internetdb-triage
+      - m6.cve-epss-correlation
+  - id: "PR.AA-02"
+    title: "Identities are proofed and bound to credentials based on the context of interactions"
+    checks:
+      - m3.oauth-flow-audit
+      - m4.default-credentials
+  - id: "PR.DS-02"
+    title: "The confidentiality, integrity, and availability of data-in-transit are protected"
+    checks:
+      - m2.tls-deep-scan
+      - m4.tls-config-review
+  - id: "PR.PS-02"
+    title: "Software is maintained, replaced, and removed commensurate with risk"
+    checks:
+      - m2.legacy-services
+      - m5.dep-confusion
+      - m5.sbom-review
+  - id: "DE.AE-03"
+    title: "Information is correlated from multiple sources"
+    checks:
+      - m2.cve-correlate
+      - m6.ad-attack-path
+      - m6.cve-epss-correlation
+  - id: "DE.CM-03"
+    title: "Personnel activity and technology usage are monitored to find potentially adverse events"
+    checks:
+      - m3.auth-session-audit
+      - m6.sigma-hunt-rules
+  - id: "ID.AM-03"
+    title: "Representations of the organization’s authorized network communication and internal and external network data flows are maintained"
+    checks:
+      - m2.host-discovery
+      - m2.port-scan
+      - m2.service-fingerprint
+  - id: "ID.RA-03"
+    title: "Internal and external threats to the organization are identified and recorded"
+    checks:
+      - m6.exploit-match
+      - m6.template-scan
+  - id: "PR.AA-03"
+    title: "Users, services, and hardware are authenticated"
     checks:
       - m2.smb-auth
-      - m4.default-credentials
       - m3.session-logout
-
-  - id: PR.AA-05
-    title: Access permissions incorporate least privilege and separation of duties
+      - m4.default-credentials
+  - id: "DE.AE-04"
+    title: "The estimated impact and scope of adverse events are understood"
+    checks:
+      - m6.ad-attack-path
+      - m6.exploit-match
+  - id: "ID.AM-04"
+    title: "Inventories of services provided by suppliers are maintained"
+    checks:
+      - m1.service-exposure-drift
+      - m5.dep-confusion
+      - m5.sbom-review
+  - id: "ID.RA-04"
+    title: "Potential impacts and likelihoods of threats exploiting vulnerabilities are identified and recorded"
+    checks:
+      - m6.cve-epss-correlation
+      - m6.exploit-match
+  - id: "PR.AA-04"
+    title: "Identity assertions are protected, conveyed, and verified"
+    checks:
+      - m3.jwt-audit
+      - m3.oauth-flow-audit
+      - m3.saml-audit
+  - id: "PR.IR-04"
+    title: "Adequate resource capacity to ensure availability is maintained"
+    checks:
+      - m3.graphql-depth-abuse
+      - m3.rate-limit-audit
+  - id: "PR.PS-04"
+    title: "Log records are generated and made available for continuous monitoring"
+    checks:
+      - m3.auth-session-audit
+      - m6.sigma-hunt-rules
+  - id: "ID.RA-05"
+    title: "Threats, vulnerabilities, likelihoods, and impacts are used to understand inherent risk and inform risk response prioritization"
+    checks:
+      - m6.ad-attack-path
+      - m6.cve-epss-correlation
+      - m6.exploit-match
+  - id: "PR.AA-05"
+    title: "Access permissions, entitlements, and authorizations are defined in a policy, managed, enforced, and reviewed, and incorporate the principles of least privilege and separation of duties"
     checks:
       - m3.idor-oracle
       - m3.mass-assign-audit
       - m4.dashboard-exposure
       - m4.unauth-api-audit
       - m5.iam-review
-
-  - id: PR.DS-01
-    title: Data-at-rest is protected
+  - id: "PR.PS-05"
+    title: "Installation and execution of unauthorized software are prevented"
     checks:
-      - m4.datastore-surface
-      - m4.bucket-exposure
-      - m5.managed-datastores
-      - m5.firebase-rules
-      - m5.supabase-rls
-
-  - id: PR.DS-02
-    title: Data-in-transit is protected
+      - m3.upload-audit
+      - m4.webdav-verbs
+      - m5.docker-socket
+  - id: "DE.AE-06"
+    title: "Information on adverse events is provided to authorized staff and tools"
     checks:
-      - m2.tls-deep-scan
-      - m4.tls-config-review
-
-  - id: PR.PS-01
-    title: Configuration management practices are established and applied
+      - m6.sigma-hunt-rules
+  - id: "DE.CM-06"
+    title: "External service provider activities and services are monitored to find potentially adverse events"
     checks:
-      - m4.security-header-review
-      - m4.cors-config-review
-      - m4.cookie-flag-audit
-      - m5.k8s-exposure
-
-  - id: PR.PS-02
-    title: Software is maintained, replaced or removed commensurate with risk
+      - m1.service-exposure-drift
+      - m6.template-scan
+  - id: "ID.RA-06"
+    title: "Risk responses are chosen, prioritized, planned, tracked, and communicated"
     checks:
-      - m2.legacy-services
-      - m5.dep-confusion
-
-  - id: PR.PS-06
-    title: Secure software development practices are applied
+      - m6.cve-epss-correlation
+      - m6.exploit-match
+  - id: "PR.PS-06"
+    title: "Secure software development practices are integrated, and their performance is monitored throughout the software development life cycle"
     checks:
-      - m3.sqli-oracle
-      - m3.xss-oracle
       - m3.cmdi-oracle
+      - m3.sqli-oracle
       - m3.ssti-oracle
+      - m3.xss-oracle
       - m3.xxe-oracle
       - m6.secret-scan-at-scale
-
-  - id: PR.IR-01
-    title: Networks and environments are protected from unauthorized logical access
+  - id: "DE.AE-07"
+    title: "Cyber threat intelligence and other contextual information are integrated into the analysis"
     checks:
-      - m3.ssrf-probe
-      - m4.metadata-ssrf
-      - m5.imds-ssrf
-      - m3.cors-audit
+      - m6.cve-epss-correlation
+      - m6.exploit-match
+  - id: "ID.AM-07"
+    title: "Inventories of data and corresponding metadata for designated data types are maintained"
+    checks:
+      - m4.api-doc-exposure
+      - m4.bucket-exposure
+      - m4.datastore-surface
+  - id: "ID.RA-07"
+    title: "Changes and exceptions are managed, assessed for risk impact, recorded, and tracked"
+    checks:
+      - m1.service-exposure-drift
+      - m5.cloud-posture
+      - m5.do-posture
+  - id: "DE.AE-08"
+    title: "Incidents are declared when adverse events meet the defined incident criteria"
+    checks:
+      - m6.deception-listeners
+      - m6.sigma-hunt-rules
+  - id: "ID.AM-08"
+    title: "Systems, hardware, software, services, and data are managed throughout their life cycles"
+    checks:
+      - m2.legacy-services
+      - m5.image-scan
+      - m5.sbom-review
+  - id: "ID.RA-08"
+    title: "Processes for receiving, analyzing, and responding to vulnerability disclosures are established"
+    checks:
+      - m2.cve-correlate
+      - m6.exploit-match
+  - id: "DE.CM-09"
+    title: "Computing hardware and software, runtime environments, and their data are monitored to find potentially adverse events"
+    checks:
+      - m1.service-exposure-drift
+      - m6.sigma-hunt-rules
+      - m6.webshell-yara
+  - id: "ID.RA-09"
+    title: "The authenticity and integrity of hardware and software are assessed prior to acquisition and use"
+    checks:
+      - m2.cve-correlate
+      - m5.dep-confusion
+      - m5.sbom-review
+  - id: "ID.RA-10"
+    title: "Critical suppliers are assessed prior to acquisition"
+    checks:
+      - m5.dep-confusion
+      - m5.sbom-review
+  - id: "PR.DS-11"
+    title: "Backups of data are created, protected, maintained, and tested"
+    checks:
+      - m4.backup-file-hunt
+      - m5.managed-datastores
+outside_assessed_set:
+  - id: "GV.OC-01"
+    title: "The organizational mission is understood and informs cybersecurity risk management"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.OV-01"
+    title: "Cybersecurity risk management strategy outcomes are reviewed to inform and adjust strategy and direction"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.PO-01"
+    title: "Policy for managing cybersecurity risks is established based on organizational context, cybersecurity strategy, and priorities and is communicated and enforced"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.RM-01"
+    title: "Risk management objectives are established and agreed to by organizational stakeholders"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.RR-01"
+    title: "Organizational leadership is responsible and accountable for cybersecurity risk and fosters a culture that is risk-aware, ethical, and continually improving"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.SC-01"
+    title: "A cybersecurity supply chain risk management program, strategy, objectives, policies, and processes are established and agreed to by organizational stakeholders"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "ID.IM-01"
+    title: "Improvements are identified from evaluations"
+    reason: "no shipped ARACHNE check produces evidence about this Identify subcategory"
+  - id: "PR.AT-01"
+    title: "Personnel are provided with awareness and training so that they possess the knowledge and skills to perform general tasks with cybersecurity risks in mind"
+    reason: "no shipped ARACHNE check produces evidence about this Protect subcategory"
+  - id: "RC.RP-01"
+    title: "The recovery portion of the incident response plan is executed once initiated from the incident response process"
+    reason: "a Recover Function outcome: an operator capability exercised after an incident"
+  - id: "RS.MA-01"
+    title: "The incident response plan is executed in coordination with relevant third parties once an incident is declared"
+    reason: "a Respond Function outcome: an operator capability exercised during an incident"
+  - id: "RS.MI-01"
+    title: "Incidents are contained"
+    reason: "a Respond Function outcome: an operator capability exercised during an incident"
+  - id: "DE.CM-02"
+    title: "The physical environment is monitored to find potentially adverse events"
+    reason: "a Detect Function outcome: the operator's monitoring capability, which a scan does not itself provide"
+  - id: "GV.OC-02"
+    title: "Internal and external stakeholders are understood, and their needs and expectations regarding cybersecurity risk management are understood and considered"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.OV-02"
+    title: "The cybersecurity risk management strategy is reviewed and adjusted to ensure coverage of organizational requirements and risks"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.PO-02"
+    title: "Policy for managing cybersecurity risks is reviewed, updated, communicated, and enforced to reflect changes in requirements, threats, technology, and organizational mission"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.RM-02"
+    title: "Risk appetite and risk tolerance statements are established, communicated, and maintained"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.RR-02"
+    title: "Roles, responsibilities, and authorities related to cybersecurity risk management are established, communicated, understood, and enforced"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.SC-02"
+    title: "Cybersecurity roles and responsibilities for suppliers, customers, and partners are established, communicated, and coordinated internally and externally"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "PR.AT-02"
+    title: "Individuals in specialized roles are provided with awareness and training so that they possess the knowledge and skills to perform relevant tasks with cybersecurity risks in mind"
+    reason: "no shipped ARACHNE check produces evidence about this Protect subcategory"
+  - id: "PR.IR-02"
+    title: "The organization’s technology assets are protected from environmental threats"
+    reason: "no shipped ARACHNE check produces evidence about this Protect subcategory"
+  - id: "RC.RP-02"
+    title: "Recovery actions are selected, scoped, prioritized, and performed"
+    reason: "a Recover Function outcome: an operator capability exercised after an incident"
+  - id: "RS.CO-02"
+    title: "Internal and external stakeholders are notified of incidents"
+    reason: "a Respond Function outcome: an operator capability exercised during an incident"
+  - id: "RS.MA-02"
+    title: "Incident reports are triaged and validated"
+    reason: "a Respond Function outcome: an operator capability exercised during an incident"
+  - id: "RS.MI-02"
+    title: "Incidents are eradicated"
+    reason: "a Respond Function outcome: an operator capability exercised during an incident"
+  - id: "GV.OC-03"
+    title: "Legal, regulatory, and contractual requirements regarding cybersecurity — including privacy and civil liberties obligations — are understood and managed"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.OV-03"
+    title: "Organizational cybersecurity risk management performance is evaluated and reviewed for adjustments needed"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.RM-03"
+    title: "Cybersecurity risk management activities and outcomes are included in enterprise risk management processes"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.RR-03"
+    title: "Adequate resources are allocated commensurate with the cybersecurity risk strategy, roles, responsibilities, and policies"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.SC-03"
+    title: "Cybersecurity supply chain risk management is integrated into cybersecurity and enterprise risk management, risk assessment, and improvement processes"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "ID.IM-03"
+    title: "Improvements are identified from execution of operational processes, procedures, and activities"
+    reason: "no shipped ARACHNE check produces evidence about this Identify subcategory"
+  - id: "PR.IR-03"
+    title: "Mechanisms are implemented to achieve resilience requirements in normal and adverse situations"
+    reason: "no shipped ARACHNE check produces evidence about this Protect subcategory"
+  - id: "PR.PS-03"
+    title: "Hardware is maintained, replaced, and removed commensurate with risk"
+    reason: "no shipped ARACHNE check produces evidence about this Protect subcategory"
+  - id: "RC.CO-03"
+    title: "Recovery activities and progress in restoring operational capabilities are communicated to designated internal and external stakeholders"
+    reason: "a Recover Function outcome: an operator capability exercised after an incident"
+  - id: "RC.RP-03"
+    title: "The integrity of backups and other restoration assets is verified before using them for restoration"
+    reason: "a Recover Function outcome: an operator capability exercised after an incident"
+  - id: "RS.AN-03"
+    title: "Analysis is performed to establish what has taken place during an incident and the root cause of the incident"
+    reason: "a Respond Function outcome: an operator capability exercised during an incident"
+  - id: "RS.CO-03"
+    title: "Information is shared with designated internal and external stakeholders"
+    reason: "a Respond Function outcome: an operator capability exercised during an incident"
+  - id: "RS.MA-03"
+    title: "Incidents are categorized and prioritized"
+    reason: "a Respond Function outcome: an operator capability exercised during an incident"
+  - id: "GV.OC-04"
+    title: "Critical objectives, capabilities, and services that external stakeholders depend on or expect from the organization are understood and communicated"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.RM-04"
+    title: "Strategic direction that describes appropriate risk response options is established and communicated"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.RR-04"
+    title: "Cybersecurity is included in human resources practices"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.SC-04"
+    title: "Suppliers are known and prioritized by criticality"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "ID.IM-04"
+    title: "Incident response plans and other cybersecurity plans that affect operations are established, communicated, maintained, and improved"
+    reason: "no shipped ARACHNE check produces evidence about this Identify subcategory"
+  - id: "RC.CO-04"
+    title: "Public updates on incident recovery are shared using approved methods and messaging"
+    reason: "a Recover Function outcome: an operator capability exercised after an incident"
+  - id: "RC.RP-04"
+    title: "Critical mission functions and cybersecurity risk management are considered to establish post-incident operational norms"
+    reason: "a Recover Function outcome: an operator capability exercised after an incident"
+  - id: "RS.MA-04"
+    title: "Incidents are escalated or elevated as needed"
+    reason: "a Respond Function outcome: an operator capability exercised during an incident"
+  - id: "GV.OC-05"
+    title: "Outcomes, capabilities, and services that the organization depends on are understood and communicated"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.RM-05"
+    title: "Lines of communication across the organization are established for cybersecurity risks, including risks from suppliers and other third parties"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.SC-05"
+    title: "Requirements to address cybersecurity risks in supply chains are established, prioritized, and integrated into contracts and other types of agreements with suppliers and other relevant third parties"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "ID.AM-05"
+    title: "Assets are prioritized based on classification, criticality, resources, and impact on the mission"
+    reason: "no shipped ARACHNE check produces evidence about this Identify subcategory"
+  - id: "RC.RP-05"
+    title: "The integrity of restored assets is verified, systems and services are restored, and normal operating status is confirmed"
+    reason: "a Recover Function outcome: an operator capability exercised after an incident"
+  - id: "RS.MA-05"
+    title: "The criteria for initiating incident recovery are applied"
+    reason: "a Respond Function outcome: an operator capability exercised during an incident"
+  - id: "GV.RM-06"
+    title: "A standardized method for calculating, documenting, categorizing, and prioritizing cybersecurity risks is established and communicated"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.SC-06"
+    title: "Planning and due diligence are performed to reduce risks before entering into formal supplier or other third-party relationships"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "PR.AA-06"
+    title: "Physical access to assets is managed, monitored, and enforced commensurate with risk"
+    reason: "no shipped ARACHNE check produces evidence about this Protect subcategory"
+  - id: "RC.RP-06"
+    title: "The end of incident recovery is declared based on criteria, and incident-related documentation is completed"
+    reason: "a Recover Function outcome: an operator capability exercised after an incident"
+  - id: "RS.AN-06"
+    title: "Actions performed during an investigation are recorded, and the records’ integrity and provenance are preserved"
+    reason: "a Respond Function outcome: an operator capability exercised during an incident"
+  - id: "GV.RM-07"
+    title: "Strategic opportunities (i.e., positive risks) are characterized and are included in organizational cybersecurity risk discussions"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.SC-07"
+    title: "The risks posed by a supplier, their products and services, and other third parties are understood, recorded, prioritized, assessed, responded to, and monitored over the course of the relationship"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "RS.AN-07"
+    title: "Incident data and metadata are collected, and their integrity and provenance are preserved"
+    reason: "a Respond Function outcome: an operator capability exercised during an incident"
+  - id: "GV.SC-08"
+    title: "Relevant suppliers and other third parties are included in incident planning, response, and recovery activities"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "RS.AN-08"
+    title: "An incident’s magnitude is estimated and validated"
+    reason: "a Respond Function outcome: an operator capability exercised during an incident"
+  - id: "GV.SC-09"
+    title: "Supply chain security practices are integrated into cybersecurity and enterprise risk management programs, and their performance is monitored throughout the technology product and service life cycle"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "GV.SC-10"
+    title: "Cybersecurity supply chain risk management plans include provisions for activities that occur after the conclusion of a partnership or service agreement"
+    reason: "a Govern Function outcome: organisational risk-management activity, evidenced by policy and management review rather than by a scan"
+  - id: "PR.DS-10"
+    title: "The confidentiality, integrity, and availability of data-in-use are protected"
+    reason: "no shipped ARACHNE check produces evidence about this Protect subcategory"

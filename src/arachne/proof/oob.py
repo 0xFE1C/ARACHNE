@@ -49,7 +49,7 @@ from arachne.core.proof import (
     token_mac,
 )
 from arachne.core.redaction import redact_mapping, redact_text
-from arachne.core.signing import DeploymentSigner
+from arachne.core.signing import Signer
 
 __all__ = [
     "MAX_HITS_PER_WINDOW",
@@ -180,7 +180,7 @@ class CallbackService:
         auditor: Auditor | None = None,
         hit_limiter: _HitRateLimiter | None = None,
         max_tokens_per_scan: int = MAX_TOKENS_PER_SCAN,
-        signer: DeploymentSigner | None = None,
+        signer: Signer | None = None,
         scan_gate: Callable[[str], str | None] | None = None,
         replay_window_s: float = REPLAY_WINDOW_SECONDS,
     ) -> None:

@@ -1,138 +1,692 @@
-# ARACHNE compliance map — CIS Controls v8.1 (S22, REQ-TRUST-001).
+# GENERATED FILE — do not edit by hand.
 #
-# This file is data, not code (ADR-04): it maps ARACHNE check ids onto the CIS
-# safeguards a finding is evidence about. The shape is validated by
-# `tests/unit/test_compliance_map.py`, which guarantees the two directions an
-# auditor cares about:
+# `python -m arachne.tools.compliance --write` regenerates it from every check's
+# `compliance=` declaration (REQ-TRUST-009); `--check` fails when this file and the
+# registry disagree, which is what makes 'generated, not maintained' enforceable.
 #
-#   * every `checks:` entry is a real check id in the shipped planning catalogue —
-#     no dangling ids, so a control can never claim coverage from a typo; and
-#   * every control id is unique inside its framework.
+# CIS Controls v8.1 — 153 safeguards.
+# Assessed: 64 safeguard(s) reached by at least one check (target 60 of 153).
+# Outside the assessed set: 89 safeguard(s), each named below with a
+# reason — an unmapped control is reported, never omitted.
 #
-# An unmapped safeguard is *deliberately absent*: `total_controls` records the
-# framework's own control count (153 safeguards in v8.1), so a framework report can
-# state the gap honestly — "this scan assesses N of 153 safeguards; the remainder are
-# outside ARACHNE's check catalogue" — instead of implying the framework was covered.
+# Source: CIS Critical Security Controls v8.1, OSCAL catalog published by the Center for Internet Security: https://bitbucket.org/cis-it-workspace/cis-controls-v8.1_oscal/src/main/src/catalogs/json/cis-controls-v8.1_catalog.json (catalog metadata version 8.1.2, last-modified 2025-04-09)
+# Retrieved: 2026-11-05. Cross-check: All 18 control-group titles compared against CIS's own controls list; the 18 per-group safeguard counts sum to 153; every group's safeguards are contiguous; 1.1 and 18.5 hand-checked against the published titles.
 #
-# A check id is `m<module>.<name>` (the id every finding carries). One check may
-# evidence several safeguards; one safeguard may be evidenced by several checks.
-#
-# Editing this file is a governance act: a new check id must exist in
-# `templates/plan/check_catalog.yaml` (and the registry) first, or the schema test
-# fails the build.
-
-framework: cis
-name: CIS Controls v8
-edition: v8.1
-kind: safeguard
+# A control id is a real control of this edition (validated against the pinned
+# inventory), and every `checks:` entry is a registered check id, so neither direction
+# of the join can be a typo. A check's evidence is *about* a control; it is never proof
+# of conformity.
+framework: "cis"
+name: "CIS Controls"
+edition: "v8.1"
+kind: "safeguard"
 total_controls: 153
-map_version: "1.0"
+map_version: "2.0"
 controls:
-  - id: "3.3"
-    title: Configure Data Access Control Lists
+  - id: "1.1"
+    title: "Establish and Maintain Detailed Enterprise Asset Inventory"
     checks:
-      - m3.idor-oracle
+      - m1.passive-dns
+      - m1.subdomain-passive
+      - m2.host-discovery
+      - m2.snmp-enum
+  - id: "1.3"
+    title: "Utilize an Active Discovery Tool"
+    checks:
+      - m2.host-discovery
+      - m2.port-scan
+      - m2.ssdp-discovery
+  - id: "1.5"
+    title: "Use a Passive Asset Discovery Tool"
+    checks:
+      - m1.passive-dns
+      - m1.webarchive-harvest
+      - m2.http-fingerprint
+  - id: "2.1"
+    title: "Establish and Maintain a Software Inventory"
+    checks:
+      - m2.os-fingerprint
+      - m2.service-fingerprint
+      - m5.image-scan
+  - id: "2.2"
+    title: "Ensure Authorized Software is Currently Supported"
+    checks:
+      - m2.cve-correlate
+      - m2.legacy-services
+      - m5.image-scan
+  - id: "2.6"
+    title: "Allowlist Authorized Libraries"
+    checks:
+      - m5.dep-confusion
+      - m5.sbom-review
+  - id: "3.2"
+    title: "Establish and Maintain a Data Inventory"
+    checks:
+      - m4.bucket-exposure
+      - m4.datastore-surface
+      - m5.managed-datastores
+  - id: "3.3"
+    title: "Configure Data Access Control Lists"
+    checks:
       - m3.cors-audit
+      - m3.idor-oracle
       - m4.bucket-exposure
       - m4.cors-config-review
       - m5.bucket-enumerator
       - m5.firebase-rules
-      - m5.supabase-rls
       - m5.managed-datastores
-
+      - m5.supabase-rls
   - id: "3.10"
-    title: Encrypt Data in Transit
+    title: "Encrypt Sensitive Data in Transit"
     checks:
       - m2.tls-deep-scan
       - m4.tls-config-review
-
   - id: "3.11"
-    title: Encrypt Sensitive Data at Rest
+    title: "Encrypt Sensitive Data at Rest"
     checks:
       - m4.datastore-surface
+      - m5.firebase-rules
       - m5.managed-datastores
-
   - id: "4.1"
-    title: Establish and Maintain a Secure Configuration Process
+    title: "Establish and Maintain a Secure Configuration Process"
     checks:
-      - m4.security-header-review
+      - m4.cookie-flag-audit
       - m4.cors-config-review
+      - m4.security-header-review
       - m4.tls-config-review
       - m5.k8s-exposure
       - m5.tfstate-exposure
-
-  - id: "4.8"
-    title: Uninstall or Disable Unnecessary Services on Enterprise Assets and Software
+  - id: "4.2"
+    title: "Establish and Maintain a Secure Configuration Process for Network Infrastructure"
     checks:
       - m2.legacy-services
-      - m2.ftp-anonymous
-      - m4.webdav-verbs
-
-  - id: "5.2"
-    title: Use Unique Passwords
+      - m2.smtp-transport
+      - m2.tls-deep-scan
+      - m5.k8s-exposure
+  - id: "4.6"
+    title: "Securely Manage Enterprise Assets and Software"
     checks:
-      - m4.default-credentials
-      - m2.smb-auth
-
-  - id: "5.4"
-    title: Restrict Admin Privileges to Dedicated Administrative Accounts
-    checks:
-      - m4.dashboard-exposure
       - m4.actuator-exposure
-      - m4.unauth-api-audit
-
-  - id: "6.8"
-    title: Define and Maintain Role-Based Access Control
+      - m4.debug-endpoints
+      - m4.verbose-errors
+  - id: "4.7"
+    title: "Manage Default Accounts on Enterprise Assets and Software"
+    checks:
+      - m2.smb-auth
+      - m4.dashboard-exposure
+      - m4.default-credentials
+  - id: "4.8"
+    title: "Uninstall or Disable Unnecessary Services on Enterprise Assets and Software"
+    checks:
+      - m2.ftp-anonymous
+      - m2.legacy-services
+      - m2.rdp-vnc-detect
+      - m4.webdav-verbs
+  - id: "5.1"
+    title: "Establish and Maintain an Inventory of Accounts"
+    checks:
+      - m2.kerberos-enum
+      - m2.ldap-enum
+      - m4.user-enumeration
+      - m5.iam-review
+  - id: "5.2"
+    title: "Use Unique Passwords"
+    checks:
+      - m2.smb-auth
+      - m4.default-credentials
+      - m4.key-exposure
+  - id: "5.3"
+    title: "Disable Dormant Accounts"
+    checks:
+      - m2.kerberos-enum
+      - m2.ldap-enum
+      - m2.smtp-enum
+  - id: "5.4"
+    title: "Restrict Administrator Privileges to Dedicated Administrator Accounts"
     checks:
       - m3.idor-oracle
-      - m3.mass-assign-audit
+      - m4.actuator-exposure
+      - m4.dashboard-exposure
       - m5.iam-review
-
-  - id: "8.2"
-    title: Collect Audit Logs
+  - id: "5.5"
+    title: "Establish and Maintain an Inventory of Service Accounts"
+    checks:
+      - m2.kerberos-enum
+      - m5.iam-review
+      - m5.leaked-cloud-keys
+  - id: "6.2"
+    title: "Establish an Access Revoking Process"
+    checks:
+      - m3.jwt-audit
+      - m3.session-logout
+      - m4.dashboard-exposure
+  - id: "6.3"
+    title: "Require MFA for Externally-Exposed Applications"
     checks:
       - m3.auth-session-audit
-
-  - id: "8.11"
-    title: Conduct Audit Log Reviews
+      - m3.jwt-audit
+      - m3.oauth-flow-audit
+      - m3.saml-audit
+  - id: "6.5"
+    title: "Require MFA for Administrative Access"
     checks:
+      - m4.actuator-exposure
+      - m4.dashboard-exposure
+      - m5.k8s-exposure
+  - id: "6.6"
+    title: "Establish and Maintain an Inventory of Authentication and Authorization Systems"
+    checks:
+      - m2.ldap-enum
       - m3.auth-session-audit
-
-  - id: "9.5"
-    title: Implement Domain-based Message Authentication, Reporting and Conformance (DMARC)
+      - m4.unauth-api-audit
+  - id: "6.7"
+    title: "Centralize Access Control"
     checks:
-      - m4.email-auth-review
-
-  - id: "10.1"
-    title: Deploy and Maintain Anti-Malware Software
+      - m3.authz-bypass
+      - m3.idor-oracle
+      - m5.iam-review
+  - id: "6.8"
+    title: "Define and Maintain Role-Based Access Control"
     checks:
-      - m6.webshell-yara
-
-  - id: "12.1"
-    title: Ensure Network Infrastructure is Up-to-Date
+      - m3.authz-bypass
+      - m3.idor-oracle
+      - m4.unauth-api-audit
+      - m5.iam-review
+  - id: "7.1"
+    title: "Establish and Maintain a Vulnerability Management Process"
+    checks:
+      - m2.cve-correlate
+      - m6.cve-epss-correlation
+  - id: "7.2"
+    title: "Establish and Maintain a Remediation Process"
+    checks:
+      - m6.cve-epss-correlation
+      - m6.exploit-match
+  - id: "7.3"
+    title: "Perform Automated Operating System Patch Management"
     checks:
       - m2.cve-correlate
       - m2.legacy-services
-
-  - id: "16.1"
-    title: Establish and Maintain a Secure Application Development Process
+      - m2.service-fingerprint
+  - id: "7.4"
+    title: "Perform Automated Application Patch Management"
     checks:
-      - m3.sqli-oracle
-      - m3.xss-oracle
-      - m3.cmdi-oracle
-      - m3.ssti-oracle
-      - m3.xxe-oracle
-
-  - id: "16.4"
-    title: Establish and Manage an Inventory of Third-Party Software Components
-    checks:
-      - m5.sbom-review
       - m5.dep-confusion
-
-  - id: "16.10"
-    title: Apply Secure Design Principles in Application Architectures
+      - m5.image-scan
+      - m5.sbom-review
+  - id: "7.5"
+    title: "Perform Automated Vulnerability Scans of Internal Enterprise Assets"
     checks:
+      - m2.cve-correlate
+      - m5.image-scan
+      - m5.sbom-review
+      - m6.exploit-match
+  - id: "7.6"
+    title: "Perform Automated Vulnerability Scans of Externally-Exposed Enterprise Assets"
+    checks:
+      - m2.cve-correlate
+      - m6.cve-epss-correlation
+      - m6.template-scan
+  - id: "7.7"
+    title: "Remediate Detected Vulnerabilities"
+    checks:
+      - m6.cve-epss-correlation
+      - m6.exploit-match
+      - m6.webshell-yara
+  - id: "8.1"
+    title: "Establish and Maintain an Audit Log Management Process"
+    checks:
+      - m3.auth-session-audit
+      - m3.session-logout
+  - id: "8.2"
+    title: "Collect Audit Logs"
+    checks:
+      - m3.auth-session-audit
+      - m6.sigma-hunt-rules
+  - id: "8.5"
+    title: "Collect Detailed Audit Logs"
+    checks:
+      - m3.auth-session-audit
+      - m6.sigma-hunt-rules
+  - id: "8.9"
+    title: "Centralize Audit Logs"
+    checks:
+      - m6.ad-attack-path
+      - m6.sigma-hunt-rules
+  - id: "9.5"
+    title: "Implement DMARC"
+    checks:
+      - m1.dns-txt-mining
+      - m4.email-auth-review
+  - id: "9.7"
+    title: "Deploy and Maintain Email Server Anti-Malware Protections"
+    checks:
+      - m2.smtp-transport
+      - m4.email-auth-review
+  - id: "10.1"
+    title: "Deploy and Maintain Anti-Malware Software"
+    checks:
+      - m6.webshell-yara
+  - id: "10.7"
+    title: "Use Behavior-Based Anti-Malware Software"
+    checks:
+      - m6.sigma-hunt-rules
+      - m6.webshell-yara
+  - id: "11.2"
+    title: "Perform Automated Backups"
+    checks:
+      - m4.backup-file-hunt
+      - m5.managed-datastores
+  - id: "11.3"
+    title: "Protect Recovery Data"
+    checks:
+      - m4.backup-file-hunt
+      - m5.tfstate-exposure
+  - id: "11.4"
+    title: "Establish and Maintain an Isolated Instance of Recovery Data"
+    checks:
+      - m4.backup-file-hunt
+  - id: "12.1"
+    title: "Ensure Network Infrastructure is Up-to-Date"
+    checks:
+      - m2.cve-correlate
+      - m2.legacy-services
+  - id: "12.2"
+    title: "Establish and Maintain a Secure Network Architecture"
+    checks:
+      - m2.tls-deep-scan
+      - m4.tls-config-review
+      - m5.k8s-exposure
+  - id: "12.3"
+    title: "Securely Manage Network Infrastructure"
+    checks:
+      - m2.legacy-services
+      - m2.smtp-transport
+      - m4.webdav-verbs
+  - id: "12.6"
+    title: "Use of Secure Network Management and Communication Protocols"
+    checks:
+      - m2.smtp-transport
+      - m2.tls-deep-scan
+      - m3.jwt-audit
+      - m4.tls-config-review
+  - id: "13.1"
+    title: "Centralize Security Event Alerting"
+    checks:
+      - m6.deception-listeners
+      - m6.sigma-hunt-rules
+  - id: "13.9"
+    title: "Deploy Port-Level Access Control"
+    checks:
+      - m2.legacy-services
+      - m2.port-scan
+      - m5.docker-socket
+  - id: "16.1"
+    title: "Establish and Maintain a Secure Application Development Process"
+    checks:
+      - m3.cmdi-oracle
+      - m3.nosql-oracle
+      - m3.sqli-oracle
+      - m3.ssti-oracle
+      - m3.traversal-oracle
+      - m3.xss-oracle
+      - m3.xxe-oracle
+  - id: "16.2"
+    title: "Establish and Maintain a Process to Accept and Address Software Vulnerabilities"
+    checks:
+      - m2.cve-correlate
+      - m6.cve-epss-correlation
+      - m6.exploit-match
+  - id: "16.4"
+    title: "Establish and Manage an Inventory of Third-Party Software Components"
+    checks:
+      - m5.dep-confusion
+      - m5.sbom-review
+  - id: "16.5"
+    title: "Use Up-to-Date and Trusted Third-Party Software Components"
+    checks:
+      - m5.dep-confusion
+      - m5.image-scan
+      - m5.sbom-review
+  - id: "16.6"
+    title: "Establish and Maintain a Severity Rating System and Process for Application Vulnerabilities"
+    checks:
+      - m6.cve-epss-correlation
+      - m6.exploit-match
+  - id: "16.7"
+    title: "Use Standard Hardening Configuration Templates for Application Infrastructure"
+    checks:
+      - m4.cookie-flag-audit
+      - m4.security-header-review
+      - m4.tls-config-review
+      - m5.k8s-exposure
+  - id: "16.8"
+    title: "Separate Production and Non-Production Systems"
+    checks:
+      - m4.debug-endpoints
+      - m4.staging-exposure
+      - m4.vcs-exposure
+  - id: "16.10"
+    title: "Apply Secure Design Principles in Application Architectures"
+    checks:
+      - m3.race-oracle
       - m3.ssrf-probe
       - m4.metadata-ssrf
       - m5.imds-ssrf
-      - m3.race-oracle
+  - id: "16.11"
+    title: "Leverage Vetted Modules or Services for Application Security Components"
+    checks:
+      - m5.dep-confusion
+      - m5.sbom-review
+      - m5.supabase-rls
+  - id: "16.12"
+    title: "Implement Code-Level Security Checks"
+    checks:
+      - m3.argument-injection
+      - m3.business-logic-audit
+      - m3.code-injection-oracle
+      - m3.crlf-injection
+      - m3.deser-audit
+      - m3.file-inclusion
+      - m3.hpp-oracle
+      - m3.input-validation-audit
+      - m3.ldap-injection
+      - m3.mass-assign-audit
+      - m3.proto-pollution
+      - m3.xpath-injection
+  - id: "16.13"
+    title: "Conduct Application Penetration Testing"
+    checks:
+      - m3.cmdi-oob
+      - m3.rce-echo
+      - m3.sqli-oob
+      - m3.state-marker
+      - m3.xxe-oob
+  - id: "18.2"
+    title: "Perform Periodic External Penetration Tests"
+    checks:
+      - m3.cmdi-oob
+      - m3.smuggling-oracle
+      - m3.sqli-oob
+      - m3.ssrf-probe
+  - id: "18.4"
+    title: "Validate Security Measures"
+    checks:
+      - m3.cmdi-oob
+      - m3.sqli-oob
+      - m3.ssrf-probe
+      - m6.webshell-yara
+  - id: "18.5"
+    title: "Perform Periodic Internal Penetration Tests"
+    checks:
+      - m2.port-scan
+      - m3.rce-echo
+      - m3.state-marker
+outside_assessed_set:
+  - id: "1.2"
+    title: "Address Unauthorized Assets"
+    reason: "an asset-inventory process: the inventory itself is not something a scan of the target observes"
+  - id: "1.4"
+    title: "Use Dynamic Host Configuration Protocol (DHCP) Logging to Update Enterprise Asset Inventory"
+    reason: "an asset-inventory process: the inventory itself is not something a scan of the target observes"
+  - id: "2.3"
+    title: "Address Unauthorized Software"
+    reason: "a software-inventory or allowlisting process, not a technical artefact a network scan produces"
+  - id: "2.4"
+    title: "Utilize Automated Software Inventory Tools"
+    reason: "a software-inventory or allowlisting process, not a technical artefact a network scan produces"
+  - id: "2.5"
+    title: "Allowlist Authorized Software"
+    reason: "a software-inventory or allowlisting process, not a technical artefact a network scan produces"
+  - id: "2.7"
+    title: "Allowlist Authorized Scripts"
+    reason: "a software-inventory or allowlisting process, not a technical artefact a network scan produces"
+  - id: "3.1"
+    title: "Establish and Maintain a Data Management Process"
+    reason: "a data-governance process (classification, retention, disposal or loss prevention): the process leaves no artefact a scan can observe"
+  - id: "3.4"
+    title: "Enforce Data Retention"
+    reason: "a data-governance process (classification, retention, disposal or loss prevention): the process leaves no artefact a scan can observe"
+  - id: "3.5"
+    title: "Securely Dispose of Data"
+    reason: "a data-governance process (classification, retention, disposal or loss prevention): the process leaves no artefact a scan can observe"
+  - id: "3.6"
+    title: "Encrypt Data on End-User Devices"
+    reason: "a data-governance process (classification, retention, disposal or loss prevention): the process leaves no artefact a scan can observe"
+  - id: "3.7"
+    title: "Establish and Maintain a Data Classification Scheme"
+    reason: "a data-governance process (classification, retention, disposal or loss prevention): the process leaves no artefact a scan can observe"
+  - id: "3.8"
+    title: "Document Data Flows"
+    reason: "a data-governance process (classification, retention, disposal or loss prevention): the process leaves no artefact a scan can observe"
+  - id: "3.9"
+    title: "Encrypt Data on Removable Media"
+    reason: "a data-governance process (classification, retention, disposal or loss prevention): the process leaves no artefact a scan can observe"
+  - id: "3.12"
+    title: "Segment Data Processing and Storage Based on Sensitivity"
+    reason: "a data-governance process (classification, retention, disposal or loss prevention): the process leaves no artefact a scan can observe"
+  - id: "3.13"
+    title: "Deploy a Data Loss Prevention Solution"
+    reason: "a data-governance process (classification, retention, disposal or loss prevention): the process leaves no artefact a scan can observe"
+  - id: "3.14"
+    title: "Log Sensitive Data Access"
+    reason: "a data-governance process (classification, retention, disposal or loss prevention): the process leaves no artefact a scan can observe"
+  - id: "4.3"
+    title: "Configure Automatic Session Locking on Enterprise Assets"
+    reason: "a configuration safeguard on an endpoint or network device ARACHNE does not administer; it needs host-level access this scanner deliberately does not have"
+  - id: "4.4"
+    title: "Implement and Manage a Firewall on Servers"
+    reason: "a configuration safeguard on an endpoint or network device ARACHNE does not administer; it needs host-level access this scanner deliberately does not have"
+  - id: "4.5"
+    title: "Implement and Manage a Firewall on End-User Devices"
+    reason: "a configuration safeguard on an endpoint or network device ARACHNE does not administer; it needs host-level access this scanner deliberately does not have"
+  - id: "4.9"
+    title: "Configure Trusted DNS Servers on Enterprise Assets"
+    reason: "a configuration safeguard on an endpoint or network device ARACHNE does not administer; it needs host-level access this scanner deliberately does not have"
+  - id: "4.10"
+    title: "Enforce Automatic Device Lockout on Portable End-User Devices"
+    reason: "a configuration safeguard on an endpoint or network device ARACHNE does not administer; it needs host-level access this scanner deliberately does not have"
+  - id: "4.11"
+    title: "Enforce Remote Wipe Capability on Portable End-User Devices"
+    reason: "a configuration safeguard on an endpoint or network device ARACHNE does not administer; it needs host-level access this scanner deliberately does not have"
+  - id: "4.12"
+    title: "Separate Enterprise Workspaces on Mobile End-User Devices"
+    reason: "a configuration safeguard on an endpoint or network device ARACHNE does not administer; it needs host-level access this scanner deliberately does not have"
+  - id: "5.6"
+    title: "Centralize Account Management"
+    reason: "an account-lifecycle process (dormant-account review, service-account inventory): it needs directory-administrator or HR data"
+  - id: "6.1"
+    title: "Establish an Access Granting Process"
+    reason: "an access-governance process: granting and revoking access is an administrative act, not a network artefact"
+  - id: "6.4"
+    title: "Require MFA for Remote Network Access"
+    reason: "an access-governance process: granting and revoking access is an administrative act, not a network artefact"
+  - id: "8.3"
+    title: "Ensure Adequate Audit Log Storage"
+    reason: "a log-collection or log-retention activity in the operator's own estate"
+  - id: "8.4"
+    title: "Standardize Time Synchronization"
+    reason: "a log-collection or log-retention activity in the operator's own estate"
+  - id: "8.6"
+    title: "Collect DNS Query Audit Logs"
+    reason: "a log-collection or log-retention activity in the operator's own estate"
+  - id: "8.7"
+    title: "Collect URL Request Audit Logs"
+    reason: "a log-collection or log-retention activity in the operator's own estate"
+  - id: "8.8"
+    title: "Collect Command-Line Audit Logs"
+    reason: "a log-collection or log-retention activity in the operator's own estate"
+  - id: "8.10"
+    title: "Retain Audit Logs"
+    reason: "a log-collection or log-retention activity in the operator's own estate"
+  - id: "8.11"
+    title: "Conduct Audit Log Reviews"
+    reason: "a log-collection or log-retention activity in the operator's own estate"
+  - id: "8.12"
+    title: "Collect Service Provider Logs"
+    reason: "a log-collection or log-retention activity in the operator's own estate"
+  - id: "9.1"
+    title: "Ensure Use of Only Fully Supported Browsers and Email Clients"
+    reason: "a browser, mail-client or DNS-filter configuration on managed endpoints"
+  - id: "9.2"
+    title: "Use DNS Filtering Services"
+    reason: "a browser, mail-client or DNS-filter configuration on managed endpoints"
+  - id: "9.3"
+    title: "Maintain and Enforce Network-Based URL Filters"
+    reason: "a browser, mail-client or DNS-filter configuration on managed endpoints"
+  - id: "9.4"
+    title: "Restrict Unnecessary or Unauthorized Browser and Email Client Extensions"
+    reason: "a browser, mail-client or DNS-filter configuration on managed endpoints"
+  - id: "9.6"
+    title: "Block Unnecessary File Types"
+    reason: "a browser, mail-client or DNS-filter configuration on managed endpoints"
+  - id: "10.2"
+    title: "Configure Automatic Anti-Malware Signature Updates"
+    reason: "an endpoint anti-malware deployment or signature-management safeguard"
+  - id: "10.3"
+    title: "Disable Autorun and Autoplay for Removable Media"
+    reason: "an endpoint anti-malware deployment or signature-management safeguard"
+  - id: "10.4"
+    title: "Configure Automatic Anti-Malware Scanning of Removable Media"
+    reason: "an endpoint anti-malware deployment or signature-management safeguard"
+  - id: "10.5"
+    title: "Enable Anti-Exploitation Features"
+    reason: "an endpoint anti-malware deployment or signature-management safeguard"
+  - id: "10.6"
+    title: "Centrally Manage Anti-Malware Software"
+    reason: "an endpoint anti-malware deployment or signature-management safeguard"
+  - id: "11.1"
+    title: "Establish and Maintain a Data Recovery Process"
+    reason: "a backup, recovery or recovery-testing process"
+  - id: "11.5"
+    title: "Test Data Recovery"
+    reason: "a backup, recovery or recovery-testing process"
+  - id: "12.4"
+    title: "Establish and Maintain Architecture Diagram(s)"
+    reason: "a network-infrastructure management process for devices ARACHNE does not administer"
+  - id: "12.5"
+    title: "Centralize Network Authentication, Authorization, and Auditing (AAA)"
+    reason: "a network-infrastructure management process for devices ARACHNE does not administer"
+  - id: "12.7"
+    title: "Ensure Remote Devices Utilize a VPN and are Connecting to an Enterprise's AAA Infrastructure"
+    reason: "a network-infrastructure management process for devices ARACHNE does not administer"
+  - id: "12.8"
+    title: "Establish and Maintain Dedicated Computing Resources for All Administrative Work"
+    reason: "a network-infrastructure management process for devices ARACHNE does not administer"
+  - id: "13.2"
+    title: "Deploy a Host-Based Intrusion Detection Solution"
+    reason: "a security-monitoring or traffic-filtering capability deployed in the estate"
+  - id: "13.3"
+    title: "Deploy a Network Intrusion Detection Solution"
+    reason: "a security-monitoring or traffic-filtering capability deployed in the estate"
+  - id: "13.4"
+    title: "Perform Traffic Filtering Between Network Segments"
+    reason: "a security-monitoring or traffic-filtering capability deployed in the estate"
+  - id: "13.5"
+    title: "Manage Access Control for Remote Assets"
+    reason: "a security-monitoring or traffic-filtering capability deployed in the estate"
+  - id: "13.6"
+    title: "Collect Network Traffic Flow Logs"
+    reason: "a security-monitoring or traffic-filtering capability deployed in the estate"
+  - id: "13.7"
+    title: "Deploy a Host-Based Intrusion Prevention Solution"
+    reason: "a security-monitoring or traffic-filtering capability deployed in the estate"
+  - id: "13.8"
+    title: "Deploy a Network Intrusion Prevention Solution"
+    reason: "a security-monitoring or traffic-filtering capability deployed in the estate"
+  - id: "13.10"
+    title: "Perform Application Layer Filtering"
+    reason: "a security-monitoring or traffic-filtering capability deployed in the estate"
+  - id: "13.11"
+    title: "Tune Security Event Alerting Thresholds"
+    reason: "a security-monitoring or traffic-filtering capability deployed in the estate"
+  - id: "14.1"
+    title: "Establish and Maintain a Security Awareness Program"
+    reason: "a security-awareness training activity for the workforce"
+  - id: "14.2"
+    title: "Train Workforce Members to Recognize Social Engineering Attacks"
+    reason: "a security-awareness training activity for the workforce"
+  - id: "14.3"
+    title: "Train Workforce Members on Authentication Best Practices"
+    reason: "a security-awareness training activity for the workforce"
+  - id: "14.4"
+    title: "Train Workforce on Data Handling Best Practices"
+    reason: "a security-awareness training activity for the workforce"
+  - id: "14.5"
+    title: "Train Workforce Members on Causes of Unintentional Data Exposure"
+    reason: "a security-awareness training activity for the workforce"
+  - id: "14.6"
+    title: "Train Workforce Members on Recognizing and Reporting Security Incidents"
+    reason: "a security-awareness training activity for the workforce"
+  - id: "14.7"
+    title: "Train Workforce on How to Identify and Report if Their Enterprise Assets are Missing Security Updates"
+    reason: "a security-awareness training activity for the workforce"
+  - id: "14.8"
+    title: "Train Workforce on the Dangers of Connecting to and Transmitting Enterprise Data Over Insecure Networks"
+    reason: "a security-awareness training activity for the workforce"
+  - id: "14.9"
+    title: "Conduct Role-Specific Security Awareness and Skills Training"
+    reason: "a security-awareness training activity for the workforce"
+  - id: "15.1"
+    title: "Establish and Maintain an Inventory of Service Providers"
+    reason: "a service-provider governance process (contracts, classification, decommissioning)"
+  - id: "15.2"
+    title: "Establish and Maintain a Service Provider Management Policy"
+    reason: "a service-provider governance process (contracts, classification, decommissioning)"
+  - id: "15.3"
+    title: "Classify Service Providers"
+    reason: "a service-provider governance process (contracts, classification, decommissioning)"
+  - id: "15.4"
+    title: "Ensure Service Provider Contracts Include Security Requirements"
+    reason: "a service-provider governance process (contracts, classification, decommissioning)"
+  - id: "15.5"
+    title: "Assess Service Providers"
+    reason: "a service-provider governance process (contracts, classification, decommissioning)"
+  - id: "15.6"
+    title: "Monitor Service Providers"
+    reason: "a service-provider governance process (contracts, classification, decommissioning)"
+  - id: "15.7"
+    title: "Securely Decommission Service Providers"
+    reason: "a service-provider governance process (contracts, classification, decommissioning)"
+  - id: "16.3"
+    title: "Perform Root Cause Analysis on Security Vulnerabilities"
+    reason: "an application-security process step (threat modelling, developer training, root-cause analysis) with no artefact a scan produces"
+  - id: "16.9"
+    title: "Train Developers in Application Security Concepts and Secure Coding"
+    reason: "an application-security process step (threat modelling, developer training, root-cause analysis) with no artefact a scan produces"
+  - id: "16.14"
+    title: "Conduct Threat Modeling"
+    reason: "an application-security process step (threat modelling, developer training, root-cause analysis) with no artefact a scan produces"
+  - id: "17.1"
+    title: "Designate Personnel to Manage Incident Handling"
+    reason: "an incident-response process activity"
+  - id: "17.2"
+    title: "Establish and Maintain Contact Information for Reporting Security Incidents"
+    reason: "an incident-response process activity"
+  - id: "17.3"
+    title: "Establish and Maintain an Enterprise Process for Reporting Incidents"
+    reason: "an incident-response process activity"
+  - id: "17.4"
+    title: "Establish and Maintain an Incident Response Process"
+    reason: "an incident-response process activity"
+  - id: "17.5"
+    title: "Assign Key Roles and Responsibilities"
+    reason: "an incident-response process activity"
+  - id: "17.6"
+    title: "Define Mechanisms for Communicating During Incident Response"
+    reason: "an incident-response process activity"
+  - id: "17.7"
+    title: "Conduct Routine Incident Response Exercises"
+    reason: "an incident-response process activity"
+  - id: "17.8"
+    title: "Conduct Post-Incident Reviews"
+    reason: "an incident-response process activity"
+  - id: "17.9"
+    title: "Establish and Maintain Security Incident Thresholds"
+    reason: "an incident-response process activity"
+  - id: "18.1"
+    title: "Establish and Maintain a Penetration Testing Program"
+    reason: "a penetration-test programme activity performed by the estate"
+  - id: "18.3"
+    title: "Remediate Penetration Test Findings"
+    reason: "a penetration-test programme activity performed by the estate"

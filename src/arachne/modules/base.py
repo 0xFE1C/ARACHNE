@@ -40,6 +40,7 @@ from arachne.core.errors import ConfigurationError
 from arachne.core.proof import ProofLevel, metadata_proof_problems
 from arachne.core.results import CheckResult
 from arachne.core.target import TargetKind
+from arachne.modules.compliance_map import validate_controls
 from arachne.modules.framework_map import validate_items
 
 if TYPE_CHECKING:  # a type-only cycle: context.py imports this module for Asset/Module
@@ -101,6 +102,14 @@ class CheckMetadata:
     #: unrepresentable once registered. A check that sets :attr:`cwe` must list it here
     #: too, so the ledger's per-check list is the whole mapping and not a partial view.
     framework: tuple[str, ...] = ()
+    #: Every **compliance control** this check's evidence bears on (REQ-TRUST-009):
+    #: ``CIS-3.3``, ``ISO-A.8.5``, ``CSF-PR.AA-05``, ``PCI-6``. A different axis from
+    #: :attr:`framework`, which is a *detection* vocabulary: this one is the auditor's join, and
+    #: it is what the generated control maps and ``arachne compliance export`` are built from —
+    #: generated *from here*, never maintained as a second hand-edited file. Optional (a check
+    #: may evidence no control) and validated at construction against the pinned inventory, so a
+    #: typo fails at import rather than inventing coverage.
+    compliance: tuple[str, ...] = ()
     severity_hint: SeverityHint = "info"
     type: CheckType = "passive"
     safe: bool = True
@@ -147,6 +156,9 @@ class CheckMetadata:
         # this level (a test fixture or a catalogue probe may build one) and is refused by
         # the registry, which is where "every registered check is mapped" is enforced.
         problems.extend(validate_items(self.framework))
+        # REQ-TRUST-009: same contract for the compliance axis — an id outside the pinned
+        # inventory is refused here, naming it, so no check can invent a control.
+        problems.extend(validate_controls(self.compliance))
         if self.cwe is not None and self.framework and self.cwe not in self.framework:
             problems.append(
                 f"cwe {self.cwe!r} is not in framework {list(self.framework)!r}: the "

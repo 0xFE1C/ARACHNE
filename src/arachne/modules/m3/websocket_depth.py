@@ -128,6 +128,7 @@ class WebSocketUpgradeAuth(WebCheck, Module):
         ),
         research_ref="ch03#33",
         framework=("WSTG-CLNT-10", "API2:2023", "CWE-306"),
+        compliance=("ISO-A.8.19",),
         cwe="CWE-306",
         target_kinds=(TargetKind.URL,),
         severity_hint="medium",

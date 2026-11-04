@@ -101,6 +101,54 @@ def test_sealing_a_scan_that_does_not_exist_is_refused(deployment: Path) -> None
     assert "does not exist" in result.output
 
 
+def test_an_auditor_with_only_the_public_key_verifies_through_the_cli(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """REQ-TRUST-008 at the command an auditor actually runs.
+
+    The writer signs with the seed; the auditor then runs ``verify-chain
+    --require-signatures`` with *only* the public key configured and reads "intact" — and the
+    status command says plainly that this deployment cannot sign, which is the property the
+    whole option exists for. (The command used to refuse here because it gated on the
+    *signing* key, which is exactly the assumption this test pins down.)
+    """
+    from arachne.core.signing import generate_keypair
+
+    seed, public = generate_keypair()
+    monkeypatch.setenv("ARACHNE_DATABASE_URL", f"sqlite:///{tmp_path / 'auditor.db'}")
+    monkeypatch.setenv("ARACHNE_LOG_LEVEL", "CRITICAL")
+    monkeypatch.setenv("ARACHNE_LOG_JSON", "false")
+    monkeypatch.setenv("ARACHNE_INTEGRITY_ALGORITHM", "ed25519")
+    monkeypatch.setenv("ARACHNE_INTEGRITY_ED25519_KEY", seed)
+    monkeypatch.delenv("ARACHNE_INTEGRITY_KEY", raising=False)
+    reset_settings_cache()
+    assert runner.invoke(app, ["db", "upgrade"]).exit_code == 0
+    _audit_one(tmp_path)  # the writer's half: one signed link
+
+    # The auditor's half: the seed is gone, only the public half remains.
+    monkeypatch.delenv("ARACHNE_INTEGRITY_ED25519_KEY", raising=False)
+    monkeypatch.setenv("ARACHNE_INTEGRITY_ED25519_PUBLIC_KEY", public)
+    reset_settings_cache()
+    result = runner.invoke(app, ["verify-chain", "--require-signatures"])
+    assert result.exit_code == 0, result.output
+    assert "intact" in result.output
+
+    status = _json(runner.invoke(app, ["integrity", "status", "--json"]).output)
+    key_info = status["integrity_key"]
+    assert isinstance(key_info, dict)
+    assert key_info["configured"] is True
+    assert key_info["can_sign"] is False
+    assert key_info["schemes"] == ["ed25519"]
+
+    # A *different* public key verifies nothing: the forged-chain case at CLI level.
+    _other_seed, other_public = generate_keypair()
+    monkeypatch.setenv("ARACHNE_INTEGRITY_ED25519_PUBLIC_KEY", other_public)
+    reset_settings_cache()
+    forged = runner.invoke(app, ["verify-chain", "--require-signatures"])
+    assert forged.exit_code == 1
+    assert "does not verify" in forged.output
+
+
 def test_a_backup_then_a_restore_through_the_cli(deployment: Path) -> None:
     out = deployment / "bundle"
     created = runner.invoke(

@@ -504,3 +504,144 @@ class _FakeContext:
         self.definition = None
         self.scan_id = 0
         self.auditor = None
+
+
+# ------------------------------------- 7. the catalogue's ATT&CK v20 breadth (REQ-VALID-007)
+def _shipped_map_actions() -> tuple[Any, ...]:
+    from arachne.purple.attack import load_technique_map
+
+    return tuple(load_technique_map().actions.values())
+
+
+def test_the_catalogue_reaches_the_required_v20_breadth() -> None:
+    """REQ-VALID-007's two numbers, counted from the shipped map rather than asserted in prose."""
+    techniques = {technique for action in _shipped_map_actions() for technique in action.techniques}
+    tactics = {action.tactic for action in _shipped_map_actions()}
+    assert len(techniques) >= 25, f"only {len(techniques)} technique(s): {sorted(techniques)}"
+    assert len(tactics) >= 8, f"only {len(tactics)} tactic(s): {sorted(tactics)}"
+
+
+def test_the_tactic_vocabulary_is_the_pinned_v20_set() -> None:
+    """REQ-VALID-007's vocabulary clause: 15 v20 tactics, Stealth and Defense Impairment in it.
+
+    Read from the same pinned snapshot the technique ids are validated against, so the
+    vocabulary cannot lag the release: a v18-era 14-tactic list (with ``defense-evasion``)
+    fails here.
+    """
+    from arachne.modules.framework_map import attack_tactics
+    from arachne.purple.attack import TACTIC_LABELS, TACTICS
+
+    pinned = attack_tactics()
+    assert tuple(tactic.shortname for tactic in pinned) == TACTICS
+    assert len(TACTICS) == 15, f"v20 has 15 enterprise tactics, got {len(TACTICS)}"
+    assert "stealth" in TACTICS and "defense-impairment" in TACTICS
+    assert "defense-evasion" not in TACTICS, "Defense Evasion is not a v20 tactic"
+    assert set(TACTIC_LABELS) == set(TACTICS)
+
+
+def test_every_action_names_a_technique_the_pinned_release_knows() -> None:
+    """REQ-VALID-007: every technique id validates against the pinned ATT&CK v20 data."""
+    from arachne.modules.framework_map import item_error
+
+    for action in _shipped_map_actions():
+        for technique in action.techniques:
+            assert item_error(f"ATT&CK-{technique}") is None, (action.check_id, technique)
+
+
+def test_every_action_is_filed_under_a_tactic_the_release_assigns_its_technique() -> None:
+    from arachne.purple.attack import technique_tactics
+
+    for action in _shipped_map_actions():
+        assigned = {
+            name for technique in action.techniques for name in technique_tactics(technique)
+        }
+        assert action.tactic in assigned, (action.check_id, action.tactic, sorted(assigned))
+
+
+def test_no_action_claims_a_stealth_technique() -> None:
+    """The vocabulary has Stealth; no action may be filed under it.
+
+    ARACHNE's tests are designed to be seen (``NO_EVASION_POLICY``): an action filed under the
+    Stealth tactic would describe an evasion capability the product refuses to have. Two
+    statements, because ATT&CK v20 assigns a technique *several* tactics and one of them can be
+    Stealth — T1078 (Valid Accounts) is filed under Stealth, Persistence, Privilege Escalation
+    and Initial Access, and the actions below use its initial-access/persistence assignment for a
+    plain logon test. So: no action's own tactic is Stealth, and no action names a technique
+    whose *only* home is Stealth.
+    """
+    from arachne.purple.attack import TACTIC_LABELS, technique_tactics
+
+    actions = _shipped_map_actions()
+    assert "stealth" in TACTIC_LABELS, "the vocabulary must still contain Stealth"
+    filed_under_stealth = [(a.check_id, a.tactic) for a in actions if a.tactic == "stealth"]
+    assert filed_under_stealth == []
+    stealth_only = [
+        (action.check_id, technique)
+        for action in actions
+        for technique in action.techniques
+        if set(technique_tactics(technique)) == {"stealth"}
+    ]
+    assert stealth_only == []
+
+
+def test_every_action_declares_telemetry_a_defender_could_collect() -> None:
+    """A rule-miss is only meaningful when the event is one a log source would actually hold."""
+    for action in _shipped_map_actions():
+        assert action.event.summary.strip(), action.check_id
+        assert action.event.fields, action.check_id
+        assert action.event.logsource.get("product"), action.check_id
+        assert action.event.logsource.get("category") or action.event.logsource.get("service"), (
+            action.check_id
+        )
+
+
+def test_a_map_naming_an_unknown_technique_is_refused(tmp_path: Path) -> None:
+    """The gate, not just the shipped file: an operator's own map is held to the same rule."""
+    import yaml
+
+    from arachne.purple.attack import load_technique_map
+
+    document = _doctored_document(techniques=["T9999"])
+    path = tmp_path / "unknown-technique.yaml"
+    path.write_text(yaml.safe_dump(document), encoding="utf-8")
+    with pytest.raises(ConfigurationError, match=r"ATT&CK-T9999"):
+        load_technique_map(path)
+
+
+def test_a_map_filed_under_the_wrong_tactic_is_refused(tmp_path: Path) -> None:
+    """A credential technique filed under discovery is a lie about what the test exercises."""
+    import yaml
+
+    from arachne.purple.attack import load_technique_map
+
+    document = _doctored_document(tactic="discovery")
+    path = tmp_path / "wrong-tactic.yaml"
+    path.write_text(yaml.safe_dump(document), encoding="utf-8")
+    with pytest.raises(ConfigurationError, match="tactic 'discovery' is not one ATT&CK v20"):
+        load_technique_map(path)
+
+
+def _doctored_document(*, techniques: list[str] | None = None, tactic: str | None = None) -> Any:
+    """The shipped map with every action's technique list and/or tactic replaced."""
+    from arachne.purple.attack import load_technique_map
+
+    document: dict[str, Any] = {
+        "version": "2.0",
+        "actions": [
+            {
+                "check": action.check_id,
+                "title": action.title,
+                "level": action.level,
+                "tactic": tactic or action.tactic,
+                "techniques": list(techniques or action.techniques),
+                "severity": action.severity,
+                "telemetry": {
+                    "summary": action.event.summary,
+                    "logsource": dict(action.event.logsource),
+                    "event": dict(action.event.fields),
+                },
+            }
+            for action in load_technique_map().actions.values()
+        ],
+    }
+    return document

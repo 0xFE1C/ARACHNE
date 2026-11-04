@@ -654,14 +654,26 @@ def test_the_framework_report_renders_coverage_and_explicit_gaps() -> None:
     assert document["schema_version"] == report.schema_version
     assert [block["framework"] for block in document["compliance"]] == ["iso27001", "pci-dss"]
 
-    # The appendix carries the section; every framework block states its coverage.
+    # The appendix carries the section; every framework block states its coverage. The numbers
+    # come from the shipped maps rather than being typed here, so growing the mapping (WP-19)
+    # does not require editing this golden — a hard-coded count is how a report number rots.
+    from arachne.report.compliance import load_compliance_framework
+
+    iso_map = load_compliance_framework("iso27001")
+    pci_map = load_compliance_framework("pci-dss")
     assert "### H. Compliance framework coverage" in markdown
-    assert "#### ISO/IEC 27001:2022 Annex A (2022) — map v1.0" in markdown
-    assert "#### PCI DSS (v4.0) — map v1.0" in markdown
-    assert "Mapped: 16 of 93 controls" in markdown  # iso27001: mapped, of its own total
-    assert "77 control(s) are outside ARACHNE's check catalogue" in markdown
-    assert "Mapped: 10 of 12 requirements" in markdown
-    assert "2 requirement(s) are outside ARACHNE" in markdown
+    assert f"#### {iso_map.name} ({iso_map.edition}) — map v{iso_map.map_version}" in markdown
+    assert f"#### {pci_map.name} ({pci_map.edition}) — map v{pci_map.map_version}" in markdown
+    assert f"Mapped: {iso_map.assessed} of {iso_map.total_controls} controls" in markdown
+    assert (
+        f"{iso_map.total_controls - iso_map.assessed} control(s) are outside ARACHNE's check "
+        "catalogue" in markdown
+    )
+    assert f"Mapped: {pci_map.assessed} of {pci_map.total_controls} requirements" in markdown
+    assert (
+        f"{pci_map.total_controls - pci_map.assessed} requirement(s) are outside ARACHNE"
+        in markdown
+    )
     assert "This scan: " in markdown and " gap (mapped checks that did not run)" in markdown
 
     # The failing control is a row with its finding; the clean ones are `pass`.

@@ -60,10 +60,10 @@ def _two_hop_path(host: str = "payments.example"):
     )
     terminal = make_candidate(
         number=2,
-        title="Unauthenticated administrative endpoint",
-        asset_value=f"https://{host}/admin",
+        title="Unauthenticated data API",
+        asset_value=f"https://{host}/api/users",
         module="M4",
-        check="dashboard-exposure",
+        check="unauth-api-audit",
         research_ref="ch04#2",
         severity="critical",
         confidence=95,
@@ -195,10 +195,7 @@ def test_the_defender_report_renders_the_gaps_the_sigma_miss_and_an_unseen_path(
         "execution: `m3.state-marker` Marker row written by the state-change proof "
         "— T1565.001 (unseen)" in markdown
     )
-    assert (
-        "access: `m4.dashboard-exposure` Unauthenticated administrative endpoint — — "
-        "(unmapped)" in markdown
-    )
+    assert "access: `m4.unauth-api-audit` Unauthenticated data API — — (unmapped)" in markdown
 
     payload = report.to_dict()
     assert payload["unseen_paths"] == [paths[0].id]
@@ -235,7 +232,7 @@ def test_a_path_with_no_unseen_hop_is_not_claimed_as_unseen() -> None:
         generated_at=NOW,
     )
     entry = report.paths[0]
-    assert entry.unmapped == ("m4.dashboard-exposure",)
+    assert entry.unmapped == ("m4.unauth-api-audit",)
     assert "T1565.001" in entry.unseen
     assert report.unseen_paths == (entry,)
 

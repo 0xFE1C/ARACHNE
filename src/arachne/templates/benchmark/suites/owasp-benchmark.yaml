@@ -19,6 +19,10 @@ reproduce: >-
 notes: >-
   Sampled, not exhaustive: one case per category per outcome. The full corpus is scored by the
   Benchmark's own tooling; this suite is the regression guard for the categories ARACHNE claims.
+  No result is committed for this suite: its target is hosted, an operator must run the
+  documented command against it, and publishing a number that was not measured would be a
+  fabrication. `--gate` reports the absent baseline as a note (the suite is optional), and
+  `verify_recorded` checks the arithmetic of any baseline an operator later commits.
 cases:
   - {check_id: m3.sqli-oracle, marker: "/benchmark/testcode/BenchmarkTest00001", expect: tp}
   - {check_id: m3.sqli-oracle, marker: "/benchmark/testcode/BenchmarkTest00002", expect: fp}
@@ -32,3 +36,10 @@ cases:
   - {check_id: m3.xxe-oracle, marker: "/benchmark/testcode/BenchmarkTest00042", expect: fp}
   - {check_id: m3.ssti-oracle, marker: "/benchmark/testcode/BenchmarkTest00051", expect: tp}
   - {check_id: m3.ssti-oracle, marker: "/benchmark/testcode/BenchmarkTest00052", expect: fp}
+
+# --- rotation (managed by `python -m arachne.tools.benchmark --rotate`) ---
+rotated_at: '2026-11-04'
+review_by: '2027-11-04'
+rotation_history:
+  - '2026-11-04: seeded annual rotation policy (REQ-TRUST-010)'
+# --- end rotation ---

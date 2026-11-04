@@ -21,12 +21,15 @@ prefix           id form                                     pinned artefact
 
 Two validation strengths are used, and the difference matters:
 
-* **item lists** (WSTG, API Top 10, LLM, ASI) — the id must be one of the pinned items. A
-  WSTG id whose category is real but whose number does not exist (``WSTG-ATHN-11``) is
-  refused, so the ledger can never claim a test that is not in the guide.
-* **ranges** (CWE, ATT&CK) — the numbering is open-ended, so the pinned artefact is a version
-  plus an inclusive numeric bound. ``CWE-99999`` is refused as out of range; ``ATT&CK-T123``
-  as malformed.
+* **item lists** (WSTG, API Top 10, LLM, ASI, ATT&CK) — the id must be one of the pinned
+  items. A WSTG id whose category is real but whose number does not exist (``WSTG-ATHN-11``)
+  is refused, so the ledger can never claim a test that is not in the guide. ATT&CK joined
+  that group for REQ-VALID-007: the snapshot is the release's complete Enterprise technique
+  set (706 techniques, 479 sub-techniques), so an id is checked against the release it names
+  rather than against a number band, and each item carries the tactics MITRE assigns it.
+* **ranges** (CWE) — the numbering is open-ended, so the pinned artefact is a version plus an
+  inclusive numeric bound. ``CWE-99999`` is refused as out of range. ATT&CK keeps a band as a
+  backstop for a future release's file, but the item list is what decides.
 
 This module also computes the WSTG coverage states (``mapped`` / ``out_of_scope`` / ``gap``,
 REQ-DET-003) from the authored scope of each item plus the ids the registry actually names.
@@ -48,12 +51,14 @@ __all__ = [
     "CWE_TOP25_FILE",
     "FRAMEWORK_FILES",
     "FRAMEWORK_ORDER",
+    "AttackTactic",
     "CweTop25State",
     "Framework",
     "FrameworkItem",
     "WstgState",
     "api_top10_coverage",
     "asi_top10_coverage",
+    "attack_tactics",
     "cwe_top25_coverage",
     "cwe_top25_framework",
     "framework",
@@ -114,10 +119,23 @@ class FrameworkItem:
     scope: str = "in_scope"
     #: Why an item is out of scope; required when ``scope == "out_of_scope"``.
     reason: str | None = None
+    #: Every tactic the release assigns this item (ATT&CK only; empty elsewhere). The purple
+    #: replay catalogue's ``tactic`` must be one of them, which is what makes "this action
+    #: exercises this technique" checkable against pinned data rather than taken on trust.
+    tactics: tuple[str, ...] = ()
 
     @property
     def in_scope(self) -> bool:
         return self.scope == "in_scope"
+
+
+@dataclass(frozen=True, slots=True)
+class AttackTactic:
+    """One ATT&CK enterprise tactic (REQ-VALID-007): its id, its short name and its label."""
+
+    id: str
+    shortname: str
+    title: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,6 +151,8 @@ class Framework:
     minimum: int | None = None
     maximum: int | None = None
     notes: str = ""
+    #: The release's tactic vocabulary, when it declares one (ATT&CK). Empty otherwise.
+    tactics: tuple[AttackTactic, ...] = ()
 
     @property
     def label(self) -> str:
@@ -193,6 +213,7 @@ def _load(name: str, filename: str) -> Framework:
             number=raw.get("number"),
             scope=str(raw.get("scope", "in_scope")),
             reason=raw.get("reason"),
+            tactics=tuple(str(name) for name in raw.get("tactics") or ()),
         )
         if not item.in_scope and not item.reason:
             msg = f"framework item {item.id!r} is out of scope with no reason"
@@ -209,6 +230,14 @@ def _load(name: str, filename: str) -> Framework:
         minimum=bounds.get("min"),
         maximum=bounds.get("max"),
         notes=str(data.get("notes", "")),
+        tactics=tuple(
+            AttackTactic(
+                id=str(raw["id"]),
+                shortname=str(raw["shortname"]),
+                title=str(raw["title"]),
+            )
+            for raw in data.get("tactics") or ()
+        ),
     )
 
 
@@ -224,6 +253,17 @@ def framework(name: str) -> Framework:
 def framework_versions() -> dict[str, str]:
     """``{framework: pinned version}`` — what the ledger states about itself."""
     return {spec.name: spec.version for spec in frameworks()}
+
+
+def attack_tactics() -> tuple[AttackTactic, ...]:
+    """The pinned ATT&CK tactic vocabulary, in tactic-id order.
+
+    REQ-VALID-007 requires the purple catalogue's tactic vocabulary to be the release's, not a
+    hand-kept list that lags it. Reading it from the same pinned snapshot the technique ids are
+    validated against is what makes that true: v20 (15 tactics, Defense Evasion split into
+    Stealth and Defense Impairment) is a *data* statement, and a future release bumps one file.
+    """
+    return framework("ATT&CK").tactics
 
 
 def framework_for_item(item_id: str) -> Framework | None:

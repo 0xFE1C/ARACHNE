@@ -87,3 +87,10 @@ cases:
 - check_id: m3.api-surface
   marker: /api/v1
   expect: fp
+
+# --- rotation (managed by `python -m arachne.tools.benchmark --rotate`) ---
+rotated_at: '2026-11-04'
+review_by: '2027-11-04'
+rotation_history:
+  - '2026-11-04: seeded annual rotation policy (REQ-TRUST-010)'
+# --- end rotation ---

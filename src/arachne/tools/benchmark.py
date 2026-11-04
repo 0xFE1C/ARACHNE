@@ -1,7 +1,7 @@
 """``python -m arachne.tools.benchmark`` — run the benchmark harness and gate on it (REQ-QUAL-005).
 
 This is the CI entry point (the ``benchmark`` job in ``.github/workflows/ci.yml`` runs it) and
-the operator's command. Three modes:
+the operator's command. Four modes:
 
 ``--lab``
     Run the in-repo ground-truth lab (``tests/lab/web_lab.py``, the same vulnerable-by-design
@@ -16,6 +16,15 @@ the operator's command. Three modes:
     Compare every measured result against its committed baseline under ``benchmarks/`` and exit
     non-zero on a regression. Without ``--gate`` the run just prints and (with
     ``--write-baseline``) records.
+``--rotate [--suite NAME] [--rotate-note TEXT]``
+    Stamp a suite's annual fixture rotation (REQ-TRUST-010): writes ``rotated_at``, the new
+    ``review_by`` (one year on) and appends to ``rotation_history`` in the suite file. Nothing
+    is measured.
+
+Writing a baseline also writes ``results.json`` beside it — the same document, published under
+the path REQ-TRUST-010 names — so a third party gets the raw per-case rows, the corpus version,
+the exact command and the environment, not only aggregates. ``--output-dir`` redirects both
+(a reproduction run writes to a temp directory without touching the committed record).
 
 Exit codes: ``0`` ok, ``1`` a regression or an inconsistency, ``2`` a usage/target error.
 """
@@ -26,7 +35,9 @@ import asyncio
 import importlib
 import json
 import sys
+import time
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -39,10 +50,14 @@ from arachne.quality.benchmark import (
     BenchmarkResult,
     BenchmarkSuite,
     GateReport,
+    environment_snapshot,
     gate,
     load_suites,
-    measure,
+    measure_with_cases,
     result_from_score,
+    stamp_rotation,
+    suite_file_path,
+    timing_document,
     verify_recorded,
     write_result,
 )
@@ -57,12 +72,18 @@ app = typer.Typer(
 
 
 def _baseline_dir() -> Path:
-    """``<repo>/code/benchmarks``: the committed results live beside the code that produced them.
+    """``<repo>/benchmarks``: the committed results live beside the code that produced them.
 
-    ``parents[3]`` is ``code/`` (``tools`` → ``arachne`` → ``src`` → ``code``), so the results
-    sit next to the source tree that generated them and travel with it.
+    ``parents[3]`` is the repository root (``tools`` → ``arachne`` → ``src`` → repo), so the
+    results sit next to the source tree that generated them and travel with it.
     """
     return Path(__file__).resolve().parents[3] / "benchmarks"
+
+
+def _write_publication(directory: Path, result: BenchmarkResult) -> None:
+    """Write the gate baseline and its published ``results.json`` copy (REQ-TRUST-010)."""
+    write_result(directory / result.suite / "baseline.json", result)
+    write_result(directory / result.suite / "results.json", result)
 
 
 @app.command()
@@ -82,6 +103,30 @@ def run(
     write_baseline: Annotated[
         bool, typer.Option("--write-baseline", help="Commit this run as the new baseline.")
     ] = False,
+    output_dir: Annotated[
+        Path | None,
+        typer.Option(
+            "--output-dir",
+            help=(
+                "Where baselines/results are written (default: the repository's benchmarks/). "
+                "A reproduction run uses this to avoid touching the committed record."
+            ),
+        ),
+    ] = None,
+    rotate: Annotated[
+        bool,
+        typer.Option(
+            "--rotate",
+            help=(
+                "Record an annual fixture rotation in the suite file(s) instead of measuring. "
+                "Stamps rotated_at=today, review_by=+1 year and appends rotation_history."
+            ),
+        ),
+    ] = False,
+    rotate_note: Annotated[
+        str,
+        typer.Option("--rotate-note", help="What changed in this rotation (recorded)."),
+    ] = "",
     max_detection_drop: Annotated[
         float, typer.Option("--max-detection-drop", help="Tolerated detection drop.")
     ] = 0.02,
@@ -101,7 +146,12 @@ def run(
     as_json: Annotated[bool, typer.Option("--json", help="Emit the report as JSON.")] = False,
 ) -> None:
     """Measure the suites and (with ``--gate``) block on a regression."""
+    if rotate:
+        _rotate(suite, note=rotate_note)
+        return
+
     suites = load_suites()
+    directory = output_dir if output_dir is not None else _baseline_dir()
     selected: list[BenchmarkSuite] = []
     if suite:
         if suite not in suites:
@@ -126,7 +176,7 @@ def run(
             reports.append(
                 gate(
                     result,
-                    directory=_baseline_dir(),
+                    directory=directory,
                     max_detection_drop=max_detection_drop,
                     max_fp_rise=max_fp_rise,
                     max_fp_rate=max_fp_rate,
@@ -135,7 +185,7 @@ def run(
                 else GateReport(suite=item.name, measured=True, score=result.numbers)
             )
             if write_baseline:
-                write_result(_baseline_dir() / item.name / "baseline.json", result)
+                _write_publication(directory, result)
                 typer.echo(f"wrote baseline for {item.name} ({result.numbers.record()})")
         elif target and suite:
             result = _run_target(item, target)
@@ -143,7 +193,7 @@ def run(
             reports.append(
                 gate(
                     result,
-                    directory=_baseline_dir(),
+                    directory=directory,
                     max_detection_drop=max_detection_drop,
                     max_fp_rise=max_fp_rise,
                     max_fp_rate=max_fp_rate,
@@ -152,13 +202,13 @@ def run(
                 else GateReport(suite=item.name, measured=True, score=result.numbers)
             )
             if write_baseline:
-                write_result(_baseline_dir() / item.name / "baseline.json", result)
+                _write_publication(directory, result)
                 typer.echo(f"wrote baseline for {item.name} ({result.numbers.record()})")
         else:
             # A suite whose target is hosted elsewhere: the gate verifies what it can (the
             # committed baseline's presence and arithmetic) and says so.
             report = (
-                verify_recorded(item, directory=_baseline_dir())
+                verify_recorded(item, directory=directory)
                 if gate_results
                 else (GateReport(suite=item.name, measured=False))
             )
@@ -179,6 +229,25 @@ def run(
         _print(reports)
     if gate_results and not all(report.ok for report in reports):
         raise typer.Exit(code=1)
+
+
+def _rotate(name: str | None, *, note: str) -> None:
+    """Stamp the annual rotation for one suite (or every shipped suite)."""
+    suites = load_suites()
+    names = [name] if name else sorted(suites)
+    today = datetime.now(UTC).date()
+    for suite_name in names:
+        if suite_name not in suites:
+            typer.echo(
+                f"unknown suite {suite_name!r}; known: {', '.join(sorted(suites))}", err=True
+            )
+            raise typer.Exit(code=2)
+        path = suite_file_path(suite_name)
+        if not path.exists():  # pragma: no cover - the shipped suites are files in a checkout
+            typer.echo(f"cannot locate the suite file for {suite_name!r} at {path}", err=True)
+            raise typer.Exit(code=2)
+        review_by = stamp_rotation(path, rotated_at=today, note=note)
+        typer.echo(f"rotated {suite_name}: rotated_at={today} review_by={review_by}")
 
 
 def _print(reports: Sequence[GateReport]) -> None:
@@ -221,14 +290,28 @@ def _run_lab(suite: BenchmarkSuite) -> BenchmarkResult:
             request = harness.request
             if request is None:  # pragma: no cover - the harness always builds one
                 raise ConfigurationError("the benchmark harness built no scan request")
+            started = time.monotonic()
             session = await harness.orchestrator.scan(request)
+            scan_seconds = time.monotonic() - started
             if session.scan_id is None:  # pragma: no cover - a scan always has an id
                 raise ConfigurationError("the benchmark scan produced no scan id")
+            scan_started_at = session.record.started_at if session.record is not None else None
             records = harness.findings.list_candidates(int(session.scan_id))
-            return measure(records, suite)
+            score, cases = measure_with_cases(records, suite, scan_started_at=scan_started_at)
+            return score, cases, scan_seconds, scan_started_at
 
-    score = asyncio.run(measure_lab())
-    return result_from_score(suite, score, arachne_version=__version__)
+    score, cases, scan_seconds, scan_started_at = asyncio.run(measure_lab())
+    return result_from_score(
+        suite,
+        score,
+        arachne_version=__version__,
+        command=suite.reproduce,
+        environment=environment_snapshot(__version__),
+        timing=timing_document(
+            scan_seconds=scan_seconds, scan_started_at=scan_started_at, cases=cases
+        ),
+        cases=cases,
+    )
 
 
 def _run_target(suite: BenchmarkSuite, target: str) -> BenchmarkResult:
@@ -257,12 +340,26 @@ def _run_target(suite: BenchmarkSuite, target: str) -> BenchmarkResult:
             options=ScanOptions(modules=ModuleSelection(enabled=("M3", "M4"))),
         )
         orchestrator = build_orchestrator(services)
+        started = time.monotonic()
         session = asyncio.run(orchestrator.scan(request))
+        scan_seconds = time.monotonic() - started
         if session.scan_id is None:  # pragma: no cover
             raise ConfigurationError("the benchmark scan produced no scan id")
+        scan_started_at = session.record.started_at if session.record is not None else None
         records = services.findings.list_candidates(int(session.scan_id))
-        score = measure(records, suite)
-        return result_from_score(suite, score, arachne_version=__version__, target=target)
+        score, cases = measure_with_cases(records, suite, scan_started_at=scan_started_at)
+        return result_from_score(
+            suite,
+            score,
+            arachne_version=__version__,
+            target=target,
+            command=suite.reproduce,
+            environment=environment_snapshot(__version__),
+            timing=timing_document(
+                scan_seconds=scan_seconds, scan_started_at=scan_started_at, cases=cases
+            ),
+            cases=cases,
+        )
     finally:
         services.close()
 

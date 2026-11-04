@@ -51,7 +51,7 @@ from typing import Any, Final, Literal
 import yaml
 
 from arachne.core.errors import ContentPackError
-from arachne.core.signing import DeploymentSigner, SigningKeyring
+from arachne.core.signing import Signer, SigningKeyring
 from arachne.resil.packs import ContentPack, read_pack
 
 __all__ = [
@@ -298,7 +298,7 @@ class ReviewReport:
 def review_pack_bytes(
     data: bytes,
     *,
-    signer: DeploymentSigner | None = None,
+    signer: Signer | None = None,
     keyring: SigningKeyring | None = None,
     catalogue: Any = None,
     trusted_key_ids: Iterable[str] = (),
@@ -338,7 +338,7 @@ def review_pack_bytes(
 def review_pack(
     pack: ContentPack,
     *,
-    signer: DeploymentSigner | None = None,
+    signer: Signer | None = None,
     keyring: SigningKeyring | None = None,
     catalogue: Any = None,
     trusted_key_ids: Iterable[str] = (),
@@ -376,7 +376,7 @@ def review_pack(
 def _signature_gate(
     pack: ContentPack,
     *,
-    signer: DeploymentSigner | None,
+    signer: Signer | None,
     keyring: SigningKeyring | None = None,
     trusted_key_ids: Iterable[str],
     allow_unsigned: bool,

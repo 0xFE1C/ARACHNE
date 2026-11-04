@@ -31,7 +31,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Final
 
-from arachne.core.signing import DeploymentSigner, canonical_bytes, canonical_text
+from arachne.core.signing import Signer, canonical_bytes, canonical_text
 
 __all__ = [
     "ANCHOR_DOMAIN",
@@ -267,14 +267,14 @@ def anchor_payload(seq: int, hash_: str) -> dict[str, Any]:
     return {"seq": seq, "hash": hash_}
 
 
-def sign_anchor(signer: DeploymentSigner, seq: int, hash_: str) -> str:
+def sign_anchor(signer: Signer, seq: int, hash_: str) -> str:
     return signer.sign(ANCHOR_DOMAIN, canonical_bytes(anchor_payload(seq, hash_)))
 
 
 def verify_audit_chain(
     links: Sequence[AuditLink],
     *,
-    signer: DeploymentSigner | None = None,
+    signer: Signer | None = None,
     require_signature: bool = False,
     start_prev_hash: str = GENESIS_HASH,
     start_seq: int = 1,
@@ -364,7 +364,7 @@ def verify_anchors(
     anchors: Sequence[Anchor],
     *,
     links: Sequence[AuditLink],
-    signer: DeploymentSigner | None = None,
+    signer: Signer | None = None,
 ) -> IntegrityReport:
     """Check every recorded head against the log that should still reach it."""
     issues: list[IntegrityIssue] = []
@@ -464,12 +464,12 @@ def row_signature_payload(domain: str, row: Mapping[str, Any]) -> dict[str, Any]
     return finding_signature_payload(row)
 
 
-def sign_row(signer: DeploymentSigner, domain: str, row: Mapping[str, Any]) -> str:
+def sign_row(signer: Signer, domain: str, row: Mapping[str, Any]) -> str:
     return signer.sign(domain, canonical_bytes(row_signature_payload(domain, row)))
 
 
 def verify_row_signature(
-    signer: DeploymentSigner | None,
+    signer: Signer | None,
     domain: str,
     row: Mapping[str, Any],
     signature: str | None,
@@ -559,7 +559,7 @@ def seal_digest(manifest: Iterable[str]) -> str:
     return hashlib.sha256(canonical_bytes(list(manifest))).hexdigest()
 
 
-def sign_seal(signer: DeploymentSigner, scan_id: int, digest: str, count: int) -> str:
+def sign_seal(signer: Signer, scan_id: int, digest: str, count: int) -> str:
     return signer.sign(
         SEAL_DOMAIN, canonical_bytes({"scan_id": scan_id, "digest": digest, "count": count})
     )
@@ -570,7 +570,7 @@ def verify_seal(
     *,
     findings: Sequence[Mapping[str, Any]],
     evidences: Sequence[Mapping[str, Any]],
-    signer: DeploymentSigner | None = None,
+    signer: Signer | None = None,
     require_signature: bool = False,
 ) -> IntegrityReport:
     """Recompute a scan's seal against the rows that are still there.
@@ -863,13 +863,13 @@ def attestation_digest(payload: Mapping[str, Any]) -> str:
     return hashlib.sha256(canonical_bytes(dict(payload))).hexdigest()
 
 
-def sign_attestation(signer: DeploymentSigner, payload: Mapping[str, Any]) -> str:
+def sign_attestation(signer: Signer, payload: Mapping[str, Any]) -> str:
     """The deployment key's signature over the attestation body."""
     return signer.sign(RESIDUE_DOMAIN, canonical_bytes(dict(payload)))
 
 
 def verify_attestation(
-    signer: DeploymentSigner | None, payload: Mapping[str, Any], signature: str | None
+    signer: Signer | None, payload: Mapping[str, Any], signature: str | None
 ) -> bool:
     """True when ``signature`` is the deployment key's signature over ``payload``.
 

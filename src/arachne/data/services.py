@@ -26,7 +26,7 @@ from arachne.core.orchestrator import ClientFactory, Orchestrator
 from arachne.core.pii import PIIPolicy
 from arachne.core.planner import ScanStep
 from arachne.core.safety import Scope
-from arachne.core.signing import build_signer
+from arachne.core.signing import build_signer, build_verifier
 from arachne.core.vault import FileCredentialVault, build_vault
 from arachne.data.analysis_store import SqlAnalysisStore
 from arachne.data.content_pack_store import ContentPackStore
@@ -172,14 +172,24 @@ def require_schema(engine: Engine) -> None:
 
 
 def build_integrity_verifier(services: ScanServices) -> IntegrityVerifier:
-    """The verifier ``arachne verify-chain`` drives (S25, REQ-TRUST-005).
+    """The verifier ``arachne verify-chain`` drives (S25, REQ-TRUST-005; WP-19).
 
-    Built from the same key and the same store the writer used, so a signature or a seal the
-    writer produced is checked against exactly the material it was produced with.
+    Built from the same keys the writer used — *plus* every other key this deployment accepts —
+    so a signature or a seal the writer produced is checked against exactly the material it was
+    produced with, and a chain whose older rows were signed under the other scheme still
+    verifies after an upgrade (REQ-TRUST-008's dual period). An auditor who holds only the
+    Ed25519 public key runs this same function and gets a verifier that cannot sign.
+
+    An **empty** ring is passed as ``None``. The integrity layer distinguishes "no key
+    configured" (an unsigned row is a note, unless ``--require-signatures``) from "keys
+    configured" (an unsigned row is a failure), and a keyring object is never ``None`` — so
+    collapsing the empty case here is what keeps a keyless deployment reporting what it always
+    did.
     """
+    ring = build_verifier(services.settings)
     return IntegrityVerifier(
         services.session_factory,
-        signer=build_signer(services.settings),
+        signer=ring if ring.signers else None,
         require_signatures=services.settings.integrity.require_signatures,
     )
 

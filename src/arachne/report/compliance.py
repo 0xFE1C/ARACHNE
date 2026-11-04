@@ -51,6 +51,7 @@ __all__ = [
     "FRAMEWORK_ALIASES",
     "ComplianceMap",
     "ControlMapping",
+    "OutsideAssessedControl",
     "available_frameworks",
     "canonical_framework",
     "compute_framework_coverage",
@@ -97,8 +98,27 @@ class ControlMapping:
 
 
 @dataclass(frozen=True, slots=True)
+class OutsideAssessedControl:
+    """One framework control no shipped check maps onto, and why (REQ-TRUST-009).
+
+    The map files are generated from check metadata, and the generator writes this list as the
+    **complement** of the assessed set — so "an unmapped control is reported, never omitted" is a
+    property of the data rather than a promise in prose. ``reason`` comes from the control's
+    group: it names the kind of control it is (organisational, physical, a logging process), not
+    a guess about one entry.
+    """
+
+    id: str
+    title: str
+    reason: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {"control": self.id, "title": self.title, "reason": self.reason}
+
+
+@dataclass(frozen=True, slots=True)
 class ComplianceMap:
-    """A loaded framework map: which checks speak to which controls."""
+    """A loaded framework map: which checks speak to which controls, and what is outside."""
 
     framework: str
     name: str
@@ -108,6 +128,10 @@ class ComplianceMap:
     map_version: str
     controls: tuple[ControlMapping, ...]
     source: str
+    #: The controls no shipped check maps onto, each with a reason (REQ-TRUST-009). Empty for a
+    #: hand-written overlay that does not model the framework's full inventory — which is why
+    #: the export states the count it was given rather than assuming the list is complete.
+    outside_assessed_set: tuple[OutsideAssessedControl, ...] = ()
 
     def by_check(self) -> dict[str, tuple[ControlMapping, ...]]:
         """Check id → the controls it evidences (the finding→control join)."""
@@ -116,6 +140,16 @@ class ComplianceMap:
             for check in control.checks:
                 out.setdefault(check, []).append(control)
         return {check: tuple(controls) for check, controls in out.items()}
+
+    @property
+    def assessed(self) -> int:
+        """How many of the framework's controls at least one shipped check can speak to."""
+        return len(self.controls)
+
+    @property
+    def fully_modelled(self) -> bool:
+        """True when the assessed set and the outside set together are the whole framework."""
+        return self.assessed + len(self.outside_assessed_set) == self.total_controls
 
 
 def canonical_framework(name: str) -> str | None:
@@ -252,6 +286,22 @@ def _parse_data(
             f"({len(parsed)})"
         )
         raise ConfigurationError(msg)
+    outside = _parse_outside(data.get("outside_assessed_set"), source=source)
+    mapped_ids = {control.id for control in parsed}
+    duplicated = sorted(mapped_ids & {control.id for control in outside})
+    if duplicated:
+        msg = (
+            f"{source}: control id(s) {duplicated} are both mapped and listed as outside the "
+            "assessed set — one of the two is wrong"
+        )
+        raise ConfigurationError(msg)
+    if outside and total != len(parsed) + len(outside):
+        msg = (
+            f"{source}: {len(parsed)} mapped + {len(outside)} outside = "
+            f"{len(parsed) + len(outside)} controls, but the framework has {total}: an unmapped "
+            "control must be named, not omitted"
+        )
+        raise ConfigurationError(msg)
     return ComplianceMap(
         framework=str(data.get("framework") or framework),
         name=str(data.get("name") or framework),
@@ -261,7 +311,47 @@ def _parse_data(
         map_version=str(data.get("map_version") or "0"),
         controls=tuple(parsed),
         source=source,
+        outside_assessed_set=outside,
     )
+
+
+def _parse_outside(value: object, *, source: str) -> tuple[OutsideAssessedControl, ...]:
+    """The ``outside_assessed_set`` block: every entry needs a reason, and ids stay unique."""
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        msg = f"{source}: `outside_assessed_set` must be a list"
+        raise ConfigurationError(msg)
+    seen: set[str] = set()
+    parsed: list[OutsideAssessedControl] = []
+    for entry in value:
+        if not isinstance(entry, dict):
+            msg = f"{source}: every outside_assessed_set entry must be a mapping"
+            raise ConfigurationError(msg)
+        control_id = entry.get("id")
+        title = entry.get("title")
+        reason = entry.get("reason")
+        if not isinstance(control_id, str) or not control_id:
+            msg = f"{source}: every outside_assessed_set entry needs a non-empty string id"
+            raise ConfigurationError(msg)
+        if control_id in seen:
+            msg = f"{source}: duplicate outside_assessed_set id {control_id!r}"
+            raise ConfigurationError(msg)
+        seen.add(control_id)
+        if not isinstance(reason, str) or not reason.strip():
+            msg = (
+                f"{source}: outside_assessed_set control {control_id!r} needs a reason — "
+                "unassessed is a statement, not a blank"
+            )
+            raise ConfigurationError(msg)
+        parsed.append(
+            OutsideAssessedControl(
+                id=control_id,
+                title=str(title or ""),
+                reason=reason.strip(),
+            )
+        )
+    return tuple(parsed)
 
 
 def _wellformed_check(value: str) -> bool:
@@ -464,6 +554,7 @@ def export_control_evidence(
             "total_controls": coverage.total_controls,
             "mapped": coverage.mapped,
             "unmapped": coverage.unmapped,
+            "outside_assessed_set": len(map_data.outside_assessed_set),
             "fail": coverage.count("fail"),
             "pass": coverage.count("pass"),
             "gap": coverage.count("gap"),
@@ -474,6 +565,10 @@ def export_control_evidence(
                 "control's operation, not proof of conformity."
             ),
         },
+        # REQ-TRUST-009: the framework's unassessed remainder, named rather than counted. An
+        # auditor reading this document sees exactly which controls no ARACHNE check can speak
+        # to and why, so the assessed set above can never be mistaken for the whole framework.
+        "outside_assessed_set": [row.to_dict() for row in map_data.outside_assessed_set],
         "audit": {
             "total_events": audit.total_events,
             "blocked_events": audit.blocked_events,

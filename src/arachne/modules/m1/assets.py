@@ -252,6 +252,7 @@ class InternetDbTriage(Module):
         ),
         research_ref="ch01#5",
         framework=("WSTG-CONF-01", "CWE-1035"),
+        compliance=("ISO-A.5.7", "ISO-A.5.9", "CSF-ID.RA-02"),
         cwe="CWE-1035",
         target_kinds=(TargetKind.IP, TargetKind.CIDR),
         severity_hint="medium",

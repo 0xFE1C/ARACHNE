@@ -282,6 +282,7 @@ class CodeSecretMining(Module):
         ),
         research_ref="ch01#2",
         framework=("WSTG-INFO-01", "CWE-798"),
+        compliance=("ISO-A.5.17", "ISO-A.5.32", "ISO-A.8.4"),
         cwe="CWE-798",
         target_kinds=(*_DOMAIN_KINDS, TargetKind.GIT),
         severity_hint="high",
