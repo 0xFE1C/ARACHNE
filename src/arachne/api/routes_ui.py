@@ -45,6 +45,7 @@ from arachne.api.pagination import (
 )
 from arachne.api.routes_api import (
     _definition_from_payload,
+    _denied,
     _require_finding,
     _scan_request,
     _visible,
@@ -448,7 +449,7 @@ async def start_scan(request: Request, context: ContextDep) -> Response:
     project = _ui_project(request, context, principal)
     form = await _form(request)
     payload = _start_request_from_form(form)
-    scan_request = _scan_request(payload, context, project=project)
+    scan_request = _scan_request(payload, context, project=project, request=request)
     started = await context.runner.start(
         scan_request, project_id=project.id, project_scope=project.to_scope()
     )
@@ -462,14 +463,19 @@ async def stop_scan(request: Request, scan_id: int, context: ContextDep) -> Resp
         return principal
     _require_write(request, principal, Role.SCANNER)
     project = _ui_project(request, context, principal)
-    _require_visible_scan(context, scan_id, project)
+    _require_visible_scan(request, context, scan_id, project)
     await context.runner.stop(scan_id)
     return RedirectResponse(f"/ui/scans/{scan_id}", status_code=303)
 
 
-def _require_visible_scan(context: ContextDep, scan_id: int, project: ProjectRecord) -> Any:
+def _require_visible_scan(
+    request: Request, context: ContextDep, scan_id: int, project: ProjectRecord
+) -> Any:
     record = context.services.store.get_scan(scan_id)
-    if record is None or not _visible(record.project_id, project):
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"scan {scan_id} does not exist")
+    if not _visible(record.project_id, project):
+        _denied(request, context, resource="scan", resource_id=scan_id, project=project)
         raise HTTPException(status_code=404, detail=f"scan {scan_id} does not exist")
     return record
 
@@ -480,7 +486,7 @@ def scan_detail(request: Request, scan_id: int, context: ContextDep) -> Response
     if isinstance(principal, RedirectResponse):
         return principal
     project = _ui_project(request, context, principal)
-    record = _require_visible_scan(context, scan_id, project)
+    record = _require_visible_scan(request, context, scan_id, project)
     filters = _filters(request)
     partial = False
     try:
@@ -529,7 +535,7 @@ def scan_findings_partial(request: Request, scan_id: int, context: ContextDep) -
     if isinstance(principal, RedirectResponse):
         return principal
     project = _ui_project(request, context, principal)
-    _require_visible_scan(context, scan_id, project)
+    _require_visible_scan(request, context, scan_id, project)
     filters = _filters(request)
     return _render(
         context,
@@ -549,7 +555,7 @@ def scan_report(request: Request, scan_id: int, context: ContextDep) -> Response
     if isinstance(principal, RedirectResponse):
         return principal
     project = _ui_project(request, context, principal)
-    record = _require_visible_scan(context, scan_id, project)
+    record = _require_visible_scan(request, context, scan_id, project)
     if record.plan.get("dry_run"):
         # §4.7 empty: a dry run produced no report yet.
         return _render(
@@ -598,7 +604,7 @@ def scan_attack_paths(request: Request, scan_id: int, context: ContextDep) -> Re
     if isinstance(principal, RedirectResponse):
         return principal
     project = _ui_project(request, context, principal)
-    record = _require_visible_scan(context, scan_id, project)
+    record = _require_visible_scan(request, context, scan_id, project)
     from arachne.api.ui_visuals import attack_path_svg
 
     try:
@@ -1009,8 +1015,25 @@ async def revoke_suppression_ui(
     if isinstance(principal, RedirectResponse):
         return principal
     _require_write(request, principal, Role.SCANNER)
+    project = _ui_project(request, context, principal)
     store = getattr(context.services, "quality", None)
     if store is not None:
+        exists, owner = store.suppression_project(suppression_id)
+        if not exists:
+            raise HTTPException(
+                status_code=404, detail=f"suppression {suppression_id} does not exist"
+            )
+        if not _visible(owner, project):
+            _denied(
+                request,
+                context,
+                resource="suppression",
+                resource_id=suppression_id,
+                project=project,
+            )
+            raise HTTPException(
+                status_code=404, detail=f"suppression {suppression_id} does not exist"
+            )
         store.revoke_suppression(suppression_id, actor=principal.label)
     return RedirectResponse("/ui/quality", status_code=303)
 
@@ -1058,8 +1081,21 @@ async def revoke_acceptance_ui(
     if isinstance(principal, RedirectResponse):
         return principal
     _require_write(request, principal, Role.SCANNER)
+    project = _ui_project(request, context, principal)
     store = getattr(context.services, "quality", None)
     if store is not None:
+        exists, owner = store.acceptance_project(acceptance_id)
+        if not exists:
+            raise HTTPException(
+                status_code=404, detail=f"acceptance {acceptance_id} does not exist"
+            )
+        if not _visible(owner, project):
+            _denied(
+                request, context, resource="acceptance", resource_id=acceptance_id, project=project
+            )
+            raise HTTPException(
+                status_code=404, detail=f"acceptance {acceptance_id} does not exist"
+            )
         store.revoke_acceptance(acceptance_id, actor=principal.label)
     return RedirectResponse("/ui/quality", status_code=303)
 
@@ -1091,6 +1127,8 @@ async def mark_false_positive_ui(
     if isinstance(principal, RedirectResponse):
         return principal
     _require_write(request, principal, Role.SCANNER)
+    project = _ui_project(request, context, principal)
+    _require_finding(request, context, finding_id, project)
     row = context.queries.finding_row(finding_id)
     if row is None:
         raise HTTPException(status_code=404, detail=f"finding {finding_id} does not exist")
@@ -1360,7 +1398,7 @@ async def findings_action(request: Request, context: ContextDep) -> Response:
     rows: list[Any] = []
     for finding_id in action.finding_ids:
         try:
-            _require_finding(context, finding_id, project)
+            _require_finding(request, context, finding_id, project)
         except HTTPException:
             return _refuse(translate("ui.workspace.bulk_error_not_in_project"))
         row = context.queries.finding_row(finding_id)
@@ -1644,7 +1682,10 @@ def finding_detail_page(request: Request, finding_id: int, context: ContextDep) 
     if row is None:
         raise HTTPException(status_code=404, detail=f"finding {finding_id} does not exist")
     record = context.services.store.get_scan(row.scan_id)
-    if record is None or not _visible(record.project_id, project):
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"finding {finding_id} does not exist")
+    if not _visible(record.project_id, project):
+        _denied(request, context, resource="finding", resource_id=finding_id, project=project)
         raise HTTPException(status_code=404, detail=f"finding {finding_id} does not exist")
     finding = row.to_dict()
     selected = _parse_selection(request.query_params.get("sel"))

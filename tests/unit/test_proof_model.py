@@ -131,7 +131,9 @@ def test_the_shipped_checks_are_annotated_l1() -> None:
     registry = ModuleRegistry.builtin()
     ladder = {m.id for m in registry.metadata() if m.proof.is_opt_in}
     original = [m for m in registry.metadata() if m.id not in ladder]
-    assert len(original) == 168
+    # WP-20 adds the SSH credential check (REQ-CREDS-006), an active L1 check that reaches
+    # the network behind the same scope gate as the SMB one -> 169.
+    assert len(original) == 169
     assert all(m.proof in {ProofLevel.L0, ProofLevel.L1} for m in original)
     assert {m.id for m in original if m.proof is ProofLevel.L0} == {"m1.mobile-artifact"}
     assert all(not m.requires_state_attestation for m in original)

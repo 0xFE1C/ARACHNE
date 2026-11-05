@@ -39,7 +39,8 @@ import socket
 import ssl
 import struct
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import AsyncIterator, Mapping, Sequence
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any, Final, Literal, Protocol
 
@@ -297,6 +298,16 @@ class NetTransport(Protocol):
         max_bytes: int,
     ) -> TcpExchange: ...
 
+    async def open_stream(
+        self,
+        host: str,
+        port: int,
+        *,
+        connect_timeout: float,
+        read_timeout: float,
+        max_bytes: int,
+    ) -> NetStream: ...
+
     async def udp(
         self,
         host: str,
@@ -323,6 +334,25 @@ class NetTransport(Protocol):
     ) -> TlsExchange: ...
 
     async def icmp(self, host: str, *, identifier: int, io_timeout: float) -> IcmpExchange: ...
+
+
+class NetStream(Protocol):
+    """A duplex connection a scoped client has authorized and audited.
+
+    ``tcp`` is a request/response probe; a protocol that negotiates (SSH) needs the connection
+    to stay open across several exchanges. This is that seam and nothing more: bytes in,
+    bytes out, and a close — the authorization, the address policy, the airgap and the audit
+    line all live in :meth:`ScopedNetClient.open_stream`, so a negotiated protocol cannot
+    reach the network by any other route.
+    """
+
+    async def send(self, data: bytes) -> None: ...
+
+    async def receive(self) -> bytes:
+        """The next chunk, or ``b""`` when the peer closed the connection."""
+        ...
+
+    async def close(self) -> None: ...
 
 
 #: Wire values of the TLS protocol versions, as ``ssl.TLSVersion`` numbers them (they are the
@@ -365,6 +395,20 @@ def legacy_version_cap_options() -> int:
 
 class SocketTransport:
     """The real transport: ``asyncio`` sockets and the stdlib ``ssl`` module."""
+
+    async def open_stream(
+        self,
+        host: str,
+        port: int,
+        *,
+        connect_timeout: float,
+        read_timeout: float,
+        max_bytes: int,
+    ) -> NetStream:
+        reader, writer = await asyncio.wait_for(
+            asyncio.open_connection(host, port), connect_timeout
+        )
+        return _SocketStream(reader, writer, read_timeout=read_timeout, max_bytes=max_bytes)
 
     async def tcp(
         self,
@@ -657,6 +701,30 @@ def _describe(exc: BaseException) -> str:
     return f"{exc.__class__.__name__}: {exc}"
 
 
+class _SocketStream:
+    """A live asyncio connection with the transport's read timeout and byte bound applied."""
+
+    def __init__(self, reader: Any, writer: Any, *, read_timeout: float, max_bytes: int) -> None:
+        self._reader = reader
+        self._writer = writer
+        self._read_timeout = read_timeout
+        self._max_bytes = max_bytes
+
+    async def send(self, data: bytes) -> None:
+        self._writer.write(data)
+        await self._writer.drain()
+
+    async def receive(self) -> bytes:
+        try:
+            chunk = await asyncio.wait_for(self._reader.read(self._max_bytes), self._read_timeout)
+        except (TimeoutError, ConnectionError, OSError):
+            return b""
+        return bytes(chunk)
+
+    async def close(self) -> None:
+        _close_writer(self._writer)
+
+
 def _is_ipv6(host: str) -> bool:
     try:
         return ipaddress.ip_address(host).version == 6
@@ -689,6 +757,27 @@ class ScriptedNetTransport:
         if isinstance(route, list):
             return route.pop(0) if route else default
         return route
+
+    async def open_stream(
+        self,
+        host: str,
+        port: int,
+        *,
+        connect_timeout: float,
+        read_timeout: float,
+        max_bytes: int,
+    ) -> NetStream:
+        """A duplex over the scripted replies; an unscripted port records and closes."""
+        del connect_timeout, read_timeout
+        self.calls.append(("stream", host, port))
+        route = self.routes.get(("stream", host, port))
+        if route is None:
+            return _ScriptedStream([])
+        if callable(route):
+            route = route()
+        chunks = list(route) if isinstance(route, list) else [route]
+        payloads = [chunk if isinstance(chunk, bytes) else bytes(chunk) for chunk in chunks]
+        return _ScriptedStream(payloads)
 
     async def tcp(
         self,
@@ -807,6 +896,24 @@ class ScriptedNetTransport:
         return route
 
 
+class _ScriptedStream:
+    """A duplex backed by a list of pre-recorded chunks (the scripted transport's stream)."""
+
+    def __init__(self, chunks: list[bytes]) -> None:
+        self._chunks = chunks
+        self.sent: list[bytes] = []
+        self.closed = False
+
+    async def send(self, data: bytes) -> None:
+        self.sent.append(data)
+
+    async def receive(self) -> bytes:
+        return self._chunks.pop(0) if self._chunks else b""
+
+    async def close(self) -> None:
+        self.closed = True
+
+
 class ScopedNetClient:
     """The single non-HTTP egress point: scoped, rate-limited, audited probes (S4/M2)."""
 
@@ -850,6 +957,42 @@ class ScopedNetClient:
         """Nothing to release today; the seam exists so a caller treats both clients alike."""
 
     # ------------------------------------------------------------------ primitives
+    @asynccontextmanager
+    async def open_stream(
+        self, host: str, port: int, *, protocol: str = "tcp"
+    ) -> AsyncIterator[NetStream]:
+        """A duplex connection, authorized exactly like every other probe (SSH, REQ-CREDS-006).
+
+        ``_authorize`` runs **before** the transport is asked for a socket, so an out-of-scope
+        host is refused with no connection attempt, no DNS query and an audited
+        ``scope.rejected`` — the same order the request/response probes use. The rate limiter
+        is acquired for the *connect* only, not for the conversation: an SSH handshake is
+        several exchanges long and holding the global semaphore for its duration would stall
+        the rest of the scan.
+        """
+        addresses = await self._authorize(host, port, protocol=protocol)
+        await self.limiter.acquire(f"{host}:{port}")
+        stream = await self.transport.open_stream(
+            addresses[0],
+            port,
+            connect_timeout=self.net_settings.connect_timeout_s,
+            read_timeout=self.net_settings.read_timeout_s,
+            max_bytes=self.net_settings.max_read_bytes,
+        )
+        self._audit(
+            action=AuditAction.NET_PROBE,
+            host=host,
+            port=port,
+            protocol=protocol,
+            outcome=AuditOutcome.ALLOWED,
+            meta={"state": "open", "addresses": list(addresses), "stream": True},
+        )
+        self.probes += 1
+        try:
+            yield stream
+        finally:
+            await stream.close()
+
     async def tcp(
         self,
         host: str,

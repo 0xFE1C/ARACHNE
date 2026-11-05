@@ -1386,6 +1386,268 @@ export class ArachneClient {
     );
   }
 
+  async listGroups(
+    options: {
+      filter?: string | null;
+      startIndex?: number | null;
+      count?: number | null;
+      project?: string | null;
+    } = {},
+  ): Promise<unknown> {
+    /**
+     * List Groups GET /api/v1/scim/v2/Groups (operationId
+     * `list_groups_api_v1_scim_v2_Groups_get`). The success body is generic JSON: schema
+     * declares no `type`.
+     */
+    return this.request<unknown>(
+      "GET",
+      "/api/v1/scim/v2/Groups",
+      {
+        query: { filter: options.filter, startIndex: options.startIndex, count: options.count },
+        project: options.project,
+      },
+    );
+  }
+
+  async createGroup(body: object, options: { project?: string | null; } = {}): Promise<unknown> {
+    /**
+     * Create Group POST /api/v1/scim/v2/Groups (operationId
+     * `create_group_api_v1_scim_v2_Groups_post`). The success body is generic JSON: schema
+     * declares no `type`.
+     */
+    return this.request<unknown>(
+      "POST",
+      "/api/v1/scim/v2/Groups",
+      {
+        body,
+        project: options.project,
+      },
+    );
+  }
+
+  async getGroup(groupId: string, options: { project?: string | null; } = {}): Promise<unknown> {
+    /**
+     * Get Group GET /api/v1/scim/v2/Groups/{group_id} (operationId
+     * `get_group_api_v1_scim_v2_Groups__group_id__get`). The success body is generic JSON:
+     * schema declares no `type`.
+     */
+    return this.request<unknown>(
+      "GET",
+      `/api/v1/scim/v2/Groups/${encodeURIComponent(String(groupId))}`,
+      {
+        project: options.project,
+      },
+    );
+  }
+
+  async replaceGroup(
+    groupId: string,
+    body: object,
+    options: { project?: string | null; } = {},
+  ): Promise<unknown> {
+    /**
+     * Replace Group PUT /api/v1/scim/v2/Groups/{group_id} (operationId
+     * `replace_group_api_v1_scim_v2_Groups__group_id__put`). The success body is generic JSON:
+     * schema declares no `type`.
+     */
+    return this.request<unknown>(
+      "PUT",
+      `/api/v1/scim/v2/Groups/${encodeURIComponent(String(groupId))}`,
+      {
+        body,
+        project: options.project,
+      },
+    );
+  }
+
+  async patchGroup(
+    groupId: string,
+    body: object,
+    options: { project?: string | null; } = {},
+  ): Promise<unknown> {
+    /**
+     * Patch Group PATCH /api/v1/scim/v2/Groups/{group_id} (operationId
+     * `patch_group_api_v1_scim_v2_Groups__group_id__patch`). The success body is generic JSON:
+     * schema declares no `type`.
+     */
+    return this.request<unknown>(
+      "PATCH",
+      `/api/v1/scim/v2/Groups/${encodeURIComponent(String(groupId))}`,
+      {
+        body,
+        project: options.project,
+      },
+    );
+  }
+
+  async deleteGroup(groupId: string, options: { project?: string | null; } = {}): Promise<unknown> {
+    /**
+     * Delete Group DELETE /api/v1/scim/v2/Groups/{group_id} (operationId
+     * `delete_group_api_v1_scim_v2_Groups__group_id__delete`). The success body is generic JSON:
+     * no success response schema is declared.
+     */
+    return this.request<unknown>(
+      "DELETE",
+      `/api/v1/scim/v2/Groups/${encodeURIComponent(String(groupId))}`,
+      {
+        project: options.project,
+      },
+    );
+  }
+
+  async getResourceTypes(options: { project?: string | null; } = {}): Promise<unknown> {
+    /**
+     * Get Resource Types GET /api/v1/scim/v2/ResourceTypes (operationId
+     * `get_resource_types_api_v1_scim_v2_ResourceTypes_get`). The success body is generic JSON:
+     * schema declares no `type`.
+     */
+    return this.request<unknown>(
+      "GET",
+      "/api/v1/scim/v2/ResourceTypes",
+      {
+        project: options.project,
+      },
+    );
+  }
+
+  async getSchemas(options: { project?: string | null; } = {}): Promise<unknown> {
+    /**
+     * Get Schemas GET /api/v1/scim/v2/Schemas (operationId
+     * `get_schemas_api_v1_scim_v2_Schemas_get`). The success body is generic JSON: schema
+     * declares no `type`.
+     */
+    return this.request<unknown>(
+      "GET",
+      "/api/v1/scim/v2/Schemas",
+      {
+        project: options.project,
+      },
+    );
+  }
+
+  async getServiceProviderConfig(options: { project?: string | null; } = {}): Promise<unknown> {
+    /**
+     * Get Service Provider Config GET /api/v1/scim/v2/ServiceProviderConfig (operationId
+     * `get_service_provider_config_api_v1_scim_v2_ServiceProviderConfig_get`). The success body
+     * is generic JSON: schema declares no `type`.
+     */
+    return this.request<unknown>(
+      "GET",
+      "/api/v1/scim/v2/ServiceProviderConfig",
+      {
+        project: options.project,
+      },
+    );
+  }
+
+  async listUsers(
+    options: {
+      filter?: string | null;
+      startIndex?: number | null;
+      count?: number | null;
+      project?: string | null;
+    } = {},
+  ): Promise<unknown> {
+    /**
+     * List Users GET /api/v1/scim/v2/Users (operationId `list_users_api_v1_scim_v2_Users_get`).
+     * The success body is generic JSON: schema declares no `type`.
+     */
+    return this.request<unknown>(
+      "GET",
+      "/api/v1/scim/v2/Users",
+      {
+        query: { filter: options.filter, startIndex: options.startIndex, count: options.count },
+        project: options.project,
+      },
+    );
+  }
+
+  async createUser(body: object, options: { project?: string | null; } = {}): Promise<unknown> {
+    /**
+     * Create User POST /api/v1/scim/v2/Users (operationId
+     * `create_user_api_v1_scim_v2_Users_post`). The success body is generic JSON: schema
+     * declares no `type`.
+     */
+    return this.request<unknown>(
+      "POST",
+      "/api/v1/scim/v2/Users",
+      {
+        body,
+        project: options.project,
+      },
+    );
+  }
+
+  async getUser(userId: string, options: { project?: string | null; } = {}): Promise<unknown> {
+    /**
+     * Get User GET /api/v1/scim/v2/Users/{user_id} (operationId
+     * `get_user_api_v1_scim_v2_Users__user_id__get`). The success body is generic JSON: schema
+     * declares no `type`.
+     */
+    return this.request<unknown>(
+      "GET",
+      `/api/v1/scim/v2/Users/${encodeURIComponent(String(userId))}`,
+      {
+        project: options.project,
+      },
+    );
+  }
+
+  async replaceUser(
+    userId: string,
+    body: object,
+    options: { project?: string | null; } = {},
+  ): Promise<unknown> {
+    /**
+     * Replace User PUT /api/v1/scim/v2/Users/{user_id} (operationId
+     * `replace_user_api_v1_scim_v2_Users__user_id__put`). The success body is generic JSON:
+     * schema declares no `type`.
+     */
+    return this.request<unknown>(
+      "PUT",
+      `/api/v1/scim/v2/Users/${encodeURIComponent(String(userId))}`,
+      {
+        body,
+        project: options.project,
+      },
+    );
+  }
+
+  async patchUser(
+    userId: string,
+    body: object,
+    options: { project?: string | null; } = {},
+  ): Promise<unknown> {
+    /**
+     * Patch User PATCH /api/v1/scim/v2/Users/{user_id} (operationId
+     * `patch_user_api_v1_scim_v2_Users__user_id__patch`). The success body is generic JSON:
+     * schema declares no `type`.
+     */
+    return this.request<unknown>(
+      "PATCH",
+      `/api/v1/scim/v2/Users/${encodeURIComponent(String(userId))}`,
+      {
+        body,
+        project: options.project,
+      },
+    );
+  }
+
+  async deleteUser(userId: string, options: { project?: string | null; } = {}): Promise<unknown> {
+    /**
+     * Delete User DELETE /api/v1/scim/v2/Users/{user_id} (operationId
+     * `delete_user_api_v1_scim_v2_Users__user_id__delete`). The success body is generic JSON: no
+     * success response schema is declared.
+     */
+    return this.request<unknown>(
+      "DELETE",
+      `/api/v1/scim/v2/Users/${encodeURIComponent(String(userId))}`,
+      {
+        project: options.project,
+      },
+    );
+  }
+
   async listServiceAccounts(options: { project?: string | null; } = {}): Promise<unknown> {
     /**
      * List Service Accounts GET /api/v1/service-accounts (operationId

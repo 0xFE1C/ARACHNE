@@ -46,7 +46,12 @@ from arachne.data.evidence_service import EvidenceService
 from arachne.data.feed_store import FeedStore
 from arachne.data.finding_store import SqlFindingStore
 from arachne.data.fix_store import SqlFixProposalStore
-from arachne.data.identity_store import ServiceAccountStore, SessionStore, SsoFlowStore
+from arachne.data.identity_store import (
+    ProvisionedPrincipalStore,
+    ServiceAccountStore,
+    SessionStore,
+    SsoFlowStore,
+)
 from arachne.data.posture_store import SqlPostureStore
 from arachne.data.project_store import SqlProjectStore
 from arachne.data.purple_store import SqlPurpleStore
@@ -351,6 +356,7 @@ def make_api_harness(
         service_accounts=ServiceAccountStore(factory),
         identity_flows=SsoFlowStore(factory),
         auth_sessions=SessionStore(factory),
+        provisioned_principals=ProvisionedPrincipalStore(factory),
         evidence_backend=evidence_backend,
         evidence=evidence,
         quota=quota,

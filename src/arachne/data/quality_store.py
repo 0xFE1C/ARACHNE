@@ -65,6 +65,8 @@ class QualityStore(Protocol):
 
     def revoke_suppression(self, suppression_id: int, *, actor: str) -> Suppression | None: ...
 
+    def suppression_project(self, suppression_id: int) -> tuple[bool, int | None]: ...
+
     def add_acceptance(
         self, acceptance: RiskAcceptance, *, project_id: int | None = None
     ) -> RiskAcceptance: ...
@@ -79,6 +81,8 @@ class QualityStore(Protocol):
     ) -> tuple[RiskAcceptance, ...]: ...
 
     def revoke_acceptance(self, acceptance_id: int, *, actor: str) -> RiskAcceptance | None: ...
+
+    def acceptance_project(self, acceptance_id: int) -> tuple[bool, int | None]: ...
 
     def reopen_expired(self, *, now: datetime | None = None) -> tuple[ReopenDecision, ...]: ...
 
@@ -170,6 +174,12 @@ class MemoryQualityStore:
     def active_suppressions(self) -> SuppressionSet:
         return SuppressionSet.of(self._suppressions)
 
+    def suppression_project(self, suppression_id: int) -> tuple[bool, int | None]:
+        """``(exists, project_id)`` for one rule — the tenant check a revoke route needs."""
+        if suppression_id not in self._suppression_tenant:
+            return (False, None)
+        return (True, self._suppression_tenant[suppression_id])
+
     # ------------------------------------------------------------------ acceptances
     def add_acceptance(
         self, acceptance: RiskAcceptance, *, project_id: int | None = None
@@ -228,6 +238,12 @@ class MemoryQualityStore:
             )
             return revoked
         return None
+
+    def acceptance_project(self, acceptance_id: int) -> tuple[bool, int | None]:
+        """``(exists, project_id)`` for one acceptance — the tenant check a revoke route needs."""
+        if acceptance_id not in self._acceptance_tenant:
+            return (False, None)
+        return (True, self._acceptance_tenant[acceptance_id])
 
     def reopen_expired(self, *, now: datetime | None = None) -> tuple[ReopenDecision, ...]:
         moment = _now(now)
@@ -364,6 +380,14 @@ class SqlQualityStore:
     def active_suppressions(self) -> SuppressionSet:
         return SuppressionSet.of(self.list_suppressions(active_only=True))
 
+    def suppression_project(self, suppression_id: int) -> tuple[bool, int | None]:
+        """``(exists, project_id)`` for one rule — the tenant check a revoke route needs."""
+        with self._session_factory() as session:
+            row = session.get(models.Suppression, suppression_id)
+            if row is None:
+                return (False, None)
+            return (True, row.project_id)
+
     # ------------------------------------------------------------------ acceptances
     def add_acceptance(
         self, acceptance: RiskAcceptance, *, project_id: int | None = None
@@ -435,6 +459,14 @@ class SqlQualityStore:
             meta={"change": "revoked"},
         )
         return store
+
+    def acceptance_project(self, acceptance_id: int) -> tuple[bool, int | None]:
+        """``(exists, project_id)`` for one acceptance — the tenant check a revoke route needs."""
+        with self._session_factory() as session:
+            row = session.get(models.RiskAcceptance, acceptance_id)
+            if row is None:
+                return (False, None)
+            return (True, row.project_id)
 
     def reopen_expired(self, *, now: datetime | None = None) -> tuple[ReopenDecision, ...]:
         moment = _now(now)

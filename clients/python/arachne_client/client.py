@@ -1959,6 +1959,312 @@ class Client:
             project=project,
         )
 
+    def list_groups(
+        self,
+        *,
+        filter_: str | None = None,
+        start_index: int | None = None,
+        count: int | None = None,
+        project: str | None = None,
+    ) -> object:
+        """List Groups
+
+        ``GET /api/v1/scim/v2/Groups`` (operationId
+        ``list_groups_api_v1_scim_v2_Groups_get``).
+
+        The success body is generic JSON: schema declares no `type`.
+        """
+        return self._request(
+            "GET",
+            "/api/v1/scim/v2/Groups",
+            query={
+                "filter": filter_,
+                "startIndex": start_index,
+                "count": count,
+            },
+            project=project,
+        )
+
+    def create_group(
+        self,
+        *,
+        body: object,
+        project: str | None = None,
+    ) -> object:
+        """Create Group
+
+        ``POST /api/v1/scim/v2/Groups`` (operationId
+        ``create_group_api_v1_scim_v2_Groups_post``).
+
+        The success body is generic JSON: schema declares no `type`.
+        """
+        return self._request(
+            "POST",
+            "/api/v1/scim/v2/Groups",
+            body=body,
+            project=project,
+        )
+
+    def get_group(
+        self,
+        group_id: str,
+        project: str | None = None,
+    ) -> object:
+        """Get Group
+
+        ``GET /api/v1/scim/v2/Groups/{group_id}`` (operationId
+        ``get_group_api_v1_scim_v2_Groups__group_id__get``).
+
+        The success body is generic JSON: schema declares no `type`.
+        """
+        path = f"/api/v1/scim/v2/Groups/{quote(str(group_id), safe='')}"
+        return self._request(
+            "GET",
+            path,
+            project=project,
+        )
+
+    def replace_group(
+        self,
+        group_id: str,
+        *,
+        body: object,
+        project: str | None = None,
+    ) -> object:
+        """Replace Group
+
+        ``PUT /api/v1/scim/v2/Groups/{group_id}`` (operationId
+        ``replace_group_api_v1_scim_v2_Groups__group_id__put``).
+
+        The success body is generic JSON: schema declares no `type`.
+        """
+        path = f"/api/v1/scim/v2/Groups/{quote(str(group_id), safe='')}"
+        return self._request(
+            "PUT",
+            path,
+            body=body,
+            project=project,
+        )
+
+    def patch_group(
+        self,
+        group_id: str,
+        *,
+        body: object,
+        project: str | None = None,
+    ) -> object:
+        """Patch Group
+
+        ``PATCH /api/v1/scim/v2/Groups/{group_id}`` (operationId
+        ``patch_group_api_v1_scim_v2_Groups__group_id__patch``).
+
+        The success body is generic JSON: schema declares no `type`.
+        """
+        path = f"/api/v1/scim/v2/Groups/{quote(str(group_id), safe='')}"
+        return self._request(
+            "PATCH",
+            path,
+            body=body,
+            project=project,
+        )
+
+    def delete_group(
+        self,
+        group_id: str,
+        project: str | None = None,
+    ) -> object:
+        """Delete Group
+
+        ``DELETE /api/v1/scim/v2/Groups/{group_id}`` (operationId
+        ``delete_group_api_v1_scim_v2_Groups__group_id__delete``).
+
+        The success body is generic JSON: no success response schema is declared.
+        """
+        path = f"/api/v1/scim/v2/Groups/{quote(str(group_id), safe='')}"
+        return self._request(
+            "DELETE",
+            path,
+            project=project,
+        )
+
+    def get_resource_types(
+        self,
+        project: str | None = None,
+    ) -> object:
+        """Get Resource Types
+
+        ``GET /api/v1/scim/v2/ResourceTypes`` (operationId
+        ``get_resource_types_api_v1_scim_v2_ResourceTypes_get``).
+
+        The success body is generic JSON: schema declares no `type`.
+        """
+        return self._request(
+            "GET",
+            "/api/v1/scim/v2/ResourceTypes",
+            project=project,
+        )
+
+    def get_schemas(
+        self,
+        project: str | None = None,
+    ) -> object:
+        """Get Schemas
+
+        ``GET /api/v1/scim/v2/Schemas`` (operationId
+        ``get_schemas_api_v1_scim_v2_Schemas_get``).
+
+        The success body is generic JSON: schema declares no `type`.
+        """
+        return self._request(
+            "GET",
+            "/api/v1/scim/v2/Schemas",
+            project=project,
+        )
+
+    def get_service_provider_config(
+        self,
+        project: str | None = None,
+    ) -> object:
+        """Get Service Provider Config
+
+        ``GET /api/v1/scim/v2/ServiceProviderConfig`` (operationId
+        ``get_service_provider_config_api_v1_scim_v2_ServiceProviderConfig_get``).
+
+        The success body is generic JSON: schema declares no `type`.
+        """
+        return self._request(
+            "GET",
+            "/api/v1/scim/v2/ServiceProviderConfig",
+            project=project,
+        )
+
+    def list_users(
+        self,
+        *,
+        filter_: str | None = None,
+        start_index: int | None = None,
+        count: int | None = None,
+        project: str | None = None,
+    ) -> object:
+        """List Users
+
+        ``GET /api/v1/scim/v2/Users`` (operationId ``list_users_api_v1_scim_v2_Users_get``).
+
+        The success body is generic JSON: schema declares no `type`.
+        """
+        return self._request(
+            "GET",
+            "/api/v1/scim/v2/Users",
+            query={
+                "filter": filter_,
+                "startIndex": start_index,
+                "count": count,
+            },
+            project=project,
+        )
+
+    def create_user(
+        self,
+        *,
+        body: object,
+        project: str | None = None,
+    ) -> object:
+        """Create User
+
+        ``POST /api/v1/scim/v2/Users`` (operationId
+        ``create_user_api_v1_scim_v2_Users_post``).
+
+        The success body is generic JSON: schema declares no `type`.
+        """
+        return self._request(
+            "POST",
+            "/api/v1/scim/v2/Users",
+            body=body,
+            project=project,
+        )
+
+    def get_user(
+        self,
+        user_id: str,
+        project: str | None = None,
+    ) -> object:
+        """Get User
+
+        ``GET /api/v1/scim/v2/Users/{user_id}`` (operationId
+        ``get_user_api_v1_scim_v2_Users__user_id__get``).
+
+        The success body is generic JSON: schema declares no `type`.
+        """
+        path = f"/api/v1/scim/v2/Users/{quote(str(user_id), safe='')}"
+        return self._request(
+            "GET",
+            path,
+            project=project,
+        )
+
+    def replace_user(
+        self,
+        user_id: str,
+        *,
+        body: object,
+        project: str | None = None,
+    ) -> object:
+        """Replace User
+
+        ``PUT /api/v1/scim/v2/Users/{user_id}`` (operationId
+        ``replace_user_api_v1_scim_v2_Users__user_id__put``).
+
+        The success body is generic JSON: schema declares no `type`.
+        """
+        path = f"/api/v1/scim/v2/Users/{quote(str(user_id), safe='')}"
+        return self._request(
+            "PUT",
+            path,
+            body=body,
+            project=project,
+        )
+
+    def patch_user(
+        self,
+        user_id: str,
+        *,
+        body: object,
+        project: str | None = None,
+    ) -> object:
+        """Patch User
+
+        ``PATCH /api/v1/scim/v2/Users/{user_id}`` (operationId
+        ``patch_user_api_v1_scim_v2_Users__user_id__patch``).
+
+        The success body is generic JSON: schema declares no `type`.
+        """
+        path = f"/api/v1/scim/v2/Users/{quote(str(user_id), safe='')}"
+        return self._request(
+            "PATCH",
+            path,
+            body=body,
+            project=project,
+        )
+
+    def delete_user(
+        self,
+        user_id: str,
+        project: str | None = None,
+    ) -> object:
+        """Delete User
+
+        ``DELETE /api/v1/scim/v2/Users/{user_id}`` (operationId
+        ``delete_user_api_v1_scim_v2_Users__user_id__delete``).
+
+        The success body is generic JSON: no success response schema is declared.
+        """
+        path = f"/api/v1/scim/v2/Users/{quote(str(user_id), safe='')}"
+        return self._request(
+            "DELETE",
+            path,
+            project=project,
+        )
+
     def list_service_accounts(
         self,
         project: str | None = None,

@@ -41,6 +41,20 @@
   ],
   "response_required": []
  },
+ "DELETE /api/v1/scim/v2/Groups/{group_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:group_id"
+  ],
+  "response_required": []
+ },
+ "DELETE /api/v1/scim/v2/Users/{user_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:user_id"
+  ],
+  "response_required": []
+ },
  "DELETE /api/v1/suppressions/{suppression_id}": {
   "body_required": [],
   "parameters": [
@@ -323,6 +337,53 @@
    "spec"
   ]
  },
+ "GET /api/v1/scim/v2/Groups": {
+  "body_required": [],
+  "parameters": [
+   "query:count",
+   "query:filter",
+   "query:startIndex"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/scim/v2/Groups/{group_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:group_id"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/scim/v2/ResourceTypes": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "GET /api/v1/scim/v2/Schemas": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "GET /api/v1/scim/v2/ServiceProviderConfig": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "GET /api/v1/scim/v2/Users": {
+  "body_required": [],
+  "parameters": [
+   "query:count",
+   "query:filter",
+   "query:startIndex"
+  ],
+  "response_required": []
+ },
+ "GET /api/v1/scim/v2/Users/{user_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:user_id"
+  ],
+  "response_required": []
+ },
  "GET /api/v1/service-accounts": {
   "body_required": [],
   "parameters": [],
@@ -383,6 +444,20 @@
    "scan_id",
    "title"
   ]
+ },
+ "PATCH /api/v1/scim/v2/Groups/{group_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:group_id"
+  ],
+  "response_required": []
+ },
+ "PATCH /api/v1/scim/v2/Users/{user_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:user_id"
+  ],
+  "response_required": []
  },
  "POST /api/v1/acceptances": {
   "body_required": [
@@ -541,6 +616,16 @@
   ],
   "response_required": []
  },
+ "POST /api/v1/scim/v2/Groups": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
+ "POST /api/v1/scim/v2/Users": {
+  "body_required": [],
+  "parameters": [],
+  "response_required": []
+ },
  "POST /api/v1/service-accounts": {
   "body_required": [
    "label",
@@ -599,6 +684,20 @@
   "body_required": [],
   "parameters": [
    "path:slug"
+  ],
+  "response_required": []
+ },
+ "PUT /api/v1/scim/v2/Groups/{group_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:group_id"
+  ],
+  "response_required": []
+ },
+ "PUT /api/v1/scim/v2/Users/{user_id}": {
+  "body_required": [],
+  "parameters": [
+   "path:user_id"
   ],
   "response_required": []
  }

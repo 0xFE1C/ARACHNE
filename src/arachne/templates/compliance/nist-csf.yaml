@@ -139,6 +139,7 @@ controls:
     title: "Users, services, and hardware are authenticated"
     checks:
       - m2.smb-auth
+      - m2.ssh-auth
       - m3.session-logout
       - m4.default-credentials
   - id: "DE.AE-04"

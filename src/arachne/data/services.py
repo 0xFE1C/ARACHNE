@@ -36,7 +36,12 @@ from arachne.data.evidence_service import EvidenceService
 from arachne.data.feed_store import FeedStore
 from arachne.data.finding_store import SqlFindingStore
 from arachne.data.fix_store import FixProposalStore, SqlFixProposalStore
-from arachne.data.identity_store import ServiceAccountStore, SessionStore, SsoFlowStore
+from arachne.data.identity_store import (
+    ProvisionedPrincipalStore,
+    ServiceAccountStore,
+    SessionStore,
+    SsoFlowStore,
+)
 from arachne.data.integrity_store import IntegrityService, IntegrityVerifier, SqlAuditChain
 from arachne.data.leader_store import LeaderElector
 from arachne.data.posture_store import SqlPostureStore
@@ -102,6 +107,11 @@ class ScanServices:
     identity_flows: SsoFlowStore | None = None
     #: Minted SSO sessions (S17, REQ-IDAM-001).
     auth_sessions: SessionStore | None = None
+    #: The SCIM 2.0 directory mirror (WP-20, REQ-IDAM-007): provisioned principals and the
+    #: groups whose display names map to roles. ``None`` means this deployment carries no
+    #: provisioning layer, and the SCIM routes then answer 503 rather than pretending to
+    #: serve an empty directory.
+    provisioned_principals: ProvisionedPrincipalStore | None = None
     #: The credential vault (S19, area CREDS, REQ-CREDS-002). ``None`` means this deployment
     #: has no vault, so every credential-dependent check reports itself skipped and a scan
     #: that names a credential runs unauthenticated with an audited refusal. Deliberately
@@ -289,6 +299,7 @@ def build_services(settings: Settings | None = None, *, check_schema: bool = Tru
         service_accounts=ServiceAccountStore(factory),
         identity_flows=SsoFlowStore(factory),
         auth_sessions=SessionStore(factory),
+        provisioned_principals=ProvisionedPrincipalStore(factory),
         credentials=build_vault(effective),
         evidence_backend=evidence_backend,
         evidence=evidence,

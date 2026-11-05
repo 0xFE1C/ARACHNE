@@ -193,9 +193,10 @@ async def start_scan(
     principal: ScannerPrincipal,
     context: ContextDep,
     project: ProjectDep,
+    request: Request,
 ) -> JSONResponse:
     """Admit a scan in this project and run it in the background (or plan it, with ``dry_run``)."""
-    request = _scan_request(payload, context, project=project)
+    scan_request = _scan_request(payload, context, project=project, request=request)
     if payload.dry_run:
         from arachne.core.orchestrator import Orchestrator
 
@@ -204,10 +205,10 @@ async def start_scan(
             auditor=context.auditor,
             project_id=project.id,
             project_scope=project.to_scope(),
-        ).plan(request, dry_run=True)
+        ).plan(scan_request, dry_run=True)
         return JSONResponse({"dry_run": True, "plan": plan.to_dict()})
     started = await context.runner.start(
-        request,
+        scan_request,
         project_id=project.id,
         project_scope=project.to_scope(),
         requested_by=principal.actor,
@@ -221,10 +222,14 @@ async def start_scan(
 
 @api_router.get("/scans/{scan_id}", response_model=ScanDetail, tags=["scans"])
 def get_scan(
-    scan_id: int, principal: ViewerPrincipal, context: ContextDep, project: ProjectDep
+    scan_id: int,
+    principal: ViewerPrincipal,
+    context: ContextDep,
+    project: ProjectDep,
+    request: Request,
 ) -> ScanDetail:
     """One scan's summary, per-step progress and its discovered assets."""
-    record = _require_scan(context, scan_id, project)
+    record = _require_scan(request, context, scan_id, project)
     counts = context.queries.severity_counts(scan_id)
     assets = [
         {"id": item.id, "kind": item.kind, "value": item.value, "meta": dict(item.meta)}
@@ -254,22 +259,30 @@ def get_scan(
 
 @api_router.post("/scans/{scan_id}/stop", tags=["scans"])
 async def stop_scan(
-    scan_id: int, principal: ScannerPrincipal, context: ContextDep, project: ProjectDep
+    scan_id: int,
+    principal: ScannerPrincipal,
+    context: ContextDep,
+    project: ProjectDep,
+    request: Request,
 ) -> JSONResponse:
     """Cancel a background scan this process is running (F-07-02 "stop")."""
-    _require_scan(context, scan_id, project)
+    _require_scan(request, context, scan_id, project)
     if not await context.runner.stop(scan_id):
         raise _conflict(f"scan {scan_id} is not running in this process")
-    record = _require_scan(context, scan_id, project)
+    record = _require_scan(request, context, scan_id, project)
     return JSONResponse({"scan_id": scan_id, "status": record.status.value})
 
 
 @api_router.delete("/scans/{scan_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["scans"])
 def delete_scan(
-    scan_id: int, principal: AdminPrincipal, context: ContextDep, project: ProjectDep
+    scan_id: int,
+    principal: AdminPrincipal,
+    context: ContextDep,
+    project: ProjectDep,
+    request: Request,
 ) -> Response:
     """Delete a scan and everything that cascades from it."""
-    record = _require_scan(context, scan_id, project)
+    record = _require_scan(request, context, scan_id, project)
     if context.runner.is_running(record.id):
         raise _conflict(f"scan {scan_id} is running; stop it first")
     if not context.queries.delete_scan(scan_id):
@@ -284,6 +297,7 @@ def get_report(
     principal: ViewerPrincipal,
     context: ContextDep,
     project: ProjectDep,
+    request: Request,
     fmt: Annotated[str, Query(alias="format")] = "md",
     diff_with: Annotated[int | None, Query()] = None,
     locale: Annotated[
@@ -298,7 +312,7 @@ def get_report(
     label vocabulary is the shipped catalogue (``templates/i18n/``); an unknown locale falls
     back to English rather than failing the request.
     """
-    _require_scan(context, scan_id, project)
+    _require_scan(request, context, scan_id, project)
     from arachne.report import default_registry, media_type, report_bytes
 
     if default_registry().get(fmt) is None:
@@ -323,10 +337,14 @@ def get_report(
 
 @api_router.post("/scans/{scan_id}/report", tags=["reports"])
 async def push_report(
-    scan_id: int, principal: ScannerPrincipal, context: ContextDep, project: ProjectDep
+    scan_id: int,
+    principal: ScannerPrincipal,
+    context: ContextDep,
+    project: ProjectDep,
+    request: Request,
 ) -> JSONResponse:
     """Render a report and push it to the configured webhooks (F-06-06)."""
-    _require_scan(context, scan_id, project)
+    _require_scan(request, context, scan_id, project)
     results = await context.reports.notify(scan_id)
     return JSONResponse(
         {
@@ -424,10 +442,14 @@ def list_findings(
 
 @api_router.get("/findings/{finding_id}", tags=["findings"])
 def get_finding(
-    finding_id: int, principal: ViewerPrincipal, context: ContextDep, project: ProjectDep
+    finding_id: int,
+    principal: ViewerPrincipal,
+    context: ContextDep,
+    project: ProjectDep,
+    request: Request,
 ) -> JSONResponse:
     """One finding with its evidence and remediation (the expanded view)."""
-    _require_finding(context, finding_id, project)
+    _require_finding(request, context, finding_id, project)
     row = context.queries.finding_row(finding_id)
     if row is None:
         raise _not_found(f"finding {finding_id} does not exist")
@@ -443,9 +465,10 @@ def review_finding(
     principal: ScannerPrincipal,
     context: ContextDep,
     project: ProjectDep,
+    request: Request,
 ) -> FindingOut:
     """Set a finding's status and, optionally, record F-05-07 false-positive feedback."""
-    _require_finding(context, finding_id, project)
+    _require_finding(request, context, finding_id, project)
     row = context.queries.finding_row(finding_id)
     if row is None:
         raise _not_found(f"finding {finding_id} does not exist")
@@ -475,9 +498,13 @@ def review_finding(
     "/findings/{finding_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["findings"]
 )
 def delete_finding(
-    finding_id: int, principal: AdminPrincipal, context: ContextDep, project: ProjectDep
+    finding_id: int,
+    principal: AdminPrincipal,
+    context: ContextDep,
+    project: ProjectDep,
+    request: Request,
 ) -> Response:
-    _require_finding(context, finding_id, project)
+    _require_finding(request, context, finding_id, project)
     if not context.queries.delete_finding(finding_id):
         raise _not_found(f"finding {finding_id} does not exist")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -556,21 +583,45 @@ def create_target(
 
 @api_router.get("/targets/{target_id}", response_model=TargetOut, tags=["targets"])
 def get_target(
-    target_id: int, principal: ViewerPrincipal, context: ContextDep, project: ProjectDep
+    target_id: int,
+    principal: ViewerPrincipal,
+    context: ContextDep,
+    project: ProjectDep,
+    request: Request,
 ) -> TargetOut:
     record = context.services.target_store.get_target(target_id)
-    if record is None or not _visible(record.project_id, project):
+    if record is None:
         raise _not_found(f"target {target_id} does not exist")
+    _require_visible(
+        request,
+        context,
+        resource="target",
+        resource_id=target_id,
+        owner_project_id=record.project_id,
+        project=project,
+    )
     return TargetOut.model_validate(record.to_dict())
 
 
 @api_router.delete("/targets/{target_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["targets"])
 def delete_target(
-    target_id: int, principal: AdminPrincipal, context: ContextDep, project: ProjectDep
+    target_id: int,
+    principal: AdminPrincipal,
+    context: ContextDep,
+    project: ProjectDep,
+    request: Request,
 ) -> Response:
     record = context.services.target_store.get_target(target_id)
-    if record is None or not _visible(record.project_id, project):
+    if record is None:
         raise _not_found(f"target {target_id} does not exist")
+    _require_visible(
+        request,
+        context,
+        resource="target",
+        resource_id=target_id,
+        owner_project_id=record.project_id,
+        project=project,
+    )
     if not context.services.target_store.delete_target(target_id):
         raise _not_found(f"target {target_id} does not exist")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -695,12 +746,15 @@ def list_projects(
 ) -> list[ProjectOut]:
     """Every tenant/workspace (F-07-06). The default workspace is created on demand.
 
-    Ordered by slug, with cursor pagination.
+    Ordered by slug, with cursor pagination. A key bound to a tenant sees only that tenant
+    (REQ-IDAM-006): the registry is deployment-wide for an unbound key, but enumerating other
+    tenants is not something a tenant-scoped credential may do.
     """
     context.services.projects.ensure_default()
     records = [
         ProjectOut.model_validate(record.to_dict())
         for record in context.services.projects.list_projects()
+        if not principal.project or record.slug == principal.project
     ]
     reject_unknown_query_params(request, frozenset())
     page_cursor = cursor_or_400(cursor)
@@ -745,9 +799,12 @@ def create_project(
 
 
 @api_router.get("/projects/{slug}", response_model=ProjectOut, tags=["projects"])
-def get_project(slug: str, principal: ViewerPrincipal, context: ContextDep) -> ProjectOut:
+def get_project(
+    slug: str, principal: ViewerPrincipal, context: ContextDep, request: Request
+) -> ProjectOut:
     from arachne.core.errors import ConfigurationError as _ConfigurationError
 
+    _bound_to_other_project(request, context, principal, slug)
     try:
         record = context.services.projects.resolve(slug)
     except _ConfigurationError as exc:
@@ -756,7 +813,9 @@ def get_project(slug: str, principal: ViewerPrincipal, context: ContextDep) -> P
 
 
 @api_router.get("/projects/{slug}/retention", tags=["projects"])
-def get_retention(slug: str, principal: ViewerPrincipal, context: ContextDep) -> dict[str, Any]:
+def get_retention(
+    slug: str, principal: ViewerPrincipal, context: ContextDep, request: Request
+) -> dict[str, Any]:
     """A tenant's effective retention policy (S20, REQ-DATA-001).
 
     The *effective* policy is what the pruning job will act on: the project's own overrides on
@@ -766,6 +825,7 @@ def get_retention(slug: str, principal: ViewerPrincipal, context: ContextDep) ->
     from arachne.core.errors import ConfigurationError as _ConfigurationError
     from arachne.data.retention import RetentionPolicy
 
+    _bound_to_other_project(request, context, principal, slug)
     try:
         record = context.services.projects.resolve(slug)
     except _ConfigurationError as exc:
@@ -790,11 +850,16 @@ def get_retention(slug: str, principal: ViewerPrincipal, context: ContextDep) ->
 
 @api_router.put("/projects/{slug}/retention", tags=["projects"])
 def set_retention(
-    slug: str, payload: RetentionIn, principal: AdminPrincipal, context: ContextDep
+    slug: str,
+    payload: RetentionIn,
+    principal: AdminPrincipal,
+    context: ContextDep,
+    request: Request,
 ) -> dict[str, Any]:
     """Set a tenant's retention policy (admin). ``0`` days keeps a category for ever."""
     from arachne.core.errors import ConfigurationError as _ConfigurationError
 
+    _bound_to_other_project(request, context, principal, slug)
     try:
         record = context.services.projects.resolve(slug, create_default=False)
     except _ConfigurationError as exc:
@@ -816,10 +881,13 @@ def set_retention(
 
 
 @api_router.get("/projects/{slug}/storage", tags=["projects"])
-def get_storage(slug: str, principal: ViewerPrincipal, context: ContextDep) -> dict[str, Any]:
+def get_storage(
+    slug: str, principal: ViewerPrincipal, context: ContextDep, request: Request
+) -> dict[str, Any]:
     """A tenant's storage usage against its quota (S20, REQ-DATA-003)."""
     from arachne.core.errors import ConfigurationError as _ConfigurationError
 
+    _bound_to_other_project(request, context, principal, slug)
     try:
         record = context.services.projects.resolve(slug)
     except _ConfigurationError as exc:
@@ -838,11 +906,16 @@ def get_storage(slug: str, principal: ViewerPrincipal, context: ContextDep) -> d
 
 @api_router.put("/projects/{slug}/storage", tags=["projects"])
 def set_quota(
-    slug: str, payload: QuotaIn, principal: AdminPrincipal, context: ContextDep
+    slug: str,
+    payload: QuotaIn,
+    principal: AdminPrincipal,
+    context: ContextDep,
+    request: Request,
 ) -> dict[str, Any]:
     """Set (or clear) a tenant's storage quota (admin); ``null`` removes the limit."""
     from arachne.core.errors import ConfigurationError as _ConfigurationError
 
+    _bound_to_other_project(request, context, principal, slug)
     try:
         record = context.services.projects.resolve(slug, create_default=False)
     except _ConfigurationError as exc:
@@ -860,10 +933,13 @@ def set_quota(
 
 
 @api_router.delete("/projects/{slug}", status_code=status.HTTP_204_NO_CONTENT, tags=["projects"])
-def delete_project(slug: str, principal: AdminPrincipal, context: ContextDep) -> Response:
+def delete_project(
+    slug: str, principal: AdminPrincipal, context: ContextDep, request: Request
+) -> Response:
     """Delete a tenant; its scans survive with no project. The default one is protected."""
     from arachne.core.errors import ConfigurationError as _ConfigurationError
 
+    _bound_to_other_project(request, context, principal, slug)
     try:
         record = context.services.projects.resolve(slug, create_default=False)
         context.services.projects.delete(record.id)
@@ -883,6 +959,8 @@ async def download_evidence(
     evidence_id: int,
     principal: ViewerPrincipal,
     context: ContextDep,
+    project: ProjectDep,
+    request: Request,
     redirect: Annotated[bool, Query()] = True,
 ) -> Response:
     """Fetch one evidence payload (S20, REQ-DATA-002).
@@ -908,6 +986,19 @@ async def download_evidence(
     row = context.queries.evidence_row(evidence_id)
     if row is None:
         raise _not_found(f"evidence {evidence_id} does not exist")
+    finding_id = row.get("finding_id")
+    scan_id = context.queries.finding_scan_id(int(finding_id)) if finding_id is not None else None
+    scan = context.services.store.get_scan(scan_id) if scan_id is not None else None
+    if scan is None:
+        raise _not_found(f"evidence {evidence_id} does not exist")
+    _require_visible(
+        request,
+        context,
+        resource="evidence",
+        resource_id=evidence_id,
+        owner_project_id=scan.project_id,
+        project=project,
+    )
     service = getattr(context.services, "evidence", None)
     if service is not None:
         service.require_region(row.get("region"))
@@ -1250,13 +1341,17 @@ def list_suppressions(
     tags=["quality"],
 )
 def create_suppression(
-    payload: SuppressionIn, principal: ScannerPrincipal, context: ContextDep, project: ProjectDep
+    payload: SuppressionIn,
+    principal: ScannerPrincipal,
+    context: ContextDep,
+    project: ProjectDep,
+    request: Request,
 ) -> SuppressionOut:
     """Record a suppression rule (a reason is required, and the actor is attributed)."""
     from arachne.quality.suppressions import Suppression
 
-    if payload.finding_id is not None and context.queries.finding_row(payload.finding_id) is None:
-        raise _not_found(f"finding {payload.finding_id} does not exist")
+    if payload.finding_id is not None:
+        _require_finding(request, context, payload.finding_id, project)
     try:
         rule = Suppression(
             kind=payload.kind,
@@ -1277,9 +1372,24 @@ def create_suppression(
     "/suppressions/{suppression_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["quality"]
 )
 def revoke_suppression(
-    suppression_id: int, principal: ScannerPrincipal, context: ContextDep
+    suppression_id: int,
+    principal: ScannerPrincipal,
+    context: ContextDep,
+    project: ProjectDep,
+    request: Request,
 ) -> Response:
     """Revoke a rule. The row stays (a report from before the revocation still reads)."""
+    exists, owner = _quality(context).suppression_project(suppression_id)
+    if not exists:
+        raise _not_found(f"suppression {suppression_id} does not exist")
+    _require_visible(
+        request,
+        context,
+        resource="suppression",
+        resource_id=suppression_id,
+        owner_project_id=owner,
+        project=project,
+    )
     if _quality(context).revoke_suppression(suppression_id, actor=principal.label) is None:
         raise _not_found(f"suppression {suppression_id} does not exist")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -1332,15 +1442,19 @@ def list_acceptances(
     tags=["quality"],
 )
 def create_acceptance(
-    payload: AcceptanceIn, principal: ScannerPrincipal, context: ContextDep, project: ProjectDep
+    payload: AcceptanceIn,
+    principal: ScannerPrincipal,
+    context: ContextDep,
+    project: ProjectDep,
+    request: Request,
 ) -> AcceptanceOut:
     """Accept a risk until a date: owner, justification and expiry are all mandatory."""
     from datetime import timedelta
 
     from arachne.quality.acceptance import RiskAcceptance
 
-    if payload.finding_id is not None and context.queries.finding_row(payload.finding_id) is None:
-        raise _not_found(f"finding {payload.finding_id} does not exist")
+    if payload.finding_id is not None:
+        _require_finding(request, context, payload.finding_id, project)
     expires = (
         payload.expires_at.astimezone(UTC)
         if payload.expires_at is not None
@@ -1366,9 +1480,24 @@ def create_acceptance(
     "/acceptances/{acceptance_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["quality"]
 )
 def revoke_acceptance(
-    acceptance_id: int, principal: ScannerPrincipal, context: ContextDep
+    acceptance_id: int,
+    principal: ScannerPrincipal,
+    context: ContextDep,
+    project: ProjectDep,
+    request: Request,
 ) -> Response:
     """Withdraw an acceptance before its expiry."""
+    exists, owner = _quality(context).acceptance_project(acceptance_id)
+    if not exists:
+        raise _not_found(f"acceptance {acceptance_id} does not exist")
+    _require_visible(
+        request,
+        context,
+        resource="acceptance",
+        resource_id=acceptance_id,
+        owner_project_id=owner,
+        project=project,
+    )
     if _quality(context).revoke_acceptance(acceptance_id, actor=principal.label) is None:
         raise _not_found(f"acceptance {acceptance_id} does not exist")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -1394,13 +1523,15 @@ def expire_acceptances(principal: ScannerPrincipal, context: ContextDep) -> dict
 
 @api_router.get("/scans/{scan_id}/hypotheses", tags=["quality"])
 def scan_hypotheses(
-    scan_id: int, principal: ViewerPrincipal, context: ContextDep, project: ProjectDep
+    scan_id: int,
+    principal: ViewerPrincipal,
+    context: ContextDep,
+    project: ProjectDep,
+    request: Request,
 ) -> JSONResponse:
     """The agentic journal of one scan (S21, REQ-AGENT-002): proposals, decisions, budget."""
     del principal
-    record = context.services.store.get_scan(scan_id)
-    if record is None or (project.id is not None and record.project_id not in (None, project.id)):
-        raise _not_found(f"scan {scan_id} does not exist")
+    record = _require_scan(request, context, scan_id, project)
     journal = (record.stats or {}).get("hypotheses")
     if not journal:
         raise _not_found(f"scan {scan_id} ran no agentic reasoning")
@@ -1414,15 +1545,26 @@ def control_hypotheses(
     principal: ScannerPrincipal,
     context: ContextDep,
     project: ProjectDep,
+    request: Request,
 ) -> dict[str, Any]:
     """The operator kill switch (S21, REQ-AGENT-007): pause, abort or clear.
 
     The directive is written where a running scan can read it (a file both processes reach),
     so a scan on another node stops between two hypotheses and leaves a resumable journal.
+
+    A scan that exists and belongs to another tenant is refused *and audited* (REQ-IDAM-006):
+    the kill switch is a write, and reaching another tenant's scan with it is a cross-tenant
+    write. A scan id that names no row is still accepted — the directive is the way an
+    operator arms a run that is about to start, and a directive for an id that never runs
+    reaches nothing.
     """
     from arachne.reasoning.control import build_hypothesis_control
 
-    del principal, project
+    del principal
+    record = context.services.store.get_scan(scan_id)
+    if record is not None and not _visible(record.project_id, project):
+        _denied(request, context, resource="scan", resource_id=scan_id, project=project)
+        raise _not_found(f"scan {scan_id} does not exist")
     control = build_hypothesis_control(context.settings.hypotheses.control_path)
     control.set(scan_id, payload.directive)
     return {"scan_id": scan_id, "directive": payload.directive}
@@ -1600,10 +1742,11 @@ def create_service_account(
 
 @api_router.post("/service-accounts/{label}/rotate", tags=["identity"])
 def rotate_service_account(
-    label: str, principal: AdminPrincipal, context: ContextDep
+    label: str, principal: AdminPrincipal, context: ContextDep, request: Request
 ) -> JSONResponse:
     """Rotate a key: the old secret stops working immediately, the new one is returned once."""
     store = _service_accounts(context)
+    _require_account_in_scope(request, context, principal, store, label)
     rotated = store.rotate(label, actor=principal.actor)
     if rotated is None:
         raise _not_found(f"service account {label!r} does not exist")
@@ -1622,10 +1765,11 @@ def rotate_service_account(
 
 @api_router.post("/service-accounts/{label}/revoke", tags=["identity"])
 def revoke_service_account(
-    label: str, principal: AdminPrincipal, context: ContextDep
+    label: str, principal: AdminPrincipal, context: ContextDep, request: Request
 ) -> JSONResponse:
     """Revoke a key (it never authenticates again; the row is kept for audit lineage)."""
     store = _service_accounts(context)
+    _require_account_in_scope(request, context, principal, store, label)
     record = store.revoke(label, actor=principal.actor)
     if record is None:
         raise _not_found(f"service account {label!r} does not exist")
@@ -1645,6 +1789,45 @@ def _service_accounts(context: AppContext) -> Any:
             detail="the identity store is unavailable",
         )
     return store
+
+
+def _require_account_in_scope(
+    request: Request, context: AppContext, principal: Any, store: Any, label: str
+) -> None:
+    """A project-bound key manages only its own project's credentials (REQ-IDAM-006).
+
+    ``service_accounts`` is not partitioned by a foreign key — it carries the tenant as a slug
+    — so a bound key that could rotate another tenant's key would be a cross-tenant write with
+    no store-level defence behind it. A deployment-wide account (no project) belongs to the
+    deployment plane and is likewise out of a bound key's reach.
+    """
+    bound = getattr(principal, "project", None)
+    if not bound:
+        return
+    record = store.get(label)
+    if record is None:
+        return  # the route's own 404
+    owner = getattr(record, "project", None)
+    if owner is not None and str(owner).lower() == str(bound).lower():
+        return
+    reason = (
+        f"this API key is bound to project {bound!r}; it cannot manage another project's "
+        "service account"
+    )
+    context.auditor.with_actor(principal.actor).record(
+        AuditAction.API_DENIED,
+        outcome=AuditOutcome.BLOCKED,
+        target=str(request.url.path),
+        reason=reason,
+        meta={
+            "resource": "service_account",
+            "resource_id": label,
+            "method": request.method,
+            "path": request.url.path,
+            "project": bound,
+        },
+    )
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=reason)
 
 
 # --------------------------------------------------------------------------- helpers
@@ -1696,14 +1879,108 @@ def _visible(project_id: int | None, project: ProjectRecord) -> bool:
     return project_id == project.id
 
 
+def _denied(
+    request: Request,
+    context: AppContext,
+    *,
+    resource: str,
+    resource_id: object,
+    project: ProjectRecord,
+) -> None:
+    """Audit a refused cross-tenant access as ``api.denied`` (REQ-IDAM-006).
+
+    The attempted resource id is part of the event, not only of the 404 the caller sees: an
+    isolation refusal has to be answerable from the audit trail, and "which other tenant's
+    row did this key ask for?" is the question that matters when one is refused. The response
+    stays a 404 so a refusal never confirms that the row exists.
+    """
+    context.auditor.record(
+        AuditAction.API_DENIED,
+        outcome=AuditOutcome.BLOCKED,
+        target=str(request.url.path),
+        reason=f"{resource} {resource_id} belongs to another project",
+        meta={
+            "resource": resource,
+            "resource_id": str(resource_id),
+            "method": request.method,
+            "path": request.url.path,
+            "project": project.slug,
+        },
+    )
+
+
+def _require_visible(
+    request: Request,
+    context: AppContext,
+    *,
+    resource: str,
+    resource_id: object,
+    owner_project_id: int | None,
+    project: ProjectRecord,
+) -> None:
+    """Refuse a resource of another tenant, auditing the attempt, and answer as if it were absent.
+
+    The only place the suite's adversarial cases have to go through: every id-taking route
+    calls this (directly or via the two helpers below) so "refused and audited" is one
+    behaviour rather than a per-route intention.
+    """
+    if _visible(owner_project_id, project):
+        return
+    _denied(request, context, resource=resource, resource_id=resource_id, project=project)
+    raise _not_found(f"{resource} {resource_id} does not exist")
+
+
+def _bound_to_other_project(
+    request: Request, context: AppContext, principal: Any, slug: str
+) -> None:
+    """Refuse a project slug that a project-bound key does not own (REQ-IDAM-006).
+
+    ``get_project`` enforces this for every route that declares a tenant, but the
+    ``/projects/{slug}`` routes address the tenant *by name* in the path and never depend on
+    it — so without this check a key bound to ``acme`` could read, re-policy or delete
+    ``globex``. The refusal is audited like every other denial and answered with 403, which is
+    what a bound key naming another project already gets everywhere else.
+    """
+    bound = getattr(principal, "project", None)
+    if not bound or slug.lower() == str(bound).lower():
+        return
+    reason = f"this API key is bound to project {bound!r}; it cannot operate on another project"
+    context.auditor.with_actor(principal.actor).record(
+        AuditAction.API_DENIED,
+        outcome=AuditOutcome.BLOCKED,
+        target=str(request.url.path),
+        reason=reason,
+        meta={
+            "resource": "project",
+            "resource_id": slug,
+            "method": request.method,
+            "path": request.url.path,
+            "project": bound,
+        },
+    )
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=reason)
+
+
 def _scan_request(
-    payload: StartScanRequest, context: AppContext, *, project: ProjectRecord
+    payload: StartScanRequest,
+    context: AppContext,
+    *,
+    project: ProjectRecord,
+    request: Request,
 ) -> ScanRequest:
     """Turn a ``StartScanRequest`` into a validated :class:`ScanRequest`."""
     if payload.target_id is not None:
         record = context.services.target_store.get_target(payload.target_id)
-        if record is None or not _visible(record.project_id, project):
+        if record is None:
             raise _not_found(f"target {payload.target_id} does not exist")
+        _require_visible(
+            request,
+            context,
+            resource="target",
+            resource_id=payload.target_id,
+            owner_project_id=record.project_id,
+            project=project,
+        )
         definition = record.to_definition()
     elif payload.target is not None:
         definition = _definition_from_payload(payload.target)
@@ -1748,19 +2025,34 @@ def _iso(value: datetime | None) -> str | None:
     return value.isoformat() if value is not None else None
 
 
-def _require_scan(context: AppContext, scan_id: int, project: ProjectRecord) -> ScanRecord:
+def _require_scan(
+    request: Request, context: AppContext, scan_id: int, project: ProjectRecord
+) -> ScanRecord:
     record = context.services.store.get_scan(scan_id)
-    if record is None or not _visible(record.project_id, project):
+    if record is None:
         raise _not_found(f"scan {scan_id} does not exist")
+    _require_visible(
+        request,
+        context,
+        resource="scan",
+        resource_id=scan_id,
+        owner_project_id=record.project_id,
+        project=project,
+    )
     return record
 
 
-def _require_finding(context: AppContext, finding_id: int, project: ProjectRecord) -> int:
+def _require_finding(
+    request: Request, context: AppContext, finding_id: int, project: ProjectRecord
+) -> int:
     """Ensure the finding's scan belongs to ``project``; returns the scan id."""
     scan_id = context.queries.finding_scan_id(finding_id)
-    if scan_id is None:
+    record = context.services.store.get_scan(scan_id) if scan_id is not None else None
+    if scan_id is None or record is None:
         raise _not_found(f"finding {finding_id} does not exist")
-    _require_scan(context, scan_id, project)
+    if not _visible(record.project_id, project):
+        _denied(request, context, resource="finding", resource_id=finding_id, project=project)
+        raise _not_found(f"finding {finding_id} does not exist")
     return scan_id
 
 

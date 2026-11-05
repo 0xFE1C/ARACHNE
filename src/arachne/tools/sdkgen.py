@@ -588,14 +588,25 @@ def _operations(spec: Mapping[str, object], known: frozenset[str]) -> tuple[Oper
 def _parameter_name(name: str) -> str:
     """A Python parameter name for a wire parameter.
 
-    ``format`` and ``next`` shadow builtins and would fail ``ruff``'s A002; they carry a
-    trailing underscore. The wire name is what goes into the query string, so only the
-    local spelling changes.
+    Two normalisations, both local only — the wire name is what goes into the query string,
+    so only the spelling in the signature changes:
+
+    * a camelCase wire name (SCIM's ``startIndex``) becomes ``start_index``, because a
+      parameter name that is not lowercase is an N803 for every caller of the generated
+      client;
+    * ``format`` and ``next`` shadow builtins and would fail ``ruff``'s A002; they carry a
+      trailing underscore.
     """
-    candidate = name
+    candidate = _snake_case(name)
     while keyword.iskeyword(candidate) or candidate in _RESERVED_PYTHON_NAMES:
         candidate = f"{candidate}_"
     return candidate
+
+
+def _snake_case(name: str) -> str:
+    """``startIndex`` → ``start_index``; an already-snake name is returned unchanged."""
+    spaced = re.sub(r"(?<=[a-z0-9])([A-Z])", r"_\1", name)
+    return spaced.lower()
 
 
 def _camel(name: str) -> str:

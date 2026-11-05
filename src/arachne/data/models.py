@@ -1312,3 +1312,84 @@ class SimulationPointRecord(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, nullable=False, index=True
     )
+
+
+class ProvisionedPrincipal(Base):
+    """One SCIM-provisioned principal — a directory mirror, not an authorisation source (S29).
+
+    The identity model deliberately has no user table: a human exists as an IdP ``sub`` and
+    ARACHNE derives the principal from the token at login (REQ-IDAM-001). SCIM adds a
+    *directory mirror*, not a second authorisation source, so this row holds only what the IdP
+    asserts about identity and membership:
+
+    ``subject``
+        The IdP ``sub`` — immutable, unique, the join key every other identity row uses.
+    ``user_name`` / ``emails_json`` / ``display_name``
+        The SCIM attributes, echoed back so an IdP can reconcile its directory.
+    ``active``
+        The deprovisioning flag. ``DELETE`` sets it false and **never** deletes the row:
+        historical scans and audit rows attribute to the subject, and a hard purge is a
+        retention concern, not an identity one.
+    ``groups_json``
+        The group ids the IdP last asserted for this subject. The role is *derived* from them
+        through ``SsoSettings.role_for`` at login and deliberately not stored, so a group
+        change at the IdP changes the next login's role with no authorisation column to keep
+        in step (docs/scim-ldap-interface.md §2).
+
+    There is deliberately no ``project`` column: provisioning a person does not bind them to
+    a tenant. Tenancy stays an attribute of the key that acts, exactly as it is for an OIDC
+    login today (docs/scim-ldap-interface.md §7, first open question).
+    """
+
+    __tablename__ = "provisioned_principals"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    #: The IdP ``sub``. Unique: a second create for the same subject is the same principal.
+    subject: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    user_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    emails_json: Mapped[list[Any]] = mapped_column(JSON, nullable=False, default=list)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)
+    #: The group ids last asserted for this subject (a group's ``value``, not its display name).
+    groups_json: Mapped[list[Any]] = mapped_column(JSON, nullable=False, default=list)
+    #: The IdP's own correlation id, stored verbatim.
+    external_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    #: ``meta.version`` — the optimistic-concurrency token (an integer, rendered as a string).
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    meta_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False
+    )
+
+
+class ProvisionedGroup(Base):
+    """One SCIM group whose *display name* maps to a role (S29, REQ-IDAM-007).
+
+    Membership is a list of subject values. The role a group grants is read from
+    ``SsoSettings.group_roles`` by display name — the same mapping an OIDC login uses — so a
+    group created here grants nothing until an operator maps it, which is the deny-by-default
+    behaviour of docs/scim-ldap-interface.md §5.
+
+    Groups are deployment-wide: the role vocabulary is global, so there is no tenant column.
+    A group is a statement about the directory, not about a scan or a target.
+    """
+
+    __tablename__ = "provisioned_groups"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    #: The SCIM group id the IdP addresses it by (``Groups.value``), unique.
+    group_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    display_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    members_json: Mapped[list[Any]] = mapped_column(JSON, nullable=False, default=list)
+    external_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    meta_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False
+    )

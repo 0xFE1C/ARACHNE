@@ -113,6 +113,7 @@ controls:
     title: "Manage Default Accounts on Enterprise Assets and Software"
     checks:
       - m2.smb-auth
+      - m2.ssh-auth
       - m4.dashboard-exposure
       - m4.default-credentials
   - id: "4.8"
@@ -133,6 +134,7 @@ controls:
     title: "Use Unique Passwords"
     checks:
       - m2.smb-auth
+      - m2.ssh-auth
       - m4.default-credentials
       - m4.key-exposure
   - id: "5.3"

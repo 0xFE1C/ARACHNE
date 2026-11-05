@@ -208,6 +208,12 @@ class AuditAction(StrEnum):
     AUTH_SSO_LOGIN = "auth.sso_login"
     AUTH_SSO_LOGOUT = "auth.sso_logout"
     SERVICE_ACCOUNT_CHANGED = "service_account.changed"
+    #: WP-20 (area IDAM, REQ-IDAM-007): one line per SCIM provisioning write — created,
+    #: updated, deactivated, group membership changed — with the acting provisioner key and
+    #: its owner, and for a deactivation the sessions and keys it revoked in the same request.
+    #: A provisioning change is an access change, so it belongs on the trail next to
+    #: ``service_account.changed`` rather than in the server log.
+    PROVISIONING_CHANGED = "provisioning.changed"
     #: S18 (area INTEL): live threat intel. ``intel.feed_fetched`` is one line per request to
     #: a feed source; ``intel.feed_verified`` / ``intel.feed_rejected`` record the integrity
     #: decision **before** an import (REQ-INTEL-002 — a tampered mirror is a security event,

@@ -20,7 +20,7 @@ __all__ = [
 ]
 
 #: Revision this code expects ``alembic upgrade head`` to reach.
-LATEST_SCHEMA_REVISION: Final = "0017"
+LATEST_SCHEMA_REVISION: Final = "0018"
 
 #: Table Alembic uses to record the applied revision.
 ALEMBIC_VERSION_TABLE: Final = "alembic_version"
@@ -93,6 +93,11 @@ EXTENSION_TABLE_NAMES: Final[tuple[str, ...]] = (
     # version) and, for a re-verification, the parent record it re-checked. The finding's
     # current record is named by the additive ``findings.verification_id`` column.
     "finding_verifications",
+    # WP-20 / area IDAM: SCIM 2.0 provisioning — the directory mirror the IdP keeps in step
+    # (subjects, their asserted groups and the deprovisioning flag) and the groups whose
+    # display names map to roles through ``SsoSettings.group_roles``.
+    "provisioned_principals",
+    "provisioned_groups",
 )
 
 #: Every table the schema owns.

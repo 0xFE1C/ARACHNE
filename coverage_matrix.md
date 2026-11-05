@@ -6,7 +6,7 @@ the numbered methods in `docs/research/`.
 
 - research corpus: `docs/research`
 - source roots: `src/arachne/modules`
-- references found: **175**
+- references found: **176**
 - coverage: **148/175 (84.6%)**
 
 ## Summary
@@ -85,7 +85,7 @@ the numbered methods in `docs/research/`.
 | 21 | Anonymous FTP access check | yes | `ftp-anonymous` |
 | 22 | Database service probing | yes | `db-service-probe` |
 | 23 | Database default-configuration probing | yes | `db-service-probe` |
-| 24 | SSH algorithm and auth enumeration | yes | `ssh-enum` |
+| 24 | SSH algorithm and auth enumeration | yes | `ssh-auth`, `ssh-enum` |
 | 25 | RDP and VNC service detection | yes | `rdp-vnc-detect` |
 | 26 | SSDP and UPnP discovery | yes | `ssdp-discovery` |
 | 27 | ICS/OT protocol probing | yes | `ics-probe`, `ot-protocol-probe` |

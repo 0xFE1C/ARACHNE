@@ -161,6 +161,7 @@ controls:
     title: "Secure authentication"
     checks:
       - m2.smb-auth
+      - m2.ssh-auth
       - m3.auth-session-audit
       - m3.jwt-audit
       - m3.oauth-flow-audit

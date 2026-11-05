@@ -56,6 +56,8 @@ from arachne.core.secrets import decrypt_blob, encrypt_blob
 __all__ = [
     "CLOUD_CREDENTIAL_KINDS",
     "CREDENTIAL_KINDS",
+    "SSH_AUTH_METHODS",
+    "SSH_KEY_TYPES",
     "VAULT_MAGIC",
     "WEB_CREDENTIAL_KINDS",
     "CredentialEntry",
@@ -94,6 +96,14 @@ CREDENTIAL_KINDS: Final[tuple[str, ...]] = (
 #: The kinds a web check may select (both are HTTP login flows; the difference is the body
 #: encoding, which the login spec may also override).
 WEB_CREDENTIAL_KINDS: Final[tuple[str, ...]] = ("web-form", "web-json")
+
+#: SSH authentication methods a ``ssh`` credential can declare (WP-20, REQ-CREDS-006). The
+#: method selects what the stored secret *is*: an SSH password, or an Ed25519 seed. Declaring
+#: it explicitly is what stops a password from being offered as a key and vice versa.
+SSH_AUTH_METHODS: Final[tuple[str, ...]] = ("password", "publickey")
+#: The SSH key types this build authenticates with. Ed25519 only: the module the trust layer
+#: already ships is the one the SSH check signs with, not a second implementation.
+SSH_KEY_TYPES: Final[tuple[str, ...]] = ("ed25519",)
 #: The kinds a read-only cloud API check may select. ``cloud-token`` was added by WP-12
 #: (REQ-DET-017): the broker injects the bearer token into one request and hands the check
 #: the redacted exchange, so the material never crosses the module boundary.
@@ -460,6 +470,27 @@ class FileCredentialVault:
         if not secret_value:
             msg = f"credential {clean!r} needs a non-empty secret"
             raise ConfigurationError(msg)
+        if kind == "ssh":
+            # An SSH credential declares what its secret *is*: a password or an Ed25519 seed.
+            # Validated at the boundary so a scan cannot offer a password as a key (which the
+            # peer would refuse, and which reads as "the stored secret is wrong").
+            declared = dict(extra or {})
+            method = str(declared.get("auth_method") or declared.get("auth-method") or "password")
+            method = method.lower()
+            if method not in SSH_AUTH_METHODS:
+                msg = (
+                    f"an ssh credential's auth_method must be one of "
+                    f"{', '.join(SSH_AUTH_METHODS)} (got {method!r})"
+                )
+                raise ConfigurationError(msg)
+            if method == "publickey":
+                key_type = str(declared.get("key_type") or "ed25519").lower()
+                if key_type not in SSH_KEY_TYPES:
+                    msg = (
+                        f"this build authenticates with {', '.join(SSH_KEY_TYPES)} SSH keys, "
+                        f"not {key_type!r}"
+                    )
+                    raise ConfigurationError(msg)
         entries = self._entries()
         if clean not in entries and len(entries) >= self.max_entries:
             msg = f"the vault already holds {self.max_entries} credentials"

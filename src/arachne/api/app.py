@@ -49,6 +49,7 @@ from arachne.api.purple_routes import purple_router
 from arachne.api.resilience_routes import resilience_router
 from arachne.api.routes_api import api_router
 from arachne.api.routes_ui import ui_router
+from arachne.api.scim_routes import scim_router
 from arachne.api.sso_routes import sso_router
 from arachne.core.audit import AuditAction, AuditOutcome
 from arachne.core.config import Settings, get_settings
@@ -197,6 +198,7 @@ def create_app(
     # REQ-RESIL-002/003).
     app.include_router(resilience_router, prefix="/api/v1")
     app.include_router(sso_router, prefix="/api/v1")
+    app.include_router(scim_router, prefix="/api/v1")
     app.include_router(ui_router)
     _mount_static(app)
 

@@ -15,6 +15,7 @@ from fastapi import Depends, HTTPException, Request, status
 
 from arachne.api.auth import Principal, Role, authenticate, require_role
 from arachne.api.context import AppContext
+from arachne.core.audit import AuditAction, AuditOutcome
 from arachne.core.errors import ConfigurationError
 from arachne.data.project_store import ProjectRecord
 
@@ -87,12 +88,28 @@ def get_project(
     ).strip()
     if principal.project:
         if requested and requested.lower() != principal.project.lower():
+            reason = (
+                f"this API key is bound to project {principal.project!r}; "
+                "it cannot operate on another project"
+            )
+            # Audited as a denial, like every other refusal (REQ-IDAM-006): a key reaching for
+            # another tenant is an isolation event whether the route or this dependency caught it.
+            context.auditor.with_actor(principal.actor).record(
+                AuditAction.API_DENIED,
+                outcome=AuditOutcome.BLOCKED,
+                target=str(request.url.path),
+                reason=reason,
+                meta={
+                    "resource": "project",
+                    "resource_id": requested,
+                    "method": request.method,
+                    "path": request.url.path,
+                    "project": principal.project,
+                },
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=(
-                    f"this API key is bound to project {principal.project!r}; "
-                    "it cannot operate on another project"
-                ),
+                detail=reason,
             )
         requested = principal.project
     try:

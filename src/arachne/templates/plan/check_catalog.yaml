@@ -1916,6 +1916,26 @@ checks:
     - domain_pattern
     - url
     estimated_requests: 3
+  # ---------------------------------------------------------------- WP-20 credential breadth
+  # (area CREDS, REQ-CREDS-006). The SSH half the archive recorded as designed-not-implemented.
+  # Opt-in and active like the SMB check, behind the same scope gate and the same broker.
+  - module: M2
+    name: ssh-auth
+    version: '1.0'
+    title: SSH credential verification
+    description: 'Authenticates to an SSH service with the credential this scan selected from the vault, over a curve25519-sha256 / ssh-ed25519 / aes128-ctr profile, and reports whether the peer accepted it. The credential never enters the check: the broker supplies it for one exchange and drops it. The host key is verified before any credential is offered, and an out-of-scope host is refused before a socket is opened. Opt-in, active, and refused when the credential is not scoped to the target.'
+    research_ref: ch02#24
+    proof: L1
+    requires_state_attestation: false
+    requires_active_checks: true
+    cwe: CWE-1392
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 6
   # ---------------------------------------------------------------- S29 depth expansion
   # (area DEPTH, REQ-DEPTH-001...006). Generated from the check metadata, like every row
   # above: tests/unit/test_registry.py fails the build if the two ever disagree. Note the

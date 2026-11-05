@@ -28,10 +28,19 @@ from typing import Any
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, sessionmaker
 
-from arachne.data.models import AuthSession, ServiceAccount, SsoFlow
+from arachne.data.models import (
+    AuthSession,
+    ProvisionedGroup,
+    ProvisionedPrincipal,
+    ServiceAccount,
+    SsoFlow,
+)
 from arachne.data.scan_store import as_utc
 
 __all__ = [
+    "GroupRecord",
+    "PrincipalRecord",
+    "ProvisionedPrincipalStore",
     "ServiceAccountRecord",
     "ServiceAccountStore",
     "SessionRecord",
@@ -259,6 +268,33 @@ class ServiceAccountStore:
             session.refresh(match)
             return _account(match)
 
+    def revoke_owned_by(self, owner: str, *, actor: str | None = None) -> tuple[str, ...]:
+        """Revoke every active key owned by ``owner``; returns the labels revoked (REQ-IDAM-007).
+
+        Deprovisioning a person has to take their machine credentials with them: a key that
+        outlives its owner's directory entry is exactly the "leaver" hole SCIM exists to
+        close. One transaction, so a deactivation is all-or-nothing.
+        """
+        if not owner:
+            return ()
+        now = datetime.now(UTC)
+        revoked: list[str] = []
+        with self._session_factory() as session:
+            rows = session.scalars(
+                select(ServiceAccount).where(ServiceAccount.owner == owner)
+            ).all()
+            for row in rows:
+                if row.revoked_at is not None:
+                    continue
+                row.revoked_at = now
+                meta = dict(row.meta_json or {})
+                meta["revoked_by"] = actor
+                meta["revoked_reason"] = "deprovisioned"
+                row.meta_json = meta
+                revoked.append(str(row.label))
+            session.commit()
+        return tuple(sorted(revoked))
+
 
 @dataclass(frozen=True, slots=True)
 class SsoFlowRecord:
@@ -416,6 +452,32 @@ class SessionStore:
             session.refresh(row)
             return _session(row)
 
+    def revoke_subject(self, subject: str) -> int:
+        """Delete every session for ``subject``; returns how many were revoked (REQ-IDAM-007).
+
+        SCIM deprovisioning has to end the subject's *sessions*, not only their ability to
+        obtain new ones: a deactivation that leaves a live browser session is worse than no
+        SCIM at all, because the directory says the person is gone and the API disagrees.
+        """
+        if not subject:
+            return 0
+        with self._session_factory() as session:
+            rows = session.scalars(select(AuthSession).where(AuthSession.subject == subject)).all()
+            for row in rows:
+                session.delete(row)
+            session.commit()
+        return len(rows)
+
+    def active_subjects(self) -> tuple[str, ...]:
+        """Every subject with a live session (the deprovisioning audit's "before" reading)."""
+        with self._session_factory() as session:
+            rows = session.scalars(
+                select(AuthSession.subject)
+                .where(AuthSession.expires_at > datetime.now(UTC))
+                .distinct()
+            ).all()
+        return tuple(sorted(str(item) for item in rows))
+
     def revoke(self, token: str | None) -> bool:
         if not token:
             return False
@@ -448,3 +510,387 @@ def _session(row: AuthSession) -> SessionRecord:
         expires_at=as_utc(row.expires_at),
         last_seen_at=as_utc(row.last_seen_at),
     )
+
+
+# --------------------------------------------------------------------- SCIM provisioning
+
+
+@dataclass(frozen=True, slots=True)
+class PrincipalRecord:
+    """One provisioned principal (the IdP's view of a person), tenant-free by design."""
+
+    id: int
+    subject: str
+    user_name: str
+    display_name: str | None = None
+    emails: tuple[str, ...] = ()
+    active: bool = True
+    groups: tuple[str, ...] = ()
+    external_id: str | None = None
+    version: int = 1
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+    @property
+    def primary_email(self) -> str | None:
+        return self.emails[0] if self.emails else None
+
+
+@dataclass(frozen=True, slots=True)
+class GroupRecord:
+    """One provisioned group: a directory group whose display name maps to a role."""
+
+    id: int
+    group_id: str
+    display_name: str
+    members: tuple[str, ...] = ()
+    external_id: str | None = None
+    version: int = 1
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+def _principal(row: ProvisionedPrincipal) -> PrincipalRecord:
+    return PrincipalRecord(
+        id=int(row.id),
+        subject=str(row.subject),
+        user_name=str(row.user_name),
+        display_name=row.display_name,
+        emails=tuple(str(item) for item in (row.emails_json or [])),
+        active=bool(row.active),
+        groups=tuple(str(item) for item in (row.groups_json or [])),
+        external_id=row.external_id,
+        version=int(row.version),
+        created_at=as_utc(row.created_at),
+        updated_at=as_utc(row.updated_at),
+    )
+
+
+def _group(row: ProvisionedGroup) -> GroupRecord:
+    return GroupRecord(
+        id=int(row.id),
+        group_id=str(row.group_id),
+        display_name=str(row.display_name),
+        members=tuple(str(item) for item in (row.members_json or [])),
+        external_id=row.external_id,
+        version=int(row.version),
+        created_at=as_utc(row.created_at),
+        updated_at=as_utc(row.updated_at),
+    )
+
+
+class ProvisionedPrincipalStore:
+    """The SCIM directory mirror: principals, groups and their membership (REQ-IDAM-007).
+
+    Two tables, one store, because the SCIM resource model is genuinely two resources and the
+    membership lives on the group. Every write bumps ``version``, which is the ``meta.version``
+    an IdP can use for optimistic concurrency.
+
+    Role is **never** stored: it is derived from ``groups`` by ``SsoSettings.role_for`` at
+    login, so a group change takes effect on the next login with no authorisation column to
+    keep in step (docs/scim-ldap-interface.md §2).
+    """
+
+    def __init__(self, session_factory: sessionmaker[Session]) -> None:
+        self._session_factory = session_factory
+
+    # ------------------------------------------------------------------ principals
+    def upsert_principal(
+        self,
+        *,
+        subject: str,
+        user_name: str,
+        display_name: str | None = None,
+        emails: tuple[str, ...] = (),
+        groups: tuple[str, ...] = (),
+        external_id: str | None = None,
+        active: bool = True,
+    ) -> tuple[PrincipalRecord, bool]:
+        """Create or reconcile one principal. ``True`` in the second slot means "created".
+
+        ``POST /Users`` is idempotent on the subject, which is what RFC 7644 §3.3 asks for: a
+        retried create reconciles the attributes instead of failing, so an IdP that lost the
+        response does not have to guess.
+        """
+        now = datetime.now(UTC)
+        with self._session_factory() as session:
+            row = session.scalar(
+                select(ProvisionedPrincipal).where(ProvisionedPrincipal.subject == subject)
+            )
+            created = row is None
+            if row is None:
+                row = ProvisionedPrincipal(
+                    subject=subject,
+                    user_name=user_name,
+                    created_at=now,
+                    updated_at=now,
+                )
+                session.add(row)
+            row.user_name = user_name
+            row.display_name = display_name
+            row.emails_json = list(emails)
+            row.groups_json = list(groups)
+            row.external_id = external_id
+            row.active = active
+            row.version = int(row.version or 0) + 1 if not created else 1
+            row.updated_at = now
+            session.commit()
+            session.refresh(row)
+            return _principal(row), created
+
+    def get_principal(self, reference: str | int) -> PrincipalRecord | None:
+        """Resolve by numeric row id (the SCIM ``id``) or by subject."""
+        with self._session_factory() as session:
+            row = self._find(session, reference)
+            return None if row is None else _principal(row)
+
+    def get_by_user_name(self, user_name: str) -> PrincipalRecord | None:
+        with self._session_factory() as session:
+            row = session.scalar(
+                select(ProvisionedPrincipal).where(ProvisionedPrincipal.user_name == user_name)
+            )
+            return None if row is None else _principal(row)
+
+    def list_principals(
+        self, *, user_name: str | None = None, external_id: str | None = None
+    ) -> tuple[PrincipalRecord, ...]:
+        query = select(ProvisionedPrincipal).order_by(ProvisionedPrincipal.id)
+        if user_name is not None:
+            query = query.where(ProvisionedPrincipal.user_name == user_name)
+        if external_id is not None:
+            query = query.where(ProvisionedPrincipal.external_id == external_id)
+        with self._session_factory() as session:
+            rows = session.scalars(query).all()
+        return tuple(_principal(row) for row in rows)
+
+    def update_principal(
+        self,
+        reference: str | int,
+        *,
+        user_name: str | None = None,
+        display_name: str | None = None,
+        emails: tuple[str, ...] | None = None,
+        groups: tuple[str, ...] | None = None,
+        external_id: str | None = None,
+        active: bool | None = None,
+    ) -> PrincipalRecord | None:
+        """Replace the named attributes; ``None`` means "leave alone". Bumps ``version``."""
+        with self._session_factory() as session:
+            row = self._find(session, reference)
+            if row is None:
+                return None
+            if user_name is not None:
+                row.user_name = user_name
+            if display_name is not None:
+                row.display_name = display_name
+            if emails is not None:
+                row.emails_json = list(emails)
+            if groups is not None:
+                row.groups_json = list(groups)
+            if external_id is not None:
+                row.external_id = external_id
+            if active is not None:
+                row.active = active
+            row.version = int(row.version or 0) + 1
+            row.updated_at = datetime.now(UTC)
+            session.commit()
+            session.refresh(row)
+            return _principal(row)
+
+    def delete_principal(self, reference: str | int) -> bool:
+        """Hard delete. SCIM ``DELETE`` does **not** use this — it deactivates the row."""
+        with self._session_factory() as session:
+            row = self._find(session, reference)
+            if row is None:
+                return False
+            session.delete(row)
+            session.commit()
+            return True
+
+    @staticmethod
+    def _find(session: Session, reference: str | int) -> ProvisionedPrincipal | None:
+        """A row by id or by subject; subjects are opaque strings, so both are accepted."""
+        if isinstance(reference, int) or (isinstance(reference, str) and reference.isdigit()):
+            row = session.get(ProvisionedPrincipal, int(reference))
+            if row is not None:
+                return row
+        return session.scalar(
+            select(ProvisionedPrincipal).where(ProvisionedPrincipal.subject == str(reference))
+        )
+
+    @classmethod
+    def _canonical_members(cls, session: Session, members: tuple[str, ...]) -> list[str]:
+        """Member references → principal ids, so a group and its members agree on one spelling.
+
+        An IdP may send a member as the subject, the ``userName`` or the resource id; storing
+        whichever arrived is how a group ends up "containing" somebody that ``GET /Users``
+        cannot connect to it. A value that resolves to nothing is kept verbatim: a member may
+        legally be provisioned after the group is.
+        """
+        canonical: list[str] = []
+        for member in members:
+            row = cls._find(session, member)
+            value = str(row.id) if row is not None else str(member)
+            if value not in canonical:
+                canonical.append(value)
+        return canonical
+
+    # ------------------------------------------------------------------ groups
+    def upsert_group(
+        self,
+        *,
+        group_id: str,
+        display_name: str,
+        members: tuple[str, ...] = (),
+        external_id: str | None = None,
+    ) -> tuple[GroupRecord, bool]:
+        now = datetime.now(UTC)
+        with self._session_factory() as session:
+            row = session.scalar(
+                select(ProvisionedGroup).where(ProvisionedGroup.group_id == group_id)
+            )
+            created = row is None
+            if row is None:
+                row = ProvisionedGroup(
+                    group_id=group_id, display_name=display_name, created_at=now, updated_at=now
+                )
+                session.add(row)
+            row.display_name = display_name
+            row.members_json = self._canonical_members(session, members)
+            row.external_id = external_id
+            row.version = 1 if created else int(row.version or 0) + 1
+            row.updated_at = now
+            session.commit()
+            session.refresh(row)
+            return _group(row), created
+
+    def get_group(self, reference: str | int) -> GroupRecord | None:
+        with self._session_factory() as session:
+            row = self._find_group(session, reference)
+            return None if row is None else _group(row)
+
+    def list_groups(self, *, display_name: str | None = None) -> tuple[GroupRecord, ...]:
+        query = select(ProvisionedGroup).order_by(ProvisionedGroup.id)
+        if display_name is not None:
+            query = query.where(ProvisionedGroup.display_name == display_name)
+        with self._session_factory() as session:
+            rows = session.scalars(query).all()
+        return tuple(_group(row) for row in rows)
+
+    def update_group(
+        self,
+        reference: str | int,
+        *,
+        display_name: str | None = None,
+        members: tuple[str, ...] | None = None,
+        external_id: str | None = None,
+    ) -> GroupRecord | None:
+        with self._session_factory() as session:
+            row = self._find_group(session, reference)
+            if row is None:
+                return None
+            if display_name is not None:
+                row.display_name = display_name
+            if members is not None:
+                row.members_json = self._canonical_members(session, members)
+            if external_id is not None:
+                row.external_id = external_id
+            row.version = int(row.version or 0) + 1
+            row.updated_at = datetime.now(UTC)
+            session.commit()
+            session.refresh(row)
+            return _group(row)
+
+    def delete_group(self, reference: str | int) -> bool:
+        with self._session_factory() as session:
+            row = self._find_group(session, reference)
+            if row is None:
+                return False
+            session.delete(row)
+            session.commit()
+            return True
+
+    def remove_member(self, reference: str | int) -> tuple[str, ...]:
+        """Drop a principal from every group it is in; returns the groups it left.
+
+        The leaver case, and it has to clear *both* sides of the membership: the group's
+        ``members_json`` (so ``GET /Groups`` stops reporting the person) and the principal's
+        ``groups_json`` (which is what the role is derived from — a stale entry there would
+        hand the role straight back on reactivation).
+
+        ``reference`` is either the principal's row id or its subject, because a SCIM group's
+        ``members`` may carry either and both resolve to the same person.
+        """
+        if reference is None or reference == "":
+            return ()
+        with self._session_factory() as session:
+            principal = self._find(session, reference)
+            if principal is None:
+                return ()
+            tokens = {str(principal.subject), str(principal.id)}
+            left: list[str] = [str(item) for item in (principal.groups_json or [])]
+            for row in session.scalars(select(ProvisionedGroup)).all():
+                members = [str(item) for item in (row.members_json or [])]
+                if not tokens & set(members):
+                    continue
+                row.members_json = [item for item in members if item not in tokens]
+                row.version = int(row.version or 0) + 1
+                row.updated_at = datetime.now(UTC)
+                left.append(str(row.group_id))
+            # The membership list itself goes: a deactivated principal that kept the claim
+            # would be handed its old role the moment it was reactivated.
+            principal.groups_json = []
+            principal.version = int(principal.version or 0) + 1
+            principal.updated_at = datetime.now(UTC)
+            session.commit()
+        return tuple(sorted(set(left)))
+
+    def groups_for(self, subject: str) -> tuple[str, ...]:
+        """The group ids ``subject`` is a member of (the principal's ``groups_json`` source)."""
+        return tuple(group.group_id for group in self.list_groups() if subject in group.members)
+
+    def set_groups(self, reference: str | int, groups: tuple[str, ...]) -> PrincipalRecord | None:
+        """Write a principal's group membership to **both** sides of the relationship.
+
+        SCIM has two views of the same fact — ``User.groups`` and ``Group.members`` — and an
+        IdP may write either. An implementation that updates only the side it was written
+        through ends up with a user whose role says one thing and whose group says another,
+        which is exactly the state a leaver must never reach. So every write reconciles both,
+        using the principal's SCIM id as the canonical member value (RFC 7643 §4.2 makes
+        ``members.value`` the member resource's ``id``, and :meth:`upsert_principal` returns
+        that id, so both directions of the reference resolve).
+        """
+        wanted = [str(group) for group in groups]
+        with self._session_factory() as session:
+            principal = self._find(session, reference)
+            if principal is None:
+                return None
+            member = str(principal.id)
+            for row in session.scalars(select(ProvisionedGroup)).all():
+                members = [str(item) for item in (row.members_json or [])]
+                belongs = str(row.group_id) in wanted
+                present = member in members
+                if belongs and not present:
+                    row.members_json = [*members, member]
+                elif not belongs and present:
+                    row.members_json = [item for item in members if item != member]
+                else:
+                    continue
+                row.version = int(row.version or 0) + 1
+                row.updated_at = datetime.now(UTC)
+            principal.groups_json = wanted
+            principal.version = int(principal.version or 0) + 1
+            principal.updated_at = datetime.now(UTC)
+            session.commit()
+            session.refresh(principal)
+            return _principal(principal)
+
+    @staticmethod
+    def _find_group(session: Session, reference: str | int) -> ProvisionedGroup | None:
+        if isinstance(reference, int) or (isinstance(reference, str) and reference.isdigit()):
+            row = session.get(ProvisionedGroup, int(reference))
+            if row is not None:
+                return row
+        return session.scalar(
+            select(ProvisionedGroup).where(ProvisionedGroup.group_id == str(reference))
+        )

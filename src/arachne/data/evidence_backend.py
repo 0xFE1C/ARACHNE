@@ -9,6 +9,16 @@ SHA-256 of its logical bytes. Two identical 64 KB response bodies therefore map 
 object: the second write finds the key and skips the write entirely. Dedup and integrity are
 the same property, so neither can drift from the other.
 
+**Every object lives in a tenant namespace (WP-21, REQ-DATA-006).** The key stays the plain
+content digest — that is what makes a read self-verifying — but the *address* carries a
+tenant segment: ``<dir>/<tenant>/ab/cd/<sha256>`` locally and
+``<prefix>/<tenant>/<sha256>`` in an object store. Deduplication is therefore per tenant by
+construction: two tenants that happen to capture byte-identical evidence get two objects, and
+a caller that asks for a key without naming the tenant cannot reach either of them. This is
+deliberate and is the one place the requirement is stricter than "dedup": an existence check
+across tenants would itself be a leak (it answers "does tenant B hold this exact byte string?"),
+so the namespaces are physically separate rather than logically filtered.
+
 **One container format for both backends.** A stored object is ``MAGIC | flag | size |
 body``, where the body is the zlib-compressed payload (or the raw payload when compression is
 switched off). Both backends write exactly the same bytes, so a payload migrated from one to
@@ -56,6 +66,7 @@ from arachne.core.safety import Scope
 
 __all__ = [
     "CONTAINER_CONTENT_TYPE",
+    "DEFAULT_TENANT",
     "EvidenceBackend",
     "LocalEvidenceBackend",
     "S3EvidenceBackend",
@@ -64,9 +75,32 @@ __all__ = [
     "decode_container",
     "encode_container",
     "iter_backend_object",
+    "normalize_tenant",
 ]
 
 _logger = get_logger("data.evidence")
+
+#: The namespace used when a caller names no tenant. It is the implicit default workspace
+#: (``scans.project_id IS NULL``) rather than "no tenant at all": the default workspace is a
+#: tenant like any other, and giving it a namespace of its own keeps the addressing scheme
+#: uniform. A pre-WP-21 object written before namespaces existed is still readable there
+#: through :meth:`LocalEvidenceBackend._legacy_path_for`.
+DEFAULT_TENANT: Final = "default"
+
+#: A tenant namespace is a path segment, so it is validated rather than escaped: the producer
+#: (``blob_registry.tenant_key``) emits only ``[a-z0-9-]``, and anything else is refused.
+_TENANT_RE: Final = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
+
+
+def normalize_tenant(tenant: str | None) -> str:
+    """Validate a tenant namespace, returning :data:`DEFAULT_TENANT` for ``None``."""
+    if tenant is None:
+        return DEFAULT_TENANT
+    name = tenant.strip()
+    if not _TENANT_RE.fullmatch(name):
+        msg = f"refusing tenant namespace {tenant!r}: not a valid namespace segment"
+        raise EvidenceStoreError(msg)
+    return name
 
 #: The container's magic: the first 8 bytes of every stored object.
 CONTAINER_MAGIC: Final = b"ARBLB001"
@@ -158,6 +192,9 @@ class StoredObject:
     backend: str
     deduplicated: bool = False
     content_type: str = CONTAINER_CONTENT_TYPE
+    #: The tenant namespace this object was written to (WP-21, REQ-DATA-006). Recorded so the
+    #: caller can register the reference against the same namespace the write landed in.
+    tenant: str = DEFAULT_TENANT
 
     @property
     def ratio(self) -> float:
@@ -170,27 +207,44 @@ class EvidenceBackend(Protocol):
 
     kind: str
 
-    async def put(self, data: bytes, *, content_type: str = "application/json") -> StoredObject:
-        """Store ``data`` under its content hash."""
+    async def put(
+        self,
+        data: bytes,
+        *,
+        content_type: str = "application/json",
+        tenant: str | None = None,
+    ) -> StoredObject:
+        """Store ``data`` under its content hash, in ``tenant``'s namespace."""
         ...
 
     async def put_stream(
-        self, chunks: Iterable[bytes], *, content_type: str = "application/json"
+        self,
+        chunks: Iterable[bytes],
+        *,
+        content_type: str = "application/json",
+        tenant: str | None = None,
     ) -> StoredObject:
         """Store a payload produced in chunks, hashing it as it arrives."""
         ...
 
-    async def get(self, key: str) -> bytes:
+    async def get(self, key: str, *, tenant: str | None = None) -> bytes:
         """Read a payload back, verifying the container and its content digest."""
         ...
 
-    async def delete(self, key: str) -> bool:
+    async def delete(self, key: str, *, tenant: str | None = None) -> bool:
         """Remove an object; ``False`` when it was already gone."""
         ...
 
-    async def exists(self, key: str) -> bool: ...
+    async def exists(self, key: str, *, tenant: str | None = None) -> bool: ...
 
-    def presign(self, key: str, *, ttl_s: int = 900, filename: str | None = None) -> str | None:
+    def presign(
+        self,
+        key: str,
+        *,
+        ttl_s: int = 900,
+        filename: str | None = None,
+        tenant: str | None = None,
+    ) -> str | None:
         """A time-limited download URL, or ``None`` when the backend cannot mint one."""
         ...
 
@@ -198,13 +252,15 @@ class EvidenceBackend(Protocol):
 
 
 class LocalEvidenceBackend:
-    """The default backend: content-addressed files in a directory (REQ-DATA-002).
+    """The default backend: content-addressed files in a tenant's directory (REQ-DATA-002).
 
-    ``<dir>/ab/cd/<sha256>`` — two levels of sharding keep a directory listing manageable on
-    the filesystems operators actually use. Writes are atomic (a temp file in the same
-    directory, then :func:`os.replace`), so a killed process leaves either the old object or
-    the new one, never a half-written file that a later read would report as corrupt. The
-    write path streams: each chunk is hashed and compressed as it arrives.
+    ``<dir>/<tenant>/ab/cd/<sha256>`` — two levels of sharding keep a directory listing
+    manageable on the filesystems operators actually use. The tenant is the first path
+    segment, so one tenant's objects are physically distinct from another's (REQ-DATA-006).
+    Writes are atomic (a temp file in the same directory, then :func:`os.replace`), so a
+    killed process leaves either the old object or the new one, never a half-written file
+    that a later read would report as corrupt. The write path streams: each chunk is hashed
+    and compressed as it arrives.
     """
 
     kind = "local"
@@ -227,20 +283,42 @@ class LocalEvidenceBackend:
         self.stored_bytes = 0
 
     # ------------------------------------------------------------------ paths
-    def path_for(self, key: str) -> Path:
+    def path_for(self, key: str, tenant: str | None = None) -> Path:
+        _require_content_key(key)
+        namespace = normalize_tenant(tenant)
+        return self.directory / namespace / key[:2] / key[2:4] / key
+
+    def _legacy_path_for(self, key: str) -> Path:
+        """Where a pre-WP-21 object lived (no tenant segment).
+
+        Read-only: a blob written before tenant namespaces existed is still served for the
+        default workspace, so an upgrade does not make stored evidence disappear. New writes
+        always land at :meth:`path_for`.
+        """
         _require_content_key(key)
         return self.directory / key[:2] / key[2:4] / key
 
     # ------------------------------------------------------------------ writes
-    async def put(self, data: bytes, *, content_type: str = "application/json") -> StoredObject:
-        return await asyncio.to_thread(self._put_stream, [data])
+    async def put(
+        self,
+        data: bytes,
+        *,
+        content_type: str = "application/json",
+        tenant: str | None = None,
+    ) -> StoredObject:
+        return await asyncio.to_thread(self._put_stream, [data], tenant)
 
     async def put_stream(
-        self, chunks: Iterable[bytes], *, content_type: str = "application/json"
+        self,
+        chunks: Iterable[bytes],
+        *,
+        content_type: str = "application/json",
+        tenant: str | None = None,
     ) -> StoredObject:
-        return await asyncio.to_thread(self._put_stream, chunks)
+        return await asyncio.to_thread(self._put_stream, chunks, tenant)
 
-    def _put_stream(self, chunks: Iterable[bytes]) -> StoredObject:
+    def _put_stream(self, chunks: Iterable[bytes], tenant: str | None) -> StoredObject:
+        namespace = normalize_tenant(tenant)
         self.directory.mkdir(parents=True, exist_ok=True)
         tmp_dir = self.directory / ".tmp"
         tmp_dir.mkdir(exist_ok=True)
@@ -264,7 +342,7 @@ class LocalEvidenceBackend:
                 if compressor is not None:
                     handle.write(compressor.flush())
             key = digest.hexdigest()
-            target = self.path_for(key)
+            target = self.path_for(key, namespace)
             if self.dedup and target.exists():
                 tmp_path.unlink(missing_ok=True)
                 self.dedup_hits += 1
@@ -276,6 +354,7 @@ class LocalEvidenceBackend:
                     stored_size=target.stat().st_size,
                     backend=self.kind,
                     deduplicated=True,
+                    tenant=namespace,
                 )
             with tmp_path.open("r+b") as handle:
                 handle.seek(len(CONTAINER_MAGIC))
@@ -287,7 +366,12 @@ class LocalEvidenceBackend:
             self.logical_bytes += size
             self.stored_bytes += stored
             return StoredObject(
-                key=key, sha256=key, size=size, stored_size=stored, backend=self.kind
+                key=key,
+                sha256=key,
+                size=size,
+                stored_size=stored,
+                backend=self.kind,
+                tenant=namespace,
             )
         except OSError as exc:
             tmp_path.unlink(missing_ok=True)
@@ -295,12 +379,18 @@ class LocalEvidenceBackend:
             raise EvidenceStoreError(msg) from exc
 
     # ------------------------------------------------------------------ reads
-    async def get(self, key: str) -> bytes:
-        return await asyncio.to_thread(self._get_sync, key)
+    async def get(self, key: str, *, tenant: str | None = None) -> bytes:
+        return await asyncio.to_thread(self._get_sync, key, tenant)
 
-    def _get_sync(self, key: str) -> bytes:
+    def _get_sync(self, key: str, tenant: str | None) -> bytes:
         """The blocking read, run in a worker thread so the event loop is never stalled."""
-        path = self.path_for(key)
+        namespace = normalize_tenant(tenant)
+        path = self.path_for(key, namespace)
+        if not path.is_file() and namespace == DEFAULT_TENANT:
+            # A pre-WP-21 object, still addressed without a tenant segment.
+            legacy = self._legacy_path_for(key)
+            if legacy.is_file():
+                path = legacy
         try:
             raw = path.read_bytes()
         except FileNotFoundError as exc:
@@ -315,11 +405,16 @@ class LocalEvidenceBackend:
             raise EvidenceStoreError(msg)
         return payload
 
-    async def delete(self, key: str) -> bool:
-        return await asyncio.to_thread(self._delete_sync, key)
+    async def delete(self, key: str, *, tenant: str | None = None) -> bool:
+        return await asyncio.to_thread(self._delete_sync, key, tenant)
 
-    def _delete_sync(self, key: str) -> bool:
-        path = self.path_for(key)
+    def _delete_sync(self, key: str, tenant: str | None) -> bool:
+        namespace = normalize_tenant(tenant)
+        path = self.path_for(key, namespace)
+        if not path.is_file() and namespace == DEFAULT_TENANT:
+            legacy = self._legacy_path_for(key)
+            if legacy.is_file():
+                path = legacy
         try:
             path.unlink()
         except FileNotFoundError:
@@ -329,11 +424,23 @@ class LocalEvidenceBackend:
             raise EvidenceStoreError(msg) from exc
         return True
 
-    async def exists(self, key: str) -> bool:
-        path = self.path_for(key)
-        return await asyncio.to_thread(path.is_file)
+    async def exists(self, key: str, *, tenant: str | None = None) -> bool:
+        namespace = normalize_tenant(tenant)
+        path = self.path_for(key, namespace)
+        if await asyncio.to_thread(path.is_file):
+            return True
+        if namespace == DEFAULT_TENANT:
+            return await asyncio.to_thread(self._legacy_path_for(key).is_file)
+        return False
 
-    def presign(self, key: str, *, ttl_s: int = 900, filename: str | None = None) -> str | None:
+    def presign(
+        self,
+        key: str,
+        *,
+        ttl_s: int = 900,
+        filename: str | None = None,
+        tenant: str | None = None,
+    ) -> str | None:
         """The local backend mints no URL: the API streams the file itself."""
         return None
 
@@ -449,17 +556,24 @@ class S3EvidenceBackend:
             return f"{self.scheme}://{host}"
         return f"{self.scheme}://{self.bucket}.{host}"
 
-    def object_path(self, key: str) -> str:
-        """The URL path of one object (the bucket is in the path when path-style)."""
+    def object_path(self, key: str, tenant: str | None = None) -> str:
+        """The URL path of one object (the bucket is in the path when path-style).
+
+        ``<prefix>/<tenant>/<key>``: the tenant segment makes one tenant's objects
+        unreachable from another's namespace (WP-21, REQ-DATA-006).
+        """
         _require_content_key(key)
-        parts = [self.prefix, key] if self.prefix else [key]
+        parts = [self.prefix, normalize_tenant(tenant), key] if self.prefix else [
+            normalize_tenant(tenant),
+            key,
+        ]
         tail = "/".join(_uri_encode(part, safe="") for part in parts)
         if self.path_style:
             return f"/{_uri_encode(self.bucket, safe='')}/{tail}"
         return f"/{tail}"
 
-    def object_url(self, key: str) -> str:
-        return f"{self._base_url()}{self.object_path(key)}"
+    def object_url(self, key: str, tenant: str | None = None) -> str:
+        return f"{self._base_url()}{self.object_path(key, tenant)}"
 
     # ------------------------------------------------------------------ signing
     def _signed_headers(
@@ -510,6 +624,7 @@ class S3EvidenceBackend:
         ttl_s: int = 900,
         filename: str | None = None,
         now: datetime | None = None,
+        tenant: str | None = None,
     ) -> str | None:
         """A presigned GET URL — a bearer credential for this object until it expires.
 
@@ -518,7 +633,7 @@ class S3EvidenceBackend:
         ``now`` exists so a test can mint a link at a chosen instant and prove the store's
         expiry check bites.
         """
-        path = self.object_path(key)
+        path = self.object_path(key, tenant)
         moment = now or datetime.now(UTC)
         amz_date = moment.strftime("%Y%m%dT%H%M%SZ")
         date_stamp = moment.strftime("%Y%m%d")
@@ -557,15 +672,26 @@ class S3EvidenceBackend:
         return f"{self._base_url()}{path}?{_query_string(params)}"
 
     # ------------------------------------------------------------------ writes
-    async def put(self, data: bytes, *, content_type: str = "application/json") -> StoredObject:
-        return await self._put_chunks([data])
+    async def put(
+        self,
+        data: bytes,
+        *,
+        content_type: str = "application/json",
+        tenant: str | None = None,
+    ) -> StoredObject:
+        return await self._put_chunks([data], tenant)
 
     async def put_stream(
-        self, chunks: Iterable[bytes], *, content_type: str = "application/json"
+        self,
+        chunks: Iterable[bytes],
+        *,
+        content_type: str = "application/json",
+        tenant: str | None = None,
     ) -> StoredObject:
-        return await self._put_chunks(chunks)
+        return await self._put_chunks(chunks, tenant)
 
-    async def _put_chunks(self, chunks: Iterable[bytes]) -> StoredObject:
+    async def _put_chunks(self, chunks: Iterable[bytes], tenant: str | None) -> StoredObject:
+        namespace = normalize_tenant(tenant)
         digest = hashlib.sha256()
         size = 0
         compressor = zlib.compressobj(self.compress_level) if self.compress else None
@@ -582,20 +708,20 @@ class S3EvidenceBackend:
         container = CONTAINER_MAGIC + _CONTAINER_HEADER.pack(flag, size) + b"".join(body)
         key = digest.hexdigest()
         deduplicated = False
-        if self.dedup and await self.exists(key):
+        if self.dedup and await self.exists(key, tenant=namespace):
             deduplicated = True
             self.dedup_hits += 1
         elif len(container) >= self.multipart_threshold:
-            await self._put_multipart(key, container)
+            await self._put_multipart(key, container, namespace)
             self.writes += 1
             self.stored_bytes += len(container)
         else:
             headers = self._signed_headers(
-                "PUT", self.object_path(key), {}, payload_hash=_sha256(container)
+                "PUT", self.object_path(key, namespace), {}, payload_hash=_sha256(container)
             )
             exchange = await self.client.request(
                 "PUT",
-                self.object_url(key),
+                self.object_url(key, namespace),
                 headers={**headers, "content-type": CONTAINER_CONTENT_TYPE},
                 content=container,
             )
@@ -612,14 +738,15 @@ class S3EvidenceBackend:
             stored_size=len(container),
             backend=self.kind,
             deduplicated=deduplicated,
+            tenant=namespace,
         )
 
-    async def _put_multipart(self, key: str, container: bytes) -> None:
+    async def _put_multipart(self, key: str, container: bytes, tenant: str) -> None:
         """Initiate → upload parts sequentially → complete."""
-        path = self.object_path(key)
+        path = self.object_path(key, tenant)
         initiated = await self.client.request(
             "POST",
-            f"{self.object_url(key)}?uploads",
+            f"{self.object_url(key, tenant)}?uploads",
             headers=self._signed_headers("POST", path, {"uploads": ""}, payload_hash=_sha256(b"")),
             content=b"",
         )
@@ -640,7 +767,7 @@ class S3EvidenceBackend:
                 params = {"partNumber": str(number), "uploadId": upload_id}
                 response = await self.client.request(
                     "PUT",
-                    f"{self.object_url(key)}?{_query_string(params)}",
+                    f"{self.object_url(key, tenant)}?{_query_string(params)}",
                     headers=self._signed_headers("PUT", path, params, payload_hash=_sha256(part)),
                     content=part,
                 )
@@ -651,7 +778,7 @@ class S3EvidenceBackend:
                 etags.append((number, etag))
                 self.parts_uploaded += 1
         except Exception:
-            await self._abort_multipart(key, upload_id)
+            await self._abort_multipart(key, upload_id, tenant)
             raise
         body = (
             "<CompleteMultipartUpload>"

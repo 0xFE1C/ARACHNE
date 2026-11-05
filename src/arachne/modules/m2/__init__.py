@@ -87,6 +87,7 @@ from arachne.modules.m2.mtls import MutualTlsAuth
 from arachne.modules.m2.netinfra import DnsActive, IcsProbe, SnmpEnum
 from arachne.modules.m2.ot import OtProtocolProbe
 from arachne.modules.m2.remote import RdpVncDetect, SmtpEnum, SmtpTransport, SshEnum
+from arachne.modules.m2.ssh import SshAuth
 from arachne.modules.m2.tls_cve import CveCorrelate, TlsDeepScan
 from arachne.modules.registry import ModuleGroup
 
@@ -123,9 +124,12 @@ M2_CHECKS: tuple[type[Module], ...] = (
     SsdpDiscovery,
     LegacyServices,
     CveCorrelate,
-    # S19 (area CREDS, REQ-CREDS-004): the one credentialed host check — opt-in, and the only
-    # M2 check that draws a credential (from the vault, through the broker).
+    # S19 (area CREDS, REQ-CREDS-004): the credentialed host checks — opt-in, and the only M2
+    # checks that draw a credential (from the vault, through the broker).
     SmbAuth,
+    # WP-20 (REQ-CREDS-006): the SSH half the archive recorded as designed-not-implemented.
+    # Same scope gate, same broker, same audit and redaction rules as the SMB check.
+    SshAuth,
     # S29 detection depth expansion (area DEPTH, REQ-DEPTH-003/006): the gRPC/HTTP-2 posture
     # family (cleartext fallback, reflection, request-metadata leakage) and the read-only
     # OT/ICS protocol probe (S7comm, DNP3). The OT check is opt-in twice over.
