@@ -1,5 +1,7 @@
 # ADR-170 — Stage 12: REST API, Web UI and Webhooks
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 Status: accepted (S12). Scope: `arachne.api` (new), `arachne.cli.serve`, `arachne.cli.ci`,
 the `api`/`webhooks` settings, small additions to `arachne.report`, `arachne.data` and
 `arachne.core.orchestrator`.

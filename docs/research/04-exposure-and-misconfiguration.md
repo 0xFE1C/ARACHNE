@@ -1,5 +1,7 @@
 # Chapter 4 — Exposure and Misconfiguration Discovery
 
+> **Owner:** Detection group · **Last verified:** 2026-11-05 · **Review interval:** 365 days
+
 The M4 surface: things that are reachable and should not be. Every method is a read — a
 request for a well-known path, a header, a policy record or a file — and the finding is the
 observation itself. The default-credential method is the only one that authenticates, and it

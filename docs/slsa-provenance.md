@@ -1,5 +1,7 @@
 # SLSA v1.2 Build L3 provenance
 
+> **Owner:** Ecosystem group · **Last verified:** 2026-11-05 · **Review interval:** 180 days
+
 *Living documentation (S22, REQ-TRUST-011). Update when the release chain changes.*
 
 This page states precisely what ARACHNE's release provenance claims, which platform

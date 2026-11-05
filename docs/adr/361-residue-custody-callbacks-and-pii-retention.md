@@ -1,5 +1,7 @@
 # ADR-361 · The residue attestation, evidence chain-of-custody, hardened callbacks, and a PII retention pass that exists
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 | Field | Value |
 |---|---|
 | Status | accepted (WP-14) |

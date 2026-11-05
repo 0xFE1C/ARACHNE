@@ -1,5 +1,7 @@
 # ADR-070 — Stage 3: module framework + M1 recon & attack surface
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 Scope of this stage: the plugin contract of §5 (F-02-01, F-09-01), the module
 registry (F-02-09, F-02-10), the nine M1 checks of M1 (F-02-02) with
 evidence-bearing candidates (F-02-08), candidate persistence, and the G-01 coverage tool.

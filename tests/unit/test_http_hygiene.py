@@ -44,6 +44,13 @@ SHELL_EXEMPT_MODULES = frozenset(
         # in the environment, so nothing is spliced into an argv — and the gate refuses to
         # start when that interpreter cannot import this project (REQ-QUAL-008).
         "fuzz/mutate.py",
+        # The quickstart runner executes the commands `docs/getting-started.md` declares, in a
+        # shell, because "the page runs verbatim" *is* REQ-DOC-005 — the guide's own first block
+        # sources a virtualenv, which is a shell builtin no argv can express. The script it runs
+        # is assembled from committed prose in this repository and never from a scan, a target or
+        # any other external input; the call shape is asserted by
+        # ``test_the_quickstart_runner_calls_a_shell_only_with_the_guide_as_its_script``.
+        "tools/quickstart.py",
     }
 )
 
@@ -225,6 +232,66 @@ def test_the_mutation_runner_calls_fixed_argv_with_a_timeout() -> None:
         assert f"environment[{variable}]" in source, (
             f"{variable} must be set on the environment, not spliced into the argv"
         )
+
+
+def test_the_quickstart_runner_calls_a_shell_only_with_the_guide_as_its_script() -> None:
+    """The quickstart runner's process call, asserted rather than trusted (REQ-DOC-005).
+
+    Unlike every other exemption, this one *must* use a shell: the guide's first block sources a
+    virtualenv, which is a shell builtin. So the shape assertions are about what the shell is
+    given, not about avoiding the shell:
+
+    1. every ``subprocess.run`` receives a list literal whose first two elements are the
+       literals ``"bash"`` and ``"-c"`` — the only shell this module may start;
+    2. ``shell`` is never passed (so it defaults to ``False``: the argv is a list, not a string);
+    3. ``timeout`` is always set, so a documented command that hangs fails the job;
+    4. ``cwd`` is always the repository the caller named, so no command runs in a target's
+       directory;
+    5. ``subprocess.Popen`` appears nowhere: a service is backgrounded *inside* the shell, with
+       an EXIT trap that kills it, rather than held as a Python process handle.
+    """
+    path = SRC / "tools/quickstart.py"
+    assert path.is_file(), "tools/quickstart.py is missing; drop the exemption"
+    source = path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(path))
+
+    run_calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "run"
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "subprocess"
+    ]
+    assert len(run_calls) == 2, (
+        "the runner has exactly two process calls (the corridor segment and `arachne --version`); "
+        "a new one needs its own assertion"
+    )
+
+    for call in run_calls:
+        assert call.args, "subprocess.run must be given an argv"
+        argv = call.args[0]
+        assert isinstance(argv, ast.List), "the argv must be a list literal, never a string"
+        assert [part.value for part in argv.elts[:2] if isinstance(part, ast.Constant)] == [
+            "bash",
+            "-c",
+        ], "the only program this module may start is bash with -c"
+        keywords = {keyword.arg: keyword.value for keyword in call.keywords}
+        assert "shell" not in keywords, "shell= must not be passed (the argv is already a list)"
+        assert "timeout" in keywords, "a documented command that hangs must fail the job"
+        cwd = keywords.get("cwd")
+        assert isinstance(cwd, ast.Name), "cwd must be the repository the caller named"
+        assert cwd.id == "repo"
+
+    assert "Popen" not in source, (
+        "the quickstart runner must not hold a process handle: a service is backgrounded in the "
+        "shell and stopped by its EXIT trap"
+    )
+    # And the script is built from the guide's own blocks, never from a command string the
+    # caller supplied: `_segment_script` takes parsed `Block`s and is the only assembler.
+    assert "def _segment_script(segment: list[Block]" in source
+    assert "parse_blocks(" in source
 
 
 def test_plugin_installer_process_call_is_fixed_argv_with_timeout() -> None:

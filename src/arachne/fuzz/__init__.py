@@ -55,6 +55,14 @@ from arachne.fuzz.candidates import (
     FuzzCandidate,
     candidate_id,
 )
+from arachne.fuzz.coverage import (
+    COVERAGE_ENGINE,
+    COVERAGE_EXTRA,
+    CoverageGuidedEngine,
+    CoverageSource,
+    InProcessCoverage,
+    coverage_available,
+)
 from arachne.fuzz.engines import (
     DEFAULT_ENGINE,
     ENGINES,
@@ -65,6 +73,7 @@ from arachne.fuzz.engines import (
     engine_names,
     get_engine,
     register_engine,
+    select_engine,
 )
 from arachne.fuzz.grammar import (
     ChecksumSpec,
@@ -113,6 +122,8 @@ from arachne.fuzz.wire import GRAMMAR_NAMES, GRAMMARS, get_grammar, grammar_cata
 
 __all__ = [
     "ALL_FAMILIES",
+    "COVERAGE_ENGINE",
+    "COVERAGE_EXTRA",
     "DEFAULT_ENGINE",
     "DEFAULT_FAMILIES",
     "DESTRUCTIVE_SQL_HEADS",
@@ -134,6 +145,8 @@ __all__ = [
     "CandidateStatus",
     "CaseOutcome",
     "ChecksumSpec",
+    "CoverageGuidedEngine",
+    "CoverageSource",
     "DegradationPolicy",
     "DegradationSignals",
     "DegradationVerdict",
@@ -159,6 +172,7 @@ __all__ = [
     "HttpFuzzPlan",
     "HttpParameter",
     "HttpReading",
+    "InProcessCoverage",
     "MessageGrammar",
     "MutationOperator",
     "NonDestructiveVerdict",
@@ -169,6 +183,7 @@ __all__ = [
     "authorize_fuzz",
     "candidate_id",
     "classify_environment",
+    "coverage_available",
     "engine_names",
     "fuzz_authorization_errors",
     "fuzz_payload_problems",
@@ -183,4 +198,5 @@ __all__ = [
     "register_engine",
     "render_fuzz_plan",
     "require_non_destructive",
+    "select_engine",
 ]

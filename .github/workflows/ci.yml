@@ -67,6 +67,15 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - run: pip install -e ".[dev]"
+      # Every page carries an owner and a last-verified date, and a page past its declared
+      # interval warns while one past two intervals fails (REQ-DOC-004).
+      - run: python -m arachne.tools.docmeta --check
+      # The changelog has one source and the release notes carry a generated index of it, so
+      # the two cannot drift (REQ-DOC-004).
+      - run: python -m arachne.tools.changelog --check
+      # The quickstart still declares the version pyproject.toml ships and still carries every
+      # step of the corridor. The execution itself is the `quickstart` job below (REQ-DOC-005).
+      - run: python -m arachne.tools.quickstart --check
       # Every Markdown link, backticked path and docstring path resolves, and no document
       # cites a commit that is not in the repository.
       - run: python -m arachne.tools.doccheck .
@@ -130,6 +139,41 @@ jobs:
       # One process, one total count, branch coverage enforced by [tool.coverage.report]
       # fail_under (REQ-QUAL-006, REQ-QUAL-007, REQ-QUAL-011).
       - run: python -m pytest tests -m "not perf" -q --cov --cov-report=term-missing
+
+  quickstart:
+    name: quickstart executed in a clean container (REQ-DOC-005)
+    runs-on: ubuntu-latest
+    # A fresh container, not a warm runner: "the quickstart works" is only measurable from an
+    # environment that has never seen this project. The image is the stock Python slim image.
+    container: python:3.12-slim
+    # A cold install plus the corridor. The ten-minute target is asserted inside the tool; this
+    # is only a backstop against a step that hangs.
+    timeout-minutes: 20
+    steps:
+      # Before the checkout, because the checkout needs git. `curl` is what the guide's health
+      # step uses, and it is part of the reader's environment rather than of the product.
+      - name: give the clean container the tools the guide's commands need
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git curl ca-certificates
+      - uses: actions/checkout@v4
+      # The guide is executed *verbatim*: the tool reads docs/getting-started.md, extracts the
+      # blocks the page marks `bash quickstart`, runs them in order and fails on the first
+      # non-zero exit. The measured wall clock is reported and compared with the 10-minute
+      # target; PYTHONPATH is only how the runner itself is loaded before the project's own
+      # virtualenv exists.
+      - name: run docs/getting-started.md verbatim and report the measured time
+        run: |
+          # `pipefail` is load-bearing: without it the pipeline's status is `tee`'s, and a
+          # corridor that failed would still exit 0 — a gate that cannot fail.
+          set -o pipefail
+          PYTHONPATH=src python -m arachne.tools.quickstart --target-seconds 600 \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+      # The self-test proves the job can fail: it drives a guide whose documented command exits
+      # non-zero and asserts the runner reports it. A gate nobody has seen fail is a gate
+      # nobody knows works.
+      - name: a failing documented command fails this job (self-test)
+        run: PYTHONPATH=src python -m arachne.tools.quickstart --self-test
 
   migrations:
     name: "migrations: reversibility, dry run, populated upgrade (REQ-OPS-008)"

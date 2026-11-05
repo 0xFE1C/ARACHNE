@@ -1,5 +1,7 @@
 # ADR-230 — S18: live threat intel & passive OSINT
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 Status: accepted (S18, program Phase 3)
 
 This stage makes the scanner's *knowledge* as current as its probes: NVD/KEV/EPSS arrive by

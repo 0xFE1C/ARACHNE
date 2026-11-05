@@ -1,5 +1,7 @@
 # Vulnerability disclosure policy (VDP)
 
+> **Owner:** Trust group · **Last verified:** 2026-11-05 · **Review interval:** 180 days
+
 *ARACHNE external-validation artifact (REQ-TRUST-007). Review at every major release.*
 
 This document is ARACHNE's **vulnerability disclosure policy**. It says what the project

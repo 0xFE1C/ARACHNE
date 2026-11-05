@@ -1,5 +1,7 @@
 # ARACHNE documentation
 
+> **Owner:** Documentation owners · **Last verified:** 2026-11-05 · **Review interval:** 180 days
+
 Everything you need to run, operate, extend or review ARACHNE. Pick the row that describes
 you.
 

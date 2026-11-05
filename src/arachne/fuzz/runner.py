@@ -76,7 +76,7 @@ from arachne.fuzz.engines import (
     CaseOutcome,
     FuzzEngine,
     fingerprint,
-    get_engine,
+    select_engine,
 )
 from arachne.fuzz.grammar import FuzzCase, MessageGrammar
 from arachne.fuzz.health import (
@@ -347,8 +347,16 @@ class FuzzRunner:
         """Authorize, then fuzz every target within the bounds. Never raises for a target."""
         run_id = plan.run_id or self.run_id or f"fz-{uuid.uuid4().hex[:12]}"
         started = datetime.now(UTC)
-        engine = self._engine or get_engine(plan.engine or self.settings.fuzz.engine)
+        # ``select_engine`` rather than ``get_engine``: REQ-FUZZ-007 makes the coverage-guided
+        # engine optional, so asking for it without the extra degrades to the default engine —
+        # and the substitution is recorded in the report's notes, never made silently. An
+        # explicitly injected engine (a test's, or a caller's) is used exactly as given.
+        if self._engine is not None:
+            engine, degraded = self._engine, None
+        else:
+            engine, degraded = select_engine(plan.engine or self.settings.fuzz.engine)
         self._engine_used = engine
+        notes = "\n".join(part for part in (plan.notes, degraded or "") if part)
         ceiling = FuzzBudget.from_settings(self.settings.fuzz)
         requested = plan.budget or ceiling
         budget = ceiling.narrowed(
@@ -405,7 +413,7 @@ class FuzzRunner:
             budget=budget,
             targets=tuple(targets),
             prohibitions=ProhibitionSummary(),
-            notes=plan.notes,
+            notes=notes,
         )
         self._audit_finish(fuzz_report, plan, run_id)
         if self.bus is not None:

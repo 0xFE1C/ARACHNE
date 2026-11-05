@@ -1,5 +1,7 @@
 # Architecture
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 180 days
+
 How ARACHNE works, with diagrams. For task-level instructions see
 [getting-started.md](getting-started.md) and the
 [operator guide](operator-guide.md); for the reasoning behind decisions see the

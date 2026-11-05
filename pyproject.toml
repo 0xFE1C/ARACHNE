@@ -69,6 +69,14 @@ browser = ["playwright>=1.44"]
 # installation observation rather than failing. `pip install arachne[quic]` enables the
 # handshake; everything else works without it.
 quic = ["aioquic>=1.0"]
+# The coverage-guided fuzzing engine's instrumentation (REQ-FUZZ-007). Deliberately an extra:
+# the default and air-gapped installs keep the two dependency-free engines (`grammar`,
+# `fingerprint`), and asking for `coverage` without this extra degrades to the default engine
+# with the substitution recorded in the report. With it installed the engine is registered only
+# once it has a target to instrument — `ARACHNE_FUZZ_COVERAGE_TARGET=module:callable`, the
+# in-process parser or decoder whose coverage the run is guided by. It never measures a remote
+# target's coverage; that needs instrumentation inside the target, which is the operator's.
+fuzz-coverage = ["coverage[toml]>=7.0"]
 
 [project.scripts]
 arachne = "arachne.cli.main:run"
@@ -169,6 +177,12 @@ ignore = [
 # and each program name is a literal — the same "operator's own tools" reasoning as
 # doccheck.py — so the partial-path rule is the wrong rule here.
 "src/arachne/tools/wp_check.py" = ["S607"]
+# The quickstart runner executes the commands `docs/getting-started.md` declares, in a shell,
+# because "the page runs verbatim" is the whole point of REQ-DOC-005. The shell and the
+# `arachne` it verifies are the operator's — resolved from PATH, with the virtualenv the guide
+# creates prepended to it — so a pinned absolute path would test a different thing than the
+# page describes. The argv is a fixed list of literals; nothing untrusted is spliced into it.
+"src/arachne/tools/quickstart.py" = ["S603", "S607"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["arachne"]

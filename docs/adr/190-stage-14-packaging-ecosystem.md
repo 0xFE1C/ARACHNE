@@ -1,5 +1,7 @@
 # ADR-190 — Stage 14: packaging & ecosystem
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 Status: accepted (S14, roadmap Phase 5 stretch)
 
 This stage turns a working scanner into a deployable one and opens its extension points to

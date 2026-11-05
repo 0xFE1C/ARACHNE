@@ -1,5 +1,7 @@
 # ADR-220 — S17: enterprise identity & access
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 Status: accepted (S17, program Phase 2)
 
 This stage puts corporate identity in front of the platform without weakening the

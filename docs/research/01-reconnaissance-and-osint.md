@@ -1,5 +1,7 @@
 # Chapter 1 — Passive Reconnaissance and OSINT
 
+> **Owner:** Detection group · **Last verified:** 2026-11-05 · **Review interval:** 365 days
+
 The M1 surface. Every method here is either passive (reads a third-party index) or active
 against the target's own nameservice; none of them writes, and none of them needs a proof
 level above L1. The `research_ref` on each M1 check cites one of the numbered methods below,

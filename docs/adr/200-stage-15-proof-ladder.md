@@ -1,5 +1,7 @@
 # ADR-200 — S15: the proof ladder & safe PoC engine
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 Status: accepted (S15, program Phase 1)
 
 This stage gives ARACHNE the ability to say *"an attacker could have done X — here is the

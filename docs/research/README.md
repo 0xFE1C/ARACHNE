@@ -1,5 +1,7 @@
 # The research corpus
 
+> **Owner:** Detection group · **Last verified:** 2026-11-05 · **Review interval:** 365 days
+
 | Field | Value |
 |---|---|
 | Owner | ARACHNE detection engineering |

@@ -1,5 +1,7 @@
 # ADR-100 — Stage 6: M3 Web Application (core families)
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 > Scope: S6 implements the *core* M3 families of roadmap Phase 1 (M3,
 > `research/03-`): twelve checks, a shared web crawl, a detection-only probe corpus, the rules /
 > narratives / remediation entries that turn their candidates into analysed findings, and the

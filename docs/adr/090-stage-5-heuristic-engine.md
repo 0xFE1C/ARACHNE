@@ -1,5 +1,7 @@
 # ADR-090 — Stage 5: The Heuristic Engine
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 Status: accepted (stage S5, roadmap Phase 1, F-03-01..05, F-05-01..07).
 
 This records the decisions that shaped the analyzer and that later stages — especially S8

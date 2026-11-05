@@ -1,8 +1,16 @@
-# SCIM 2.0 / LDAP provisioning interface — design note (S17, REQ-IDAM-005)
+# SCIM 2.0 / LDAP provisioning interface (S17 design; SCIM shipped in WP-20, REQ-IDAM-005)
 
-Status: **design only** (REQ-IDAM-005, P2). No endpoint ships in S17. This note fixes the
-data model and wire contract so that adding provisioning later is a route plus a store
-adapter, not a schema migration.
+> **Owner:** Core group · **Last verified:** 2026-11-05 · **Review interval:** 180 days
+
+Status: **SCIM 2.0 ships; LDAP is still design only.** SCIM is implemented at
+`/api/v1/scim/v2` (RFC 7643/7644) behind a dedicated provisioner credential — a service account
+holding the provisioner role, so a static admin key and a viewer key are both refused, and
+"which provisioner made this change?" always has an answer. Deleting a user deactivates the
+principal and revokes its live sessions **and** the service-account keys it owns, in one request
+(`DELETE /api/v1/scim/v2/Users/{id}`), audited like every other identity change. **LDAP is
+deferred, not delivered**: REQ-IDAM-008 is P2 and WP-20's plan allowed the deferral if SCIM
+overran, which it did. No `LdapSettings`, bind path or route exists, so nothing claims LDAP
+works — §4 below remains the contract a future package would implement.
 
 Scope: how an identity provider *provisions* users and groups into ARACHNE, as opposed to
 how it *authenticates* them (OIDC, REQ-IDAM-001 — implemented in S17). Provisioning is

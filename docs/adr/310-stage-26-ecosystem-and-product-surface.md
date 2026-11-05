@@ -1,5 +1,7 @@
 # ADR-310 — Stage 26: ecosystem & product surface (area ECOS)
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 - **Status:** accepted (S26)
 - **Requirements:** REQ-ECOS-001...006
 - **Phase/gate:** P6, gate G6 (`historical` spec path `docs/03-delivery-plan.md` §8)

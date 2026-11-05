@@ -1,5 +1,7 @@
 # ADR-120 — Stage 7: M4 Misconfiguration & Exposure
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 > Scope: S7 implements roadmap Phase 1's M4 module (M4, `research/04-`):
 > 23 checks across the exposure, hardening and identity families, the probe corpus they read,
 > the encrypted operator secrets manifest, the rules / narratives / remediation entries that

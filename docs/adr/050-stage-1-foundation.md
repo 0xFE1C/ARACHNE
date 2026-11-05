@@ -1,5 +1,7 @@
 # ADR-050 · Stage S1 foundation decisions
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 Status: accepted (S1)
 Scope: the repository — the decisions taken while implementing the foundation that later
 stages must either honour or explicitly supersede. The architectural ADRs they depend

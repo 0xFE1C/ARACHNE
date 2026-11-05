@@ -1,5 +1,7 @@
 # ADR-240 — Stage 19: authenticated & agent-based scanning (area CREDS)
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 *Status: accepted (S19). Requirements: REQ-CREDS-001…005. Gate: G3 (`historical` spec path `docs/03-delivery-plan.md`
 §5).*
 

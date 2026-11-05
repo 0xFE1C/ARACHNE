@@ -1,5 +1,7 @@
 # Performance and precision: the published envelope
 
+> **Owner:** Quality group · **Last verified:** 2026-11-05 · **Review interval:** 180 days
+
 This page is the single place where ARACHNE states **measured** numbers: the API latency
 envelope, scan throughput, the memory ceilings, and the false-positive rate on the in-repo
 ground-truth corpus. Every figure here is produced by a shipped command and committed as

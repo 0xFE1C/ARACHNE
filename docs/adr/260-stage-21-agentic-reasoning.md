@@ -1,5 +1,7 @@
 # 260 — Agentic reasoning, attack paths & self-improvement (S21, areas AGENT and QUAL)
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 **Status:** accepted · **Date:** 2026-10-30 · **Stage:** S21 · **Requirements:** REQ-AGENT-001...007,
 REQ-QUAL-001...005
 

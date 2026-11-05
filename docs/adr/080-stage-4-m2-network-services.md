@@ -1,5 +1,7 @@
 # ADR-080 — Stage 4: M2 Network & Services
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 Status: accepted (stage S4, roadmap Phase 1, M2, `research/02-`).
 
 This records the decisions that shaped M2 and that a later stage has to keep honouring. It

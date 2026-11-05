@@ -44,6 +44,14 @@ from dataclasses import dataclass, field
 from typing import Any, Final, Protocol, runtime_checkable
 
 from arachne.core.errors import ConfigurationError
+from arachne.fuzz.coverage import (
+    COVERAGE_ENGINE,
+    COVERAGE_EXTRA,
+    CoverageGuidedEngine,
+    InProcessCoverage,
+    coverage_available,
+    coverage_target,
+)
 from arachne.fuzz.grammar import FuzzCase, MessageGrammar, MutationOperator
 
 __all__ = [
@@ -55,8 +63,10 @@ __all__ = [
     "GrammarEngine",
     "engine_names",
     "get_engine",
+    "register_coverage_engine",
     "register_engine",
     "runtime_dependencies",
+    "select_engine",
 ]
 
 #: The engine a run uses when its plan names none (REQ-FUZZ-006's default).
@@ -259,11 +269,36 @@ class FingerprintEngine:
         }
 
 
-#: The engines this build ships, by name.
+#: The engines this build ships, by name. ``coverage`` is registered only when **both** halves of
+#: REQ-FUZZ-007's optionality are present: the optional dependency (``arachne[fuzz-coverage]``)
+#: and the in-process target it instruments (``ARACHNE_FUZZ_COVERAGE_TARGET``). With either
+#: absent the name is not registered at all, so nothing can claim a coverage-guided run happened
+#: when it did not — and ``select_engine`` says so in the report rather than failing the run.
 ENGINES: dict[str, FuzzEngine] = {
     DEFAULT_ENGINE: GrammarEngine(),
     "fingerprint": FingerprintEngine(),
 }
+
+
+def register_coverage_engine() -> str | None:
+    """Register the coverage-guided engine when both of its halves are available.
+
+    Returns ``None`` on success or the reason it could not be registered, which is exactly what
+    the report's degradation note carries.
+    """
+    if not coverage_available():
+        return (
+            f"the {COVERAGE_ENGINE}-guided engine needs the optional extra "
+            f"`arachne[{COVERAGE_EXTRA}]`, which is not installed"
+        )
+    target, problem = coverage_target()
+    if target is None:
+        return f"the {COVERAGE_ENGINE}-guided engine has no target to instrument ({problem})"
+    ENGINES[COVERAGE_ENGINE] = CoverageGuidedEngine(source=InProcessCoverage(target=target))
+    return None
+
+
+COVERAGE_UNAVAILABLE: str | None = register_coverage_engine()
 
 
 def register_engine(engine: FuzzEngine, *, replace: bool = False) -> None:
@@ -306,6 +341,29 @@ def get_engine(name: str | None) -> FuzzEngine:
         known = ", ".join(engine_names())
         msg = f"unknown fuzzing engine {resolved!r} (this build registers: {known})"
         raise ConfigurationError(msg) from exc
+
+
+def select_engine(name: str | None) -> tuple[FuzzEngine, str | None]:
+    """The engine a run should use, plus the reason it differs from the one that was asked for.
+
+    This is what the *runner* uses, and it is deliberately more forgiving than :func:`get_engine`
+    in exactly one place. REQ-FUZZ-007 requires the coverage-guided engine's absence to *degrade*
+    to the existing engines, so a plan that asks for ``coverage`` on a build without it runs the
+    default engine — and returns a note the report carries, because a run that silently used a
+    different engine than the plan named is a report about a run that did not happen. Every other
+    unknown name is still a configuration error: a typo must not be quietly re-interpreted.
+    """
+    requested = name or DEFAULT_ENGINE
+    if requested in ENGINES:
+        return ENGINES[requested], None
+    if requested == COVERAGE_ENGINE:
+        reason = COVERAGE_UNAVAILABLE or (
+            f"the {COVERAGE_ENGINE}-guided engine is not registered in this process"
+        )
+        return get_engine(DEFAULT_ENGINE), (
+            f"{reason}; the run used the {DEFAULT_ENGINE} engine instead"
+        )
+    return get_engine(requested), None
 
 
 def runtime_dependencies() -> tuple[str, ...]:

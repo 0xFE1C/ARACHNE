@@ -1,13 +1,22 @@
 # Getting Started
 
+> **Owner:** Documentation owners · **Last verified:** 2026-11-05 · **Review interval:** 180 days
+
 From an empty machine to your first evidence-backed scan report. Every command below
 was executed against the shipped build during the fresh-install validation.
+
+**Verified against ARACHNE 0.1.0.** This page is not prose that someone hopes still works: the
+code fences marked `bash quickstart` are extracted from this file and executed, in order, in a
+clean container by the `quickstart` CI job, which reports the measured wall clock and compares
+it with the **ten-minute target** from an empty machine to the first finding. Fences marked
+`bash` are illustrative — an optional extra, a Docker command — and are never executed, so this
+page can show you more than CI can run.
 
 ```mermaid
 flowchart LR
     A["1. Install"] --> B["2. Migrate DB"]
     B --> C["3. Plan (dry-run)"]
-    C --> D["4. Attest + scan"]
+    C --> D["4. Scan (offline demo)"]
     D --> E["5. Report"]
     E --> F["6. Serve API/UI"]
 ```
@@ -22,7 +31,7 @@ flowchart LR
 
 From the repository root:
 
-```bash
+```bash quickstart
 python -m venv .venv
 . .venv/bin/activate
 pip install -e ".[dev]"
@@ -40,7 +49,7 @@ pip install -e ".[dev,postgres]"    # everything for development
 
 ARACHNE never touches a schema implicitly — you apply migrations explicitly:
 
-```bash
+```bash quickstart
 arachne db upgrade        # apply migrations to a fresh SQLite file
 arachne db current        # confirm: up to date
 ```
@@ -52,7 +61,7 @@ All state you will ever see is produced by your own runs.
 
 Every scan starts as a plan you can read before anything is contacted:
 
-```bash
+```bash quickstart
 arachne scan --target examples/targets/lab-fixture.yaml --dry-run
 ```
 
@@ -61,6 +70,20 @@ found, every check that will run with its proof level, and the estimated request
 count. **Nothing leaves your machine during a dry-run.**
 
 ## 4. Run a scan
+
+The command is one line; the interesting part is the target definition behind it. This first
+run uses the repository's **offline demo target** — a declared, attested definition whose
+third-party answers and HTTP responses are bundled recordings, so the scan completes without
+contacting anything. That is what makes it a quickstart you can run anywhere, including CI:
+
+```bash quickstart
+export ARACHNE_HTTP_FIXTURES=docker/demo/http
+export ARACHNE_OSINT_FIXTURES=docker/demo/osint
+arachne scan --target docker/demo/target.yaml
+```
+
+Pointing it at a system you own is the same command with your own `--target`; the target file,
+not the command line, is where authorization lives:
 
 ```bash
 arachne scan --target examples/targets/lab-fixture.yaml
@@ -83,7 +106,7 @@ Notes on authorization:
 
 ## 5. Read the results
 
-```bash
+```bash quickstart
 arachne report --scan 1 --format md --output report.md
 arachne report --scan 1 --format html --output report.html
 ```
@@ -93,8 +116,13 @@ with rationale, and remediation guidance. Use `--format json` for machine consum
 
 ## 6. Serve the API and web UI
 
-```bash
+Start the server — the block below runs in the background while the next one probes it:
+
+```bash quickstart service
 arachne serve --host 127.0.0.1 --port 8080
+```
+
+```bash quickstart
 curl http://127.0.0.1:8080/health       # → {"status":"ok", ...}
 ```
 

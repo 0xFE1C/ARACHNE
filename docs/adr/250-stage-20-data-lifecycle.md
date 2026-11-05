@@ -1,5 +1,7 @@
 # 250 — Data lifecycle, evidence storage & observability (S20, areas DATA and OPS)
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 **Status:** accepted · **Date:** 2026-10-30 · **Stage:** S20 · **Requirements:** REQ-DATA-001...004,
 REQ-OPS-003, REQ-OPS-004, REQ-OPS-006
 

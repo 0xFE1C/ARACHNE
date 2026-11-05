@@ -1,20 +1,24 @@
 # Contributing to ARACHNE
 
-Thank you. This document is the practical entry point. The **normative** rules live in
-`.spec/`; this page tells you where to go and what a reviewer will check.
+> **Owner:** Documentation owners · **Last verified:** 2026-11-05 · **Review interval:** 180 days
+
+Thank you. This document is the practical entry point. The rules a contribution must satisfy
+are **executable** — they are the gates in §3, the safety suites, and the documentation checks
+that run on every pull request. A release of ARACHNE ships no separate prose specification, so
+nothing here points at one.
 
 ---
 
 ## 1. Before you start
 
-| If you want to… | Read first |
+| If you want to... | Read first |
 |---|---|
 | Report a vulnerability **in ARACHNE** | [`SECURITY.md`](SECURITY.md) — **not** a public issue |
 | Write a check or plugin | [`docs/plugin-developer-guide.md`](docs/plugin-developer-guide.md) |
-| Understand what ARACHNE does and why | [`.spec/01-vision.md`](.spec/01-vision.md) |
-| Know what the current gaps are | [`.spec/02-current-state.md`](.spec/02-current-state.md) |
+| Understand what ARACHNE does and why | [`docs/architecture.md`](docs/architecture.md) → [`docs/adr/`](docs/adr/) (the decision record) |
+| Know what the current gaps are | [`coverage_matrix.md`](coverage_matrix.md) and [`docs/research/README.md`](docs/research/README.md) |
 | Operate ARACHNE | [`docs/operator-guide.md`](docs/operator-guide.md) |
-| Run / extend the build programme | [`STATE.md`](STATE.md) → [`PROMPT.md`](PROMPT.md) |
+| Run ARACHNE end to end | [`docs/getting-started.md`](docs/getting-started.md) |
 
 **One rule above all others:** ARACHNE is a **defensive** tool. A contribution must not add
 exploitation, persistence, credential theft, destructive payloads, evasion, denial of
@@ -30,30 +34,29 @@ A pull request that weakens one is closed, not debated.
 
 ```
 1. Read docs/plugin-developer-guide.md.
-2. Read .spec/05-detection-program.md §2 — the check authoring standard.
-3. Pick a framework item with no owner (.spec/00-research/technique-landscape.md has the gap list).
-4. Scaffold it (from WP-12 onward): `arachne plugin new-check m3.your-check`
+2. Read docs/architecture.md — the layer and registry the check joins.
+3. Pick a gap named in coverage_matrix.md.
+4. Scaffold it: `arachne plugin new-check m3.your-check`
 5. Implement `run()`. Add a positive fixture AND a decoy fixture.
 6. Run the conformance kit and the full suite.
 7. Open a PR.
 ```
 
-**A check is not mergeable without a decoy fixture.** That is `FP-1` in
-`.spec/05-detection-program.md` §4.2, and it is the rule that keeps a 400-check corpus
-trustworthy.
+**A check is not mergeable without a decoy fixture.** A family that fires on a healthy target
+is worse than a family that misses, and the decoy is what makes the difference visible.
 
-**A check must declare a framework mapping** (`.spec/03-requirements.md` REQ-DET-002): at
-least one of `WSTG-*`, `API<N>:2023`, `CWE-*`, `ATT&CK-T*`, `LLM*`, `ASI*`. The registry
-refuses one that does not.
+**A check must declare a framework mapping** (REQ-DET-002): at least one of `WSTG-*`,
+`API<N>:2023`, `CWE-*`, `ATT&CK-T*`, `LLM*`, `ASI*`. The registry refuses one that does not.
 
 **A check must declare the lowest sufficient proof level.** If a read-only request establishes
 the claim, it is L1 — not L2 because L2 "sounds stronger".
 
 ### 2.2 Everything else
 
-Bug fixes, interface work, performance, documentation. Read the relevant `.spec/` document,
-then open a PR. For anything non-trivial, open an issue first so the design is agreed before
-you write it.
+Bug fixes, interface work, performance, documentation. Read the shipped document closest to
+the change — [`docs/architecture.md`](docs/architecture.md) for structure,
+[`docs/operator-guide.md`](docs/operator-guide.md) for behaviour — then open a PR. For anything
+non-trivial, open an issue first so the design is agreed before you write it.
 
 ---
 
@@ -106,22 +109,24 @@ python -m arachne.tools.credentials_gate .
 
 **Add a safety test whenever you touch a safety surface.** Reviewers look for it first.
 
-**Do not delete a test to make a gate pass.** That is a safety change and requires owner
-approval (`.spec/README.md` §6.4).
+**Do not delete a test to make a gate pass.** That is a safety change: the invariants
+(`INV-1`...`INV-11`) are reviewed by a human before merge, and removing the test that asserts one
+needs the owner's explicit approval recorded against the change.
 
 ---
 
 ## 4. Definition of Done
 
-A pull request is done when **all seven** hold (`.spec/08-quality-verification.md` §2.1):
+A pull request is done when **all seven** hold:
 
 1. Every requirement or claim it makes has passing evidence.
 2. `ruff check .` passes.
 3. `ruff format --check .` passes.
 4. `mypy` strict passes.
 5. The full non-perf suite passes, including every safety suite.
-6. No invariant (`INV-1`…`INV-11`) is weakened.
-7. The living docs are updated where behaviour changed, and the commit exists.
+6. No invariant (`INV-1`...`INV-11`) is weakened.
+7. The living docs are updated where behaviour changed — including the page's
+   `last-verified` date, which the docs job checks — and the commit exists.
 
 A PR that satisfies 1–3 but not 4–7 is **not done**, and saying so in the PR is the correct
 move — a truthful incomplete PR is worth more than a false complete one.
@@ -160,10 +165,11 @@ review and are never merged on a green CI alone.
 
 ### 5.3 Release notes and the changelog
 
-There is **one** changelog source (introduced in WP-18). [`docs/release-notes.md`](docs/release-notes.md)
-is the operator-facing history; do not create a second, parallel changelog. If your change is
-user-visible, it gets an entry in the single source, and the release notes are generated from
-it.
+There is **one** changelog source: [`CHANGELOG.md`](CHANGELOG.md). If your change is
+user-visible, it gets an entry there and nowhere else — [`docs/release-notes.md`](docs/release-notes.md)
+carries a **generated** index of that file, and `python -m arachne.tools.changelog --check`
+fails the docs job when the two disagree. Editing the release notes by hand is how two
+documents start telling different stories about one release.
 
 ---
 
@@ -174,8 +180,8 @@ it.
 | Security vulnerability **in ARACHNE** | [`SECURITY.md`](SECURITY.md) — private disclosure, never a public issue |
 | A check that reports a false positive | A public issue with the check id, the target shape (redacted), and the evidence the check produced |
 | A check that misses a known vulnerability | A public issue with a minimal reproduction |
-| A documentation error | A PR. Path and link errors are gated (`.spec/03-requirements.md` REQ-DOC-001); a report is a gift. |
-| A specification problem | An issue against `.spec/`. It is normative, so a change goes through change control (`.spec/README.md` §6). |
+| A documentation error | A PR. Path and link errors are gated (`python -m arachne.tools.doccheck .`, REQ-DOC-001); a report is a gift. |
+| Anything else | A public issue, or a PR if it is small and obvious. |
 
 **Never include a real secret, a real customer hostname, or unredacted evidence in an issue.**
 Reproduce against a lab fixture.
@@ -184,13 +190,14 @@ Reproduce against a lab fixture.
 
 ## 7. Working on the build programme
 
-If you are a builder session rather than a human contributor, your entry point is
-[`STATE.md`](STATE.md), not this file. In short: read `STATE.md`, take the first `pending`
-work package, copy its block from [`PROMPT.md`](PROMPT.md), implement only that, keep the
-gates green, fill the handoff, commit once, and **stop**.
+ARACHNE's own development runs as a work-package programme: a tracker file names the single
+package a session may implement, a delivery plan defines each package's requirements and gate,
+and a handoff gate checks the result. None of that scaffolding is part of a release — the
+product ships `docs/`, not the plan — so it is not described here, and a contributor does not
+need it: the gates in §3 are the same either way.
 
 One work package per session. A failing work package is fixed before the next starts. Every
-deviation is recorded in `STATE.md`.
+deviation is recorded in the tracker, not in the code.
 
 ---
 

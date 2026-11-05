@@ -1,9 +1,13 @@
 # Reproducible public benchmark
 
+> **Owner:** Quality group · **Last verified:** 2026-11-05 · **Review interval:** 180 days
+
 This document describes the published benchmark method required by **REQ-TRUST-010**. The
 claim it makes is deliberately narrow, because it is the only one that survives a saturated
-benchmark ([`ai-era-research.md` §4](../.spec/00-research/ai-era-research.md)): *here is the
-corpus, here is the command, here are the raw rows and the environment — re-run it.*
+benchmark: *here is the corpus, here is the command, here are the raw rows and the
+environment — re-run it.* The method universe the corpus is drawn from is
+[`docs/research/`](research/README.md), and the measured envelope it feeds is
+[`docs/performance.md`](performance.md).
 
 The published artefacts live in [`benchmarks/`](../benchmarks/README.md):
 

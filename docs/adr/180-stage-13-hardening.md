@@ -1,5 +1,7 @@
 # ADR-180 — Stage 13: Hardening & Polish
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 Status: accepted (S13). Scope: `arachne.analyzer.fp` + `arachne.cli.fp` (the FP tuner,
 F-05-07), `arachne.report.html_render`/`pdf`/`pdf_backend` (F-06-02), the remediation catalog
 and OWASP map (data), `arachne.i18n` (new), 25 new detection checks across M1–M6, the perf

@@ -1,5 +1,7 @@
 # ARACHNE Operator Guide
 
+> **Owner:** Operations · **Last verified:** 2026-11-05 · **Review interval:** 180 days
+
 This guide is task-oriented: it tells you how to install, configure and operate the ARACHNE
 scanner that lives in this repository root. It documents only what the code actually
 does. Every command was run against the shipped build (`arachne --version` → `0.1.0`) and
@@ -1254,8 +1256,15 @@ client can confirm how it will be attributed. The requester is also stored on th
   writes an `api.denied` audit line with the user and group list.
 * A replayed/expired `state`, a nonce mismatch, a wrong issuer/audience or an expired ID
   token are all refusals — each audited, none yielding a session.
-* SCIM/LDAP provisioning is designed but not implemented (REQ-IDAM-005); see
-  `docs/scim-ldap-interface.md` for the contract and the (optional) future endpoints.
+* **SCIM 2.0 provisioning ships** at `/api/v1/scim/v2` (RFC 7643/7644), authenticated **only**
+  by a dedicated provisioner credential — a service account holding the provisioner role. A
+  viewer key and a static admin key are both refused, so "which provisioner changed this?" is
+  always answerable. `DELETE /Users/{id}` deactivates the principal and revokes its live
+  sessions *and* the service-account keys it owns in one request.
+* **LDAP is deliberately not implemented** (REQ-IDAM-008, P2, deferred): there is no
+  `LdapSettings`, no bind path and no route, so nothing claims it works. See
+  `docs/scim-ldap-interface.md` for the shipped SCIM contract and the LDAP design a future
+  release would implement.
 
 ### 19.5 Troubleshooting SSO
 

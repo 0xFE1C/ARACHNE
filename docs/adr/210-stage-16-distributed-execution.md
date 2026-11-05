@@ -1,5 +1,7 @@
 # ADR-210 — S16: distributed scan execution
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 Status: accepted (S16, program Phase 2)
 
 This stage removes the last single-process constraint the S14 baseline named

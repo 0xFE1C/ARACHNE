@@ -1,5 +1,7 @@
 # ARACHNE Plugin Developer Guide
 
+> **Owner:** Ecosystem group · **Last verified:** 2026-11-05 · **Review interval:** 180 days
+
 How to write, register, test and ship an ARACHNE **check** (a detection plugin). This is the
 F-09-01 contract: the plugin API is a documented interface plus a discovery mechanism, not a
 fork of the scanner.

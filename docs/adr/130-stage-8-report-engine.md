@@ -1,5 +1,7 @@
 # ADR 130 — Stage 8: report engine v1 + remediation
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 Stage S8 implements (F-06-01…07): the report is the product, and every
 format must be the same document. The decisions below record what S8 fixed and why.
 

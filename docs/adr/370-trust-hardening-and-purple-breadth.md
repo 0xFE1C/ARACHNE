@@ -1,5 +1,7 @@
 # ADR-370 · Trust hardening and purple breadth: an asymmetric deployment key, generated compliance maps, and a 36-technique ATT&CK v20 catalogue
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 | Field | Value |
 |---|---|
 | Status | accepted (WP-19) |

@@ -1,5 +1,7 @@
 # Reproducible builds
 
+> **Owner:** Ecosystem group · **Last verified:** 2026-11-05 · **Review interval:** 180 days
+
 *Living documentation (S22, REQ-TRUST-003). Update when the build changes.*
 
 "Reproducible" here means: **the same source tree, built twice, produces artifacts

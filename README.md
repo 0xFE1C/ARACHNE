@@ -6,7 +6,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3b82f6" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/checks-176-8b5cf6" alt="176 registered checks">
-  <img src="https://img.shields.io/badge/tests-5,552-22c55e" alt="5,511 tests">
+  <img src="https://img.shields.io/badge/tests-5,610-22c55e" alt="5,610 tests">
   <img src="https://img.shields.io/badge/engine-heuristic_%2B_AI-f59e0b" alt="Dual engine">
   <img src="https://img.shields.io/badge/proof_ladder-L0%E2%80%93L4-ef4444" alt="Proof ladder L0–L4">
   <img src="https://img.shields.io/badge/mypy-strict-0ea5e9" alt="mypy strict">
@@ -26,6 +26,8 @@ findings on ground-truth labs.
 > destroys, and it is **refused by its own gates** unless every target is covered by an
 > authorization attestation. Scanning systems you do not own is prohibited, by policy
 > and by design.
+
+> **Owner:** ARACHNE programme · **Last verified:** 2026-11-05 · **Review interval:** 180 days
 
 ## ✨ What makes it different
 
@@ -48,7 +50,7 @@ it — safely — and to **show its work**:
 | 🪜 **Proof ladder L0–L4** | passive → read-only → out-of-band → one-shot command → minimal state change (auto-restored) |
 | ⚙️ **Dual engine** | heuristic (127 rules, deterministic) + AI (7 provider adapters) — parity-guaranteed |
 | 🖥️ **Run it your way** | CLI · REST API + web UI · scheduler · distributed agents · CI gate · air-gapped |
-| 🧪 **5,552 tests** | incl. a 59-test safety suite and ground-truth labs with false-positive traps |
+| 🧪 **5,610 tests** | incl. a 59-test safety suite and ground-truth labs with false-positive traps |
 | 🔏 **Tamper-evident** | hash-chained audit trail; `arachne verify-chain` detects any modification |
 | 🔑 **Asymmetric signing** | Ed25519 alongside HMAC — an auditor with only the public key verifies and cannot forge |
 | 📋 **Generated compliance maps** | CIS · ISO 27001 · NIST CSF · PCI DSS, built from check metadata with the unassessed remainder named |
@@ -202,9 +204,10 @@ ARACHNE/
 ## 🤝 Contributing
 
 Issues and pull requests are welcome. Plugin authors: start with the
-[plugin developer guide](docs/plugin-developer-guide.md) — new checks ride the same
-registry, versioning and safety gates as the built-in 152, and the parity suite will
-hold them to it.
+[plugin developer guide](docs/plugin-developer-guide.md) — a new check rides the same
+registry, versioning and safety gates as the built-in registry, whose size is the generated
+count in [the badges above](#-at-a-glance) rather than a number typed here, and the parity
+suite will hold it to the same bar.
 
 ## ⚖️ License
 

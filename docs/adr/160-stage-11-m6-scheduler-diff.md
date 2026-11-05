@@ -1,5 +1,7 @@
 # ADR 160 — Stage 11: M6 automation/AI-era/post-exploit + scheduler + diff
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 - **Status:** accepted
 - **Date:** 2026-10-29
 - **Scope:** S11 (roadmap phase 3). Adds the M6 module (nine checks), a cron-like scan

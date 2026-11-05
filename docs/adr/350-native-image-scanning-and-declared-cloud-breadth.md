@@ -1,5 +1,7 @@
 # ADR-350 · Native image scanning, hostile archives in a temporary root, and a declared cloud-provider ledger
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 | Field | Value |
 |---|---|
 | Status | accepted (WP-12) |

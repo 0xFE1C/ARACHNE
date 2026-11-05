@@ -1,5 +1,7 @@
 # Chapter 5 — Cloud and Supply-Chain Exposure
 
+> **Owner:** Detection group · **Last verified:** 2026-11-05 · **Review interval:** 365 days
+
 The M5 surface. Cloud configuration is read through the provider's own API with a read-only
 credential, or observed from outside where the credential is not available. Container and
 supply-chain methods read manifests, registries and pipelines. Nothing in this chapter

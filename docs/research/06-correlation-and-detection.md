@@ -1,5 +1,7 @@
 # Chapter 6 — Vulnerability Correlation, Threat Detection and Adversary Emulation
 
+> **Owner:** Detection group · **Last verified:** 2026-11-05 · **Review interval:** 365 days
+
 The M6 surface. The first half correlates what the other modules observed against
 vulnerability, exploit and threat data to answer "does this matter, and is anyone using it".
 The second half is detection engineering: reading the target's own telemetry rules and

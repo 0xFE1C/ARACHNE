@@ -1,5 +1,7 @@
 # ADR-060 · Stage S2 decisions — scope, safety & scan orchestration
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 Status: accepted (S2)
 Scope: the repository — what S2 had to decide because the spec left it open, plus the two places
 it deliberately extends what S1 shipped. Same rule as S1: prefer the safer interpretation,

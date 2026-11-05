@@ -1,5 +1,7 @@
 # ADR-320 — Stage 28: simulation & what-if modeling (area SIM)
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 - **Status:** accepted (S28)
 - **Requirements:** REQ-SIM-001...006
 - **Phase/gate:** P7, gate G7 (`historical` spec path `docs/03-delivery-plan.md` §9)

@@ -1,5 +1,7 @@
 # ADR-340 · A headless browser behind an optional extra, with the scope-bound proxy as its only egress
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 | Field | Value |
 |---|---|
 | Status | accepted (WP-11) |

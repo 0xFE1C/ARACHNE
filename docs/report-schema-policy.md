@@ -1,5 +1,7 @@
 # The report schema policy
 
+> **Owner:** Data group · **Last verified:** 2026-11-05 · **Review interval:** 180 days
+
 Every ARACHNE report carries a `schema_version`, and the schema itself ships as data under
 `src/arachne/templates/report/`. This page is the promise behind that number: what may change,
 what may go away, how long a consumer has, and how to move an old document forward.

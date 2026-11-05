@@ -109,6 +109,7 @@ SHIPPED_DIRS: Final[frozenset[str]] = frozenset(
 
 SHIPPED_ROOT_FILES: Final[frozenset[str]] = frozenset(
     {
+        "CHANGELOG.md",
         "CONTRIBUTING.md",
         "LICENSE",
         "README.md",
@@ -117,7 +118,7 @@ SHIPPED_ROOT_FILES: Final[frozenset[str]] = frozenset(
         "coverage_matrix.md",
         "pyproject.toml",
         ".env.example",
-    },
+    }
 )
 
 #: Extensions whose ``#`` comments are prose and therefore citable.

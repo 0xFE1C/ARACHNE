@@ -1,5 +1,7 @@
 # Chapter 2 — Active Scanning and Enumeration
 
+> **Owner:** Detection group · **Last verified:** 2026-11-05 · **Review interval:** 365 days
+
 The M2 surface: what is listening, what it is, and which version it runs. Methods 1–13 are
 discovery and fingerprinting (L1, read-only); 14–28 are per-protocol enumeration, each of
 which reads a banner, a share list or a directory rather than changing anything; 29 correlates

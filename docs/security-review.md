@@ -1,5 +1,7 @@
 # Security review of the ARACHNE codebase (F-08)
 
+> **Owner:** Trust group · **Last verified:** 2026-11-05 · **Review interval:** 180 days
+
 Scope: the ARACHNE codebase as shipped. Checklist source: the project's own security
 requirements for the codebase itself (F-08). Redaction fuzz requirement, guarded by
 `tests/unit/test_redaction_fuzz.py`.

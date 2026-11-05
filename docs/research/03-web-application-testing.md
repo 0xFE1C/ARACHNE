@@ -1,5 +1,7 @@
 # Chapter 3 — Web Application Vulnerability Testing
 
+> **Owner:** Detection group · **Last verified:** 2026-11-05 · **Review interval:** 365 days
+
 The M3 surface. Each method pairs a detection with a *proof* that stays inside the proof
 ladder: a differential oracle (the response differs when the input differs) is the default,
 an out-of-band callback is L2 and opt-in, and a one-shot echoed nonce is the strongest thing

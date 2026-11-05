@@ -1,5 +1,7 @@
 # ADR-300 — Stage 25: resilience & evidence integrity (areas RESIL + TRUST)
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 - **Status:** accepted (S25)
 - **Requirements:** REQ-RESIL-001…006, REQ-TRUST-005/006/007
 - **Phase/gate:** P6, gate G6 (`historical` spec path `docs/03-delivery-plan.md` §8)

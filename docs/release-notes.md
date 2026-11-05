@@ -1,7 +1,68 @@
 # Release notes
 
-*One section per release, newest first. Every number here is reproducible with the command
-that produced it; where a capability is partial, this file says so.*
+> **Owner:** ARACHNE programme · **Last verified:** 2026-11-05 · **Review interval:** 180 days
+
+*One section per release, newest first. The per-release change entries are **generated** from
+[`CHANGELOG.md`](../CHANGELOG.md) — the single source for what changed — and this file carries
+no second copy of them. Every number here is reproducible with the command that produced it;
+where a capability is partial, this file says so.*
+
+<!-- BEGIN GENERATED: changelog -->
+
+<!-- Generated from CHANGELOG.md by `python -m arachne.tools.changelog --write`;
+     edit the source, not this block. -->
+
+## Change index
+
+The authoritative change entries live in [`CHANGELOG.md`](../CHANGELOG.md). This index is generated from them, so the two cannot drift.
+
+| Version | Date | Status | Added | Changed | Deprecated | Removed | Fixed | Security |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| Unreleased | — | unreleased | 0 | 0 | 0 | 0 | 0 | 0 |
+| 0.1.0 | 2026-11-05 | development snapshot (unreleased) | 14 | 3 | 0 | 0 | 3 | 3 |
+
+### Unreleased
+
+No entries.
+
+### 0.1.0 — 2026-11-05 — development snapshot (unreleased)
+
+**Added**
+
+- **Detection across six modules** — reconnaissance and OSINT, network and service checks,
+- **A graduated safe proof ladder (L0–L4)** with verification records: a finding states how it
+- **Evidence custody that survives deletion** — evidence is content-addressed inside its
+- **An API and web UI** with key-based authentication, per-tenant isolation over every
+- **A report engine** producing Markdown, HTML, JSON, SARIF and PDF from one model, versioned
+- **Two analysis engines** — a deterministic heuristic engine that needs no network or API key,
+- **Identity and access management** — roles, service accounts, sessions, project-scoped API
+- **Operational surfaces** — service-level objectives with generated burn alerts, a rehearsal
+- **A software-supply-chain story** — signed releases with SLSA v1.2 Build L3 provenance, an
+- **Trust primitives** — Ed25519 signing and verification with the public key alone, a
+- **Compliance maps generated from check metadata** for CIS, ISO/IEC 27001, NIST CSF and
+- **A purple-team catalogue** of ATT&CK v20 techniques with replayable, declared-safe proof
+- **Bounded fuzzing of protocol surfaces** behind a grant and an attestation, with a case,
+- **A documentation surface** with an owner and a last-verified date on every page, a link and
+
+**Changed**
+
+- **Numeric claims in documentation are generated or test-checked**, so a count that moves in
+- **The compliance maps and the coverage ledger are artefacts of the check registry**, not
+- **Release notes are generated from this file** rather than typed twice.
+
+**Fixed**
+
+- **Five cross-tenant isolation defects** found by the generative tenancy suite — an evidence
+- **Deduplicated evidence could be destroyed by one finding's delete**, and a tenant could be
+- **A dangling-reference class in the documentation** — citations to paths and commits that do
+
+**Security**
+
+- **Proof levels are refusals, not warnings**: an L3 or L4 action without the corresponding
+- **Scope is deny-by-default** and evaluated before resolution, with an out-of-scope host
+- **Redaction happens at capture**, so a credential's value never enters evidence, a report or
+
+<!-- END GENERATED: changelog -->
 
 ---
 
@@ -203,10 +264,10 @@ a browser engine inside the scanner is a new attack surface and the operator opt
 
 | What | Result |
 |---|---|
-| Tests | **5,552** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
-| Primary safety suite | **59 tests** in `tests/test_safety.py`; **336** in the safety files |
+| Tests | **5,610** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Primary safety suite | **59 tests** in `tests/test_safety.py`; **340** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol and mobile fixtures with planted false-positive traps |
-| Strict type checking | clean under `mypy --strict` across the **432** Python modules in `src/` |
+| Strict type checking | clean under `mypy --strict` across the **436** Python modules in `src/` |
 | Lint | clean over the whole repository (the badge's scope is the tree, not `src/` and `tests/`) |
 | Research coverage | **148/175 (84.6%)** of the corpus's numbered methods have an implementing check |
 
@@ -233,15 +294,23 @@ discover. Each is a candidate for a future release.
 2. **No WSTG or OWASP API Top 10 identifiers** in check metadata. Coverage against those
    frameworks cannot be reported, only estimated.
 3. **Four of the ten OWASP Agentic Top 10 items have no check**, and AD CS enumeration is
-   partial. `ASI01`, `ASI04`, `ASI05` and `ASI08` are named as gaps in the coverage ledger
-   (`.spec/ledgers/coverage-ledger.md`); the six that ship are `ASI02`, `ASI03`, `ASI06`,
-   `ASI07`, `ASI09` and `ASI10`. The AD CS check reports the template and CA conditions
-   associated with the published ESC classes but cannot decide the ACL-based ESC4/ESC5/ESC7,
-   the relay-based ESC8 or the mapping-based ESC9/ESC10 halves, which it names as
-   not-assessed rather than omitting. MCP-server checks ship (three of them).
-4. **No mutual-TLS or client-certificate check**, and no SMTP transport-security check
-   (STARTTLS enforcement, AUTH, open relay).
-5. **No HTTP/3 probing**, and IPv6-only targets are under-scanned.
+   partial. `ASI01`, `ASI04`, `ASI05` and `ASI08` are named as gaps in the generated coverage
+   ledger ([`coverage_matrix.md`](../coverage_matrix.md), which every check's `research_ref`
+   feeds); the six that ship are `ASI02`, `ASI03`, `ASI06`, `ASI07`, `ASI09` and `ASI10`. The
+   AD CS check reports the template and CA conditions associated with the published ESC classes
+   but cannot decide the ACL-based ESC4/ESC5/ESC7, the relay-based ESC8 or the mapping-based
+   ESC9/ESC10 halves, which it names as not-assessed rather than omitting. MCP-server checks
+   ship (three of them).
+4. **Mutual TLS and client-certificate inspection ship**, as does SMTP transport-security
+   assessment (STARTTLS enforcement, AUTH mechanisms, open relay). What they do not do is
+   *require* a client certificate: a server that accepts an anonymous handshake is reported as
+   accepting one, not as a failure, because whether mTLS is required is a deployment decision
+   the scanner cannot read from outside.
+5. **HTTP/3 probing ships as an optional extra** (`arachne[quic]`; with the extra absent the
+   check reports itself skipped and names it). IPv6-only targets remain **under-scanned**: the
+   address policy, scope comparison and connect path handle IPv6 (the IPv6 safety suite asserts
+   the parity), but the port and service catalogue is IPv4-shaped, so a v6-only host yields
+   fewer service findings than its v4 equivalent.
 6. **`oracle`, `sip` and `opc-ua` are declared in the port catalogue without an implementing
    check.** An Oracle port currently produces a generic "port reachable" finding rather than
    a database finding.
@@ -252,13 +321,22 @@ discover. Each is a candidate for a future release.
 8. **Cloud posture covers AWS, Azure, GCP and DigitalOcean.** OCI and Alibaba Cloud are
    `not_supported`, each with its reason in the coverage ledger — their APIs need a request
    signing scheme this release does not implement, and a guessed one would misreport posture.
-9. **Four in-scope CWE Top 25 weaknesses have no check**: CWE-94, CWE-863, CWE-20 and CWE-77.
+9. **Every in-scope CWE Top 25 weakness now has a check (18 of 18).** The four that were gaps in
+   an earlier snapshot (CWE-94, CWE-863, CWE-20, CWE-77) have one. The residual limitation is
+   the same shape as item 2: a weakness is covered through the *techniques* its checks
+   exercise, so a CWE no non-destructive probe can reach would appear as a named gap in
+   `coverage_matrix.md` rather than being silently omitted.
 
 **Behaviour you should know about**
 
-10. **The PII retention re-mask is configured and documented but not implemented.** The
-    setting is accepted and no re-mask occurs. Treat evidence retention as manual until this
-    is fixed. This is the most significant known defect in this snapshot.
+10. **PII re-masking in place is implemented for evidence stored in the database, and only
+    reported for offloaded evidence.** The retention pruner masks inline payloads under the
+    project's policy and **reports** a payload that was offloaded to an object store
+    (`pii.remask_unsupported`, with the reason in the plan) instead of rewriting the blob:
+    rewriting would mint a new content-addressed key and orphan the old object, and reference
+    counting is the data-lifecycle package's (REQ-DATA-006, WP-21). A deployment with
+    `ARACHNE_EVIDENCE_BACKEND` set therefore has a partial privacy control — and the largest
+    payloads, where PII is most likely, are the ones it reports rather than rewrites.
 11. **`arachne coverage` reports 148 of 175 methods (84.6%) mapped.** The remaining 27 are
     named gaps, each with the reason it is absent (see `docs/research/README.md`). Seven of
     them are absent because the technique would need a capability ARACHNE refuses; the rest
@@ -325,11 +403,19 @@ discover. Each is a candidate for a future release.
 
 **Developer experience**
 
-16. **The integration test layer takes about 20 minutes** and there is no per-test timeout.
-17. **Repo-wide lint reports one error outside the CI scope**, and 193 files would be
-    reformatted. CI checks `src/` and `tests/` only.
-18. **Coverage is configured but not enforced** — no `fail_under`, and CI does not run
-    `pytest --cov`.
+16. **The full test suite takes about 29 minutes and its bar is 15.** Every test has a timeout
+    (60 s by default, with reviewed per-test exceptions), so a stuck test fails rather than
+    hangs — but the suite budget itself is **not** met, and the CI `tests` job's asserted 900 s
+    ceiling is red by design until the probe volume comes down. This is the one known unmet
+    quality requirement in this snapshot (REQ-QUAL-007).
+17. **A documentation page can go stale by one review interval before anyone is told.** Every
+    shipped page declares an owner, a `last-verified` date and a review interval
+    (`python -m arachne.tools.docmeta --check` in the docs job); past one interval it warns,
+    past two it fails the build. The mechanism is deliberately forgiving at one interval.
+18. **Coverage and mutation floors are enforced, and lowering either needs an ADR.** The branch
+    coverage floor is 82 % (`fail_under`, with the CI test job running `--cov`) and the safety
+    core's mutation-score floor is 0.80. Repo-wide `ruff check .` and `ruff format --check .`
+    are clean and cover the whole tree, not `src` and `tests` only.
 
 ### Reporting a problem
 

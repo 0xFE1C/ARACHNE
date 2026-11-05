@@ -1,7 +1,17 @@
 # ADR 150 — Stage 10: M3 extended families + M5 cloud/container/supply chain
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 - **Status:** accepted
 - **Date:** 2026-10-29
+- **Superseded in part by:** [ADR 350](350-native-image-scanning-and-declared-cloud-breadth.md)
+  for the container-image decision. What this record describes as "the external image scanner
+  (`ARACHNE_M5_REGISTRY_SCAN` / `ARACHNE_M5_SBOM_TOOL`), off by default" became a **native,
+  on-by-default** layer scanner, with the external Trivy/Grype path kept as an opt-in import of
+  a report produced out of band. The rest of this record — the M3 families and the M5 cloud
+  posture — still stands. The decisions below are left as written rather than edited: a decision
+  record says what was decided at the time, and the superseding record is how the change is
+  traced.
 - **Scope:** S10 (roadmap phase 3). Adds the remaining M3 web-application families and the whole
  M5 module (M3/M5, F-02-04/F-02-06), with rules, narratives, remediation, CVSS
   vectors, the planning catalogue, the coverage matrix and two new lab fixtures.

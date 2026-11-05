@@ -1,5 +1,7 @@
 # ADR-360 · Verification records as a persisted artefact, re-verification that cannot escalate, and a shared differential oracle
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 | Field | Value |
 |---|---|
 | Status | accepted (WP-13) |

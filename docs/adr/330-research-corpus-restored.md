@@ -1,5 +1,7 @@
 # ADR-330 · The research corpus is restored, and reconstructed from the checks
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 | Field | Value |
 |---|---|
 | Status | accepted (WP-01) |

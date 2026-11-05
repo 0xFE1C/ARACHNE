@@ -1,5 +1,7 @@
 # ADR-280: Stage 23 — Continuous exposure management
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 Date: 2026-10-31 · Status: accepted · Supersedes: none · Decisions: 280.1–280.9
 
 ## Context

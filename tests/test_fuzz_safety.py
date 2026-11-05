@@ -19,6 +19,8 @@ import pytest
 from arachne.core.errors import FuzzRefused
 from arachne.fuzz.bounds import STOP_ABORTED, STOP_BUDGET, STOP_COMPLETED
 from arachne.fuzz.candidates import CandidateStatus, FuzzCandidate
+from arachne.fuzz.coverage import COVERAGE_ENGINE, COVERAGE_EXTRA, CoverageGuidedEngine
+from arachne.fuzz.engines import DEFAULT_ENGINE
 from arachne.fuzz.grammar import FuzzCase, MutationOperator
 from arachne.fuzz.runner import FuzzPlan
 from tests.helpers.fuzz import (
@@ -264,10 +266,64 @@ class _RogueEngine:
         return ()
 
 
-async def test_a_prohibited_payload_from_any_engine_is_discarded_inside_the_process() -> None:
+class _EmptyCoverage:
+    """A coverage source that reaches nothing: the engine then behaves like the default one.
+
+    REQ-FUZZ-007's engine is exercised here through the *runner*, with a source a test controls,
+    so the safety assertions below do not depend on the optional extra being installed.
+    """
+
+    def read(self, payload: bytes) -> frozenset[str]:
+        return frozenset()
+
+
+_ROGUE_COVERAGE_NAME = "rogue-coverage-test-engine"
+
+
+class _RogueCoverageEngine(CoverageGuidedEngine):
+    """The coverage-guided engine, handed a prohibited payload (REQ-FUZZ-007's last gate).
+
+    It is the same rogue plan as :class:`_RogueEngine`, wearing the new engine's name — which is
+    the whole question the requirement asks: does the prohibition table apply to the coverage
+    engine *identically*, or only to the engines that existed when it was written?
+    """
+
+    name = _ROGUE_COVERAGE_NAME
+
+    def __init__(self) -> None:
+        # The dataclass field would otherwise default the instance's name to the shipped
+        # engine's, and the audit line naming *which* engine tried the payload is the point.
+        super().__init__(name=_ROGUE_COVERAGE_NAME, source=_EmptyCoverage())
+
+    def plan(self, grammar, *, limit):  # type: ignore[no-untyped-def]
+        seed = grammar.seed()
+        rogue = FuzzCase(
+            index=0,
+            grammar=grammar.name,
+            protocol=grammar.protocol,
+            field="key",
+            operator=MutationOperator.DROP_FIELD,
+            payload=b"x; rm -rf / ; shutdown -h now",
+            baseline=seed,
+        )
+        good = grammar.build_case("key-length", MutationOperator.LENGTH_MAX, index=1)
+        return (rogue, good)
+
+    def observe(self, outcome):  # type: ignore[no-untyped-def]
+        return ()
+
+
+@pytest.mark.parametrize(
+    "engine_factory",
+    [_RogueEngine, _RogueCoverageEngine],
+    ids=["grammar-family", "coverage-guided"],
+)
+async def test_a_prohibited_payload_from_any_engine_is_discarded_inside_the_process(
+    engine_factory,  # type: ignore[no-untyped-def]
+) -> None:
     with lab_arc() as lab:
         with arc_grammars_registered():
-            harness = build_runner(engine=_RogueEngine())
+            harness = build_runner(engine=engine_factory())
             report = await harness.runner.run(arc_plan(lab))
 
     target = report.targets[0]
@@ -277,10 +333,80 @@ async def test_a_prohibited_payload_from_any_engine_is_discarded_inside_the_proc
     detail = harness.audit_meta("fuzz.payload_refused")[0]["detail"]
     assert "destructive-command" in detail
     assert "remaining-infrastructure" in detail
+    assert harness.audit_meta("fuzz.payload_refused")[0]["engine"] == engine_factory.name
     # The service never parsed the prohibited message: it only ever saw the permitted one plus
     # the health probes, and its own counter is the evidence.
     assert lab.arc.faults == 1
     assert [c.operator for c in target.candidates] == ["length-max"]
+
+
+async def test_the_coverage_engine_gets_the_same_health_probe_and_abort_guard() -> None:
+    """REQ-FUZZ-007: the guard is not engine-specific, and this proves it for the new engine.
+
+    The same planted distress as the default engine's case: the service is dropped on twice, and
+    the run must stop at the first signal rather than finishing the 50-wide batch.
+    """
+    with lab_arc() as lab:
+        with arc_grammars_registered():
+            harness = build_runner(
+                engine=CoverageGuidedEngine(source=_EmptyCoverage()), probe_interval=1
+            )
+            lab.arm_drop_after(6)
+            report = await harness.runner.run(
+                arc_plan(lab, budget=arc_budget(max_cases=200, max_requests=200, batch_size=50))
+            )
+
+    target = report.targets[0]
+    assert target.engine == "coverage"
+    assert report.aborted is True
+    assert target.abort_reasons, "an abort must state the signal that stopped it"
+    assert target.cases_run < 50, "the batch is 50 wide; the coverage engine must not finish it"
+    assert lab.arc.dropped <= 4, "the service is dropped on, then left alone"
+    assert "fuzz.aborted" in harness.actions()
+    # The health probes really ran: the engine's identity never entered the guard's decision.
+    assert harness.audit_meta("fuzz.health"), "the guard must have probed this target"
+
+
+async def test_the_coverage_engine_plans_the_grammar_and_never_a_finding() -> None:
+    """The new engine changes ordering only: candidates stay candidates (no proof, no severity)."""
+    with lab_arc() as lab:
+        with arc_grammars_registered():
+            harness = build_runner(
+                engine=CoverageGuidedEngine(source=_EmptyCoverage()),
+            )
+            report = await harness.runner.run(arc_plan(lab))
+
+    target = report.targets[0]
+    assert target.engine == "coverage"
+    assert target.cases_planned == report.targets[0].cases_planned
+    assert target.cases_run > 0
+    for candidate in report.candidates:
+        assert candidate.is_finding is False
+        assert candidate.is_verified is False
+    assert report.to_dict()["prohibitions"]["classes"], "the report still carries the table"
+
+
+async def test_asking_for_an_unavailable_coverage_engine_degrades_to_the_default(
+    monkeypatch,  # type: ignore[no-untyped-def]
+) -> None:
+    """REQ-FUZZ-007: absence degrades — and the report says so rather than claiming coverage."""
+    from arachne.fuzz import engines as engines_module
+
+    monkeypatch.delitem(engines_module.ENGINES, COVERAGE_ENGINE, raising=False)
+    monkeypatch.setattr(
+        engines_module,
+        "COVERAGE_UNAVAILABLE",
+        f"the coverage-guided engine needs the optional extra `arachne[{COVERAGE_EXTRA}]`",
+    )
+    with lab_arc() as lab:
+        with arc_grammars_registered():
+            harness = build_runner()
+            report = await harness.runner.run(arc_plan(lab, engine=COVERAGE_ENGINE))
+
+    assert report.engine == DEFAULT_ENGINE
+    assert COVERAGE_EXTRA in report.notes, "a substituted engine must be named in the report"
+    assert report.to_dict()["notes"] == report.notes
+    assert report.targets[0].cases_run > 0, "the run still happened, with the default engine"
 
 
 def test_no_destructive_payload_exists_anywhere_in_the_shipped_grammars() -> None:

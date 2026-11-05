@@ -1,5 +1,7 @@
 # ADR-270 — Stage 22: supply chain, deployment, compliance & integrations
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 *Status:* accepted · *Stage:* S22 (Phase 4, gate G4) · *Date:* 2026-10-31
 
 ## Context

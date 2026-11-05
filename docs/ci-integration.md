@@ -1,5 +1,7 @@
 # CI integration (REQ-ECOS-003)
 
+> **Owner:** Ecosystem group · **Last verified:** 2026-11-05 · **Review interval:** 180 days
+
 ARACHNE's delivery surface: run the offline IaC/CI gate in a pipeline and put its findings
 where a reviewer reads them — GitHub pull-request annotations, a GitLab Code Quality report,
 or SARIF in Code Scanning. Everything here is offline by construction; nothing dials out

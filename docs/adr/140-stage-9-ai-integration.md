@@ -1,5 +1,7 @@
 # ADR 140 — Stage 9: the AI integration layer
 
+> **Owner:** ARACHNE architecture group · **Last verified:** 2026-11-05 · **Review interval:** 1825 days
+
 Stage S9 implements (F-04-01...09) and completes the cross-engine half of
  (G-05). The layer is optional, explicit and swappable; every capability it
 adds already has a heuristic counterpart, and a scan never loses a finding because a model was
