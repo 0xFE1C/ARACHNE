@@ -1,0 +1,660 @@
+{
+  "appendix": {
+    "audit": {
+      "actions": {},
+      "blocked_events": 0,
+      "first_event_at": null,
+      "last_event_at": null,
+      "out_of_scope_events": [],
+      "total_events": 0
+    },
+    "evidence": [
+      {
+        "captured_at": "2026-10-27T12:00:00Z",
+        "id": "E-0001",
+        "kind": "http_request",
+        "payload": {
+          "headers": {
+            "accept": "*/*",
+            "cookie": "[REDACTED:value]"
+          },
+          "method": "GET",
+          "url": "https://target.example/.env"
+        },
+        "redacted": true,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "summary": "GET https://target.example/.env"
+      },
+      {
+        "captured_at": "2026-10-27T12:00:00Z",
+        "id": "E-0002",
+        "kind": "http_response",
+        "payload": {
+          "body": "AWS_ACCESS_KEY_ID=[REDACTED:aws-access-key-id]",
+          "captured_patterns": [
+            "aws-access-key-id"
+          ],
+          "headers": {
+            "content-type": "text/plain"
+          },
+          "status_code": 200
+        },
+        "redacted": true,
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "summary": "HTTP 200 \u00b7 46 bytes \u00b7 matched patterns: aws-access-key-id"
+      },
+      {
+        "captured_at": "2026-10-27T12:00:00Z",
+        "id": "E-0003",
+        "kind": "note",
+        "payload": {
+          "check": "m4.env-file-probe",
+          "detail": "candidate 1 provenance",
+          "module": "M4"
+        },
+        "redacted": true,
+        "sha256": "6370b71e43d43353d3393d2eef1c2e63aabb9afa62e96ea737c10ac3470f0fa5",
+        "summary": "candidate 1 provenance"
+      },
+      {
+        "captured_at": "2026-10-27T12:00:00Z",
+        "id": "E-0004",
+        "kind": "http_request",
+        "payload": {
+          "headers": {
+            "accept": "*/*",
+            "cookie": "[REDACTED:value]"
+          },
+          "method": "GET",
+          "url": "https://target.example/admin"
+        },
+        "redacted": true,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "summary": "GET https://target.example/admin"
+      },
+      {
+        "captured_at": "2026-10-27T12:00:00Z",
+        "id": "E-0005",
+        "kind": "http_response",
+        "payload": {
+          "body": "AWS_ACCESS_KEY_ID=[REDACTED:aws-access-key-id]",
+          "captured_patterns": [
+            "aws-access-key-id"
+          ],
+          "headers": {
+            "content-type": "text/plain"
+          },
+          "status_code": 200
+        },
+        "redacted": true,
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "summary": "HTTP 200 \u00b7 46 bytes \u00b7 matched patterns: aws-access-key-id"
+      },
+      {
+        "captured_at": "2026-10-27T12:00:00Z",
+        "id": "E-0006",
+        "kind": "note",
+        "payload": {
+          "check": "m4.env-file-probe",
+          "detail": "candidate 2 provenance",
+          "module": "M4"
+        },
+        "redacted": true,
+        "sha256": "161b1ed38b674bd1fbf14a283dfb84087fdc60c9d355795e51502fcad85a30ed",
+        "summary": "candidate 2 provenance"
+      },
+      {
+        "captured_at": "2026-10-27T12:00:00Z",
+        "id": "E-0007",
+        "kind": "http_request",
+        "payload": {
+          "headers": {
+            "accept": "*/*",
+            "cookie": "[REDACTED:value]"
+          },
+          "method": "GET",
+          "url": "https://target.example/"
+        },
+        "redacted": true,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "summary": "GET https://target.example/"
+      },
+      {
+        "captured_at": "2026-10-27T12:00:00Z",
+        "id": "E-0008",
+        "kind": "http_response",
+        "payload": {
+          "body": "AWS_ACCESS_KEY_ID=[REDACTED:aws-access-key-id]",
+          "captured_patterns": [
+            "aws-access-key-id"
+          ],
+          "headers": {
+            "content-type": "text/plain"
+          },
+          "status_code": 200
+        },
+        "redacted": true,
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "summary": "HTTP 200 \u00b7 46 bytes \u00b7 matched patterns: aws-access-key-id"
+      },
+      {
+        "captured_at": "2026-10-27T12:00:00Z",
+        "id": "E-0009",
+        "kind": "note",
+        "payload": {
+          "check": "m4.env-file-probe",
+          "detail": "candidate 3 provenance",
+          "module": "M4"
+        },
+        "redacted": true,
+        "sha256": "9f849379fe1b07b206f23f7e2808e1d2a9914a6f0a48a713e328a1fddc62cef3",
+        "summary": "candidate 3 provenance"
+      },
+      {
+        "captured_at": "2026-10-27T12:00:00Z",
+        "id": "E-0010",
+        "kind": "http_request",
+        "payload": {
+          "headers": {
+            "accept": "*/*",
+            "cookie": "[REDACTED:value]"
+          },
+          "method": "GET",
+          "url": "https://target.example/"
+        },
+        "redacted": true,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "summary": "GET https://target.example/"
+      },
+      {
+        "captured_at": "2026-10-27T12:00:00Z",
+        "id": "E-0011",
+        "kind": "http_response",
+        "payload": {
+          "body": "AWS_ACCESS_KEY_ID=[REDACTED:aws-access-key-id]",
+          "captured_patterns": [
+            "aws-access-key-id"
+          ],
+          "headers": {
+            "content-type": "text/plain"
+          },
+          "status_code": 200
+        },
+        "redacted": true,
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "summary": "HTTP 200 \u00b7 46 bytes \u00b7 matched patterns: aws-access-key-id"
+      },
+      {
+        "captured_at": "2026-10-27T12:00:00Z",
+        "id": "E-0012",
+        "kind": "note",
+        "payload": {
+          "check": "m4.env-file-probe",
+          "detail": "candidate 4 provenance",
+          "module": "M4"
+        },
+        "redacted": true,
+        "sha256": "0c81c595bd08e81dae31e09833d70ed2fd6fd67cdcfacf177451be64678ab14c",
+        "summary": "candidate 4 provenance"
+      }
+    ],
+    "false_positives": [
+      {
+        "finding_id": "F-000004",
+        "reason": "placeholder page",
+        "severity": "info",
+        "status": "fp",
+        "title": "Generic server banner"
+      }
+    ],
+    "glossary": {
+      "CAPEC": "Common Attack Pattern Enumerations and Classifications identifier.",
+      "CVE": "Common Vulnerabilities and Exposures identifier for a known vulnerability.",
+      "CVSS": "Common Vulnerability Scoring System v3.1 base score (0-10).",
+      "CWE": "Common Weakness Enumeration identifier for the class of weakness.",
+      "EPSS": "Exploit Prediction Scoring System probability (0-1), when a feed is available.",
+      "attestation": "Who authorized the scan, for which scope, and when (F-08-05).",
+      "confidence": "0-100 evidence-quality score. Below the report threshold a finding is listed as a low-confidence observation and is not a confirmed finding.",
+      "redacted": "The captured value was redacted at capture time; placeholders such as [REDACTED] replace any secret.",
+      "severity": "critical >= 9.0, high >= 7.0, medium >= 4.0, low >= 2.0, otherwise info."
+    }
+  },
+  "assets": [],
+  "attack_paths": [
+    {
+      "asset": "target.example",
+      "business_severity": null,
+      "cheapest_break": "fix m4.env-file-probe on https://target.example/.env (verified hop): Block .env at the web-server layer and rotate the credentials. \u2014 2 hop(s) depend on it",
+      "cheapest_check_id": "m4.env-file-probe",
+      "cheapest_finding_id": "F-000001",
+      "criticality": null,
+      "fully_verified": true,
+      "hops": [
+        {
+          "asset": "https://target.example/.env",
+          "check_id": "m4.env-file-probe",
+          "evidence_refs": [
+            "E-0001",
+            "E-0002",
+            "E-0003"
+          ],
+          "finding_id": "F-000001",
+          "marker": "exposure",
+          "severity": "high",
+          "stage": "exposure",
+          "title": "Sensitive environment file exposed",
+          "verified": true,
+          "verifying_check": null
+        },
+        {
+          "asset": "https://target.example/admin",
+          "check_id": "m4.dashboard-exposure",
+          "evidence_refs": [
+            "E-0004",
+            "E-0005",
+            "E-0006"
+          ],
+          "finding_id": "F-000002",
+          "marker": "impact",
+          "severity": "critical",
+          "stage": "impact",
+          "title": "Unauthenticated admin dashboard",
+          "verified": true,
+          "verifying_check": null
+        }
+      ],
+      "id": "ap-d7ece7c989ca",
+      "severity": "critical",
+      "stages": [
+        "exposure",
+        "impact"
+      ]
+    }
+  ],
+  "branding": {
+    "accent_color": "#c00000",
+    "classification": "",
+    "company_name": "",
+    "contact": "",
+    "footer_text": "",
+    "logo_text": "",
+    "logo_url": null,
+    "primary_color": "#1f4e79",
+    "product_name": "ARACHNE",
+    "show_arachne_branding": true,
+    "tagline": ""
+  },
+  "compliance": [],
+  "cover": {
+    "arachne_version": "0.1.0",
+    "authorization": {
+      "allowed_targets": [
+        "target.example"
+      ],
+      "attested_at": "2026-10-01T00:00:00+00:00",
+      "attested_by": "felix@corp",
+      "authorization_ref": "TEST-42",
+      "expires_at": "2026-11-30T00:00:00+00:00"
+    },
+    "engine": "heuristic",
+    "generated_at": "2026-10-27T12:00:00Z",
+    "module_versions": {
+      "M3": "1.0.0",
+      "M4": "1.0.0"
+    },
+    "scan_finished_at": "2026-10-27T12:41:00Z",
+    "scan_id": "scan_1",
+    "scan_started_at": "2026-10-27T12:00:00Z",
+    "schema_version": "1.14",
+    "target": "target.example",
+    "title": "Security Assessment Report \u2014 target.example"
+  },
+  "detection_validation": null,
+  "diff": null,
+  "executive_summary": {
+    "counts": {
+      "critical": 1,
+      "high": 1,
+      "info": 0,
+      "low": 0,
+      "medium": 0
+    },
+    "headline_finding_ids": [
+      "F-000002",
+      "F-000001"
+    ],
+    "low_confidence_count": 1,
+    "paragraphs": [
+      "ARACHNE scanned 0 asset(s) \u2014 0 host(s), 0 URL(s) \u2014 across M4, M3 over 41 minutes. Overall posture: critical.",
+      "The scan confirmed 2 finding(s): 1 critical, 1 high. The most serious is F-000002 \u00b7 Unauthenticated admin dashboard (CWE-284) on https://target.example/admin (severity critical, confidence 95/100).",
+      "Headline findings, in priority order: F-000002 \u00b7 Unauthenticated admin dashboard (CWE-284) on https://target.example/admin; F-000001 \u00b7 Sensitive environment file exposed (CWE-200) on https://target.example/.env.",
+      "Recommended priority order: Block .env at the web-server layer and rotate the credentials. Each finding in section 4 onward carries its own numbered remediation and a verification-of-fix step.",
+      "A further 1 observation(s) fall below the 55 confidence threshold and are reported separately in section 9. They are not confirmed findings and should be triaged before they are acted on.",
+      "Analysis was performed by the heuristic engine using template corpus 1.0; every finding cites the evidence that produced it and the rule (or signature) that decided it."
+    ],
+    "posture": "critical",
+    "priority_order": [
+      "Block .env at the web-server layer and rotate the credentials."
+    ],
+    "provenance": {
+      "analysis_log_id": null,
+      "engine": "heuristic",
+      "model": null,
+      "rule_ids": [],
+      "signatures": [],
+      "template_version": "1.0"
+    },
+    "synthesized": true
+  },
+  "findings": [
+    {
+      "asset": {
+        "kind": "url",
+        "tags": [],
+        "value": "https://target.example/admin"
+      },
+      "check_id": "m4.dashboard-exposure",
+      "check_version": "1.0",
+      "classification": {
+        "capec": [],
+        "cve": null,
+        "cwe": "CWE-284",
+        "owasp_2025": "A01:2021-Broken Access Control"
+      },
+      "description": "The file returned HTTP 200 and contained credentials.",
+      "evidence_refs": [
+        "E-0004",
+        "E-0005",
+        "E-0006"
+      ],
+      "id": "F-000002",
+      "low_confidence": false,
+      "module": "M4",
+      "proof": null,
+      "provenance": {
+        "analysis_log_id": "al_2",
+        "engine": "heuristic",
+        "model": null,
+        "rule_ids": [
+          "exposure.env-file"
+        ],
+        "signatures": [],
+        "template_version": "narrative-v1"
+      },
+      "remediation": {
+        "id": "admin-surface",
+        "references": [
+          "https://cwe.mitre.org/data/definitions/200.html"
+        ],
+        "source": "catalog",
+        "steps": [
+          "1. Add a deny rule for /.env.",
+          "2. Rotate the exposed keys."
+        ],
+        "summary": "Block .env at the web-server layer and rotate the credentials.",
+        "verification": [
+          "1. Re-request the path; it must return 404."
+        ]
+      },
+      "research_ref": "ch04#5",
+      "scan_id": "scan_1",
+      "score": {
+        "confidence": 95,
+        "cvss_base": 7.5,
+        "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+        "epss": null,
+        "owasp_risk": "high"
+      },
+      "severity": "info",
+      "status": "open",
+      "timestamps": {
+        "first_seen": "2026-10-27T12:00:00Z",
+        "last_seen": "2026-10-27T12:00:00Z",
+        "verified_at": null
+      },
+      "title": "Unauthenticated admin dashboard",
+      "verification": {
+        "check_version": "1.0",
+        "level": "L0",
+        "method": "no verification record was persisted for this finding",
+        "observations": [
+          {
+            "reason": "no verification record was persisted for this finding",
+            "what": "unverified"
+          }
+        ],
+        "status": "unverified"
+      }
+    },
+    {
+      "asset": {
+        "kind": "url",
+        "tags": [],
+        "value": "https://target.example/.env"
+      },
+      "check_id": "m4.env-file-probe",
+      "check_version": "1.0",
+      "classification": {
+        "capec": [],
+        "cve": null,
+        "cwe": "CWE-200",
+        "owasp_2025": "A05:2021-Security Misconfiguration"
+      },
+      "description": "The file returned HTTP 200 and contained credentials.",
+      "evidence_refs": [
+        "E-0001",
+        "E-0002",
+        "E-0003"
+      ],
+      "id": "F-000001",
+      "low_confidence": false,
+      "module": "M4",
+      "proof": null,
+      "provenance": {
+        "analysis_log_id": "al_1",
+        "engine": "heuristic",
+        "model": null,
+        "rule_ids": [
+          "exposure.env-file"
+        ],
+        "signatures": [],
+        "template_version": "narrative-v1"
+      },
+      "remediation": {
+        "id": "env-file-exposure",
+        "references": [
+          "https://cwe.mitre.org/data/definitions/200.html"
+        ],
+        "source": "catalog",
+        "steps": [
+          "1. Add a deny rule for /.env.",
+          "2. Rotate the exposed keys."
+        ],
+        "summary": "Block .env at the web-server layer and rotate the credentials.",
+        "verification": [
+          "1. Re-request the path; it must return 404."
+        ]
+      },
+      "research_ref": "ch04#1",
+      "scan_id": "scan_1",
+      "score": {
+        "confidence": 92,
+        "cvss_base": 7.5,
+        "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+        "epss": 0.03,
+        "owasp_risk": "high"
+      },
+      "severity": "info",
+      "status": "open",
+      "timestamps": {
+        "first_seen": "2026-10-27T12:00:00Z",
+        "last_seen": "2026-10-27T12:00:00Z",
+        "verified_at": null
+      },
+      "title": "Sensitive environment file exposed",
+      "verification": {
+        "check_version": "1.0",
+        "level": "L0",
+        "method": "no verification record was persisted for this finding",
+        "observations": [
+          {
+            "reason": "no verification record was persisted for this finding",
+            "what": "unverified"
+          }
+        ],
+        "status": "unverified"
+      }
+    }
+  ],
+  "intel": null,
+  "locale": "",
+  "low_confidence": [
+    {
+      "asset": {
+        "kind": "url",
+        "tags": [],
+        "value": "https://target.example/"
+      },
+      "check_id": "m3.security-headers",
+      "check_version": "1.0",
+      "classification": {
+        "capec": [],
+        "cve": null,
+        "cwe": "CWE-693",
+        "owasp_2025": "A05:2021-Security Misconfiguration"
+      },
+      "description": "The file returned HTTP 200 and contained credentials.",
+      "evidence_refs": [
+        "E-0007",
+        "E-0008",
+        "E-0009"
+      ],
+      "id": "F-000003",
+      "low_confidence": false,
+      "module": "M3",
+      "proof": null,
+      "provenance": {
+        "analysis_log_id": "al_3",
+        "engine": "heuristic",
+        "model": null,
+        "rule_ids": [
+          "exposure.env-file"
+        ],
+        "signatures": [],
+        "template_version": "narrative-v1"
+      },
+      "remediation": {
+        "id": "security-headers",
+        "references": [
+          "https://cwe.mitre.org/data/definitions/200.html"
+        ],
+        "source": "catalog",
+        "steps": [
+          "1. Add a deny rule for /.env.",
+          "2. Rotate the exposed keys."
+        ],
+        "summary": "Block .env at the web-server layer and rotate the credentials.",
+        "verification": [
+          "1. Re-request the path; it must return 404."
+        ]
+      },
+      "research_ref": "ch03#35",
+      "scan_id": "scan_1",
+      "score": {
+        "confidence": 48,
+        "cvss_base": 7.5,
+        "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+        "epss": null,
+        "owasp_risk": "high"
+      },
+      "severity": "info",
+      "status": "open",
+      "timestamps": {
+        "first_seen": "2026-10-27T12:00:00Z",
+        "last_seen": "2026-10-27T12:00:00Z",
+        "verified_at": null
+      },
+      "title": "Missing HTTP security headers",
+      "verification": {
+        "check_version": "1.0",
+        "level": "L0",
+        "method": "no verification record was persisted for this finding",
+        "observations": [
+          {
+            "reason": "no verification record was persisted for this finding",
+            "what": "unverified"
+          }
+        ],
+        "status": "unverified"
+      }
+    }
+  ],
+  "patch_gap": null,
+  "scan_id": "scan_1",
+  "schema_version": "1.12",
+  "scope": {
+    "authenticated": false,
+    "checks": [
+      {
+        "module": "M4",
+        "name": "env-file-probe",
+        "ran": true,
+        "research_ref": "ch04#1",
+        "skip_reason": null,
+        "title": "Exposed environment file",
+        "version": "1.0"
+      },
+      {
+        "module": "M4",
+        "name": "default-credentials",
+        "ran": false,
+        "research_ref": "ch04#26",
+        "skip_reason": "not run (opt-in)",
+        "title": "Vendor-default credentials",
+        "version": "1.0"
+      },
+      {
+        "module": "M3",
+        "name": "security-headers",
+        "ran": true,
+        "research_ref": "ch03#35",
+        "skip_reason": null,
+        "title": "Security header review",
+        "version": "1.0"
+      }
+    ],
+    "checks_run": 2,
+    "checks_skipped": 1,
+    "credentials": [],
+    "duration_seconds": 2460.0,
+    "engine_mode": "heuristic",
+    "exclusions": [
+      "legacy.target.example"
+    ],
+    "finished_at": "2026-10-27T12:41:00Z",
+    "modules": [
+      "M4",
+      "M3"
+    ],
+    "rate_limits": {
+      "global_per_second": 20.0,
+      "per_host_per_second": 5.0
+    },
+    "report_schema_version": "1.14",
+    "requested_by": null,
+    "research_corpus_version": "narrative-v1",
+    "scope": {
+      "allowed_hosts": [
+        "target.example"
+      ],
+      "excluded_hosts": [
+        "legacy.target.example"
+      ]
+    },
+    "started_at": "2026-10-27T12:00:00Z",
+    "target_name": "target.example"
+  },
+  "simulation": null,
+  "state_changes": [],
+  "target_name": "target.example"
+}

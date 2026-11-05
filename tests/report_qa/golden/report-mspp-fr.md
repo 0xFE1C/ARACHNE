@@ -40,7 +40,7 @@ Low-confidence observations (reported separately, not confirmed): 1
 - Timeframe: 2026-10-27T12:00:00+00:00 → 2026-10-27T12:41:00+00:00 (2460 seconds)
 - Checks run: 2 run, 1 not run
 - Rate limits: global_per_second=20.0, per_host_per_second=5.0
-- Report schema: 1.13
+- Report schema: 1.14
 
 **Scope (compiled, deny by default):**
 

@@ -47,9 +47,9 @@ VERSIONS = CODE_ROOT / "migrations" / "versions"
 #: declares nothing, so the refusal path is exercised on real files rather than on a stub.
 NON_REVERSIBLE_FIXTURE = CODE_ROOT / "tests" / "fixtures" / "migrations-nonreversible" / "versions"
 
-#: The release before the two most recent migrations: the "two versions back" starting point
-#: of the populated upgrade.
-TWO_VERSIONS_BACK = "0016"
+#: The release before the two most recent migrations (0018, 0019): the "two versions back"
+#: starting point of the populated upgrade.
+TWO_VERSIONS_BACK = "0017"
 
 runner = CliRunner()
 
@@ -277,9 +277,9 @@ def test_the_dry_run_prints_sql_and_changes_nothing(database_url: str) -> None:
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
     printed = "\n".join(payload["statements"])
-    assert "provenance" in printed, printed
     assert "provisioned_principals" in printed, printed
-    assert [item["revision"] for item in payload["pending"]] == ["0017", "0018"]
+    assert "evidence_blobs" in printed, printed
+    assert [item["revision"] for item in payload["pending"]] == ["0018", "0019"]
     # Nothing ran: the schema and the applied revision are exactly what they were.
     assert schema_fingerprint(database_url) == before
     engine = create_engine(database_url)
@@ -383,8 +383,9 @@ def test_an_upgrade_from_two_versions_back_succeeds_on_a_populated_database(
     try:
         # The rollback really did contract the schema the upgrade is about to expand: the two
         # additive changes above this revision are gone.
-        assert "provenance" not in {c["name"] for c in inspect(engine).get_columns("analysis_log")}
+        assert "provenance" in {c["name"] for c in inspect(engine).get_columns("analysis_log")}
         assert "provisioned_principals" not in inspect(engine).get_table_names()
+        assert "evidence_blobs" not in inspect(engine).get_table_names()
     finally:
         engine.dispose()
 
@@ -398,6 +399,7 @@ def test_an_upgrade_from_two_versions_back_succeeds_on_a_populated_database(
         assert {"provisioned_principals", "provisioned_groups"} <= set(
             inspect(engine).get_table_names()
         )
+        assert "evidence_blobs" in set(inspect(engine).get_table_names())
         with engine.connect() as connection:
             assert (
                 MigrationContext.configure(connection).get_current_revision()

@@ -34,8 +34,17 @@ from sqlalchemy import func, select
 
 from arachne.core.config import RetentionSettings, Settings
 from arachne.core.errors import ConfigurationError
+from arachne.data.blob_registry import tenant_key
 from arachne.data.db import create_all, create_session_factory, create_sqlite_engine
-from arachne.data.models import AuditLog, Evidence, Finding, Project, Scan, Target
+from arachne.data.models import (
+    AuditLog,
+    Evidence,
+    EvidenceBlob,
+    Finding,
+    Project,
+    Scan,
+    Target,
+)
 from arachne.data.quota import StorageQuota
 from arachne.data.retention import CATEGORIES, RetentionPolicy, RetentionPruner
 from arachne.data.scan_store import SqlScanStateStore
@@ -51,13 +60,19 @@ CATEGORY_MODELS: dict[str, Any] = {
 
 
 class RecordingBackend:
-    """Stands in for the evidence backend: records the keys it was asked to delete."""
+    """Stands in for the evidence backend: records the keys it was asked to delete.
+
+    ``tenant`` is part of the backend protocol since WP-21 (REQ-DATA-006): an object lives in
+    a tenant namespace, so the sweep names the namespace it is unlinking from.
+    """
 
     def __init__(self) -> None:
         self.deleted: list[str] = []
+        self.tenants: list[str | None] = []
 
-    async def delete(self, key: str) -> bool:
+    async def delete(self, key: str, *, tenant: str | None = None) -> bool:
         self.deleted.append(key)
+        self.tenants.append(tenant)
         return True
 
 
@@ -418,17 +433,29 @@ async def test_pruning_removes_only_what_the_policies_allow(services: Any, seed:
                 f"seed {seed}: an audit row past the strictest policy survived"
             )
 
-        # ---- 5: the usage ledger still describes the surviving rows.
+        # ---- 5: the usage ledger still describes the surviving rows, in physical bytes.
+        # WP-21 (REQ-DATA-006): a deduplicated object is charged once (from
+        # ``evidence_blobs``), and a payload small enough to stay inline is charged its own
+        # bytes. Charging the logical size of every offloaded row would bill a tenant twice
+        # for one object, so the old single SUM is no longer the ledger's definition.
         for project_id in policies:
-            stored = session.scalar(
+            inline = session.scalar(
                 select(func.coalesce(func.sum(Evidence.size_bytes), 0))
                 .select_from(Evidence)
                 .join(Finding, Finding.id == Evidence.finding_id)
                 .join(Scan, Scan.id == Finding.scan_id)
                 .where(Scan.project_id == project_id)
+                .where(Evidence.storage_key.is_(None))
+            )
+            physical = session.scalar(
+                select(func.coalesce(func.sum(EvidenceBlob.physical_bytes), 0)).where(
+                    EvidenceBlob.tenant == tenant_key(project_id)
+                )
             )
             cached = session.scalar(select(Project.used_bytes).where(Project.id == project_id))
-            assert int(cached or 0) == int(stored or 0), f"seed {seed}: usage ledger drifted"
+            assert int(cached or 0) == int(inline or 0) + int(physical or 0), (
+                f"seed {seed}: usage ledger drifted"
+            )
 
     # ---- 4: the second run is a no-op.
     second = await pruner.prune(dry_run=False, now=NOW)

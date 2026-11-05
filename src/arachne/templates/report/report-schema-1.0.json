@@ -1,4 +1,12 @@
 {
+  "x-arachne-changelog": [
+    {
+      "kind": "initial",
+      "note": "the first versioned report contract",
+      "version": "1.0"
+    }
+  ],
+  "x-arachne-deprecations": [],
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://arachne.local/schema/report-1.0.json",
   "title": "ARACHNE ReportData",

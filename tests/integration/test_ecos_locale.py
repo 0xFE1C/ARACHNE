@@ -107,9 +107,9 @@ def test_the_json_report_carries_its_locale(harness: ApiHarness) -> None:
         assert response.status_code == 200
         document = json.loads(response.text)
         assert document["locale"] == "fr"
-        # WP-14 moved the report schema to 1.13 (the optional ``residue_attestation``
-        # block, REQ-PROOF-017); the locale itself is unchanged by that.
-        assert document["schema_version"] == "1.13"
+        # WP-21 moved the report schema to 1.14 (the feed-freshness SLA fields, REQ-INTEL-006);
+        # the locale itself is unchanged by that additive bump.
+        assert document["schema_version"] == "1.14"
 
 
 def test_the_locale_is_audited_with_the_report(harness: ApiHarness) -> None:

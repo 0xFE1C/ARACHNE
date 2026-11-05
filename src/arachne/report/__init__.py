@@ -56,6 +56,7 @@ from arachne.report.formats import (
 from arachne.report.html_render import HTML_CSS, html_to_text, render_html
 from arachne.report.json_render import load_report_schema, render_json, report_payload
 from arachne.report.markdown import render_markdown
+from arachne.report.migrate import migrate_report
 from arachne.report.model import REPORT_SCHEMA_VERSION, Branding, ReportData
 from arachne.report.owasp import load_owasp_map
 from arachne.report.pdf import (
@@ -66,6 +67,7 @@ from arachne.report.pdf import (
     select_backend,
 )
 from arachne.report.sarif import render_sarif
+from arachne.report.schema_policy import SUPPORTED_VERSIONS
 from arachne.report.summary import build_executive_summary, load_summary_templates
 
 __all__ = [
@@ -74,6 +76,7 @@ __all__ = [
     "REPORT_FORMATS",
     "REPORT_FORMAT_ENTRY_POINT",
     "REPORT_SCHEMA_VERSION",
+    "SUPPORTED_VERSIONS",
     "Branding",
     "BrandingError",
     "PdfResult",
@@ -99,6 +102,7 @@ __all__ = [
     "load_summary_templates",
     "media_type",
     "merge_branding",
+    "migrate_report",
     "module_versions_for",
     "not_run_checks",
     "pdf_text",

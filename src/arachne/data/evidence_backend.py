@@ -102,6 +102,7 @@ def normalize_tenant(tenant: str | None) -> str:
         raise EvidenceStoreError(msg)
     return name
 
+
 #: The container's magic: the first 8 bytes of every stored object.
 CONTAINER_MAGIC: Final = b"ARBLB001"
 #: ``flag`` (0 raw, 1 zlib) + the logical length.
@@ -563,10 +564,14 @@ class S3EvidenceBackend:
         unreachable from another's namespace (WP-21, REQ-DATA-006).
         """
         _require_content_key(key)
-        parts = [self.prefix, normalize_tenant(tenant), key] if self.prefix else [
-            normalize_tenant(tenant),
-            key,
-        ]
+        parts = (
+            [self.prefix, normalize_tenant(tenant), key]
+            if self.prefix
+            else [
+                normalize_tenant(tenant),
+                key,
+            ]
+        )
         tail = "/".join(_uri_encode(part, safe="") for part in parts)
         if self.path_style:
             return f"/{_uri_encode(self.bucket, safe='')}/{tail}"
@@ -800,14 +805,14 @@ class S3EvidenceBackend:
             msg = f"could not complete the multipart upload: HTTP {completed.status_code}"
             raise EvidenceStoreError(msg)
 
-    async def _abort_multipart(self, key: str, upload_id: str) -> None:
+    async def _abort_multipart(self, key: str, upload_id: str, tenant: str) -> None:
         try:
             params = {"uploadId": upload_id}
             await self.client.request(
                 "DELETE",
-                f"{self.object_url(key)}?{_query_string(params)}",
+                f"{self.object_url(key, tenant)}?{_query_string(params)}",
                 headers=self._signed_headers(
-                    "DELETE", self.object_path(key), params, payload_hash=_sha256(b"")
+                    "DELETE", self.object_path(key, tenant), params, payload_hash=_sha256(b"")
                 ),
             )
         except Exception as exc:  # an abandoned upload expires on the store's side
@@ -817,12 +822,13 @@ class S3EvidenceBackend:
             )
 
     # ------------------------------------------------------------------ reads
-    async def get(self, key: str) -> bytes:
+    async def get(self, key: str, *, tenant: str | None = None) -> bytes:
+        namespace = normalize_tenant(tenant)
         exchange = await self.client.request_bytes(
             "GET",
-            self.object_url(key),
+            self.object_url(key, namespace),
             headers=self._signed_headers(
-                "GET", self.object_path(key), {}, payload_hash=_sha256(b"")
+                "GET", self.object_path(key, namespace), {}, payload_hash=_sha256(b"")
             ),
             max_bytes=self.max_object_bytes,
         )
@@ -841,22 +847,24 @@ class S3EvidenceBackend:
             raise EvidenceStoreError(msg)
         return payload
 
-    async def delete(self, key: str) -> bool:
+    async def delete(self, key: str, *, tenant: str | None = None) -> bool:
+        namespace = normalize_tenant(tenant)
         exchange = await self.client.request(
             "DELETE",
-            self.object_url(key),
+            self.object_url(key, namespace),
             headers=self._signed_headers(
-                "DELETE", self.object_path(key), {}, payload_hash=_sha256(b"")
+                "DELETE", self.object_path(key, namespace), {}, payload_hash=_sha256(b"")
             ),
         )
         return exchange.status_code in {200, 204, 404}
 
-    async def exists(self, key: str) -> bool:
+    async def exists(self, key: str, *, tenant: str | None = None) -> bool:
+        namespace = normalize_tenant(tenant)
         exchange = await self.client.request(
             "HEAD",
-            self.object_url(key),
+            self.object_url(key, namespace),
             headers=self._signed_headers(
-                "HEAD", self.object_path(key), {}, payload_hash=_sha256(b"")
+                "HEAD", self.object_path(key, namespace), {}, payload_hash=_sha256(b"")
             ),
         )
         return bool(exchange.status_code == 200)
@@ -947,8 +955,10 @@ def build_evidence_backend(
     )
 
 
-async def iter_backend_object(backend: EvidenceBackend, key: str) -> AsyncIterator[bytes]:
+async def iter_backend_object(
+    backend: EvidenceBackend, key: str, *, tenant: str | None = None
+) -> AsyncIterator[bytes]:
     """Stream one logical payload in chunks (the download endpoint's read path)."""
-    data = await backend.get(key)
+    data = await backend.get(key, tenant=tenant)
     for start in range(0, len(data), _CHUNK):
         yield data[start : start + _CHUNK]

@@ -1,4 +1,13 @@
 {
+  "x-arachne-changelog": [
+    {
+      "version": "1.2",
+      "kind": "added",
+      "fields": ["findings[].proof", "state_changes"],
+      "note": "the per-finding proof artifact and the report-level state-change table"
+    }
+  ],
+  "x-arachne-deprecations": [],
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://arachne.local/schema/report-1.2.json",
   "title": "ReportData",

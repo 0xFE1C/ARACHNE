@@ -339,6 +339,43 @@ class Evidence(Base):
     )
 
 
+class EvidenceBlob(Base):
+    """Reference count for one content-addressed evidence object (WP-21, REQ-DATA-006).
+
+    One row per ``(tenant, key)``: the namespace the object lives in and its content digest.
+    ``refcount`` is the number of ``evidences`` rows that currently address the object, so a
+    blob is unlinked only when the last reference is deleted — the property S20's unconditional
+    key unlink did not have, and the one that made a shared blob's deletion a corruption.
+
+    ``physical_bytes`` is the size the object actually occupies (the compressed container), as
+    opposed to the logical, uncompressed ``size_bytes`` on the evidence rows. Quota accounting
+    sums the physical figure once per blob, so two findings sharing one object are charged
+    for it once. ``tenant`` is the backend's namespace string (``default`` / ``p<id>``), not a
+    project foreign key — see :mod:`arachne.data.blob_registry` for why.
+    """
+
+    __tablename__ = "evidence_blobs"
+    __table_args__ = (UniqueConstraint("tenant", "key", name="uq_evidence_blobs_tenant_key"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    #: The backend namespace: ``default`` for the implicit workspace, ``p<id>`` otherwise.
+    tenant: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    #: The object's content digest — the backend key within ``tenant``.
+    key: Mapped[str] = mapped_column(String(64), nullable=False)
+    #: How many evidence rows address this object. Zero means "collectable", never negative.
+    refcount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    #: The logical (uncompressed) payload size, for the dedup arithmetic operators read.
+    logical_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    #: The physical (stored container) size a quota is enforced against.
+    physical_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False
+    )
+
+
 class AnalysisLog(Base):
     """Provenance of one analysis step (F-03-05, F-04-07).
 

@@ -1752,6 +1752,19 @@ DEFAULT_FRESHNESS_TTL_HOURS: Final[tuple[tuple[str, float], ...]] = (
     ("nvd-baseline", 720.0),
 )
 
+#: The feed kinds that move a finding's severity (WP-21, REQ-INTEL-006). EPSS shifts the
+#: score band and KEV marks known exploitation, so a stale copy of either silently distorts
+#: prioritisation — which is why the report warns about these rather than merely listing
+#: them. ``nvd``/``cve`` are lookup catalogues (does this CVE exist, what is its CVSS) and are
+#: reported as freshness metadata without a severity warning. Operators may narrow or extend
+#: the set; the vocabulary mirrors ``data.feed_store.FEED_KINDS`` and is validated so a typo
+#: cannot silently disable the warning.
+SEVERITY_FEED_KINDS: Final[tuple[str, ...]] = ("epss", "kev")
+
+#: The feed-kind vocabulary a severity-feed list may name (kept beside the TTL table so the
+#: configuration is self-describing without importing the data layer).
+KNOWN_FEED_KINDS: Final[tuple[str, ...]] = ("epss", "kev", "cve", "nvd")
+
 
 @dataclass(frozen=True, slots=True)
 class IntelSettings:
@@ -1792,6 +1805,10 @@ class IntelSettings:
     nvd_api_key: SecretStr | None = None
     #: Hours per feed kind after which the report marks the feed stale.
     freshness_ttl: tuple[tuple[str, float], ...] = DEFAULT_FRESHNESS_TTL_HOURS
+    #: Feed kinds whose staleness distorts severity (WP-21, REQ-INTEL-006). A feed in this
+    #: set that is past its TTL produces a visible report warning; every fed kind still
+    #: appears in the freshness metadata with its timestamp and age.
+    severity_feeds: tuple[str, ...] = SEVERITY_FEED_KINDS
     #: The product map ``arachne intel build-index`` generates from (``None`` uses the packaged
     #: ``templates/m2/cve-index-products.yaml``); its output path is
     #: ``NetSettings.cve_index_baseline`` — the same file the loader reads.
@@ -1826,6 +1843,13 @@ class IntelSettings:
             raise ConfigurationError(msg)
         if any(hours <= 0 for _, hours in self.freshness_ttl):
             msg = "intel.freshness_ttl values must be > 0"
+            raise ConfigurationError(msg)
+        unknown_severity = sorted(set(self.severity_feeds) - set(KNOWN_FEED_KINDS))
+        if unknown_severity:
+            msg = (
+                f"unknown intel.severity_feeds {unknown_severity}; "
+                f"known feed kinds are {list(KNOWN_FEED_KINDS)}"
+            )
             raise ConfigurationError(msg)
 
     @property
@@ -2879,6 +2903,9 @@ class Settings:
                 freshness_ttl=(
                     _env_pairs_float(source, "ARACHNE_INTEL_FRESHNESS_TTL")
                     or DEFAULT_FRESHNESS_TTL_HOURS
+                ),
+                severity_feeds=(
+                    _env_list(source, "ARACHNE_INTEL_SEVERITY_FEEDS") or SEVERITY_FEED_KINDS
                 ),
                 index_products=_env_str(source, "ARACHNE_CVE_INDEX_PRODUCTS") or None,
                 index_max_entries=_env_int(source, "ARACHNE_CVE_INDEX_MAX_ENTRIES", 500),

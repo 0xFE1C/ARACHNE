@@ -1,4 +1,13 @@
 {
+  "x-arachne-changelog": [
+    {
+      "version": "1.12",
+      "kind": "added",
+      "fields": ["findings[].verification", "findings[].verification_history"],
+      "note": "a finding's verification record became required"
+    }
+  ],
+  "x-arachne-deprecations": [],
   "$defs": {
     "Appendix": {
       "additionalProperties": false,

@@ -47,11 +47,13 @@ from arachne.report.sarif import render_sarif
 def test_the_schema_version_requires_the_verification_record() -> None:
     """REQ-PROOF-015: ``verification`` is in the finding's ``required`` list."""
     schema = load_report_schema()
-    assert REPORT_SCHEMA_VERSION == "1.13"
+    # WP-21 moved the schema to 1.14 (the feed-freshness SLA fields, REQ-INTEL-006). The
+    # verification requirement below is unchanged by that additive bump.
+    assert REPORT_SCHEMA_VERSION == "1.14"
     finding = schema["$defs"]["ReportFinding"]
     assert "verification" in finding["required"], finding["required"]
     assert "$ref" in finding["properties"]["verification"]
-    assert schema["properties"]["schema_version"]["const"] == "1.13"
+    assert schema["properties"]["schema_version"]["const"] == "1.14"
 
 
 def test_the_shipped_schema_file_is_the_current_version() -> None:

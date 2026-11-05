@@ -254,9 +254,9 @@ def test_an_ordinary_report_carries_no_detection_validation_block() -> None:
     document = json.loads(report.model_dump_json())
     assert document["detection_validation"] is None
     # WP-13 bumped the report schema to 1.12: the per-finding ``verification`` record became
-    # required (REQ-PROOF-015). Pinned so a further bump is a conscious act, not silent
-    # drift.
-    assert document["schema_version"] == REPORT_SCHEMA_VERSION == "1.13"
+    # required (REQ-PROOF-015). WP-21 bumped it to 1.14 for the additive feed-freshness SLA
+    # fields (REQ-INTEL-006). Pinned so a further bump is a conscious act, not silent drift.
+    assert document["schema_version"] == REPORT_SCHEMA_VERSION == "1.14"
     jsonschema.validate(document, load_report_schema())
 
 

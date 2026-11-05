@@ -1,4 +1,13 @@
 {
+  "x-arachne-changelog": [
+    {
+      "version": "1.13",
+      "kind": "added",
+      "fields": ["residue_attestation"],
+      "note": "the scan's residue attestation"
+    }
+  ],
+  "x-arachne-deprecations": [],
   "$defs": {
     "Appendix": {
       "additionalProperties": false,

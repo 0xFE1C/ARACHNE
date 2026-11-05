@@ -22,9 +22,10 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from arachne.data.blob_registry import BlobRegistry
 from arachne.data.keyset import PageWindow, with_finding_page
 from arachne.data.models import Asset as AssetRow
 from arachne.data.models import Check, Evidence, Finding, Scan
@@ -50,6 +51,37 @@ FINDING_STATUSES: frozenset[str] = frozenset({"open", "verified", "fp", "merged"
 #: The API's ``sort`` vocabulary for ``/findings`` (REQ-UIX-002) lives in
 #: :mod:`arachne.data.keyset` as a closed enum; only ``id`` is indexed, and the endpoint
 #: documents the other fields as a full scan.
+
+
+def _collect_blob_keys(
+    session: Session, *, scan_id: int, finding_id: int | None = None
+) -> tuple[int | None, tuple[str, ...]]:
+    """``(project_id, keys)`` for the offloaded evidence rows a delete is about to remove.
+
+    ``finding_id`` narrows the selection to one finding: deleting a single finding must *not*
+    touch its neighbour's reference to a shared object, or the neighbour's evidence would be
+    swept out from under it.
+    """
+    project_id = session.scalar(select(Scan.project_id).where(Scan.id == scan_id))
+    statement = (
+        select(Evidence.storage_key)
+        .join(Finding, Finding.id == Evidence.finding_id)
+        .where(Finding.scan_id == scan_id, Evidence.storage_key.is_not(None))
+    )
+    if finding_id is not None:
+        statement = statement.where(Finding.id == finding_id)
+    keys = tuple(str(key) for key in session.scalars(statement).all() if key)
+    return (None if project_id is None else int(project_id)), keys
+
+
+def _reconcile_blobs(session: Session, project_id: int | None, keys: tuple[str, ...]) -> None:
+    """Re-derive each blob's reference count from the rows that remain (WP-21, REQ-DATA-006).
+
+    Called after the delete has been flushed, in the same transaction. A key another finding
+    still cites keeps its count and is never a sweep candidate; the last one reaches zero.
+    """
+    for key in dict.fromkeys(keys):
+        BlobRegistry.reconcile(session, project_id, key)
 
 
 @dataclass(frozen=True, slots=True)
@@ -353,11 +385,22 @@ class ApiQueryStore:
             return _finding_row(finding, check, asset)
 
     def delete_finding(self, finding_id: int) -> bool:
+        """Delete one finding, releasing the references its evidence held.
+
+        WP-21 (REQ-DATA-006): a finding whose evidence shares an object with another finding
+        drops one reference; the object stays readable through the survivor. The physical
+        unlink happens only when the last reference is gone, in ``BlobRegistry.sweep``.
+        """
         with self._session_factory() as session:
             finding = session.get(Finding, finding_id)
             if finding is None:
                 return False
+            project_id, keys = _collect_blob_keys(
+                session, scan_id=int(finding.scan_id), finding_id=finding_id
+            )
             session.delete(finding)
+            session.flush()
+            _reconcile_blobs(session, project_id, keys)
             session.commit()
             return True
 
@@ -368,7 +411,10 @@ class ApiQueryStore:
             scan = session.get(Scan, scan_id)
             if scan is None:
                 return False
+            project_id, keys = _collect_blob_keys(session, scan_id=scan_id)
             session.delete(scan)
+            session.flush()
+            _reconcile_blobs(session, project_id, keys)
             session.commit()
             return True
 
@@ -382,9 +428,14 @@ class ApiQueryStore:
     def delete_all_findings(self, scan_id: int) -> int:
         """Remove every finding of a scan (kept for operational cleanup); returns the count."""
         with self._session_factory() as session:
-            result = session.execute(delete(Finding).where(Finding.scan_id == scan_id))
+            project_id, keys = _collect_blob_keys(session, scan_id=scan_id)
+            rows = session.scalars(select(Finding).where(Finding.scan_id == scan_id)).all()
+            for row in rows:
+                session.delete(row)
+            session.flush()
+            _reconcile_blobs(session, project_id, keys)
             session.commit()
-            return int(result.rowcount or 0)  # type: ignore[attr-defined]
+            return len(rows)
 
     # ------------------------------------------------------------------ checks
     def list_checks(self, *, module: str | None = None) -> tuple[CheckRow, ...]:

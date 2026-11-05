@@ -1,4 +1,13 @@
 {
+  "x-arachne-changelog": [
+    {
+      "version": "1.7",
+      "kind": "added",
+      "fields": ["compliance"],
+      "note": "per-framework control coverage"
+    }
+  ],
+  "x-arachne-deprecations": [],
   "$defs": {
     "Appendix": {
       "additionalProperties": false,

@@ -533,12 +533,14 @@ def _intel_block(snapshot: Mapping[str, Any]) -> m.IntelFreshness | None:
     if not snapshot:
         return None
     feeds: list[m.FeedFreshness] = []
+    severity_set = {str(item) for item in snapshot.get("severity_feeds") or ()}
     for item in snapshot.get("feeds") or ():
         if not isinstance(item, Mapping):
             continue
+        kind = str(item.get("kind") or "")
         feeds.append(
             m.FeedFreshness(
-                kind=str(item.get("kind") or ""),
+                kind=kind,
                 name=str(item.get("name") or ""),
                 version=item.get("version"),
                 source=item.get("source"),
@@ -550,10 +552,15 @@ def _intel_block(snapshot: Mapping[str, Any]) -> m.IntelFreshness | None:
                 verified=bool(item.get("verified")),
                 verification=item.get("verification"),
                 digest=item.get("digest"),
+                # A pre-WP-21 snapshot carries no severity list; the marker is then false
+                # rather than guessed, and the warnings list is likewise whatever was
+                # recorded (empty for an old scan).
+                severity_contributing=kind in severity_set,
             )
         )
     providers = snapshot.get("providers") or {}
     providers_map = providers if isinstance(providers, Mapping) else {}
+    severity_feeds = tuple(str(item) for item in snapshot.get("severity_feeds") or ())
     return m.IntelFreshness(
         generated_at=str(snapshot.get("generated_at") or ""),
         stale=bool(snapshot.get("stale")),
@@ -561,6 +568,8 @@ def _intel_block(snapshot: Mapping[str, Any]) -> m.IntelFreshness | None:
         feeds=tuple(feeds),
         providers=tuple(str(item) for item in providers_map.get("enabled") or ()),
         opted_in_providers=tuple(str(item) for item in providers_map.get("opted_in") or ()),
+        severity_feeds=severity_feeds,
+        warnings=tuple(str(item) for item in snapshot.get("warnings") or ()),
     )
 
 

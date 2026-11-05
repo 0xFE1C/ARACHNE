@@ -1,4 +1,13 @@
 {
+  "x-arachne-changelog": [
+    {
+      "version": "1.4",
+      "kind": "added",
+      "fields": ["intel"],
+      "note": "threat-intel freshness snapshot"
+    }
+  ],
+  "x-arachne-deprecations": [],
   "$id": "https://arachne.local/schema/report-1.4.json",
   "title": "ReportData",
   "$defs": {

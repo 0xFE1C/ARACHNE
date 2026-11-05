@@ -182,6 +182,107 @@ def test_a_stale_feed_is_visible_in_the_report(intel_stack: Any) -> None:
     assert "an ingested feed is past its freshness TTL" in render_markdown(report)
 
 
+def _admit_with_intel(services: Any, intel: IntelSettings) -> int:
+    """Admit a scan whose recorded snapshot uses ``intel`` as its freshness policy."""
+    import asyncio
+
+    from arachne.core.orchestrator import Orchestrator
+    from arachne.intel.freshness import intel_snapshot
+
+    settings = replace(services.settings, intel=intel)
+    orchestrator = Orchestrator(
+        settings=settings,
+        store=services.store,
+        target_store=services.target_store,
+        auditor=services.auditor,
+        bus=services.bus,
+        registry=services.registry,
+        pipeline=(ScanStep.RECON,),
+        intel_snapshot=lambda: intel_snapshot(services.feeds, settings=settings),
+    )
+    session = asyncio.run(orchestrator.launch(build_scan_request()))
+    assert session.scan_id is not None
+    return int(session.scan_id)
+
+
+def test_a_stale_severity_feed_produces_a_visible_warning_not_an_error(
+    intel_stack: Any,
+) -> None:
+    """REQ-INTEL-006: the report warns, it does not fail — and the warning is visible."""
+    _sync(intel_stack)
+    _age_feeds(intel_stack, days=30)
+    intel = IntelSettings(
+        freshness_ttl=(("nvd", 168.0), ("kev", 168.0), ("epss", 48.0), ("cve", 720.0)),
+        severity_feeds=("epss", "kev"),
+    )
+    scan_id = _admit_with_intel(intel_stack, intel)
+
+    record = intel_stack.store.get_scan(scan_id)
+    assert record is not None, "the scan was not admitted"
+    # "Not an error": the stale feed did not fail the admission or the report — the report
+    # renders normally and carries a warning. (This harness launches with no checks, so the
+    # scan is pending by design; the property under test is the metadata, not the run.)
+    snapshot = record.stats["intel"]
+    assert snapshot["severity_feeds"] == ["epss", "kev"]
+    assert snapshot["warnings"], "a stale severity feed recorded no warning"
+
+    report = _report(intel_stack, scan_id)
+    assert report.intel is not None
+    assert report.intel.warnings
+    assert all("may be understated" in warning for warning in report.intel.warnings)
+    warned = " ".join(report.intel.warnings)
+    assert "epss" in warned and "kev" in warned
+    # The per-feed marker tells a reader which timestamps matter to the severity ordering.
+    by_kind = {feed.kind: feed for feed in report.intel.feeds}
+    assert by_kind["epss"].severity_contributing is True
+    assert by_kind["kev"].severity_contributing is True
+    assert by_kind["nvd"].severity_contributing is False
+
+    markdown = render_markdown(report)
+    assert "Warning — feed freshness SLA" in markdown
+    assert "may be understated" in markdown
+
+    document = json.loads(render_json(report))
+    validate(document, load_report_schema())
+    assert document["intel"]["warnings"] == list(report.intel.warnings)
+    assert document["intel"]["severity_feeds"] == ["epss", "kev"]
+
+
+def test_every_ingested_feed_states_its_timestamp_and_age(intel_stack: Any) -> None:
+    """REQ-INTEL-006: the freshness metadata carries both the when and the how-old."""
+    _sync(intel_stack)
+    report = _report(intel_stack, _admit(intel_stack))
+    assert report.intel is not None
+    ingested = [feed for feed in report.intel.feeds if feed.imported_at]
+    assert ingested, "the fixture ingested nothing"
+    for feed in ingested:
+        assert feed.age_hours is not None
+        assert feed.imported_at
+    document = json.loads(render_json(report))
+    validate(document, load_report_schema())
+    for feed in document["intel"]["feeds"]:
+        if feed["imported_at"]:
+            assert feed["age_hours"] is not None
+
+
+def test_a_fresh_severity_feed_raises_no_warning(intel_stack: Any) -> None:
+    _sync(intel_stack)
+    report = _report(intel_stack, _admit(intel_stack))
+    assert report.intel is not None
+    assert report.intel.stale is False
+    assert report.intel.warnings == ()
+    assert "Warning — feed freshness SLA" not in render_markdown(report)
+
+
+def test_a_missing_feed_is_stated_as_missing_not_warned_about(intel_stack: Any) -> None:
+    """Absent and stale are different facts and must not be conflated into one warning."""
+    _sync(intel_stack)
+    report = _report(intel_stack, _admit(intel_stack))
+    assert report.intel is not None
+    assert "cve" in report.intel.missing
+    assert not any("cve" in warning for warning in report.intel.warnings)
+
+
 def test_a_rejected_feed_is_reported_as_missing_not_as_clean(
     intel_stack: Any, tmp_path: Path
 ) -> None:

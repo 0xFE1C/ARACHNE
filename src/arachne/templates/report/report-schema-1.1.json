@@ -1,4 +1,13 @@
 {
+  "x-arachne-changelog": [
+    {
+      "version": "1.1",
+      "kind": "added",
+      "fields": ["branding"],
+      "note": "white-label branding for MSSP reports"
+    }
+  ],
+  "x-arachne-deprecations": [],
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://arachne.local/schema/report-1.1.json",
   "title": "ReportData",

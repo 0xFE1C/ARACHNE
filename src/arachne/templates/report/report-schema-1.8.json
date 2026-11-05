@@ -1,4 +1,13 @@
 {
+  "x-arachne-changelog": [
+    {
+      "version": "1.8",
+      "kind": "added",
+      "fields": ["attack_paths[].criticality", "attack_paths[].business_severity"],
+      "note": "CMDB criticality on attack-path entries"
+    }
+  ],
+  "x-arachne-deprecations": [],
   "$defs": {
     "Appendix": {
       "additionalProperties": false,

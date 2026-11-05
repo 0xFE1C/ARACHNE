@@ -1,4 +1,13 @@
 {
+  "x-arachne-changelog": [
+    {
+      "version": "1.9",
+      "kind": "added",
+      "fields": ["detection_validation"],
+      "note": "the purple-team run a scan performed"
+    }
+  ],
+  "x-arachne-deprecations": [],
   "$defs": {
     "Appendix": {
       "additionalProperties": false,

@@ -39,6 +39,7 @@ from arachne.core.integrity import (
 from arachne.core.metrics import REGISTRY
 from arachne.core.results import CheckResult, Evidence, confidence_percent
 from arachne.core.signing import Signer
+from arachne.data.blob_registry import BlobRegistry, tenant_key
 from arachne.data.evidence_service import EVIDENCE_STUB_KEY, serialized_size
 from arachne.data.models import Asset as AssetRow
 from arachne.data.models import Check, Finding
@@ -195,12 +196,14 @@ def _note_payload(result: CheckResult, asset: str | None) -> dict[str, Any]:
     }
 
 
-def _evidence_storage(item: Evidence) -> tuple[int, str, str | None]:
-    """``(logical bytes, storage, storage_key)`` for one evidence item (S20, REQ-DATA-002).
+def _evidence_storage(item: Evidence) -> tuple[int, str, str | None, int]:
+    """``(logical bytes, storage, storage_key, physical bytes)`` for one evidence item.
 
-    An inline payload is measured here; an *offloaded* one carries its logical size, backend
-    and key in its stub (``EvidenceService.stage`` wrote them), and the size is the number the
-    quota already counted — so the row and the ledger agree.
+    An inline payload is measured here; an *offloaded* one carries its logical size, backend,
+    key and (WP-21) the physical stored size in its stub (``EvidenceService.stage`` wrote
+    them), and the logical size is the number the quota already counted — so the row and the
+    ledger agree. A pre-WP-21 offloaded stub has no ``stored_size``: the physical size then
+    falls back to the logical one, which is the most it could have occupied.
     """
     payload = item.payload
     if payload.get(EVIDENCE_STUB_KEY):
@@ -208,8 +211,14 @@ def _evidence_storage(item: Evidence) -> tuple[int, str, str | None]:
         size = int(declared) if isinstance(declared, int) and not isinstance(declared, bool) else 0
         backend = payload.get("backend")
         key = payload.get("key")
-        return size, str(backend or "unknown"), str(key) if key else None
-    return serialized_size(payload), "inline", None
+        stored = payload.get("stored_size")
+        physical = (
+            int(stored)
+            if isinstance(stored, int) and not isinstance(stored, bool) and stored > 0
+            else size
+        )
+        return size, str(backend or "unknown"), str(key) if key else None, physical
+    return serialized_size(payload), "inline", None, 0
 
 
 def _count_proof(item: Evidence) -> None:
@@ -497,10 +506,12 @@ class SqlFindingStore:
 
             stored: list[EvidenceRecord] = []
             rows: list[EvidenceRow] = []
-            accounted = 0
+            #: ``(storage, storage_key, logical, physical)`` per stored row, folded into the
+            #: quota ledger and the blob reference counts after the project is known.
+            accounts: list[tuple[str, str | None, int, int]] = []
             for item in result.evidence:
-                size_bytes, storage, storage_key = _evidence_storage(item)
-                accounted += size_bytes
+                size_bytes, storage, storage_key, physical = _evidence_storage(item)
+                accounts.append((storage, storage_key, size_bytes, physical))
                 row = EvidenceRow(
                     finding_id=finding.id,
                     kind=item.kind,
@@ -551,13 +562,29 @@ class SqlFindingStore:
                     },
                 )
             rows.append(note)
-            accounted += int(note.size_bytes or 0)
+            accounts.append(("inline", None, int(note.size_bytes or 0), 0))
             session.flush()
 
-            # The quota ledger (REQ-DATA-003) is maintained in the same transaction as the
-            # rows it accounts for, so a committed finding always has its bytes counted and
-            # a rolled-back one never does.
+            # The quota ledger (REQ-DATA-003) and the blob reference counts (WP-21,
+            # REQ-DATA-006) are maintained in the same transaction as the rows they account
+            # for, so a committed finding always has its bytes and its references counted and a
+            # rolled-back one never does.
             project_id = StorageQuota.project_for_scan(session, scan_id)
+            tenant = tenant_key(project_id)
+            accounted = 0
+            for storage, storage_key, logical, physical in accounts:
+                if storage_key is None or storage in (None, "inline"):
+                    accounted += logical
+                    continue
+                already = BlobRegistry.count(session, tenant, storage_key)
+                BlobRegistry.reference(
+                    session, tenant, storage_key, logical_bytes=logical, physical_bytes=physical
+                )
+                # The object is charged once — on the reference that created it. Counting
+                # logical bytes per row would make the quota penalise dedup, which is the
+                # opposite of what content addressing is for.
+                if already == 0:
+                    accounted += physical or logical
             if project_id is not None:
                 StorageQuota.add_usage(session, project_id, accounted)
 

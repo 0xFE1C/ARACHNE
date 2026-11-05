@@ -23,13 +23,18 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
-from arachne.core.config import OPT_IN_OSINT_PROVIDERS, Settings
+from arachne.core.config import (
+    OPT_IN_OSINT_PROVIDERS,
+    SEVERITY_FEED_KINDS,
+    Settings,
+)
 from arachne.data.feed_store import FEED_KINDS, FeedRecord, FeedStore
 
 __all__ = [
     "FeedObservation",
     "intel_snapshot",
     "observations_from_store",
+    "sla_warnings",
 ]
 
 #: How many decimal places an age is reported with (hours): one is plenty and keeps the
@@ -155,6 +160,29 @@ def observations_from_store(
     return tuple(observations)
 
 
+def sla_warnings(
+    observations: Sequence[FeedObservation], severity_feeds: Sequence[str]
+) -> tuple[str, ...]:
+    """One visible warning per severity-contributing feed past its SLA (WP-21, REQ-INTEL-006).
+
+    A warning, not an error: the scan completed and its report is valid — it just says that
+    the data behind its severity ordering is old. A feed that was never ingested is *not*
+    warned about here; it is named under ``missing``, because "absent" and "out of date" call
+    for different operator action and conflating them would make the warning noise.
+    """
+    wanted = {kind.strip().lower() for kind in severity_feeds}
+    warnings: list[str] = []
+    for item in observations:
+        if item.kind not in wanted or item.imported_at is None or not item.stale:
+            continue
+        age = f"{item.age_hours:.1f} h" if item.age_hours is not None else "unknown age"
+        warnings.append(
+            f"{item.kind} feed is {age} old, past its {item.ttl_hours:.0f} h freshness SLA; "
+            f"severity enrichment for this scan may be understated"
+        )
+    return tuple(warnings)
+
+
 def intel_snapshot(
     store: FeedStore | None,
     *,
@@ -195,6 +223,9 @@ def intel_snapshot(
         )
     osint = settings.osint if settings is not None else None
     enabled_providers = list(osint.providers) if osint is not None and osint.enabled else []
+    severity_feeds = (
+        tuple(settings.intel.severity_feeds) if settings is not None else SEVERITY_FEED_KINDS
+    )
     return {
         "generated_at": moment.isoformat(),
         # "Stale" is about data that exists and is old. A kind that was never ingested is
@@ -203,6 +234,12 @@ def intel_snapshot(
         "stale": any(item.stale for item in observations if item.imported_at is not None),
         "missing": [item.kind for item in observations if item.imported_at is None],
         "feeds": [item.to_dict() for item in observations],
+        # WP-21 (REQ-INTEL-006): which kinds move severity, and the visible warnings that
+        # follow when one of them is past its SLA. Both are recorded in the snapshot so the
+        # report can state them without reaching back into a configuration that may have
+        # changed since the scan ran.
+        "severity_feeds": list(severity_feeds),
+        "warnings": list(sla_warnings(observations, severity_feeds)),
         "providers": {
             "enabled": enabled_providers,
             # The providers this build can consume, so a report reader can tell an absent

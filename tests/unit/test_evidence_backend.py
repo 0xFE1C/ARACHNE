@@ -360,8 +360,11 @@ def test_the_signed_headers_are_pinned_to_the_spec() -> None:
     )
     assert other["Authorization"] != authorization
 
-    # The object path is path-style and content-addressed: bucket, prefix, shard-free key.
-    assert backend.object_path(key) == f"/{fake.bucket}/evidence/{key}"
+    # The object path is path-style and content-addressed: bucket, prefix, tenant namespace,
+    # shard-free key (WP-21, REQ-DATA-006). Two tenants are two addresses.
+    assert backend.object_path(key) == f"/{fake.bucket}/evidence/default/{key}"
+    assert backend.object_path(key, tenant="p7") == f"/{fake.bucket}/evidence/p7/{key}"
+    assert backend.object_path(key, tenant="p7") != backend.object_path(key, tenant="p8")
 
 
 def test_a_different_secret_produces_a_different_signature() -> None:

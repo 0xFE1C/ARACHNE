@@ -57,6 +57,7 @@ from arachne.core.integrity import payload_digest
 from arachne.core.logging import get_logger
 from arachne.core.metrics import REGISTRY
 from arachne.core.pii import PIIPolicy, mask_payload
+from arachne.data.blob_registry import BlobRegistry, tenant_key
 from arachne.data.evidence_service import EVIDENCE_STUB_KEY, serialized_size
 from arachne.data.models import AuditLog, Evidence, Finding, Project, Scan
 from arachne.data.quota import StorageQuota
@@ -771,12 +772,12 @@ class RetentionPruner:
         return applied
 
     async def _apply(self, plan: PrunePlan) -> PrunePlan:
-        keys: list[str] = []
         applied: list[ProjectPrune] = []
         remasked: list[_Remasked] = []
         with self._session_factory() as session:
             for entry in plan.projects:
                 categories: dict[str, CategoryPlan] = {}
+                deleted_keys: list[str] = []
                 for name, model in (
                     ("scans", Scan),
                     ("findings", Finding),
@@ -787,7 +788,15 @@ class RetentionPruner:
                         session.execute(delete(model).where(model.id.in_(category_plan.ids)))
                         session.flush()
                     categories[name] = category_plan
-                    keys.extend(category_plan.keys)
+                    deleted_keys.extend(category_plan.keys)
+                # WP-21 (REQ-DATA-006): the plan's deletions are flushed, so the remaining
+                # references are counted rather than assumed. A blob another surviving finding
+                # still cites keeps a positive count and is not collectable; a blob whose last
+                # reference this run removed reaches zero and the sweep may unlink it.
+                # Counting after the delete also adopts objects written before the ledger
+                # existed, so an upgrade cannot leave an unlinkable orphan behind.
+                for key in dict.fromkeys(deleted_keys):
+                    BlobRegistry.reconcile(session, entry.project_id, key)
                 # REQ-DATA-005: re-mask in the same transaction as the deletion, against the
                 # ids the plan selected. Masking is irreversible, which is the point: a
                 # deployment that could un-mask would have kept the value.
@@ -815,15 +824,18 @@ class RetentionPruner:
             # would otherwise be reported as tampering by the very control that protects it.
             self._refresh_integrity(remasked)
 
-        # Blobs go after the rows: a failure to unlink leaves an orphan (harmless, and
-        # visible through the backend's stats) instead of a row pointing at nothing.
+        # Collection goes after the rows, and only for blobs whose count reached zero. A
+        # failure to unlink leaves an orphan (harmless, and visible through the backend's
+        # stats) instead of a row pointing at nothing; a blob another finding still cites is
+        # not a sweep candidate at all (WP-21, REQ-DATA-006).
         if self.evidence is not None:
-            for key in keys:
+            registry = BlobRegistry(self._session_factory)
+            for entry in applied:
                 try:
-                    await self.evidence.delete(key)
+                    await registry.sweep(self.evidence, tenant=tenant_key(entry.project_id))
                 except Exception as exc:
                     _logger.warning(
-                        "could not delete an evidence object",
+                        "could not sweep unreferenced evidence objects",
                         extra={"event": "retention.blob_delete_failed", "error": str(exc)[:200]},
                     )
         if self.quota is not None:

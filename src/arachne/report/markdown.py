@@ -836,6 +836,21 @@ def _intel_section(report: ReportData) -> list[str]:
         f"Snapshot taken {_iso(intel.generated_at)}"
         + (" — **an ingested feed is past its freshness TTL**." if intel.stale else ".")
     )
+    if intel.warnings:
+        # WP-21 (REQ-INTEL-006): a stale severity-contributing feed is a **warning**, not
+        # an error. The report is valid and the scan completed; what a reader must not do is
+        # trust the severity ordering without knowing the data behind it is old.
+        lines.append("")
+        lines.append("> **Warning — feed freshness SLA.**")
+        for warning in intel.warnings:
+            lines.append(f"> {_inline(warning)}.")
+        lines.append("")
+    if intel.severity_feeds:
+        lines.append(
+            "Severity-contributing feeds: "
+            + ", ".join(f"`{_inline(kind)}`" for kind in intel.severity_feeds)
+            + "."
+        )
     if intel.missing:
         lines.append(
             "Not ingested (a match against data nobody loaded is not a clean result): "

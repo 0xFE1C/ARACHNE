@@ -1,4 +1,13 @@
 {
+  "x-arachne-changelog": [
+    {
+      "version": "1.3",
+      "kind": "added",
+      "fields": ["scope.requested_by"],
+      "note": "the principal that requested the scan"
+    }
+  ],
+  "x-arachne-deprecations": [],
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://arachne.local/schema/report-1.3.json",
   "title": "ReportData",

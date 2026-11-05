@@ -15,6 +15,7 @@ you.
 | [performance.md](performance.md) | The **measured** envelope: p95 latency per list endpoint at 50 req/s, checks per minute, memory ceilings, the hot-path query budget, and the published false-positive rate — with the one command that reproduces each figure. |
 | [research/](research/) | The method universe the detection programme is measured against: 175 numbered techniques across six chapters. The `research_ref` on every check cites one of them, and `../coverage_matrix.md` is the generated map of what is covered. |
 | [ci-integration.md](ci-integration.md) | Using ARACHNE as a CI gate: exit codes, thresholds, and wiring for GitHub Actions and GitLab. |
+| [report-schema-policy.md](report-schema-policy.md) | The report contract's version policy: additive-only changes, deprecation windows with removal versions, the bounded set of supported versions, and the `migrate_report` helper. |
 | [security.txt](security.txt) | RFC 9116 security policy: how to report a vulnerability in ARACHNE itself. |
 
 **The one-paragraph orientation.** ARACHNE is a defensive vulnerability scanner. It inspects

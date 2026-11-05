@@ -20,7 +20,7 @@ __all__ = [
 ]
 
 #: Revision this code expects ``alembic upgrade head`` to reach.
-LATEST_SCHEMA_REVISION: Final = "0018"
+LATEST_SCHEMA_REVISION: Final = "0019"
 
 #: Table Alembic uses to record the applied revision.
 ALEMBIC_VERSION_TABLE: Final = "alembic_version"
@@ -98,6 +98,10 @@ EXTENSION_TABLE_NAMES: Final[tuple[str, ...]] = (
     # display names map to roles through ``SsoSettings.group_roles``.
     "provisioned_principals",
     "provisioned_groups",
+    # WP-21 / area DATA (REQ-DATA-006): the reference ledger that makes per-tenant dedup
+    # safe to delete from — one row per (tenant, content digest) with the number of evidence
+    # rows addressing it and the physical bytes the tenant holds.
+    "evidence_blobs",
 )
 
 #: Every table the schema owns.

@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any, Final
 
 from arachne.report.model import REPORT_SCHEMA_VERSION, ReportData
+from arachne.report.schema_policy import SCHEMA_HISTORY, policy_violations
 
 __all__ = [
     "SCHEMA_RESOURCE",
@@ -46,14 +47,21 @@ SCHEMA_ID: Final = f"https://arachne.local/schema/report-{REPORT_SCHEMA_VERSION}
 
 
 def schema_document() -> dict[str, Any]:
-    """The full committed document: the pydantic schema plus its dialect header and ``$id``.
+    """The full committed document: pydantic schema, dialect header, ``$id`` and the policy.
 
     ``$id`` names the schema *version*, so a document can be validated against the schema of
     the revision it claims in ``schema_version`` — which is what makes keeping the older
     ``report-schema-1.<n>.json`` files worth the space.
+
+    WP-21 (REQ-DATA-007): the document also carries its machine-readable changelog and its
+    deprecation records, taken from :data:`~arachne.report.schema_policy.SCHEMA_HISTORY`.
+    Because the generator emits them, the current file cannot claim a policy the code does not
+    declare; because every frozen file carries the same pair, a consumer can read the policy
+    from whichever revision it holds.
     """
     schema = ReportData.model_json_schema()
-    return {"$schema": SCHEMA_DIALECT, "$id": SCHEMA_ID, **schema}
+    revision = next(item for item in SCHEMA_HISTORY if item.version == REPORT_SCHEMA_VERSION)
+    return {"$schema": SCHEMA_DIALECT, "$id": SCHEMA_ID, **schema, **revision.metadata()}
 
 
 def render_schema() -> str:
@@ -101,12 +109,20 @@ def main(argv: list[str] | None = None) -> int:
         except OSError as exc:
             sys.stderr.write(f"error: cannot read {target}: {exc}\n")
             return 1
+        problems = list(policy_violations())
         if existing != payload:
-            sys.stderr.write(
-                f"error: {target.name} is stale; run `python -m arachne.tools.report_schema`\n"
+            problems.insert(
+                0,
+                f"{target.name} is stale; run `python -m arachne.tools.report_schema`",
             )
+        if problems:
+            for problem in problems:
+                sys.stderr.write(f"error: {problem}\n")
             return 1
-        sys.stdout.write(f"{target.name} is up to date (schema {REPORT_SCHEMA_VERSION})\n")
+        sys.stdout.write(
+            f"{target.name} is up to date (schema {REPORT_SCHEMA_VERSION}); "
+            f"the schema policy holds\n"
+        )
         return 0
     target.write_text(payload, encoding="utf-8")
     sys.stdout.write(f"wrote {target} (schema {REPORT_SCHEMA_VERSION})\n")

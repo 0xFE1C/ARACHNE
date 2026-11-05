@@ -100,6 +100,7 @@ from arachne.core.audit import AuditAction, AuditOutcome
 from arachne.core.errors import ArachneError, ConfigurationError
 from arachne.core.lifecycle import ScanRecord
 from arachne.core.target import ScanRequest, TargetDefinition
+from arachne.data.blob_registry import tenant_key
 from arachne.data.keyset import PageWindow
 from arachne.data.project_store import DEFAULT_PROJECT_SLUG, ProjectRecord
 from arachne.report import module_versions_for
@@ -1005,13 +1006,17 @@ async def download_evidence(
     filename = f"evidence-{evidence_id}-{row['kind']}.json"
     key = row.get("storage_key")
     stored = row.get("storage") not in (None, "inline")
+    # WP-21 (REQ-DATA-006): the object lives in its tenant's namespace. The tenant is derived
+    # from the scan that owns the evidence — the same derivation the write used — so a key
+    # from one tenant can never be resolved against another's objects.
+    tenant = tenant_key(scan.project_id)
     if stored and key and service is not None:
         if redirect:
-            url = service.presign(str(key), filename=filename)
+            url = service.presign(str(key), filename=filename, tenant=tenant)
             if url:
                 return RedirectResponse(url, status_code=status.HTTP_302_FOUND)
         try:
-            data = await service.download(str(key))
+            data = await service.download(str(key), tenant=tenant)
         except ArachneError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         return Response(

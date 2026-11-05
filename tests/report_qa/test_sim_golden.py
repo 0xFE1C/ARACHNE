@@ -103,8 +103,9 @@ def test_the_json_document_carries_the_simulation_in_its_own_block_only() -> Non
     document = json.loads(report.model_dump_json())
 
     # 1.12 is WP-13's: the per-finding ``verification`` record became required
-    # (REQ-PROOF-015). Pinned so a further bump is a conscious act, not silent drift.
-    assert document["schema_version"] == REPORT_SCHEMA_VERSION == "1.13"
+    # (REQ-PROOF-015). Pinned so a further bump is a conscious act, not silent drift;
+    # 1.14 is WP-21's additive feed-freshness SLA bump (REQ-INTEL-006).
+    assert document["schema_version"] == REPORT_SCHEMA_VERSION == "1.14"
     block = document["simulation"]
     assert block["provenance"] == "simulated"
     assert block["change"]["name"] == "publish-legacy-console"

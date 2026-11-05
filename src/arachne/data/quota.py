@@ -12,10 +12,17 @@ cost money. The behaviour the requirement asks for is a *two-stage* refusal:
   state ``arachne scan --resume`` continues from: raise the quota, resume, and the scan
   carries on from the failed step instead of starting over.
 
+**What is counted is physical, not logical (WP-21, REQ-DATA-006).** An offloaded blob is
+charged its stored (compressed) size, once, however many evidence rows address it; an inline
+payload is charged its own bytes. Charging the logical size per row would make the ledger bill
+a tenant twice for one deduplicated object — i.e. it would penalise the behaviour content
+addressing exists to produce. The physical figure comes from ``evidence_blobs`` (one row per
+tenant-and-digest) plus the inline rows, which is also what ``recompute`` re-derives.
+
 Accounting is a cached running total (``projects.used_bytes``) because it is read on every
-evidence write, with a ``SUM(evidences.size_bytes)`` recomputation used by the pruning job
-and by ``arachne retention status``. The two agree because every write increments the total
-in the same transaction as the rows it accounts for, and every prune recomputes it.
+evidence write, with a ``SUM`` recomputation used by the pruning job and by
+``arachne retention status``. The two agree because every write increments the total in the
+same transaction as the rows it accounts for, and every prune recomputes it.
 """
 
 from __future__ import annotations
@@ -27,7 +34,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from arachne.core.errors import ConfigurationError, StorageQuotaError
-from arachne.data.models import Evidence, Finding, Project, Scan
+from arachne.data.blob_registry import tenant_key
+from arachne.data.models import Evidence, EvidenceBlob, Finding, Project, Scan
 
 __all__ = ["DEFAULT_WARN_RATIO", "QuotaState", "StorageQuota"]
 
@@ -121,25 +129,33 @@ class StorageQuota:
         return int(value or 0)
 
     def recompute(self, project_id: int | None) -> int:
-        """Recompute a project's usage from the evidence rows and store the result.
+        """Recompute a project's usage from the stored bytes and store the result.
 
         Used after a prune and by the operator-facing status command: the cached total is
-        what enforcement reads, and this is what keeps it honest.
+        what enforcement reads, and this is what keeps it honest. Two terms, both physical
+        (WP-21, REQ-DATA-006): the tenant's content-addressed blobs counted once each, plus
+        the payloads small enough to sit inline in ``evidences``.
         """
         if project_id is None:
             return 0
         with self._session_factory() as session:
-            total = session.scalar(
+            blobs = session.scalar(
+                select(func.coalesce(func.sum(EvidenceBlob.physical_bytes), 0)).where(
+                    EvidenceBlob.tenant == tenant_key(project_id)
+                )
+            )
+            inline = session.scalar(
                 select(func.coalesce(func.sum(Evidence.size_bytes), 0))
                 .select_from(Evidence)
                 .join(Finding, Finding.id == Evidence.finding_id)
                 .join(Scan, Scan.id == Finding.scan_id)
                 .where(Scan.project_id == project_id)
+                .where(Evidence.storage_key.is_(None))
             )
             row = session.get(Project, project_id)
             if row is None:
                 return 0
-            row.used_bytes = int(total or 0)
+            row.used_bytes = int(blobs or 0) + int(inline or 0)
             session.commit()
             return int(row.used_bytes or 0)
 

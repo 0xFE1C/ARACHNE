@@ -113,7 +113,13 @@ __all__ = [
 #: the unrestored list and its repair instructions (area PROOF, REQ-PROOF-017). Optional,
 #: so a report built without one (a pre-WP-14 scan) keeps its 1.12 shape byte for byte,
 #: and a missing attestation is rendered as "not recorded", never as clean.
-REPORT_SCHEMA_VERSION = "1.13"
+#: 1.14 (WP-21) adds the intel block's ``severity_feeds``/``warnings`` and the per-feed
+#: ``severity_contributing`` marker (area DATA/INTEL, REQ-INTEL-006): a feed that moves
+#: severity and is past its freshness SLA produces a visible warning in the report metadata
+#: rather than silently distorting prioritisation. Additive only — a scan whose feeds are
+#: fresh carries an empty warning list, so this is the schema's first change under the
+#: deprecation policy in :mod:`arachne.report.schema_policy`.
+REPORT_SCHEMA_VERSION = "1.14"
 
 #: Why a finding carries no verification record (WP-13). It is a *reason*, so a
 #: reader of the report sees why the finding is unverified rather than a blank.
@@ -726,6 +732,8 @@ class FeedFreshness(BaseModel):
     ``imported_at=None`` means "this deployment has not ingested this feed", which is a
     different statement from "the feed is stale" and is rendered as such: a report reader
     must be able to tell "we looked and found nothing" from "we never looked".
+    ``severity_contributing`` (WP-21, REQ-INTEL-006) marks the kinds whose staleness moves a
+    finding's severity, so a reader can weigh a stale timestamp accordingly.
     """
 
     model_config = _MODEL
@@ -742,6 +750,7 @@ class FeedFreshness(BaseModel):
     verified: bool = False
     verification: str | None = None
     digest: str | None = None
+    severity_contributing: bool = False
 
 
 class IntelFreshness(BaseModel):
@@ -751,6 +760,12 @@ class IntelFreshness(BaseModel):
     kinds nobody ingested. ``providers`` names the third-party indexes the deployment was
     allowed to consult (never a key, never a query) so an absent finding from an opted-out
     provider is not read as a clean result.
+
+    ``severity_feeds``/``warnings`` are WP-21's SLA half (REQ-INTEL-006): which kinds move
+    severity, and one human-readable warning per such kind that is past its SLA. The list is
+    empty when nothing is stale, which is the ordinary case and keeps a healthy report's
+    metadata unchanged in substance. A warning is never an error: the report is still valid
+    and the scan still completed.
     """
 
     model_config = _MODEL
@@ -761,6 +776,8 @@ class IntelFreshness(BaseModel):
     feeds: tuple[FeedFreshness, ...] = ()
     providers: tuple[str, ...] = ()
     opted_in_providers: tuple[str, ...] = ()
+    severity_feeds: tuple[str, ...] = ()
+    warnings: tuple[str, ...] = ()
 
 
 class DetectionAction(BaseModel):

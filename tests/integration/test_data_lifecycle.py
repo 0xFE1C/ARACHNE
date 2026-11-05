@@ -17,6 +17,7 @@ happened to the data it produced:
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import socket
@@ -432,3 +433,263 @@ def test_a_real_scan_produces_a_span_tree(tmp_path: Path, monkeypatch: pytest.Mo
     assert {span.parent_span_id for span in http_spans} <= step_ids
     assert any(span.attributes.get("http.status_code") for span in http_spans)
     assert any(span.attributes.get("http.url") for span in http_spans)
+
+
+# ------------------------------------------------------------------------- WP-21 / REQ-DATA-006
+#
+# The four properties the requirement names — one blob per (tenant, content), delete-safe
+# reference counting, no cross-tenant sharing, physical-byte quota — exercised against the
+# real store and service over a temporary database, so the assertion is about bytes on disk
+# and rows in ``evidence_blobs`` rather than about a mock's call log.
+
+
+@pytest.fixture
+def blob_stack(tmp_path: Path) -> Iterator[object]:
+    """A store/service pair with a permissive quota and a low offload threshold."""
+    from arachne.core.config import EvidenceSettings, Settings
+    from arachne.data.db import create_all, create_sqlite_engine
+    from arachne.data.services import build_services
+
+    settings = Settings(
+        database_url=f"sqlite:///{tmp_path / 'blobs.db'}",
+        log_level="CRITICAL",
+        evidence=EvidenceSettings(
+            backend="local",
+            dir=str(tmp_path / "evidence"),
+            offload_threshold_bytes=256,
+            preview_chars=16,
+        ),
+    )
+    engine = create_sqlite_engine(settings.database_url)
+    create_all(engine)
+    services = build_services(settings, check_schema=False)
+    try:
+        yield services
+    finally:
+        services.close()
+        engine.dispose()
+
+
+def _seed_project(services: object, slug: str) -> int:
+    from arachne.data.models import Project
+
+    with services.session_factory() as session:  # type: ignore[attr-defined]
+        project = Project(slug=slug, name=slug.title(), scope_json={}, branding_json={})
+        session.add(project)
+        session.commit()
+        return int(project.id)
+
+
+def _seed_scan(services: object, project_id: int | None) -> int:
+    from arachne.data.models import Scan, Target
+
+    with services.session_factory() as session:  # type: ignore[attr-defined]
+        target = Target(project_id=project_id, name="t", scope_json={}, auth_attestation={})
+        session.add(target)
+        session.flush()
+        scan = Scan(
+            target_id=target.id,
+            project_id=project_id,
+            status="running",
+            plan_json={},
+            engine="heuristic",
+            stats_json={},
+        )
+        session.add(scan)
+        session.commit()
+        return int(scan.id)
+
+
+def _body(seed: str = "A", size: int = 8192) -> str:
+    return seed * size
+
+
+def _stage_and_record(
+    services: object, *, scan_id: int, project_id: int | None, body: str
+) -> tuple[int, object]:
+    """Stage one oversized payload through the service and persist it as a finding."""
+    from arachne.core.results import CheckResult, Evidence
+
+    result = CheckResult(
+        module="m3",
+        check="m3.sqli-oracle",
+        title="evidence",
+        status="vulnerable",
+        detail="d",
+        confidence=0.9,
+        evidence=(Evidence.of("http_response", {"body": body, "status_code": 200}),),
+    )
+    staged = asyncio.run(
+        services.evidence.stage(  # type: ignore[attr-defined]
+            result, scan_id=scan_id, project_id=project_id
+        )
+    )
+    record = services.findings.record_candidate(  # type: ignore[attr-defined]
+        scan_id, result=staged, check_id=None, asset_id=None
+    )
+    return int(record.id), record
+
+
+def _offloaded(record: object) -> object:
+    rows = [item for item in record.evidence if item.offloaded]  # type: ignore[attr-defined]
+    assert rows, "the payload was not offloaded"
+    return rows[0]
+
+
+def _objects(services: object) -> list[Path]:
+    root = Path(str(services.settings.evidence_dir))  # type: ignore[attr-defined]
+    return sorted(path for path in root.rglob("*") if path.is_file() and path.parent.name != ".tmp")
+
+
+def test_identical_evidence_in_one_tenant_stores_one_blob_with_two_references(
+    blob_stack: object,
+) -> None:
+    """The first exit criterion, asserted on disk and in the ledger."""
+    from arachne.data.blob_registry import BlobRegistry, tenant_key
+
+    project_id = _seed_project(blob_stack, "acme")
+    scan_id = _seed_scan(blob_stack, project_id)
+    body = _body("A")
+
+    first_id, first = _stage_and_record(
+        blob_stack, scan_id=scan_id, project_id=project_id, body=body
+    )
+    second_id, second = _stage_and_record(
+        blob_stack, scan_id=scan_id, project_id=project_id, body=body
+    )
+
+    first_row = _offloaded(first)
+    second_row = _offloaded(second)
+    key = str(first_row.storage_key)
+    assert key == second_row.storage_key, "identical bytes produced two different keys"
+    assert len(_objects(blob_stack)) == 1, "the second copy was written to disk"
+
+    registry = BlobRegistry(blob_stack.session_factory)  # type: ignore[attr-defined]
+    assert registry.refcount(tenant_key(project_id), key) == 2
+    blob = registry.record(tenant_key(project_id), key)
+    assert blob is not None
+    assert blob.refcount == 2
+    # The object is charged its physical size once, not its logical size twice.
+    assert blob.physical_bytes < blob.logical_bytes
+
+    # Both rows address the same object, and the object reads back as the captured body.
+    backend = blob_stack.evidence_backend  # type: ignore[attr-defined]
+    payload = asyncio.run(backend.get(key, tenant=tenant_key(project_id)))
+    assert json.loads(payload)["body"] == body
+    assert first_id != second_id
+
+
+def test_deleting_one_finding_keeps_the_shared_blob_readable(
+    blob_stack: object,
+) -> None:
+    """Delete-with-two-references, then delete-last-reference — the corruption pitfall."""
+    from arachne.data.api_store import ApiQueryStore
+    from arachne.data.blob_registry import BlobRegistry, tenant_key
+
+    project_id = _seed_project(blob_stack, "acme")
+    scan_id = _seed_scan(blob_stack, project_id)
+    body = _body("B")
+    first_id, first = _stage_and_record(
+        blob_stack, scan_id=scan_id, project_id=project_id, body=body
+    )
+    second_id, _second = _stage_and_record(
+        blob_stack, scan_id=scan_id, project_id=project_id, body=body
+    )
+    key = str(_offloaded(first).storage_key)
+    tenant = tenant_key(project_id)
+    registry = BlobRegistry(blob_stack.session_factory)  # type: ignore[attr-defined]
+    backend = blob_stack.evidence_backend  # type: ignore[attr-defined]
+    queries = ApiQueryStore(blob_stack.session_factory)  # type: ignore[attr-defined]
+
+    # Deleting one finding drops one reference; the object survives for the other one.
+    assert queries.delete_finding(first_id) is True
+    assert registry.refcount(tenant, key) == 1
+    payload = asyncio.run(backend.get(key, tenant=tenant))
+    assert json.loads(payload)["body"] == body, "the survivor's object was unlinked"
+    assert len(_objects(blob_stack)) == 1
+
+    # Deleting the last reference makes the blob collectable; only then is it unlinked.
+    assert queries.delete_finding(second_id) is True
+    assert registry.refcount(tenant, key) == 0
+    removed = asyncio.run(registry.sweep(backend, tenant=tenant))
+    assert (tenant, key) in removed
+    assert _objects(blob_stack) == []
+    assert registry.record(tenant, key) is None
+
+
+def test_cross_tenant_blobs_are_never_shared(blob_stack: object) -> None:
+    """Identical bytes in two tenants are two objects, and neither can probe the other."""
+    from arachne.core.errors import EvidenceNotFoundError
+    from arachne.data.blob_registry import BlobRegistry, tenant_key
+
+    acme = _seed_project(blob_stack, "acme")
+    globex = _seed_project(blob_stack, "globex")
+    acme_scan = _seed_scan(blob_stack, acme)
+    globex_scan = _seed_scan(blob_stack, globex)
+    body = _body("C")
+
+    _, first = _stage_and_record(blob_stack, scan_id=acme_scan, project_id=acme, body=body)
+    key = str(_offloaded(first).storage_key)
+    backend = blob_stack.evidence_backend  # type: ignore[attr-defined]
+
+    # No other tenant can even observe that the object exists at this digest.
+    assert asyncio.run(backend.exists(key, tenant=tenant_key(globex))) is False
+    with pytest.raises(EvidenceNotFoundError):
+        asyncio.run(backend.get(key, tenant=tenant_key(globex)))
+
+    # Storing the same bytes for the second tenant writes a second object rather than
+    # deduplicating across tenants.
+    _, second = _stage_and_record(blob_stack, scan_id=globex_scan, project_id=globex, body=body)
+    assert _offloaded(second).storage_key == key, "the content digest should be identical"
+    assert len(_objects(blob_stack)) == 2, "the two tenants share one physical object"
+
+    registry = BlobRegistry(blob_stack.session_factory)  # type: ignore[attr-defined]
+    assert registry.refcount(tenant_key(acme), key) == 1
+    assert registry.refcount(tenant_key(globex), key) == 1
+    assert registry.physical_usage(tenant_key(acme)) == registry.physical_usage(tenant_key(globex))
+    # Both are readable inside their own namespace.
+    for project in (acme, globex):
+        payload = asyncio.run(backend.get(key, tenant=tenant_key(project)))
+        assert json.loads(payload)["body"] == body
+
+
+def test_the_quota_counts_physical_bytes_not_logical_references(
+    blob_stack: object,
+) -> None:
+    """Dedup must reduce the bill: one object, charged once, at its stored size."""
+    from sqlalchemy import func, select
+
+    from arachne.data.blob_registry import BlobRegistry, tenant_key
+    from arachne.data.models import Evidence as EvidenceRow
+
+    project_id = _seed_project(blob_stack, "acme")
+    scan_id = _seed_scan(blob_stack, project_id)
+    body = _body("D")
+    _stage_and_record(blob_stack, scan_id=scan_id, project_id=project_id, body=body)
+    _, second = _stage_and_record(blob_stack, scan_id=scan_id, project_id=project_id, body=body)
+    key = str(_offloaded(second).storage_key)
+    tenant = tenant_key(project_id)
+
+    quota = blob_stack.quota  # type: ignore[attr-defined]
+    registry = BlobRegistry(blob_stack.session_factory)  # type: ignore[attr-defined]
+    blob = registry.record(tenant, key)
+    assert blob is not None
+
+    # The cached total the store wrote and the recomputation agree, and both are physical.
+    cached = quota.usage(project_id)
+    recomputed = quota.recompute(project_id)
+    assert cached == recomputed, "the incremental ledger and the recomputation disagree"
+    assert blob.physical_bytes < blob.logical_bytes
+
+    with blob_stack.session_factory() as session:  # type: ignore[attr-defined]
+        inline = int(
+            session.scalar(
+                select(func.coalesce(func.sum(EvidenceRow.size_bytes), 0)).where(
+                    EvidenceRow.storage_key.is_(None)
+                )
+            )
+            or 0
+        )
+    assert cached == blob.physical_bytes + inline
+    # Two logical copies of the same payload would be charged twice; dedup is charged once.
+    assert cached < 2 * int(blob.logical_bytes)

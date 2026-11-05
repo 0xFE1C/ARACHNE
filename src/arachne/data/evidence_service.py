@@ -37,6 +37,7 @@ from arachne.core.errors import EvidenceStoreError, ResidencyError
 from arachne.core.metrics import REGISTRY
 from arachne.core.pii import PIIPolicy, mask_payload
 from arachne.core.results import CheckResult, Evidence
+from arachne.data.blob_registry import tenant_key
 from arachne.data.evidence_backend import EvidenceBackend, iter_backend_object
 from arachne.data.quota import QuotaState, StorageQuota
 
@@ -123,6 +124,9 @@ class EvidenceService:
         incoming = sum(sizes)
         self._enforce_quota(project_id, incoming, scan_id=scan_id)
 
+        # WP-21 (REQ-DATA-006): every object is written into its tenant's namespace, so two
+        # tenants that capture identical bytes get two objects and never share one.
+        tenant = tenant_key(project_id)
         staged: list[Evidence] = []
         for item, size in zip(result.evidence, sizes, strict=True):
             if size < self.threshold or not item.payload:
@@ -150,10 +154,14 @@ class EvidenceService:
             if len(json.dumps(stub, default=str, ensure_ascii=False, sort_keys=True)) >= size:
                 staged.append(item)
                 continue
-            stored = await self.backend.put(blob)
+            stored = await self.backend.put(blob, tenant=tenant)
             if stored.key != digest:  # pragma: no cover - a backend must be content-addressed
                 msg = f"the {stored.backend} backend returned key {stored.key} for digest {digest}"
                 raise EvidenceStoreError(msg)
+            # The physical size and namespace ride in the stub so the finding store can count
+            # the reference against the *right* ledger row without re-reading the object.
+            stub["stored_size"] = stored.stored_size
+            stub["tenant"] = stored.tenant
             staged.append(
                 Evidence(
                     kind=item.kind,
@@ -171,6 +179,7 @@ class EvidenceService:
                     target=item.kind,
                     meta={
                         "backend": stored.backend,
+                        "tenant": stored.tenant,
                         "key": stored.key,
                         "size": stored.size,
                         "stored_size": stored.stored_size,
@@ -257,6 +266,14 @@ class EvidenceService:
         The warning is recorded *before* the refusal, and independently of it: a write that
         crosses the soft threshold and the hard limit in one step still gets its warning
         line, so the trail always says "it was getting full" before it says "it stopped".
+
+        ``incoming`` is the payloads' *logical* size because compression and deduplication
+        have not happened yet — it is a conservative upper bound on what this write could add.
+        The ledger itself is physical (WP-21, REQ-DATA-006): a payload that deduplicates
+        against an existing object adds nothing to ``used_bytes`` because
+        :meth:`~arachne.data.quota.StorageQuota.recompute` and the finding store count the
+        object once. Refusing a write that would in fact have deduplicated is the safe
+        direction for a limit.
         """
         if self.quota is None:
             return None
@@ -290,27 +307,48 @@ class EvidenceService:
             REGISTRY.increment("arachne_evidence_dedup_hits_total", {"backend": backend})
 
     # ------------------------------------------------------------------ access
-    async def download(self, key: str, *, region: str | None = None) -> bytes:
-        """The full logical payload for one stored object."""
-        self.require_region(region)
-        return await self.backend.get(key)
+    async def download(
+        self, key: str, *, region: str | None = None, tenant: str | None = None
+    ) -> bytes:
+        """The full logical payload for one stored object, from ``tenant``'s namespace.
 
-    async def iter_download(self, key: str, *, region: str | None = None) -> Any:
+        ``tenant`` is not defaulted to the caller's convenience: a read must name the
+        namespace it is entitled to, so a route cannot serve another tenant's object by
+        omission (WP-21, REQ-DATA-006).
+        """
+        self.require_region(region)
+        return await self.backend.get(key, tenant=tenant)
+
+    async def iter_download(
+        self, key: str, *, region: str | None = None, tenant: str | None = None
+    ) -> Any:
         """Stream one payload in chunks."""
         self.require_region(region)
-        async for chunk in iter_backend_object(self.backend, key):
+        async for chunk in iter_backend_object(self.backend, key, tenant=tenant):
             yield chunk
 
-    async def delete(self, key: str) -> bool:
-        """Remove one object (the retention job's hook)."""
-        return await self.backend.delete(key)
+    async def delete(self, key: str, *, tenant: str | None = None) -> bool:
+        """Remove one object unconditionally (the sweep's primitive, not a policy).
+
+        Deletion policy — "only when nothing references it" — lives in
+        :class:`~arachne.data.blob_registry.BlobRegistry`; this method is the backend call it
+        makes once the count has reached zero.
+        """
+        return await self.backend.delete(key, tenant=tenant)
 
     def presign(
-        self, key: str, *, filename: str | None = None, region: str | None = None
+        self,
+        key: str,
+        *,
+        filename: str | None = None,
+        region: str | None = None,
+        tenant: str | None = None,
     ) -> str | None:
         """A time-limited URL for the backend, or ``None`` when it streams through the API."""
         self.require_region(region)
-        return self.backend.presign(key, ttl_s=self.config.presign_ttl_s, filename=filename)
+        return self.backend.presign(
+            key, ttl_s=self.config.presign_ttl_s, filename=filename, tenant=tenant
+        )
 
     def stats(self) -> dict[str, Any]:
         return self.backend.stats()
