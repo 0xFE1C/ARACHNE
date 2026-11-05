@@ -10,7 +10,7 @@ written to a temporary file, and the real test suite is run in a subprocess with
 :mod:`arachne.fuzz.mutant_loader` resolving that one import name to the altered file. Nothing
 is stubbed, nothing is monkeypatched, and the mutant never touches the working tree. The
 subprocess command is a fixed list of literals written out at the call site — the interpreter
-by name, exactly as ``tools/wp_check.py`` runs the gates — and everything that varies (which
+by name, mirroring the interpreter CI runs the suite with — and everything that varies (which
 module is mutated, which tests cover it) travels in the environment, so nothing is ever
 spliced into a command line.
 

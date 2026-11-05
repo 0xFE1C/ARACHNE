@@ -4,7 +4,7 @@
   "title": "OWASP Web Security Testing Guide",
   "source": "https://owasp.org/www-project-web-security-testing-guide/v42/",
   "id_pattern": "^WSTG-(?:INFO|CONF|IDNT|ATHN|ATHZ|SESS|INPV|ERRH|CRYP|BUSL|CLNT|APIT)-\\d{2}$",
-  "notes": "The 97 test IDs of WSTG v4.2 (12 categories). 'scope' is the counting rule of .spec/00-research/technique-landscape.md \u00a72: an in-scope item is one a black-box or credentialed scanner can produce evidence about; an out_of_scope item needs source access, a human interview or organisational process and carries a reason. A check maps to the item whose test procedure its evidence bears on. This snapshot is vendored so the ledger needs no network (risk A-02).",
+  "notes": "The 97 test IDs of WSTG v4.2 (12 categories). 'scope' is the counting rule: an in-scope item is one a black-box or credentialed scanner can produce evidence about; an out_of_scope item needs source access, a human interview or organisational process and carries a reason. A check maps to the item whose test procedure its evidence bears on. This snapshot is vendored so the ledger needs no network (risk A-02).",
   "items": [
     {"id": "WSTG-INFO-01", "category": "INFO", "number": 1, "title": "Conduct Search Engine Discovery Reconnaissance for Information Leakage"},
     {"id": "WSTG-INFO-02", "category": "INFO", "number": 2, "title": "Fingerprint Web Server"},

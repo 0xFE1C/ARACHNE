@@ -1,6 +1,6 @@
 """The screen registry: the 14 screens of the state matrix (REQ-UIX-005).
 
-``.spec/06-ui-ux.md`` §5 is a matrix of 14 screens x 5 states, and its whole point is that the
+The view-state matrix is 14 screens x 5 states (REQ-UIX-005), and its whole point is that the
 matrix is *checked* rather than asserted in prose. This module is the machine-readable form of
 that table: one entry per screen naming its template, its route and which of the five states
 apply (``n/a`` is a decision — the sign-in screen has no content to be empty and no role that

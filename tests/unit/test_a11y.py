@@ -1,7 +1,7 @@
 """WCAG 2.2 AA on every screen, every state (REQ-UIX-007).
 
-``.spec/06-ui-ux.md`` §8.1 asks for an automated audit over every screen and §8.2 lists the
-criteria automation cannot reach. This file is the automated half's acceptance evidence, and it
+REQ-UIX-007 asks for an automated audit over every screen and names the criteria automation
+cannot reach. This file is the automated half's acceptance evidence, and it
 is written so that a *rule that stopped working* fails here rather than passing quietly:
 
 * :func:`test_every_screen_and_every_state_is_audited` pins the 82 renders (14 screens by the
@@ -196,7 +196,7 @@ def test_nothing_focusable_hides_behind_aria_hidden() -> None:
 def test_a_closed_drawers_fields_are_disabled() -> None:
     """2.1.2, by construction: a closed drawer's ``required`` field cannot block a submit.
 
-    ``.spec/06-ui-ux.md`` §4.3's drawers render closed *and* inert — a field that is merely
+    The workspace's drawers render closed *and* inert — a field that is merely
     ``display: none`` is still a candidate for constraint validation, so the ``T`` key would
     fail with an error nobody can see. This asserts the inert half of that decision.
     """

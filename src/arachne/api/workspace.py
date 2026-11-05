@@ -1,6 +1,6 @@
 """The triage workspace: the keyboard contract, the bulk action and the 60-second undo.
 
-``.spec/06-ui-ux.md`` §4.3 is the most detailed screen in the specification, and its two
+The triage workspace (REQ-UIX-006) is the most detailed screen in the product, and its two
 load-bearing parts are a *table of shortcuts* and an *undo contract*. Both are data here, so
 neither can drift from the code that implements it:
 

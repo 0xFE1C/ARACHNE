@@ -1,0 +1,4274 @@
+{
+  "ledger_version": "1.0",
+  "generated_at": "2026-11-05",
+  "registry_version": "registry-1.0",
+  "registry_digest": "sha256:3ba04b678eaa24aa09ebf05db825da2024982031c09fc1bd081d7a61c3ee86fc",
+  "framework_versions": {
+    "WSTG": "4.2",
+    "API": "2023",
+    "CWE": "2025",
+    "ATT&CK": "v20",
+    "LLM": "2025",
+    "ASI": "2026"
+  },
+  "last_verified_note": "last_verified is the date the corpus was last exercised by the test suite: the ledger is regenerated after a full suite run, and every registered check is run by it. A per-check date arrives with the verification-record store (REQ-PROOF-*). It is committed content, not a wall-clock read, so --check is byte-stable.",
+  "totals": {
+    "checks": 176,
+    "cwe_only_checks": 0
+  },
+  "wstg": {
+    "mapped": 76,
+    "out_of_scope": 7,
+    "gap": 14,
+    "total": 97,
+    "in_scope": 90
+  },
+  "api_top10": {
+    "mapped": 10,
+    "total": 10
+  },
+  "asi_top10": {
+    "mapped": 6,
+    "total": 10,
+    "gap": [
+      "ASI01:2026",
+      "ASI04:2026",
+      "ASI05:2026",
+      "ASI08:2026"
+    ],
+    "items": [
+      {
+        "id": "ASI01:2026",
+        "state": "gap",
+        "title": "Agent Goal Hijack",
+        "checks": []
+      },
+      {
+        "id": "ASI02:2026",
+        "state": "mapped",
+        "title": "Tool Misuse and Exploitation",
+        "checks": [
+          "m6.agentic-tool-manifest",
+          "m6.attack-surface-genai"
+        ]
+      },
+      {
+        "id": "ASI03:2026",
+        "state": "mapped",
+        "title": "Identity and Privilege Abuse",
+        "checks": [
+          "m6.attack-surface-genai",
+          "m6.mcp-token-audience"
+        ]
+      },
+      {
+        "id": "ASI04:2026",
+        "state": "gap",
+        "title": "Agentic Supply Chain Vulnerabilities",
+        "checks": []
+      },
+      {
+        "id": "ASI05:2026",
+        "state": "gap",
+        "title": "Unexpected Code Execution",
+        "checks": []
+      },
+      {
+        "id": "ASI06:2026",
+        "state": "mapped",
+        "title": "Memory and Context Poisoning",
+        "checks": [
+          "m6.agentic-memory-store"
+        ]
+      },
+      {
+        "id": "ASI07:2026",
+        "state": "mapped",
+        "title": "Insecure Inter-Agent Communication",
+        "checks": [
+          "m6.mcp-oauth-metadata",
+          "m6.mcp-session-auth"
+        ]
+      },
+      {
+        "id": "ASI08:2026",
+        "state": "gap",
+        "title": "Cascading Agent Failures",
+        "checks": []
+      },
+      {
+        "id": "ASI09:2026",
+        "state": "mapped",
+        "title": "Human-Agent Trust Exploitation",
+        "checks": [
+          "m6.agentic-human-trust"
+        ]
+      },
+      {
+        "id": "ASI10:2026",
+        "state": "mapped",
+        "title": "Rogue Agents",
+        "checks": [
+          "m6.agentic-rogue-runtime"
+        ]
+      }
+    ]
+  },
+  "cwe_top25": {
+    "version": "2025",
+    "in_scope": {
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0
+    },
+    "all": {
+      "covered": 18,
+      "total": 25,
+      "percent": 72.0
+    },
+    "items": [
+      {
+        "id": "CWE-79",
+        "title": "Cross-site Scripting",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m3.dom-xss",
+          "m3.xss-oracle"
+        ]
+      },
+      {
+        "id": "CWE-89",
+        "title": "SQL Injection",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m3.sqli-oob",
+          "m3.sqli-oracle",
+          "m3.state-marker"
+        ]
+      },
+      {
+        "id": "CWE-352",
+        "title": "Cross-Site Request Forgery",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m3.csrf-audit"
+        ]
+      },
+      {
+        "id": "CWE-862",
+        "title": "Missing Authorization",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m3.graphql-resolver-auth"
+        ]
+      },
+      {
+        "id": "CWE-22",
+        "title": "Path Traversal",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m3.directory-traversal",
+          "m3.traversal-oracle",
+          "m4.alias-traversal"
+        ]
+      },
+      {
+        "id": "CWE-78",
+        "title": "OS Command Injection",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m3.cmdi-oob",
+          "m3.cmdi-oracle",
+          "m3.rce-echo",
+          "m5.cicd-audit"
+        ]
+      },
+      {
+        "id": "CWE-434",
+        "title": "Unrestricted Upload of File with Dangerous Type",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m3.upload-audit"
+        ]
+      },
+      {
+        "id": "CWE-502",
+        "title": "Deserialization of Untrusted Data",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m3.deser-audit"
+        ]
+      },
+      {
+        "id": "CWE-284",
+        "title": "Improper Access Control",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m1.bucket-hunt",
+          "m2.db-service-probe",
+          "m2.nfs-enum",
+          "m3.authenticated-surface",
+          "m4.dashboard-exposure",
+          "m5.firebase-rules",
+          "m5.serverless-functions",
+          "m5.supabase-rls"
+        ]
+      },
+      {
+        "id": "CWE-200",
+        "title": "Exposure of Sensitive Information to an Unauthorized Actor",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m1.ct-surprise",
+          "m1.dns-txt-mining",
+          "m1.doc-metadata",
+          "m1.dork-sweep",
+          "m1.favicon-hash",
+          "m1.js-asset-scan",
+          "m1.webarchive-harvest",
+          "m2.dns-active",
+          "m2.favicon-hash",
+          "m2.grpc-reflection",
+          "m2.http-fingerprint",
+          "m2.kerberos-enum",
+          "m2.smb-enum",
+          "m2.ssdp-discovery",
+          "m3.api-surface",
+          "m3.graphql-audit",
+          "m4.api-doc-exposure",
+          "m4.env-file-probe",
+          "m4.hidden-endpoint-hunt",
+          "m4.robots-sitemap",
+          "m4.wordpress-surface",
+          "m6.template-scan"
+        ]
+      },
+      {
+        "id": "CWE-306",
+        "title": "Missing Authentication for Critical Function",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m2.ics-probe",
+          "m2.ot-protocol-probe",
+          "m2.snmp-enum",
+          "m3.websocket-upgrade-auth",
+          "m4.unauth-api-audit",
+          "m5.docker-socket",
+          "m5.k8s-exposure",
+          "m6.agentic-rogue-runtime",
+          "m6.mcp-session-auth"
+        ]
+      },
+      {
+        "id": "CWE-918",
+        "title": "Server-Side Request Forgery",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m3.ssrf-probe",
+          "m4.metadata-ssrf",
+          "m5.azure-mi-audit",
+          "m5.imds-ssrf",
+          "m6.mcp-oauth-metadata"
+        ]
+      },
+      {
+        "id": "CWE-639",
+        "title": "Authorization Bypass Through User-Controlled Key",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m3.idor-oracle"
+        ]
+      },
+      {
+        "id": "CWE-770",
+        "title": "Allocation of Resources Without Limits or Throttling",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m3.graphql-depth-abuse",
+          "m3.rate-limit-audit"
+        ]
+      },
+      {
+        "id": "CWE-787",
+        "title": "Out-of-bounds Write",
+        "in_scope": false,
+        "covered": false,
+        "checks": [],
+        "reason": "Memory-safety class: a black-box DAST engine cannot evidence it without binary or source analysis (technique-landscape \u00a78.1)."
+      },
+      {
+        "id": "CWE-416",
+        "title": "Use After Free",
+        "in_scope": false,
+        "covered": false,
+        "checks": [],
+        "reason": "Memory-safety class: a black-box DAST engine cannot evidence it without binary or source analysis (technique-landscape \u00a78.1)."
+      },
+      {
+        "id": "CWE-125",
+        "title": "Out-of-bounds Read",
+        "in_scope": false,
+        "covered": false,
+        "checks": [],
+        "reason": "Memory-safety class: a black-box DAST engine cannot evidence it without binary or source analysis (technique-landscape \u00a78.1)."
+      },
+      {
+        "id": "CWE-94",
+        "title": "Code Injection",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m3.code-injection-oracle"
+        ]
+      },
+      {
+        "id": "CWE-120",
+        "title": "Buffer Copy without Checking Size of Input",
+        "in_scope": false,
+        "covered": false,
+        "checks": [],
+        "reason": "Memory-safety class: a black-box DAST engine cannot evidence it without binary or source analysis (technique-landscape \u00a78.1)."
+      },
+      {
+        "id": "CWE-476",
+        "title": "NULL Pointer Dereference",
+        "in_scope": false,
+        "covered": false,
+        "checks": [],
+        "reason": "Memory-safety class: a black-box DAST engine cannot evidence it without binary or source analysis (technique-landscape \u00a78.1)."
+      },
+      {
+        "id": "CWE-121",
+        "title": "Stack-based Buffer Overflow",
+        "in_scope": false,
+        "covered": false,
+        "checks": [],
+        "reason": "Memory-safety class: a black-box DAST engine cannot evidence it without binary or source analysis (technique-landscape \u00a78.1)."
+      },
+      {
+        "id": "CWE-122",
+        "title": "Heap-based Buffer Overflow",
+        "in_scope": false,
+        "covered": false,
+        "checks": [],
+        "reason": "Memory-safety class: a black-box DAST engine cannot evidence it without binary or source analysis (technique-landscape \u00a78.1)."
+      },
+      {
+        "id": "CWE-863",
+        "title": "Incorrect Authorization",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m3.authz-bypass",
+          "m6.agentic-human-trust"
+        ]
+      },
+      {
+        "id": "CWE-20",
+        "title": "Improper Input Validation",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m3.input-validation-audit"
+        ]
+      },
+      {
+        "id": "CWE-77",
+        "title": "Command Injection",
+        "in_scope": true,
+        "covered": true,
+        "checks": [
+          "m3.argument-injection"
+        ]
+      }
+    ]
+  },
+  "checks": [
+    {
+      "id": "m1.dork-sweep",
+      "module": "M1",
+      "title": "Search-engine dork sweep",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-INFO-01",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m1.code-secret-mining",
+      "module": "M1",
+      "title": "Public code-host secret mining",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern",
+        "git"
+      ],
+      "framework": [
+        "WSTG-INFO-01",
+        "CWE-798"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "m1.internetdb-triage",
+      "module": "M1",
+      "title": "InternetDB address triage",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-1035"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1035"
+    },
+    {
+      "id": "m1.ct-lookup",
+      "module": "M1",
+      "title": "Certificate Transparency lookup",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-INFO-04"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": null
+    },
+    {
+      "id": "m1.passive-dns",
+      "module": "M1",
+      "title": "Passive DNS history",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-INFO-04"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": null
+    },
+    {
+      "id": "m1.subdomain-passive",
+      "module": "M1",
+      "title": "Passive subdomain aggregation",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-INFO-04"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": null
+    },
+    {
+      "id": "m1.webarchive-harvest",
+      "module": "M1",
+      "title": "Web archive URL harvesting",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-INFO-01",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m1.email-harvest",
+      "module": "M1",
+      "title": "Organization email harvesting",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-INFO-01"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": null
+    },
+    {
+      "id": "m1.js-asset-scan",
+      "module": "M1",
+      "title": "JavaScript asset scan",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-06",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m1.dns-txt-mining",
+      "module": "M1",
+      "title": "Mail-authentication TXT mining",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-INFO-10",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m1.favicon-hash",
+      "module": "M1",
+      "title": "Favicon fingerprint",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-08",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m1.bucket-hunt",
+      "module": "M1",
+      "title": "Cloud storage bucket hunt",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-CONF-11",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m1.doc-metadata",
+      "module": "M1",
+      "title": "Document metadata extraction",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-05",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m1.service-exposure-drift",
+      "module": "M1",
+      "title": "Exposed-service drift against Shodan/Censys",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-668"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-668"
+    },
+    {
+      "id": "m1.ct-surprise",
+      "module": "M1",
+      "title": "Certificate-transparency and registration surprises",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-INFO-04",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m1.breach-exposure",
+      "module": "M1",
+      "title": "Breach exposure summary (HIBP)",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-INFO-01",
+        "CWE-522"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-522"
+    },
+    {
+      "id": "m1.mobile-artifact",
+      "module": "M1",
+      "title": "Offline mobile artifact analysis",
+      "proof": "L0",
+      "target_kinds": [
+        "artifact"
+      ],
+      "framework": [
+        "WSTG-INFO-05",
+        "CWE-798"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "m2.host-discovery",
+      "module": "M2",
+      "title": "Host discovery",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-CONF-01"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": null
+    },
+    {
+      "id": "m2.port-scan",
+      "module": "M2",
+      "title": "TCP port scan",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": null
+    },
+    {
+      "id": "m2.os-fingerprint",
+      "module": "M2",
+      "title": "OS fingerprinting",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-CONF-01"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": null
+    },
+    {
+      "id": "m2.service-fingerprint",
+      "module": "M2",
+      "title": "Service version detection",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": null
+    },
+    {
+      "id": "m2.http-fingerprint",
+      "module": "M2",
+      "title": "HTTP(S) fingerprinting",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "domain",
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-02",
+        "WSTG-INFO-09",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m2.favicon-hash",
+      "module": "M2",
+      "title": "Favicon hash identification",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "domain",
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-08",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m2.tls-deep-scan",
+      "module": "M2",
+      "title": "TLS configuration scan",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CRYP-01",
+        "CWE-327"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-327"
+    },
+    {
+      "id": "m2.tls-mutual-auth",
+      "module": "M2",
+      "title": "Mutual TLS and client-certificate enforcement",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CRYP-01",
+        "CWE-295"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-295"
+    },
+    {
+      "id": "m2.http3-probe",
+      "module": "M2",
+      "title": "HTTP/3 transport parity",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "WSTG-CONF-07",
+        "CWE-693"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-693"
+    },
+    {
+      "id": "m2.snmp-enum",
+      "module": "M2",
+      "title": "SNMP enumeration",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m2.smb-enum",
+      "module": "M2",
+      "title": "SMB enumeration",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m2.nfs-enum",
+      "module": "M2",
+      "title": "NFS export enumeration",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m2.ldap-enum",
+      "module": "M2",
+      "title": "LDAP anonymous bind",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-287"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-287"
+    },
+    {
+      "id": "m2.kerberos-enum",
+      "module": "M2",
+      "title": "Kerberos user enumeration",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m2.smtp-enum",
+      "module": "M2",
+      "title": "SMTP enumeration",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": null
+    },
+    {
+      "id": "m2.smtp-transport",
+      "module": "M2",
+      "title": "SMTP transport security and relay posture",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-319",
+        "CWE-441"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-319"
+    },
+    {
+      "id": "m2.ftp-anonymous",
+      "module": "M2",
+      "title": "FTP anonymous access",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-287"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-287"
+    },
+    {
+      "id": "m2.db-service-probe",
+      "module": "M2",
+      "title": "Database service probing",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m2.rdp-vnc-detect",
+      "module": "M2",
+      "title": "RDP/VNC detection",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": null
+    },
+    {
+      "id": "m2.ssh-enum",
+      "module": "M2",
+      "title": "SSH enumeration",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": null
+    },
+    {
+      "id": "m2.dns-active",
+      "module": "M2",
+      "title": "Active DNS enumeration",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-INFO-10",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m2.ics-probe",
+      "module": "M2",
+      "title": "ICS/SCADA protocol probing",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m2.ssdp-discovery",
+      "module": "M2",
+      "title": "SSDP/UPnP discovery",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m2.legacy-services",
+      "module": "M2",
+      "title": "Legacy network services",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-521"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-521"
+    },
+    {
+      "id": "m2.cve-correlate",
+      "module": "M2",
+      "title": "CVE/EPSS correlation",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-1035"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1035"
+    },
+    {
+      "id": "m2.smb-auth",
+      "module": "M2",
+      "title": "SMB credential verification",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-1392"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1392"
+    },
+    {
+      "id": "m2.ssh-auth",
+      "module": "M2",
+      "title": "SSH credential verification",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-1392"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1392"
+    },
+    {
+      "id": "m2.grpc-plaintext",
+      "module": "M2",
+      "title": "gRPC cleartext HTTP/2 acceptance",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-CRYP-03",
+        "CWE-319"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-319"
+    },
+    {
+      "id": "m2.grpc-reflection",
+      "module": "M2",
+      "title": "gRPC server reflection exposure",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-INFO-06",
+        "API9:2023",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m2.grpc-metadata-leak",
+      "module": "M2",
+      "title": "gRPC request metadata leakage",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-CRYP-03",
+        "CWE-522"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-522"
+    },
+    {
+      "id": "m2.ot-protocol-probe",
+      "module": "M2",
+      "title": "OT/ICS protocol discovery (S7comm, DNP3)",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m2.adcs-enum",
+      "module": "M2",
+      "title": "Active Directory Certificate Services misconfiguration (read-only)",
+      "proof": "L1",
+      "target_kinds": [
+        "ip",
+        "cidr",
+        "domain",
+        "domain_pattern",
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHZ-03",
+        "WSTG-CONF-01",
+        "CWE-269"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-269"
+    },
+    {
+      "id": "m3.security-headers",
+      "module": "M3",
+      "title": "Security header and cookie review",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-09",
+        "WSTG-CONF-07",
+        "WSTG-SESS-02",
+        "API8:2023",
+        "CWE-693"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-693"
+    },
+    {
+      "id": "m3.api-surface",
+      "module": "M3",
+      "title": "API and hidden endpoint surface",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-06",
+        "WSTG-INFO-07",
+        "API9:2023",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.subdomain-takeover",
+      "module": "M3",
+      "title": "Subdomain takeover of a web-facing alias",
+      "proof": "L1",
+      "target_kinds": [
+        "url",
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-CONF-10",
+        "CWE-350"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-350"
+    },
+    {
+      "id": "m3.csrf-audit",
+      "module": "M3",
+      "title": "CSRF protection audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-BUSL-02",
+        "WSTG-SESS-05",
+        "CWE-352"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-352"
+    },
+    {
+      "id": "m3.deser-audit",
+      "module": "M3",
+      "title": "Insecure deserialization audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-11",
+        "CWE-502"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-502"
+    },
+    {
+      "id": "m3.sqli-oracle",
+      "module": "M3",
+      "title": "SQL injection oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-05",
+        "CWE-89"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-89"
+    },
+    {
+      "id": "m3.ssti-oracle",
+      "module": "M3",
+      "title": "Server-side template injection oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-08",
+        "WSTG-INPV-18",
+        "CWE-1336"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1336"
+    },
+    {
+      "id": "m3.xxe-oracle",
+      "module": "M3",
+      "title": "XML external entity oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-07",
+        "CWE-611"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-611"
+    },
+    {
+      "id": "m3.cmdi-oracle",
+      "module": "M3",
+      "title": "OS command injection oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-12",
+        "CWE-78"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-78"
+    },
+    {
+      "id": "m3.xss-oracle",
+      "module": "M3",
+      "title": "Cross-site scripting reflection oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-03",
+        "WSTG-INPV-01",
+        "CWE-79"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-79"
+    },
+    {
+      "id": "m3.traversal-oracle",
+      "module": "M3",
+      "title": "Path traversal oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHZ-01",
+        "CWE-22"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-22"
+    },
+    {
+      "id": "m3.dom-xss",
+      "module": "M3",
+      "title": "DOM-based cross-site scripting sinks",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-01",
+        "WSTG-CLNT-02",
+        "CWE-79"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-79"
+    },
+    {
+      "id": "m3.open-redirect",
+      "module": "M3",
+      "title": "Open redirect oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-04",
+        "CWE-601"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-601"
+    },
+    {
+      "id": "m3.cors-audit",
+      "module": "M3",
+      "title": "CORS configuration audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-07",
+        "WSTG-CLNT-13",
+        "CWE-942"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-942"
+    },
+    {
+      "id": "m3.cache-poison-audit",
+      "module": "M3",
+      "title": "Web cache poisoning (unkeyed input) audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-14",
+        "WSTG-INPV-15",
+        "CWE-444"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-444"
+    },
+    {
+      "id": "m3.hpp-oracle",
+      "module": "M3",
+      "title": "HTTP parameter pollution oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-04",
+        "CWE-235"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-235"
+    },
+    {
+      "id": "m3.idor-oracle",
+      "module": "M3",
+      "title": "IDOR / object-level authorization oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHZ-04",
+        "API1:2023",
+        "CWE-639"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-639"
+    },
+    {
+      "id": "m3.auth-session-audit",
+      "module": "M3",
+      "title": "Authentication and session handling audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHN-01",
+        "WSTG-ATHN-04",
+        "WSTG-IDNT-04",
+        "API2:2023",
+        "CWE-287"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-287"
+    },
+    {
+      "id": "m3.jwt-audit",
+      "module": "M3",
+      "title": "JWT verification audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CRYP-04",
+        "WSTG-SESS-01",
+        "WSTG-SESS-04",
+        "API2:2023",
+        "CWE-347"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-347"
+    },
+    {
+      "id": "m3.oauth-flow-audit",
+      "module": "M3",
+      "title": "OAuth 2.0 flow audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHN-04",
+        "API2:2023",
+        "CWE-601"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-601"
+    },
+    {
+      "id": "m3.saml-audit",
+      "module": "M3",
+      "title": "SAML assertion signature-handling audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHN-04",
+        "API2:2023",
+        "CWE-347"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-347"
+    },
+    {
+      "id": "m3.mass-assign-audit",
+      "module": "M3",
+      "title": "Mass assignment (property-level binding) audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "API3:2023",
+        "CWE-915"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-915"
+    },
+    {
+      "id": "m3.proto-pollution",
+      "module": "M3",
+      "title": "Prototype pollution oracle (server-observable)",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-06",
+        "WSTG-INPV-11",
+        "API3:2023",
+        "CWE-1321"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1321"
+    },
+    {
+      "id": "m3.graphql-audit",
+      "module": "M3",
+      "title": "GraphQL introspection and schema disclosure",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-APIT-01",
+        "API9:2023",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.websocket-audit",
+      "module": "M3",
+      "title": "WebSocket handshake origin validation audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-10",
+        "CWE-1385"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1385"
+    },
+    {
+      "id": "m3.business-logic-audit",
+      "module": "M3",
+      "title": "Business-logic invariant audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-BUSL-01",
+        "WSTG-BUSL-03",
+        "WSTG-BUSL-06",
+        "API6:2023",
+        "CWE-840"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-840"
+    },
+    {
+      "id": "m3.race-oracle",
+      "module": "M3",
+      "title": "Race condition (concurrent-request) oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-BUSL-04",
+        "WSTG-BUSL-05",
+        "CWE-362"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-362"
+    },
+    {
+      "id": "m3.smuggling-oracle",
+      "module": "M3",
+      "title": "HTTP request smuggling (framing boundary) audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-15",
+        "CWE-444"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-444"
+    },
+    {
+      "id": "m3.rate-limit-audit",
+      "module": "M3",
+      "title": "Rate limiting and anti-automation audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHN-03",
+        "WSTG-BUSL-05",
+        "WSTG-BUSL-07",
+        "API4:2023",
+        "CWE-770"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-770"
+    },
+    {
+      "id": "m3.upload-audit",
+      "module": "M3",
+      "title": "Unrestricted file upload audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-BUSL-08",
+        "WSTG-BUSL-09",
+        "CWE-434"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-434"
+    },
+    {
+      "id": "m3.ssrf-probe",
+      "module": "M3",
+      "title": "Server-side request forgery callback probe",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-19",
+        "API7:2023",
+        "CWE-918"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-918"
+    },
+    {
+      "id": "m3.nosql-oracle",
+      "module": "M3",
+      "title": "NoSQL injection oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-05",
+        "CWE-943"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-943"
+    },
+    {
+      "id": "m3.directory-traversal",
+      "module": "M3",
+      "title": "Directory traversal oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHZ-01",
+        "CWE-22"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-22"
+    },
+    {
+      "id": "m3.file-inclusion",
+      "module": "M3",
+      "title": "File inclusion oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHZ-01",
+        "CWE-98"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-98"
+    },
+    {
+      "id": "m3.crlf-injection",
+      "module": "M3",
+      "title": "CRLF / HTTP header injection oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-15",
+        "CWE-113"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-113"
+    },
+    {
+      "id": "m3.authenticated-surface",
+      "module": "M3",
+      "title": "Authenticated-only web surface",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHZ-02",
+        "WSTG-CONF-05",
+        "API9:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m3.session-logout",
+      "module": "M3",
+      "title": "Session invalidation on logout",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-SESS-06",
+        "CWE-613"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-613"
+    },
+    {
+      "id": "m3.sqli-oob",
+      "module": "M3",
+      "title": "Blind SQL injection, out-of-band",
+      "proof": "L2",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-05",
+        "CWE-89"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-89"
+    },
+    {
+      "id": "m3.xxe-oob",
+      "module": "M3",
+      "title": "XML external entity, out-of-band",
+      "proof": "L2",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-07",
+        "CWE-611"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-611"
+    },
+    {
+      "id": "m3.cmdi-oob",
+      "module": "M3",
+      "title": "Blind OS command injection, out-of-band",
+      "proof": "L2",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-12",
+        "CWE-78"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-78"
+    },
+    {
+      "id": "m3.ssti-oob",
+      "module": "M3",
+      "title": "Server-side template injection, out-of-band",
+      "proof": "L2",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-08",
+        "WSTG-INPV-18",
+        "CWE-1336"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1336"
+    },
+    {
+      "id": "m3.rce-echo",
+      "module": "M3",
+      "title": "One-shot command execution proof",
+      "proof": "L3",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-12",
+        "CWE-78"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-78"
+    },
+    {
+      "id": "m3.state-marker",
+      "module": "M3",
+      "title": "State-change proof (marker row)",
+      "proof": "L4",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-05",
+        "CWE-89"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-89"
+    },
+    {
+      "id": "m3.graphql-depth-abuse",
+      "module": "M3",
+      "title": "GraphQL depth and cost limit audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-APIT-01",
+        "API4:2023",
+        "CWE-770"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-770"
+    },
+    {
+      "id": "m3.graphql-resolver-auth",
+      "module": "M3",
+      "title": "GraphQL resolver authorization audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-APIT-01",
+        "API5:2023",
+        "CWE-862"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-862"
+    },
+    {
+      "id": "m3.websocket-upgrade-auth",
+      "module": "M3",
+      "title": "WebSocket upgrade authentication audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-10",
+        "API2:2023",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m3.websocket-injection",
+      "module": "M3",
+      "title": "WebSocket message relay probe",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-10",
+        "CWE-1385"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1385"
+    },
+    {
+      "id": "m3.client-secret-verify",
+      "module": "M3",
+      "title": "Client-side credential impact verification",
+      "proof": "L2",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-02",
+        "CWE-522"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-522"
+    },
+    {
+      "id": "m3.ldap-injection",
+      "module": "M3",
+      "title": "LDAP injection oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-06",
+        "CWE-90"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-90"
+    },
+    {
+      "id": "m3.xpath-injection",
+      "module": "M3",
+      "title": "XPath injection oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-09",
+        "CWE-643"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-643"
+    },
+    {
+      "id": "m3.code-injection-oracle",
+      "module": "M3",
+      "title": "Code injection oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-11",
+        "CWE-94"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-94"
+    },
+    {
+      "id": "m3.argument-injection",
+      "module": "M3",
+      "title": "Command-argument injection oracle",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-12",
+        "CWE-77"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-77"
+    },
+    {
+      "id": "m3.host-header-injection",
+      "module": "M3",
+      "title": "Host header injection",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-17",
+        "CWE-644"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-644"
+    },
+    {
+      "id": "m3.email-header-injection",
+      "module": "M3",
+      "title": "Email header injection",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-10",
+        "CWE-93"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-93"
+    },
+    {
+      "id": "m3.cache-deception",
+      "module": "M3",
+      "title": "Web cache deception",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHN-06",
+        "CWE-524"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-524"
+    },
+    {
+      "id": "m3.authz-bypass",
+      "module": "M3",
+      "title": "Authorization-schema bypass",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHZ-02",
+        "CWE-863"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-863"
+    },
+    {
+      "id": "m3.input-validation-audit",
+      "module": "M3",
+      "title": "Input validation audit",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-BUSL-01",
+        "CWE-20"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-20"
+    },
+    {
+      "id": "m4.security-header-review",
+      "module": "M4",
+      "title": "Security response headers missing or weak",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-09",
+        "WSTG-CONF-07",
+        "API8:2023",
+        "CWE-693"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-693"
+    },
+    {
+      "id": "m4.cookie-flag-audit",
+      "module": "M4",
+      "title": "Session cookie lacks hardening attributes",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-SESS-02",
+        "WSTG-SESS-09",
+        "CWE-614"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-614"
+    },
+    {
+      "id": "m4.client-secrets",
+      "module": "M4",
+      "title": "Credential material in client-side assets",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-12",
+        "WSTG-INFO-05",
+        "CWE-798"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "m4.env-file-probe",
+      "module": "M4",
+      "title": "Exposed environment or configuration file",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m4.vcs-exposure",
+      "module": "M4",
+      "title": "Exposed version-control metadata",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-03",
+        "WSTG-CONF-04",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.backup-file-hunt",
+      "module": "M4",
+      "title": "Downloadable backup or dump file",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "CWE-530"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-530"
+    },
+    {
+      "id": "m4.key-exposure",
+      "module": "M4",
+      "title": "Private key material exposed",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "CWE-321"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-321"
+    },
+    {
+      "id": "m4.sourcemap-exposure",
+      "module": "M4",
+      "title": "JavaScript source map exposed",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "CWE-540"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-540"
+    },
+    {
+      "id": "m4.api-doc-exposure",
+      "module": "M4",
+      "title": "API documentation exposed",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-06",
+        "API9:2023",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m4.debug-endpoints",
+      "module": "M4",
+      "title": "Debug or diagnostic endpoint reachable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "CWE-489"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-489"
+    },
+    {
+      "id": "m4.directory-listing",
+      "module": "M4",
+      "title": "Directory listing enabled",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-548"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-548"
+    },
+    {
+      "id": "m4.dashboard-exposure",
+      "module": "M4",
+      "title": "Administrative or monitoring dashboard reachable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m4.hidden-endpoint-hunt",
+      "module": "M4",
+      "title": "Hidden endpoint or content reachable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m4.staging-exposure",
+      "module": "M4",
+      "title": "Staging or development surface exposed",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "CWE-1188"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1188"
+    },
+    {
+      "id": "m4.unauth-api-audit",
+      "module": "M4",
+      "title": "Data-bearing API route answers without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHZ-02",
+        "API5:2023",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m4.bucket-exposure",
+      "module": "M4",
+      "title": "Object-storage bucket is publicly readable",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud",
+        "url",
+        "domain"
+      ],
+      "framework": [
+        "WSTG-CONF-11",
+        "CWE-732"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-732"
+    },
+    {
+      "id": "m4.cors-config-review",
+      "module": "M4",
+      "title": "CORS policy allows cross-origin reads",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-07",
+        "CWE-942"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-942"
+    },
+    {
+      "id": "m4.tls-config-review",
+      "module": "M4",
+      "title": "Weak TLS configuration",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHN-01",
+        "WSTG-CRYP-01",
+        "CWE-326"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-326"
+    },
+    {
+      "id": "m4.email-auth-review",
+      "module": "M4",
+      "title": "Email authentication missing or permissive",
+      "proof": "L1",
+      "target_kinds": [
+        "url",
+        "domain"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "CWE-290"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-290"
+    },
+    {
+      "id": "m4.webdav-verbs",
+      "module": "M4",
+      "title": "Unsafe HTTP methods or WebDAV enabled",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-06",
+        "WSTG-INPV-03",
+        "CWE-650"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-650"
+    },
+    {
+      "id": "m4.user-enumeration",
+      "module": "M4",
+      "title": "Username enumeration through a login differential",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-IDNT-04",
+        "CWE-204"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-204"
+    },
+    {
+      "id": "m4.metadata-ssrf",
+      "module": "M4",
+      "title": "Cloud metadata service reachable through a request sink",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-19",
+        "API7:2023",
+        "CWE-918"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-918"
+    },
+    {
+      "id": "m4.default-credentials",
+      "module": "M4",
+      "title": "Vendor default credentials accepted",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHN-02",
+        "CWE-1392"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1392"
+    },
+    {
+      "id": "m4.verbose-errors",
+      "module": "M4",
+      "title": "Verbose error page exposes internals",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ERRH-01",
+        "WSTG-ERRH-02",
+        "CWE-209"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-209"
+    },
+    {
+      "id": "m4.actuator-exposure",
+      "module": "M4",
+      "title": "Spring Boot Actuator endpoint exposed",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "CWE-497"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-497"
+    },
+    {
+      "id": "m4.datastore-surface",
+      "module": "M4",
+      "title": "Data-store API reachable over HTTP",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "WSTG-CONF-05",
+        "CWE-668"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-668"
+    },
+    {
+      "id": "m4.robots-sitemap",
+      "module": "M4",
+      "title": "robots.txt or sitemap.xml discloses sensitive paths",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-03",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m4.wordpress-surface",
+      "module": "M4",
+      "title": "WordPress surface exposes users or XML-RPC",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-IDNT-04",
+        "WSTG-INFO-08",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m4.alias-traversal",
+      "module": "M4",
+      "title": "Static alias allows path traversal",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHZ-01",
+        "CWE-22"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-22"
+    },
+    {
+      "id": "m5.leaked-cloud-keys",
+      "module": "M5",
+      "title": "Leaked cloud credential material in artifacts",
+      "proof": "L1",
+      "target_kinds": [
+        "git",
+        "cloud",
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-05",
+        "CWE-798"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "m5.gcp-sa-keys",
+      "module": "M5",
+      "title": "GCP service-account key material exposed",
+      "proof": "L1",
+      "target_kinds": [
+        "git",
+        "cloud",
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-05",
+        "CWE-798"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "m5.iam-review",
+      "module": "M5",
+      "title": "IAM over-privilege and escalation paths",
+      "proof": "L1",
+      "target_kinds": [
+        "git",
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-ATHZ-03",
+        "API5:2023",
+        "CWE-269"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-269"
+    },
+    {
+      "id": "m5.cloud-posture",
+      "module": "M5",
+      "title": "Cloud configuration posture and drift",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-16"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-16"
+    },
+    {
+      "id": "m5.cicd-audit",
+      "module": "M5",
+      "title": "CI/CD pipeline supply-chain exposure",
+      "proof": "L1",
+      "target_kinds": [
+        "git",
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "CWE-78"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-78"
+    },
+    {
+      "id": "m5.dep-confusion",
+      "module": "M5",
+      "title": "Dependency-confusion or typosquatting candidate",
+      "proof": "L1",
+      "target_kinds": [
+        "git",
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API10:2023",
+        "CWE-427"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-427"
+    },
+    {
+      "id": "m5.sbom-review",
+      "module": "M5",
+      "title": "Known-vulnerable component in use",
+      "proof": "L1",
+      "target_kinds": [
+        "git",
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API10:2023",
+        "CWE-1104"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1104"
+    },
+    {
+      "id": "m5.image-history-secrets",
+      "module": "M5",
+      "title": "Secret material in image build or manifest artifacts",
+      "proof": "L1",
+      "target_kinds": [
+        "git",
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-INFO-05",
+        "CWE-798"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "m5.tfstate-exposure",
+      "module": "M5",
+      "title": "Terraform state exposed or IaC misconfigured",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud",
+        "url",
+        "git"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "CWE-312"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-312"
+    },
+    {
+      "id": "m5.image-scan",
+      "module": "M5",
+      "title": "Container image carries known-vulnerable packages",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud",
+        "artifact"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API10:2023",
+        "CWE-1104"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1104"
+    },
+    {
+      "id": "m5.do-posture",
+      "module": "M5",
+      "title": "DigitalOcean account exposes a database, firewall or load balancer",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-16"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-16"
+    },
+    {
+      "id": "m5.bucket-enumerator",
+      "module": "M5",
+      "title": "Public cloud storage bucket enumerable",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud",
+        "url",
+        "domain"
+      ],
+      "framework": [
+        "WSTG-CONF-11",
+        "CWE-732"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-732"
+    },
+    {
+      "id": "m5.firebase-rules",
+      "module": "M5",
+      "title": "Firebase project exposes open database rules",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-11",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.supabase-rls",
+      "module": "M5",
+      "title": "Supabase / PostgREST table readable without RLS",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-11",
+        "API1:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.k8s-exposure",
+      "module": "M5",
+      "title": "Kubernetes kubelet API or dashboard exposed",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud",
+        "url",
+        "ip"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m5.registry-scan",
+      "module": "M5",
+      "title": "Container registry anonymously enumerable",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "CWE-1104"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1104"
+    },
+    {
+      "id": "m5.docker-socket",
+      "module": "M5",
+      "title": "Docker daemon API reachable",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud",
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m5.serverless-functions",
+      "module": "M5",
+      "title": "Unauthenticated serverless function endpoint",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API5:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.managed-datastores",
+      "module": "M5",
+      "title": "Reachable managed database console or proxy",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-668"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-668"
+    },
+    {
+      "id": "m5.search-platform-exposure",
+      "module": "M5",
+      "title": "Unauthenticated search platform exposed",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "CWE-668"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-668"
+    },
+    {
+      "id": "m5.imds-ssrf",
+      "module": "M5",
+      "title": "Cloud metadata service reachable through a request sink",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-19",
+        "API7:2023",
+        "CWE-918"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-918"
+    },
+    {
+      "id": "m5.azure-mi-audit",
+      "module": "M5",
+      "title": "Azure managed-identity metadata reachable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-19",
+        "API7:2023",
+        "CWE-918"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-918"
+    },
+    {
+      "id": "m6.secret-scan-at-scale",
+      "module": "M6",
+      "title": "Repository and history secret scan",
+      "proof": "L1",
+      "target_kinds": [
+        "git",
+        "cloud",
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-05",
+        "CWE-798"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "m6.ci-secret-leak",
+      "module": "M6",
+      "title": "CI log/artifact secret leakage",
+      "proof": "L1",
+      "target_kinds": [
+        "git",
+        "cloud",
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-05",
+        "CWE-532"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-532"
+    },
+    {
+      "id": "m6.cve-epss-correlation",
+      "module": "M6",
+      "title": "CVE/EPSS correlation and patch-gap analysis",
+      "proof": "L1",
+      "target_kinds": [
+        "url",
+        "ip",
+        "domain",
+        "cidr",
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-1035"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1035"
+    },
+    {
+      "id": "m6.lpe-discovery",
+      "module": "M6",
+      "title": "Local privilege-escalation CVE matching",
+      "proof": "L1",
+      "target_kinds": [
+        "url",
+        "ip",
+        "domain",
+        "cidr",
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-ATHZ-03",
+        "WSTG-CONF-01",
+        "CWE-269"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-269"
+    },
+    {
+      "id": "m6.webshell-yara",
+      "module": "M6",
+      "title": "Webshell signature and behaviour scan",
+      "proof": "L1",
+      "target_kinds": [
+        "url",
+        "domain",
+        "git",
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-INFO-05",
+        "CWE-506"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-506"
+    },
+    {
+      "id": "m6.attack-surface-genai",
+      "module": "M6",
+      "title": "Generative-AI attack surface",
+      "proof": "L1",
+      "target_kinds": [
+        "url",
+        "domain",
+        "git",
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-INFO-06",
+        "CWE-1426",
+        "LLM01:2025",
+        "LLM02:2025",
+        "LLM07:2025",
+        "LLM10:2025",
+        "ASI02:2026",
+        "ASI03:2026"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1426"
+    },
+    {
+      "id": "m6.mcp-token-audience",
+      "module": "M6",
+      "title": "MCP protected-resource metadata declares no token audience",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "API2:2023",
+        "CWE-287",
+        "ASI03:2026"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-287"
+    },
+    {
+      "id": "m6.mcp-session-auth",
+      "module": "M6",
+      "title": "MCP endpoint authenticates with a session",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "API2:2023",
+        "CWE-306",
+        "ASI07:2026"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m6.mcp-oauth-metadata",
+      "module": "M6",
+      "title": "MCP OAuth metadata advertises an unsafe discovery target",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INPV-19",
+        "API7:2023",
+        "CWE-918",
+        "ASI07:2026"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-918"
+    },
+    {
+      "id": "m6.agentic-tool-manifest",
+      "module": "M6",
+      "title": "Agent tool manifest publishes high-impact tools without an authorization gate",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "API5:2023",
+        "CWE-269",
+        "LLM06:2025",
+        "ASI02:2026"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-269"
+    },
+    {
+      "id": "m6.agentic-memory-store",
+      "module": "M6",
+      "title": "Agent memory store is readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHN-04",
+        "API2:2023",
+        "CWE-345",
+        "LLM04:2025",
+        "LLM08:2025",
+        "ASI06:2026"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-345"
+    },
+    {
+      "id": "m6.agentic-human-trust",
+      "module": "M6",
+      "title": "Agent policy declares autonomous execution without human confirmation",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-BUSL-06",
+        "API5:2023",
+        "CWE-863",
+        "LLM06:2025",
+        "ASI09:2026"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-863"
+    },
+    {
+      "id": "m6.agentic-rogue-runtime",
+      "module": "M6",
+      "title": "Agent runtime answers unauthenticated callers with its own configuration",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "API2:2023",
+        "CWE-306",
+        "ASI10:2026"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m6.sigma-hunt-rules",
+      "module": "M6",
+      "title": "Post-exploitation Sigma hunt rules",
+      "proof": "L1",
+      "target_kinds": [
+        "url",
+        "domain",
+        "ip",
+        "git",
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-INFO-05",
+        "CWE-778",
+        "ATT&CK-T1059"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-778"
+    },
+    {
+      "id": "m6.deception-listeners",
+      "module": "M6",
+      "title": "Deception / honeytoken trigger monitoring",
+      "proof": "L1",
+      "target_kinds": [
+        "url",
+        "domain",
+        "ip",
+        "git",
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-INFO-05",
+        "CWE-778",
+        "ATT&CK-T1078"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-778"
+    },
+    {
+      "id": "m6.ad-attack-path",
+      "module": "M6",
+      "title": "Active Directory attack-path analysis",
+      "proof": "L1",
+      "target_kinds": [
+        "git",
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-ATHZ-03",
+        "WSTG-CONF-01",
+        "CWE-269"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-269"
+    },
+    {
+      "id": "m6.template-scan",
+      "module": "M6",
+      "title": "Template-driven exposure match",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-05",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m6.exploit-match",
+      "module": "M6",
+      "title": "Known N-day exploit matches observed software",
+      "proof": "L1",
+      "target_kinds": [
+        "url",
+        "domain",
+        "ip"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "CWE-1104"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-1104"
+    },
+    {
+      "id": "m6.credential-hunt",
+      "module": "M6",
+      "title": "Credentials in reachable configuration surfaces",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-05",
+        "CWE-798"
+      ],
+      "last_verified": "2026-11-05",
+      "cwe": "CWE-798"
+    }
+  ],
+  "wstg_items": [
+    {
+      "id": "WSTG-INFO-01",
+      "state": "mapped",
+      "title": "Conduct Search Engine Discovery Reconnaissance for Information Leakage",
+      "checks": [
+        "m1.breach-exposure",
+        "m1.code-secret-mining",
+        "m1.dork-sweep",
+        "m1.email-harvest",
+        "m1.webarchive-harvest"
+      ]
+    },
+    {
+      "id": "WSTG-INFO-02",
+      "state": "mapped",
+      "title": "Fingerprint Web Server",
+      "checks": [
+        "m2.http-fingerprint"
+      ]
+    },
+    {
+      "id": "WSTG-INFO-03",
+      "state": "mapped",
+      "title": "Review Webserver Metafiles for Information Leakage",
+      "checks": [
+        "m4.robots-sitemap"
+      ]
+    },
+    {
+      "id": "WSTG-INFO-04",
+      "state": "mapped",
+      "title": "Enumerate Applications on Webserver",
+      "checks": [
+        "m1.ct-lookup",
+        "m1.ct-surprise",
+        "m1.passive-dns",
+        "m1.subdomain-passive"
+      ]
+    },
+    {
+      "id": "WSTG-INFO-05",
+      "state": "mapped",
+      "title": "Review Webpage Comments and Metadata for Information Leakage",
+      "checks": [
+        "m1.doc-metadata",
+        "m1.mobile-artifact",
+        "m4.client-secrets",
+        "m5.gcp-sa-keys",
+        "m5.image-history-secrets",
+        "m5.leaked-cloud-keys",
+        "m6.ci-secret-leak",
+        "m6.credential-hunt",
+        "m6.deception-listeners",
+        "m6.secret-scan-at-scale",
+        "m6.sigma-hunt-rules",
+        "m6.template-scan",
+        "m6.webshell-yara"
+      ]
+    },
+    {
+      "id": "WSTG-INFO-06",
+      "state": "mapped",
+      "title": "Identify Application Entry Points",
+      "checks": [
+        "m1.js-asset-scan",
+        "m2.grpc-reflection",
+        "m3.api-surface",
+        "m4.api-doc-exposure",
+        "m4.hidden-endpoint-hunt",
+        "m6.attack-surface-genai"
+      ]
+    },
+    {
+      "id": "WSTG-INFO-07",
+      "state": "mapped",
+      "title": "Map Execution Paths Through Application",
+      "checks": [
+        "m3.api-surface"
+      ]
+    },
+    {
+      "id": "WSTG-INFO-08",
+      "state": "mapped",
+      "title": "Fingerprint Web Application Framework",
+      "checks": [
+        "m1.favicon-hash",
+        "m2.favicon-hash",
+        "m4.wordpress-surface"
+      ]
+    },
+    {
+      "id": "WSTG-INFO-09",
+      "state": "mapped",
+      "title": "Fingerprint Web Application",
+      "checks": [
+        "m2.http-fingerprint"
+      ]
+    },
+    {
+      "id": "WSTG-INFO-10",
+      "state": "mapped",
+      "title": "Map Application Architecture",
+      "checks": [
+        "m1.dns-txt-mining",
+        "m2.dns-active"
+      ]
+    },
+    {
+      "id": "WSTG-CONF-01",
+      "state": "mapped",
+      "title": "Test Network Infrastructure Configuration",
+      "checks": [
+        "m1.internetdb-triage",
+        "m1.service-exposure-drift",
+        "m2.adcs-enum",
+        "m2.cve-correlate",
+        "m2.db-service-probe",
+        "m2.ftp-anonymous",
+        "m2.host-discovery",
+        "m2.http3-probe",
+        "m2.ics-probe",
+        "m2.kerberos-enum",
+        "m2.ldap-enum",
+        "m2.legacy-services",
+        "m2.nfs-enum",
+        "m2.os-fingerprint",
+        "m2.ot-protocol-probe",
+        "m2.port-scan",
+        "m2.rdp-vnc-detect",
+        "m2.service-fingerprint",
+        "m2.smb-auth",
+        "m2.smb-enum",
+        "m2.smtp-enum",
+        "m2.smtp-transport",
+        "m2.snmp-enum",
+        "m2.ssdp-discovery",
+        "m2.ssh-auth",
+        "m2.ssh-enum",
+        "m4.datastore-surface",
+        "m5.managed-datastores",
+        "m6.ad-attack-path",
+        "m6.cve-epss-correlation",
+        "m6.exploit-match",
+        "m6.lpe-discovery"
+      ]
+    },
+    {
+      "id": "WSTG-CONF-02",
+      "state": "mapped",
+      "title": "Test Application Platform Configuration",
+      "checks": [
+        "m4.directory-listing",
+        "m4.email-auth-review",
+        "m4.staging-exposure",
+        "m5.cicd-audit",
+        "m5.cloud-posture",
+        "m5.dep-confusion",
+        "m5.do-posture",
+        "m5.image-scan",
+        "m5.sbom-review"
+      ]
+    },
+    {
+      "id": "WSTG-CONF-03",
+      "state": "mapped",
+      "title": "Test File Extensions Handling for Sensitive Information",
+      "checks": [
+        "m4.vcs-exposure"
+      ]
+    },
+    {
+      "id": "WSTG-CONF-04",
+      "state": "mapped",
+      "title": "Review Old Backup and Unreferenced Files for Sensitive Information",
+      "checks": [
+        "m4.backup-file-hunt",
+        "m4.env-file-probe",
+        "m4.key-exposure",
+        "m4.sourcemap-exposure",
+        "m4.vcs-exposure",
+        "m5.tfstate-exposure"
+      ]
+    },
+    {
+      "id": "WSTG-CONF-05",
+      "state": "mapped",
+      "title": "Enumerate Infrastructure and Application Admin Interfaces",
+      "checks": [
+        "m3.authenticated-surface",
+        "m4.actuator-exposure",
+        "m4.dashboard-exposure",
+        "m4.datastore-surface",
+        "m4.debug-endpoints",
+        "m4.hidden-endpoint-hunt",
+        "m5.docker-socket",
+        "m5.k8s-exposure",
+        "m5.registry-scan",
+        "m5.search-platform-exposure",
+        "m5.serverless-functions"
+      ]
+    },
+    {
+      "id": "WSTG-CONF-06",
+      "state": "mapped",
+      "title": "Test HTTP Methods",
+      "checks": [
+        "m4.webdav-verbs"
+      ]
+    },
+    {
+      "id": "WSTG-CONF-07",
+      "state": "mapped",
+      "title": "Test HTTP Strict Transport Security",
+      "checks": [
+        "m2.http3-probe",
+        "m3.security-headers",
+        "m4.security-header-review"
+      ]
+    },
+    {
+      "id": "WSTG-CONF-08",
+      "state": "out_of_scope",
+      "title": "Test RIA Cross Domain Policy",
+      "checks": [],
+      "reason": "Adobe Flash and Microsoft Silverlight are end-of-life; there is no RIA runtime left to exercise a cross-domain policy file against."
+    },
+    {
+      "id": "WSTG-CONF-09",
+      "state": "out_of_scope",
+      "title": "Test File Permission",
+      "checks": [],
+      "reason": "Reading host file modes needs filesystem access to the server; a remote scanner cannot observe them."
+    },
+    {
+      "id": "WSTG-CONF-10",
+      "state": "mapped",
+      "title": "Test for Subdomain Takeover",
+      "checks": [
+        "m3.subdomain-takeover"
+      ]
+    },
+    {
+      "id": "WSTG-CONF-11",
+      "state": "mapped",
+      "title": "Test Cloud Storage",
+      "checks": [
+        "m1.bucket-hunt",
+        "m4.bucket-exposure",
+        "m5.bucket-enumerator",
+        "m5.firebase-rules",
+        "m5.supabase-rls"
+      ]
+    },
+    {
+      "id": "WSTG-IDNT-01",
+      "state": "out_of_scope",
+      "title": "Test Role Definitions",
+      "checks": [],
+      "reason": "Requires the application's documented role model or source access; a black-box scan observes behaviour, not role definitions."
+    },
+    {
+      "id": "WSTG-IDNT-02",
+      "state": "out_of_scope",
+      "title": "Test User Registration Process",
+      "checks": [],
+      "reason": "An organisational process (how registration is approved); verifying it needs a human interview or internal documentation."
+    },
+    {
+      "id": "WSTG-IDNT-03",
+      "state": "out_of_scope",
+      "title": "Test Account Provisioning Process",
+      "checks": [],
+      "reason": "An organisational process (how accounts are provisioned); a remote scan cannot observe it."
+    },
+    {
+      "id": "WSTG-IDNT-04",
+      "state": "mapped",
+      "title": "Testing for Account Enumeration and Guessable User Account",
+      "checks": [
+        "m3.auth-session-audit",
+        "m4.user-enumeration",
+        "m4.wordpress-surface"
+      ]
+    },
+    {
+      "id": "WSTG-IDNT-05",
+      "state": "gap",
+      "title": "Testing for Weak or Unenforced Username Policy",
+      "checks": []
+    },
+    {
+      "id": "WSTG-ATHN-01",
+      "state": "mapped",
+      "title": "Testing for Credentials Transported over an Encrypted Channel",
+      "checks": [
+        "m3.auth-session-audit",
+        "m4.tls-config-review"
+      ]
+    },
+    {
+      "id": "WSTG-ATHN-02",
+      "state": "mapped",
+      "title": "Testing for Default Credentials",
+      "checks": [
+        "m4.default-credentials"
+      ]
+    },
+    {
+      "id": "WSTG-ATHN-03",
+      "state": "mapped",
+      "title": "Testing for Weak Lock Out Mechanism",
+      "checks": [
+        "m3.rate-limit-audit"
+      ]
+    },
+    {
+      "id": "WSTG-ATHN-04",
+      "state": "mapped",
+      "title": "Testing for Bypassing Authentication Schema",
+      "checks": [
+        "m3.auth-session-audit",
+        "m3.oauth-flow-audit",
+        "m3.saml-audit",
+        "m6.agentic-memory-store"
+      ]
+    },
+    {
+      "id": "WSTG-ATHN-05",
+      "state": "gap",
+      "title": "Testing for Vulnerable Remember Password",
+      "checks": []
+    },
+    {
+      "id": "WSTG-ATHN-06",
+      "state": "mapped",
+      "title": "Testing for Browser Cache Weaknesses",
+      "checks": [
+        "m3.cache-deception"
+      ]
+    },
+    {
+      "id": "WSTG-ATHN-07",
+      "state": "gap",
+      "title": "Testing for Weak Password Policy",
+      "checks": []
+    },
+    {
+      "id": "WSTG-ATHN-08",
+      "state": "gap",
+      "title": "Testing for Weak Security Question Answer",
+      "checks": []
+    },
+    {
+      "id": "WSTG-ATHN-09",
+      "state": "gap",
+      "title": "Testing for Weak Password Change or Reset Functionalities",
+      "checks": []
+    },
+    {
+      "id": "WSTG-ATHN-10",
+      "state": "out_of_scope",
+      "title": "Testing for Weaker Authentication in Alternative Channel",
+      "checks": [],
+      "reason": "Alternative authentication channels (mobile app, call centre, IVR) lie outside the scanned surface."
+    },
+    {
+      "id": "WSTG-ATHZ-01",
+      "state": "mapped",
+      "title": "Testing Directory Traversal File Include",
+      "checks": [
+        "m3.directory-traversal",
+        "m3.file-inclusion",
+        "m3.traversal-oracle",
+        "m4.alias-traversal"
+      ]
+    },
+    {
+      "id": "WSTG-ATHZ-02",
+      "state": "mapped",
+      "title": "Testing for Bypassing Authorization Schema",
+      "checks": [
+        "m3.authenticated-surface",
+        "m3.authz-bypass",
+        "m4.unauth-api-audit"
+      ]
+    },
+    {
+      "id": "WSTG-ATHZ-03",
+      "state": "mapped",
+      "title": "Testing for Privilege Escalation",
+      "checks": [
+        "m2.adcs-enum",
+        "m5.iam-review",
+        "m6.ad-attack-path",
+        "m6.lpe-discovery"
+      ]
+    },
+    {
+      "id": "WSTG-ATHZ-04",
+      "state": "mapped",
+      "title": "Testing for Insecure Direct Object References",
+      "checks": [
+        "m3.idor-oracle"
+      ]
+    },
+    {
+      "id": "WSTG-SESS-01",
+      "state": "mapped",
+      "title": "Testing for Session Management Schema",
+      "checks": [
+        "m3.jwt-audit"
+      ]
+    },
+    {
+      "id": "WSTG-SESS-02",
+      "state": "mapped",
+      "title": "Testing for Cookies Attributes",
+      "checks": [
+        "m3.security-headers",
+        "m4.cookie-flag-audit"
+      ]
+    },
+    {
+      "id": "WSTG-SESS-03",
+      "state": "gap",
+      "title": "Testing for Session Fixation",
+      "checks": []
+    },
+    {
+      "id": "WSTG-SESS-04",
+      "state": "mapped",
+      "title": "Testing for Exposed Session Variables",
+      "checks": [
+        "m3.jwt-audit"
+      ]
+    },
+    {
+      "id": "WSTG-SESS-05",
+      "state": "mapped",
+      "title": "Testing for Cross Site Request Forgery",
+      "checks": [
+        "m3.csrf-audit"
+      ]
+    },
+    {
+      "id": "WSTG-SESS-06",
+      "state": "mapped",
+      "title": "Testing for Logout Functionality",
+      "checks": [
+        "m3.session-logout"
+      ]
+    },
+    {
+      "id": "WSTG-SESS-07",
+      "state": "gap",
+      "title": "Testing Session Timeout",
+      "checks": []
+    },
+    {
+      "id": "WSTG-SESS-08",
+      "state": "gap",
+      "title": "Testing for Session Puzzling",
+      "checks": []
+    },
+    {
+      "id": "WSTG-SESS-09",
+      "state": "mapped",
+      "title": "Testing for Session Hijacking",
+      "checks": [
+        "m4.cookie-flag-audit"
+      ]
+    },
+    {
+      "id": "WSTG-INPV-01",
+      "state": "mapped",
+      "title": "Testing for Reflected Cross Site Scripting",
+      "checks": [
+        "m3.xss-oracle"
+      ]
+    },
+    {
+      "id": "WSTG-INPV-02",
+      "state": "gap",
+      "title": "Testing for Stored Cross Site Scripting",
+      "checks": []
+    },
+    {
+      "id": "WSTG-INPV-03",
+      "state": "mapped",
+      "title": "Testing for HTTP Verb Tampering",
+      "checks": [
+        "m4.webdav-verbs"
+      ]
+    },
+    {
+      "id": "WSTG-INPV-04",
+      "state": "mapped",
+      "title": "Testing for HTTP Parameter Pollution",
+      "checks": [
+        "m3.hpp-oracle"
+      ]
+    },
+    {
+      "id": "WSTG-INPV-05",
+      "state": "mapped",
+      "title": "Testing for SQL Injection",
+      "checks": [
+        "m3.nosql-oracle",
+        "m3.sqli-oob",
+        "m3.sqli-oracle",
+        "m3.state-marker"
+      ]
+    },
+    {
+      "id": "WSTG-INPV-06",
+      "state": "mapped",
+      "title": "Testing for LDAP Injection",
+      "checks": [
+        "m3.ldap-injection"
+      ]
+    },
+    {
+      "id": "WSTG-INPV-07",
+      "state": "mapped",
+      "title": "Testing for XML Injection",
+      "checks": [
+        "m3.xxe-oob",
+        "m3.xxe-oracle"
+      ]
+    },
+    {
+      "id": "WSTG-INPV-08",
+      "state": "mapped",
+      "title": "Testing for SSI Injection",
+      "checks": [
+        "m3.ssti-oob",
+        "m3.ssti-oracle"
+      ]
+    },
+    {
+      "id": "WSTG-INPV-09",
+      "state": "mapped",
+      "title": "Testing for XPath Injection",
+      "checks": [
+        "m3.xpath-injection"
+      ]
+    },
+    {
+      "id": "WSTG-INPV-10",
+      "state": "mapped",
+      "title": "Testing for IMAP SMTP Injection",
+      "checks": [
+        "m3.email-header-injection"
+      ]
+    },
+    {
+      "id": "WSTG-INPV-11",
+      "state": "mapped",
+      "title": "Testing for Code Injection",
+      "checks": [
+        "m3.code-injection-oracle",
+        "m3.deser-audit",
+        "m3.proto-pollution"
+      ]
+    },
+    {
+      "id": "WSTG-INPV-12",
+      "state": "mapped",
+      "title": "Testing for Command Injection",
+      "checks": [
+        "m3.argument-injection",
+        "m3.cmdi-oob",
+        "m3.cmdi-oracle",
+        "m3.rce-echo"
+      ]
+    },
+    {
+      "id": "WSTG-INPV-13",
+      "state": "gap",
+      "title": "Testing for Format String Injection",
+      "checks": []
+    },
+    {
+      "id": "WSTG-INPV-14",
+      "state": "mapped",
+      "title": "Testing for Incubated Vulnerability",
+      "checks": [
+        "m3.cache-poison-audit"
+      ]
+    },
+    {
+      "id": "WSTG-INPV-15",
+      "state": "mapped",
+      "title": "Testing for HTTP Splitting Smuggling",
+      "checks": [
+        "m3.cache-poison-audit",
+        "m3.crlf-injection",
+        "m3.smuggling-oracle"
+      ]
+    },
+    {
+      "id": "WSTG-INPV-16",
+      "state": "gap",
+      "title": "Testing for HTTP Incoming Requests",
+      "checks": []
+    },
+    {
+      "id": "WSTG-INPV-17",
+      "state": "mapped",
+      "title": "Testing for Host Header Injection",
+      "checks": [
+        "m3.host-header-injection"
+      ]
+    },
+    {
+      "id": "WSTG-INPV-18",
+      "state": "mapped",
+      "title": "Testing for Server-side Template Injection",
+      "checks": [
+        "m3.ssti-oob",
+        "m3.ssti-oracle"
+      ]
+    },
+    {
+      "id": "WSTG-INPV-19",
+      "state": "mapped",
+      "title": "Testing for Server-Side Request Forgery",
+      "checks": [
+        "m3.ssrf-probe",
+        "m4.metadata-ssrf",
+        "m5.azure-mi-audit",
+        "m5.imds-ssrf",
+        "m6.mcp-oauth-metadata"
+      ]
+    },
+    {
+      "id": "WSTG-ERRH-01",
+      "state": "mapped",
+      "title": "Testing for Improper Error Handling",
+      "checks": [
+        "m4.verbose-errors"
+      ]
+    },
+    {
+      "id": "WSTG-ERRH-02",
+      "state": "mapped",
+      "title": "Testing for Stack Traces",
+      "checks": [
+        "m4.verbose-errors"
+      ]
+    },
+    {
+      "id": "WSTG-CRYP-01",
+      "state": "mapped",
+      "title": "Testing for Weak Transport Layer Security",
+      "checks": [
+        "m2.tls-deep-scan",
+        "m2.tls-mutual-auth",
+        "m4.tls-config-review"
+      ]
+    },
+    {
+      "id": "WSTG-CRYP-02",
+      "state": "gap",
+      "title": "Testing for Padding Oracle",
+      "checks": []
+    },
+    {
+      "id": "WSTG-CRYP-03",
+      "state": "mapped",
+      "title": "Testing for Sensitive Information Sent via Unencrypted Channels",
+      "checks": [
+        "m2.grpc-metadata-leak",
+        "m2.grpc-plaintext"
+      ]
+    },
+    {
+      "id": "WSTG-CRYP-04",
+      "state": "mapped",
+      "title": "Testing for Weak Encryption",
+      "checks": [
+        "m3.jwt-audit"
+      ]
+    },
+    {
+      "id": "WSTG-BUSL-01",
+      "state": "mapped",
+      "title": "Test Business Logic Data Validation",
+      "checks": [
+        "m3.business-logic-audit",
+        "m3.input-validation-audit"
+      ]
+    },
+    {
+      "id": "WSTG-BUSL-02",
+      "state": "mapped",
+      "title": "Test Ability to Forge Requests",
+      "checks": [
+        "m3.csrf-audit"
+      ]
+    },
+    {
+      "id": "WSTG-BUSL-03",
+      "state": "mapped",
+      "title": "Test Integrity Checks",
+      "checks": [
+        "m3.business-logic-audit"
+      ]
+    },
+    {
+      "id": "WSTG-BUSL-04",
+      "state": "mapped",
+      "title": "Test for Process Timing",
+      "checks": [
+        "m3.race-oracle"
+      ]
+    },
+    {
+      "id": "WSTG-BUSL-05",
+      "state": "mapped",
+      "title": "Test Number of Times a Function Can Be Used Limits",
+      "checks": [
+        "m3.race-oracle",
+        "m3.rate-limit-audit"
+      ]
+    },
+    {
+      "id": "WSTG-BUSL-06",
+      "state": "mapped",
+      "title": "Testing for the Circumvention of Work Flows",
+      "checks": [
+        "m3.business-logic-audit",
+        "m6.agentic-human-trust"
+      ]
+    },
+    {
+      "id": "WSTG-BUSL-07",
+      "state": "mapped",
+      "title": "Test Defenses Against Application Misuse",
+      "checks": [
+        "m3.rate-limit-audit"
+      ]
+    },
+    {
+      "id": "WSTG-BUSL-08",
+      "state": "mapped",
+      "title": "Test Upload of Unexpected File Types",
+      "checks": [
+        "m3.upload-audit"
+      ]
+    },
+    {
+      "id": "WSTG-BUSL-09",
+      "state": "mapped",
+      "title": "Test Upload of Malicious Files",
+      "checks": [
+        "m3.upload-audit"
+      ]
+    },
+    {
+      "id": "WSTG-CLNT-01",
+      "state": "mapped",
+      "title": "Testing for DOM-Based Cross Site Scripting",
+      "checks": [
+        "m3.dom-xss"
+      ]
+    },
+    {
+      "id": "WSTG-CLNT-02",
+      "state": "mapped",
+      "title": "Testing for JavaScript Execution",
+      "checks": [
+        "m3.client-secret-verify",
+        "m3.dom-xss"
+      ]
+    },
+    {
+      "id": "WSTG-CLNT-03",
+      "state": "mapped",
+      "title": "Testing for HTML Injection",
+      "checks": [
+        "m3.xss-oracle"
+      ]
+    },
+    {
+      "id": "WSTG-CLNT-04",
+      "state": "mapped",
+      "title": "Testing for Client-side URL Redirect",
+      "checks": [
+        "m3.open-redirect"
+      ]
+    },
+    {
+      "id": "WSTG-CLNT-05",
+      "state": "gap",
+      "title": "Testing for CSS Injection",
+      "checks": []
+    },
+    {
+      "id": "WSTG-CLNT-06",
+      "state": "mapped",
+      "title": "Testing for Client-side Resource Manipulation",
+      "checks": [
+        "m3.proto-pollution"
+      ]
+    },
+    {
+      "id": "WSTG-CLNT-07",
+      "state": "mapped",
+      "title": "Testing Cross Origin Resource Sharing",
+      "checks": [
+        "m3.cors-audit",
+        "m4.cors-config-review"
+      ]
+    },
+    {
+      "id": "WSTG-CLNT-08",
+      "state": "out_of_scope",
+      "title": "Testing for Cross Site Flashing",
+      "checks": [],
+      "reason": "Cross-site flashing targeted Adobe Flash, which reached end of life in 2020."
+    },
+    {
+      "id": "WSTG-CLNT-09",
+      "state": "mapped",
+      "title": "Testing for Clickjacking",
+      "checks": [
+        "m3.security-headers",
+        "m4.security-header-review"
+      ]
+    },
+    {
+      "id": "WSTG-CLNT-10",
+      "state": "mapped",
+      "title": "Testing WebSockets",
+      "checks": [
+        "m3.websocket-audit",
+        "m3.websocket-injection",
+        "m3.websocket-upgrade-auth"
+      ]
+    },
+    {
+      "id": "WSTG-CLNT-11",
+      "state": "gap",
+      "title": "Testing Web Messaging",
+      "checks": []
+    },
+    {
+      "id": "WSTG-CLNT-12",
+      "state": "mapped",
+      "title": "Testing Browser Storage",
+      "checks": [
+        "m4.client-secrets"
+      ]
+    },
+    {
+      "id": "WSTG-CLNT-13",
+      "state": "mapped",
+      "title": "Testing for Cross Site Script Inclusion",
+      "checks": [
+        "m3.cors-audit"
+      ]
+    },
+    {
+      "id": "WSTG-APIT-01",
+      "state": "mapped",
+      "title": "Testing GraphQL",
+      "checks": [
+        "m3.graphql-audit",
+        "m3.graphql-depth-abuse",
+        "m3.graphql-resolver-auth"
+      ]
+    }
+  ],
+  "cloud_providers": {
+    "version": "1.0",
+    "supported": [
+      "aws",
+      "azure",
+      "gcp",
+      "digitalocean"
+    ],
+    "not_supported": [
+      "oci",
+      "alibaba"
+    ],
+    "supported_count": 4,
+    "not_supported_count": 2,
+    "total": 6,
+    "items": [
+      {
+        "provider": "aws",
+        "display": "Amazon Web Services",
+        "state": "supported",
+        "checks": [
+          "m5.bucket-enumerator",
+          "m5.iam-review",
+          "m5.cloud-posture",
+          "m5.leaked-cloud-keys"
+        ],
+        "operations": [],
+        "reason": "Public storage, IAM policy, a declared read-only config snapshot and credential artifacts are covered by the existing read-only checks."
+      },
+      {
+        "provider": "azure",
+        "display": "Microsoft Azure",
+        "state": "supported",
+        "checks": [
+          "m5.bucket-enumerator",
+          "m5.azure-mi-audit",
+          "m5.cloud-posture"
+        ],
+        "operations": [],
+        "reason": "Blob exposure, managed-identity metadata and a declared read-only config snapshot are covered by the existing read-only checks."
+      },
+      {
+        "provider": "gcp",
+        "display": "Google Cloud Platform",
+        "state": "supported",
+        "checks": [
+          "m5.bucket-enumerator",
+          "m5.gcp-sa-keys",
+          "m5.cloud-posture"
+        ],
+        "operations": [],
+        "reason": "Storage exposure, service-account key material and a declared read-only config snapshot are covered by the existing read-only checks."
+      },
+      {
+        "provider": "digitalocean",
+        "display": "DigitalOcean",
+        "state": "supported",
+        "checks": [
+          "m5.do-posture"
+        ],
+        "operations": [
+          {
+            "method": "GET",
+            "path": "/v2/droplets"
+          },
+          {
+            "method": "GET",
+            "path": "/v2/databases"
+          },
+          {
+            "method": "GET",
+            "path": "/v2/load_balancers"
+          },
+          {
+            "method": "GET",
+            "path": "/v2/firewalls"
+          }
+        ],
+        "reason": "A read-only posture check reads the account's droplets, managed databases, load balancers and firewalls with a vault-supplied cloud-token credential. GET only."
+      },
+      {
+        "provider": "oci",
+        "display": "Oracle Cloud Infrastructure",
+        "state": "not_supported",
+        "checks": [],
+        "operations": [],
+        "reason": "OCI signs every request with RSA-SHA256 over a tenancy-specific key fingerprint and an HTTP-dated canonical string. A partial signing implementation would misreport posture, so this release records the gap rather than a token check."
+      },
+      {
+        "provider": "alibaba",
+        "display": "Alibaba Cloud",
+        "state": "not_supported",
+        "checks": [],
+        "operations": [],
+        "reason": "Alibaba Cloud OpenAPI (RPC style) requires HMAC-SHA1 over a canonicalised, sorted parameter string and per-API version metadata. A guessed scheme would produce false clean results, so this release records the gap explicitly."
+      }
+    ]
+  },
+  "deprecations": {
+    "lifecycle_version": "1.0",
+    "current_version": "0.1.0",
+    "removal_horizon_minors": 2,
+    "deprecated": []
+  }
+}

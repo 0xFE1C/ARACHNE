@@ -89,7 +89,7 @@ def test_the_token_file_is_versioned_and_one_token_per_line() -> None:
     """Versioned, and shaped so a change is a reviewable diff (REQ-UIX-004, last criterion)."""
     data = tk.load_tokens()
     assert data["version"]
-    assert data["spec"].startswith(".spec/06-ui-ux.md")
+    assert data["spec"].startswith("REQ-UIX-004")
     text = tk.tokens_path().read_text(encoding="utf-8")
     token_lines = [line for line in text.splitlines() if re.match(r'^\s*"--', line)]
     assert token_lines, "the token file must declare custom properties"

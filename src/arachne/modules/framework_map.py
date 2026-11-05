@@ -6,7 +6,7 @@ a **pinned** framework snapshot vendored next to this module
 fetched, so mapping validation is offline and reproducible and a scan never acquires a
 network dependency for a metadata question (risk ``A-02``).
 
-The controlled vocabulary (``.spec/03-requirements.md`` §4.1):
+The controlled vocabulary (REQ-DET-002):
 
 ===============  ==========================================  ==================================
 prefix           id form                                     pinned artefact

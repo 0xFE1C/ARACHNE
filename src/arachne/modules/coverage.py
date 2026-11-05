@@ -514,9 +514,12 @@ LEDGER_VERSION = "1.0"
 #: The registry catalogue version the ledger was generated from (`ModuleRegistry.catalog`).
 REGISTRY_VERSION = "registry-1.0"
 
-#: Committed artefacts, relative to the repository root (`.spec/ledgers/`, architecture §3).
-LEDGER_JSON = ".spec/ledgers/coverage-ledger.json"
-LEDGER_MARKDOWN = ".spec/ledgers/coverage-ledger.md"
+#: Committed artefacts, relative to the repository root, beside the generated coverage matrix a
+#: reviewer reads them with. Repository evidence rather than package data: CI regenerates them
+#: and compares byte for byte (REQ-DET-001), so they live in the tree a reviewer reads, not in
+#: the wheel a user installs.
+LEDGER_JSON = "coverage-ledger.json"
+LEDGER_MARKDOWN = "coverage-ledger.md"
 
 _LAST_VERIFIED_NOTE = (
     "last_verified is the date the corpus was last exercised by the test suite: the ledger is "

@@ -113,7 +113,9 @@ def render_css(tokens: dict[str, Any] | None = None) -> str:
         f"   Source: src/arachne/templates/web/tokens.json ({meta[0]} v{meta[1]})",
         "   Regenerate: python -m arachne.api.tokens --write",
         "   Verify:     python -m arachne.api.tokens --check",
-        f"   Design tokens: {data['spec']} (REQ-UIX-004). */",
+        # `spec` carries the requirement id and the design specification's own version, so the
+        # header states it once rather than repeating the requirement beside it.
+        f"   Design tokens: {data['spec']}. */",
         "",
         ":root {",
     ]

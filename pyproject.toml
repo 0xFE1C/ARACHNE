@@ -48,6 +48,13 @@ dev = [
   "jsonschema>=4.21",
   # Provider tests (S9): cassettes record/replay the real HTTP path of the AI adapters.
   "vcrpy>=6.0",
+  # The release-surface test builds the wheel and the sdist and reads their contents
+  # (`tests/doc/test_release_surface.py`, REQ-DOC-006). `build` is the front end; `hatchling`
+  # is the backend `[build-system]` already names, and it is listed here so the test can run
+  # `python -m build --no-isolation` — the distribution a developer inspects is built by the
+  # same backend a release is, with no PyPI fetch in the middle of the suite.
+  "build>=1.2",
+  "hatchling>=1.25",
 ]
 # Dependency hygiene : installed in a dedicated CI step so a
 # transient advisory never breaks the primary test job, and release-blocking on a
@@ -91,7 +98,14 @@ Security = "https://github.com/0xFE1C/ARACHNE/security/advisories/new"
 packages = ["src/arachne"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src", "tests", "migrations", "README.md", "alembic.ini"]
+# `only-include`, not `include`: hatchling's `include` *adds* to its own defaults, so the
+# surface it names is a floor, not a ceiling. Measured before this was written — with
+# `include` the sdist also carried every `README.md` in the tree (including the one inside
+# the specification directory), both `docs/` README files, each nested `src/` directory under
+# `examples/` and `clients/`, and the build-time scaffolding (REQ-DOC-006). What a source
+# distribution needs is exactly what running the suite from source needs, stated positively.
+# Patterns are anchored to the project root so a nested `src/` cannot match them.
+only-include = ["/src", "/tests", "/migrations", "/README.md", "/alembic.ini"]
 
 # ---------------------------------------------------------------- ruff (lint)
 [tool.ruff]
@@ -159,8 +173,8 @@ ignore = [
 # noqa on each of the runners' branches would add noise, not information.
 "src/arachne/fix/gitops.py" = ["S603", "S607"]
 # The mutation gate (REQ-QUAL-008) runs the test suite in a subprocess, once per mutant, with
-# the interpreter by name (`python -m pytest` — the same shape tools/wp_check.py uses to run
-# the quality gates). The argv is a fixed list of literals and nothing is spliced into it: the
+# the interpreter by name (`python -m pytest`, the same shape the CI jobs use). The argv is a
+# fixed list of literals and nothing is spliced into it: the
 # mutant's identity and its test scope travel in the environment. Resolving the interpreter
 # from PATH is the point — it is the operator's interpreter — and `preflight` refuses to start
 # when that interpreter cannot import this project, so a wrong PATH is one clear error rather
@@ -172,11 +186,6 @@ ignore = [
 # than a pinned absolute path, because the gate has to answer the same question an operator
 # would ask. The argv is a fixed list of literals with no shell.
 "src/arachne/tools/doccheck.py" = ["S607"]
-# The handoff gate asks the checkout's own `git` for commits and diffs and runs the quality
-# gates (`ruff`, `mypy`, `python -m pytest`) in fresh processes. Each argv is a literal list
-# and each program name is a literal — the same "operator's own tools" reasoning as
-# doccheck.py — so the partial-path rule is the wrong rule here.
-"src/arachne/tools/wp_check.py" = ["S607"]
 # The quickstart runner executes the commands `docs/getting-started.md` declares, in a shell,
 # because "the page runs verbatim" is the whole point of REQ-DOC-005. The shell and the
 # `arachne` it verifies are the operator's — resolved from PATH, with the virtualenv the guide

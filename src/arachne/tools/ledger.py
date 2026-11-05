@@ -4,7 +4,7 @@
 same generator, mirroring :mod:`arachne.tools.report_schema` and :mod:`arachne.tools.counts`:
 
     python -m arachne.tools.ledger --check    # exit 1 (naming the check id) if the ledger drifts
-    python -m arachne.tools.ledger --write    # regenerate .spec/ledgers/coverage-ledger.{json,md}
+    python -m arachne.tools.ledger --write    # regenerate coverage-ledger.{json,md}
     python -m arachne.tools.ledger            # print the JSON ledger to stdout
 
 The ledger is a pure function of ``ModuleRegistry`` plus one committed date, so ``--check``

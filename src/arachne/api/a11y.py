@@ -1,7 +1,7 @@
 """The accessibility audit: every screen, every state, against WCAG 2.2 AA (REQ-UIX-007).
 
-``.spec/06-ui-ux.md`` §8.1 asks for "Axe (or equivalent) … over every screen in CI", and
-§8.2 lists the success criteria automation cannot reach. This module is the automated half, and
+REQ-UIX-007 asks for "Axe (or equivalent) … over every screen in CI", and names the success
+criteria automation cannot reach. This module is the automated half, and
 it is deliberately a **DOM audit with an explicit rule table** rather than a browser: the test
 suite runs on a machine with no browser, and a gate that can only run where a browser is
 installed is a gate that gets skipped. ``python -m arachne.api.a11y`` renders all 14 screens in

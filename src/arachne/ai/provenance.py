@@ -2,7 +2,7 @@
 
 The question a regulated customer has to be able to answer is not "did AI help?" but *"which
 provider received which bytes, what did the model say, and what did that change about the
-finding?"* (``.spec/00-research/ai-era-research.md`` §8). Before WP-15 that was spread across
+finding?"* (REQ-AGENT-008). Before WP-15 that was spread across
 ``analysis_log`` columns (engine, model, template version, prompt hash), the ``ai`` payload and
 the audit trail — answerable, but only by joining three things and reading logs. This module is
 the single value object that answers it from one row.

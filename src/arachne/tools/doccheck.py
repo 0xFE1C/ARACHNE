@@ -115,6 +115,8 @@ SHIPPED_ROOT_FILES: Final[frozenset[str]] = frozenset(
         "README.md",
         "SECURITY.md",
         "alembic.ini",
+        "coverage-ledger.json",
+        "coverage-ledger.md",
         "coverage_matrix.md",
         "pyproject.toml",
         ".env.example",

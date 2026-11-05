@@ -67,8 +67,8 @@ LADDER_CHECKS: tuple[str, ...] = (
 #: it sits astride the cap and is load-marginal. The marker records the real budget for a scan
 #: that is legitimately this long; it does not disable the timeout. WP-10 (REQ-DET-013/014)
 #: touches nothing on this file's path. The underlying decision — raise the default cap or make
-#: the demo scan cheaper — belongs to REQ-QUAL-007/013's owner and is recorded in ``STATE.md``
-#: section 8.
+#: the demo scan cheaper — belongs to REQ-QUAL-007's owner, with the measurements above as its
+#: record.
 pytestmark = pytest.mark.timeout(300)  # reviewed exception: the ladder scan is genuinely ~60 s
 
 

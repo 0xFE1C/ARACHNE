@@ -2,7 +2,7 @@
    Source: src/arachne/templates/web/tokens.json (arachne-ui v1.0.0)
    Regenerate: python -m arachne.api.tokens --write
    Verify:     python -m arachne.api.tokens --check
-   Design tokens: .spec/06-ui-ux.md §3 (SPEC-UIX-001 v1.0.0) (REQ-UIX-004). */
+   Design tokens: REQ-UIX-004 (SPEC-UIX-001 v1.0.0). */
 
 :root {
   --font-family-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;

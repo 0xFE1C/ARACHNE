@@ -2,7 +2,7 @@
 
 One operator verb, and it exists because of one sentence in the requirement: a regulated
 customer has to be able to answer *"which provider received how many tokens for this scan, and
-what did the model decide?"* (``.spec/00-research/ai-era-research.md`` §8). The answer is in
+what did the model decide?"* (REQ-AGENT-008). The answer is in
 ``analysis_log.provenance``, one record per analysis row; this command aggregates those records
 per scan or per project and writes the document.
 

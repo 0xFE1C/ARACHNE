@@ -1,4 +1,4 @@
-/* ARACHNE triage workspace — the keyboard layer (REQ-UIX-006, .spec/06-ui-ux.md §4.3).
+/* ARACHNE triage workspace — the keyboard layer (REQ-UIX-006).
  *
  * Two layers, deliberately separated:
  *

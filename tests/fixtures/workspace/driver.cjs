@@ -1,6 +1,6 @@
 // The driver `tests/integration/test_ui_triage_usability.py` runs in node.
 //
-// It loads the *shipped* keyboard model (`.spec/06-ui-ux.md` §4.3's `workspace.js`) with
+// It loads the *shipped* keyboard model (REQ-UIX-006's `workspace.js`) with
 // `require`, presses documented keys on it, performs the HTTP requests those keys produce
 // against a real server, and prints one JSON line of observations on stdout. Nothing here decides
 // what is correct: the assertions live in the Python test, and the shortcut table it is checked

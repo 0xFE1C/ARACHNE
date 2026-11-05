@@ -1,9 +1,9 @@
 """The view-state matrix: 14 screens x 5 states, rendered and asserted (REQ-UIX-005).
 
-``.spec/06-ui-ux.md`` §5 is a table, and a table in a document is a claim that nothing checks.
+The view-state matrix is a table, and a table in a document is a claim that nothing checks.
 The checks here are:
 
-* the matrix in code (``arachne.api.screens``) matches §5 row for row — a screen cannot be
+* the matrix in code (``arachne.api.screens``) matches it row for row — a screen cannot be
   dropped, and a state cannot be quietly marked "n/a";
 * every screen's template renders **each applicable state** without raising, and emits the
   ``data-state`` marker for that state, so a state cannot be "implemented" by a comment;

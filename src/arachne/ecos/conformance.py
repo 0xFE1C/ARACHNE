@@ -1,7 +1,7 @@
 """The conformance kit: what a candidate check has to prove before it can be merged (REQ-ECOS-007).
 
-``.spec/05-detection-program.md`` §2.2 lists seven properties every check must have and says
-each is "asserted by the conformance kit". This module is that kit. It reads a candidate's
+The check contract (REQ-ECOS-007) lists seven properties every check must have and says each is
+"asserted by the conformance kit". This module is that kit. It reads a candidate's
 conformance manifest (:mod:`arachne.ecos.sdk`), loads the check, and returns a report of
 blocking and advisory defects — the four classes the requirement names, each with a message
 that says what to do:
@@ -139,8 +139,8 @@ def verification_relevant(evidence: Evidence) -> bool:
     Two conditions, both necessary: the *kind* must be one a human can follow (a captured
     exchange, a certificate, an artifact — not a note), and the payload must carry something
     beyond "something answered" — a body, headers, a banner, a path, a digest. A status code
-    alone fails the second condition, which is exactly the rejection example in
-    ``.spec/05-detection-program.md`` §7.
+    alone fails the second condition, which is exactly the rejection example in the check
+    contract.
     """
     if evidence.kind not in VERIFICATION_EVIDENCE_KINDS:
         return False
@@ -762,7 +762,7 @@ def _determinism_defects(
 
     Evidence timestamps are *not* compared — a captured-at clock is allowed to move. What must
     not move is the verdict: the same input has to produce the same status, title and detail
-    (``.spec/05-detection-program.md`` §2.2 rule 3: non-determinism is a defect, not "AI").
+    (the determinism rule: non-determinism is a defect, not "AI").
     """
     try:
         again = run_fixture(check, fixture)

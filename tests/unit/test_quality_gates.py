@@ -142,7 +142,7 @@ def test_the_suite_budget_fails_a_run_that_exceeds_it() -> None:
             "python",
             "-m",
             "pytest",
-            "tests/unit/test_preamble_check.py",
+            "tests/unit/test_design_tokens.py",
             "-q",
             "-p",
             "no:cacheprovider",
