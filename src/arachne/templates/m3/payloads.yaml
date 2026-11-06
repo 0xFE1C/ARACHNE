@@ -16,8 +16,9 @@
 # being handed a traversal payload).
 
 # 1.0 (S6/S10/S15) the original families; 1.1 (WP-08) the four CWE Top 25 emitters and the
-# five missing injection families (REQ-DET-004, REQ-DET-009).
-version: "1.1"
+# five missing injection families (REQ-DET-004, REQ-DET-009); 1.2 (WP-25) the WordPress
+# ecosystem surface inventory (REQ-DET-018).
+version: "1.2"
 
 # --------------------------------------------------------------------------- parameter hints
 # Which parameter names a family is tried against. A family is only attempted where its hint
@@ -635,3 +636,105 @@ input_validation:
   out_of_domain_values: ["-17", "999999999999999999999999"]
   type_probe: "1ar9x"
   error_markers: ["invalid", "must be", "out of range", "not allowed", "rejected", "error", "negative", "forbidden"]
+
+# --------------------------------------------------------------------------- WordPress (WP-25, REQ-DET-018)
+# The WordPress ecosystem surface. Every entry here is a **well-known path** a stock
+# installation publishes, not a probe payload: the family is read-only inventory and
+# configuration inspection, so an operator narrowing or extending the paths narrows or
+# extends the exposed-surface inventory without touching the checks. Nothing in this section
+# is a payload, a credential or a state change — every request the family makes is a GET
+# (one OPTIONS for the cron endpoint, which is safe by HTTP semantics precisely so the probe
+# cannot trigger the scheduled job it reports as reachable).
+wordpress:
+  # wp-config.php: the source file itself, and the backup/spill names a text editor, a
+  # deployment rollback or a backup plugin leaves beside it. A hardened install serves none
+  # of them. The markers are the *identifiers* the configuration declares; the check reports
+  # those names, never a value.
+  config_backup_paths:
+    [
+      "/wp-config.php.bak",
+      "/wp-config.php~",
+      "/wp-config.php.save",
+      "/wp-config.php.old",
+      "/wp-config.php.orig",
+      "/wp-config.php.txt",
+      "/wp-config.php.bkp",
+      "/wp-config.bak",
+      "/wp-config.php.disabled",
+    ]
+  config_source_paths: ["/wp-config.php", "/wp-config.txt"]
+  config_markers: ["DB_NAME", "DB_PASSWORD", "AUTH_KEY", "SECURE_AUTH_KEY", "$table_prefix"]
+  source_markers: ["<?php", "define("]
+  # The XML-RPC endpoint. WordPress answers a GET with its "accepts POST requests only"
+  # notice — the endpoint's own advertisement, which is why detecting it never requires
+  # sending the POST body that would invoke a method. The RSD document is the discovery
+  # half: it names the endpoint and the blog.
+  xmlrpc_paths: ["/xmlrpc.php"]
+  xmlrpc_marker: "XML-RPC server accepts POST requests only."
+  xmlrpc_rsd_path: "/xmlrpc.php?rsd"
+  rsd_markers: ["<rsd", "api name=", "xmlrpc.php"]
+  # The REST API. `/wp-json/` publishes the route index; `?rest_route=` reaches the same
+  # handlers when pretty permalinks are off, which a route that is only blocked by a rewrite
+  # rule will miss. The user routes are the login-name enumeration; the settings and
+  # application-password routes must answer 401 to an anonymous caller.
+  rest_index_paths: ["/wp-json/"]
+  rest_index_markers: ["namespaces", "routes"]
+  rest_users_paths: ["/wp-json/wp/v2/users"]
+  rest_route_param_paths: ["/?rest_route=/wp/v2/users"]
+  rest_user_paths: ["/wp-json/wp/v2/users/1"]
+  rest_settings_paths: ["/wp-json/wp/v2/settings"]
+  rest_settings_keys: ["title", "description", "url", "email", "timezone", "posts_per_page"]
+  rest_app_password_paths: ["/wp-json/wp/v2/users/1/application-passwords"]
+  # Directory listings. The listing signature is the server's own index page, which is a
+  # rendering fact and not a status code.
+  uploads_paths: ["/wp-content/uploads/"]
+  plugins_paths: ["/wp-content/plugins/"]
+  themes_paths: ["/wp-content/themes/"]
+  listing_markers: ["index of /", "directory listing for", "<a href=\""]
+  # Plugin and theme enumeration: the readiness artefacts a plugin or theme ships, probed by
+  # the bounded slug lists below. An operator extends the lists; the template is the path
+  # shape. A readme's `Stable tag:` and a stylesheet's `Version:` are the disclosure.
+  plugin_readme_template: "/wp-content/plugins/{slug}/readme.txt"
+  plugin_slugs:
+    [
+      "akismet",
+      "contact-form-7",
+      "woocommerce",
+      "wordpress-seo",
+      "elementor",
+      "jetpack",
+      "classic-editor",
+    ]
+  theme_stylesheet_template: "/wp-content/themes/{slug}/style.css"
+  theme_slugs:
+    ["twentytwentyfour", "twentytwentythree", "twentytwentyone", "astra", "generatepress"]
+  readme_markers: ["stable tag:", "contributors:", "requires at least:"]
+  stylesheet_markers: ["theme name:", "version:", "text domain:"]
+  # Version disclosure. `/readme.html` carries the core version; enqueued assets carry it a
+  # second time in their `?ver=` query. Both are fingerprints, which is exactly the class
+  # FP-3 says is never `high` on its own.
+  readme_paths: ["/readme.html", "/readme.txt"]
+  asset_version_regex: "(?:wp-includes|wp-content)/[^\\s\"'<>]*\\?ver=([0-9][\\w.\\-]*)"
+  # Debug log, installer and upgrade residue, the unauthenticated AJAX entry point, the cron
+  # endpoint and the author archive.
+  debug_log_paths: ["/wp-content/debug.log"]
+  debug_log_markers: ["php notice:", "php warning:", "php fatal error", "stack trace:"]
+  installer_paths: ["/wp-admin/install.php"]
+  installer_markers: ["already installed", "installation", "wp-admin/install.php"]
+  upgrade_paths: ["/wp-admin/upgrade.php"]
+  upgrade_markers: ["database update required", "update wordpress database", "wp-admin/upgrade.php"]
+  admin_ajax_paths: ["/wp-admin/admin-ajax.php"]
+  admin_ajax_keys: ["actions", "nopriv"]
+  cron_paths: ["/wp-cron.php"]
+  # An author archive answers `/?author=1` with a redirect to the author's login-name slug.
+  # The probe is the numeric id, never a name.
+  author_probe_paths: ["/?author=1", "/?author=2"]
+  author_path_regex: "/author/[^/?#]+"
+  user_sitemap_paths: ["/wp-sitemap-users-1.xml", "/wp-sitemap.xml"]
+  user_sitemap_markers: ["/author/", "<sitemapindex", "<urlset"]
+  # The registration and application-password surfaces: both belong to the authentication
+  # story, and both are configuration decisions a hardened install has already made.
+  registration_paths: ["/wp-login.php?action=register"]
+  registration_markers: ["id=\"registerform\"", "action=register", "user_login"]
+  app_password_paths: ["/wp-admin/authorize-application.php"]
+  app_password_markers: ["application password", "authorize-application", "application_name"]

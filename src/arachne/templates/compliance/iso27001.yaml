@@ -203,6 +203,7 @@ controls:
     checks:
       - m1.bucket-hunt
       - m3.api-surface
+      - m3.wp-config-backup
       - m4.api-doc-exposure
       - m4.backup-file-hunt
       - m4.bucket-exposure

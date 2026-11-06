@@ -95,8 +95,9 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # browser is an optional extra and an operator opt-in -> 173. WP-12 adds the native image
     # scanner (REQ-DET-016) and the DigitalOcean read-only posture check (REQ-DET-017), both
     # default-on L1 checks with an active request path -> 175. WP-20 adds the SSH
-    # credential check (REQ-CREDS-006), opt-in like the SMB one -> 176.
-    assert len(registry.checks()) == 176
+    # credential check (REQ-CREDS-006), opt-in like the SMB one -> 176. WP-25 adds the
+    # WordPress ecosystem family (REQ-DET-018), all default-on read-only L1 probes -> 202.
+    assert len(registry.checks()) == 202
     # M1's code-secret-mining, M2's SNMP and ICS checks, M4's metadata-ssrf and
     # default-credentials checks, M3's ssrf-probe, M5's imds-ssrf / azure-mi-audit and
     # M6's deception-listeners / ad-attack-path, S13's m1.bucket-hunt, S15's six
@@ -111,8 +112,10 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # active count rises with the total. WP-11's m3.dom-xss is active too (it navigates with
     # a marker), and WP-12's m5.image-scan and m5.do-posture both request the target, so the
     # count rises by three across those two work packages.
-    # WP-20's m2.ssh-auth is active as well (it authenticates) -> 99.
-    assert registry.totals()["active_checks"] == 99
+    # WP-20's m2.ssh-auth is active as well (it authenticates) -> 99. WP-25's
+    # m3.wp-cron-surface is active because it is the family's one non-GET interaction (the
+    # OPTIONS reachability probe that cannot trigger the job it reports) -> 100.
+    assert registry.totals()["active_checks"] == 100
     # S15: the six L2+ declarations are exactly the proof ladder's opt-in rows. S29 adds one
     # more: m3.client-secret-verify, the L2 dynamic verification of a client-side credential.
     assert registry.totals()["proof_l2plus"] == 7
@@ -234,8 +237,8 @@ def test_a_plugin_extends_an_existing_module(monkeypatch) -> None:  # type: igno
     )
     registry = ModuleRegistry.discover()
     assert registry.module_ids() == ("M1", "M2", "M3", "M4", "M5", "M6")
-    # The shipped set (176 at WP-20) plus the plugin's one extra check.
-    assert len(registry.checks()) == 177
+    # The shipped set (202 at WP-25) plus the plugin's one extra check.
+    assert len(registry.checks()) == 203
     assert registry.group("M1").origin == "builtin+extra"  # type: ignore[union-attr]
 
 

@@ -29,7 +29,7 @@
 # disagree, so a plan can never describe a check differently from the code that runs it.
 # S4 adds the M2 rows the registry implements; M3-M6 below are still *planned* only and the
 # plan marks them `implemented: false`.
-catalog_version: "1.12"
+catalog_version: "1.13"
 checks:
   # ---------------------------------------------------------------- M1 recon & attack surface
   # Implemented in S3 (arachne/modules/m1/). The rows below are generated from the check
@@ -710,6 +710,297 @@ checks:
     - url
     estimated_requests: 10
     requires_active_checks: true
+
+  # ---------------------------------------------------------------- WP-25 WordPress ecosystem
+  # The CMS family A surface (REQ-DET-018): every row is generated from the check metadata
+  # below, so the planner describes exactly what the registry runs.
+  - module: M3
+    name: wp-config-backup
+    version: '1.0'
+    title: 'WordPress configuration backup file exposed'
+    description: 'Probes the backup and editor-spill names WordPress deployments leave beside wp-config.php (.bak, ~, .save, .old, .orig, .txt) and reports one that is served as configuration source. The finding names the configuration identifiers the file declares (DB_NAME, AUTH_KEY, $table_prefix), never a value. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-530
+    target_kinds:
+    - url
+    estimated_requests: 10
+  - module: M3
+    name: wp-config-source
+    version: '1.0'
+    title: 'WordPress configuration served as source'
+    description: 'Reports when /wp-config.php (or a .txt copy of it) answers with the PHP source of the configuration instead of executing it: the response carries the PHP open tag and the configuration''s own define() calls. A correctly served wp-config.php outputs nothing, so the marker is the source itself. Read-only GET.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-540
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: wp-xmlrpc-surface
+    version: '1.0'
+    title: 'WordPress XML-RPC endpoint published'
+    description: 'Reports when /xmlrpc.php answers a GET with WordPress''s own ''XML-RPC server accepts POST requests only'' notice, i.e. the endpoint is served rather than blocked. The notice is the endpoint''s own advertisement, which is why the check never sends the POST body that would invoke a method. Read-only GET probe.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: wp-xmlrpc-rsd
+    version: '1.0'
+    title: 'WordPress RSD discovery document served'
+    description: 'Requests /xmlrpc.php?rsd and reports the Really Simple Discovery document, which publishes the blog''s API endpoint and name to any client. The finding is the discovery document itself, not the endpoint. Read-only GET probe.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: wp-rest-index
+    version: '1.0'
+    title: 'WordPress REST API index published'
+    description: 'Reports when /wp-json/ answers an anonymous GET with the REST route index: the namespaces and route list the installation exposes. A hardened installation that disables the REST API for unauthenticated callers answers 401 instead. Read-only GET probe.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: wp-rest-users
+    version: '1.0'
+    title: 'WordPress REST user route enumerates accounts'
+    description: 'Reports when the REST user collection answers an anonymous GET with one or more user objects carrying a slug (the login name). Probes both the pretty-permalink route and its ?rest_route= form. Read-only GET probes.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: wp-rest-user-record
+    version: '1.0'
+    title: 'WordPress REST single-user record readable'
+    description: 'Reports when /wp-json/wp/v2/users/<id> answers an anonymous GET with a user object: the record names the account''s login slug and display name. Read-only GET probe.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: wp-rest-route-param
+    version: '1.0'
+    title: 'WordPress REST user route reachable via rest_route'
+    description: 'Reports when the REST user collection is reachable through the ?rest_route= query form. A deployment that blocks the route with a pretty-permalink rewrite rule leaves this form answering, which is why it is probed separately. Read-only GET probe.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: wp-rest-settings-unauth
+    version: '1.0'
+    title: 'WordPress REST settings route readable without authorization'
+    description: 'Reports when /wp-json/wp/v2/settings answers an anonymous GET with the installation''s settings document. The route requires an administrator context: a 401/403 is the correct answer and is reported clean. Read-only GET probe.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-862
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: wp-uploads-listing
+    version: '1.0'
+    title: 'WordPress uploads directory indexed'
+    description: 'Reports when /wp-content/uploads/ answers with the web server''s directory index, publishing every uploaded file name. The listing is recognised by the server''s own index rendering, not by a status code. Read-only GET probe.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-548
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: wp-plugins-listing
+    version: '1.0'
+    title: 'WordPress plugins directory indexed'
+    description: 'Reports when /wp-content/plugins/ answers with the web server''s directory index, publishing the full plugin inventory and every installed version''s directory. Read-only GET probe.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-548
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: wp-themes-listing
+    version: '1.0'
+    title: 'WordPress themes directory indexed'
+    description: 'Reports when /wp-content/themes/ answers with the web server''s directory index, publishing the installed theme inventory. Read-only GET probe.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-548
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: wp-plugin-readme
+    version: '1.0'
+    title: 'WordPress plugin versions disclosed by readme'
+    description: 'Probes the bounded plugin slug list for each plugin''s readme.txt and reports the ones served, with the version their ''Stable tag:'' line states. A plugin inventory with versions is what turns a core CVE list into a target list. Read-only GET probes; the slug list is the operator''s (payload corpus).'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 8
+  - module: M3
+    name: wp-theme-stylesheet
+    version: '1.0'
+    title: 'WordPress theme versions disclosed by stylesheet'
+    description: 'Probes the bounded theme slug list for each theme''s style.css and reports the ones served, with the version their header states. The stylesheet header is a theme''s identity and version in a file every theme ships. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 6
+  - module: M3
+    name: wp-readme-version
+    version: '1.0'
+    title: 'WordPress core version disclosed by readme'
+    description: 'Reports when /readme.html or /readme.txt publishes the WordPress core version. A version match is a signal, never a severity on its own (FP-3): the check reports the fingerprint and leaves the CVE correlation to the intelligence stage. Read-only GET probe.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: wp-debug-log
+    version: '1.0'
+    title: 'WordPress debug log exposed'
+    description: 'Reports when /wp-content/debug.log is served, recognised by its own PHP notice and warning lines. A debug log written with WP_DEBUG_LOG carries file paths, query fragments and sometimes credentials. Read-only GET probe.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-532
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: wp-installer-residue
+    version: '1.0'
+    title: 'WordPress installer reachable'
+    description: 'Reports when /wp-admin/install.php is served to an unauthenticated client: the installation entry point answers with its own installed/reinstall rendering instead of being removed or blocked. Read-only GET probe.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: wp-upgrade-residue
+    version: '1.0'
+    title: 'WordPress upgrade script reachable'
+    description: 'Reports when /wp-admin/upgrade.php is served to an unauthenticated client and answers with its database-update rendering. The upgrade entry point belongs to the installation window, not to a running site. Read-only GET probe.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: wp-admin-ajax-surface
+    version: '1.0'
+    title: 'WordPress AJAX entry point answers anonymous clients'
+    description: 'Reports when /wp-admin/admin-ajax.php answers an unauthenticated GET with a 2xx document naming its registered actions, i.e. the endpoint''s nopriv (anonymous) action surface is published. A blocked entry point answers 400/403. Read-only GET probe.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: wp-cron-surface
+    version: '1.0'
+    title: 'WordPress cron endpoint publicly reachable'
+    description: 'Reports when /wp-cron.php is reachable by an unauthenticated client, using an OPTIONS request: OPTIONS is safe by HTTP semantics (RFC 9110 §9.3.7), so the probe reports the endpoint''s reachability without issuing the GET that would run a due scheduled job. A deployment that disables the endpoint or blocks it at the edge answers 403/404. Read-only OPTIONS probe — and, because it is the family''s one non-GET interaction, gated behind the active-checks opt-in exactly like m4.webdav-verbs (F-01-09).'
+    research_ref: ch03#35
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M3
+    name: wp-author-enumeration
+    version: '1.0'
+    title: 'WordPress author archive leaks login names'
+    description: 'Requests /?author=<id> and reports a redirect to the author''s /author/<slug>/ archive, where the slug is the account''s login name. The probe is the numeric id, never a guessed name. A deployment with author archives disabled answers 200 or 404 instead of redirecting. Read-only GET probes.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: wp-user-sitemap
+    version: '1.0'
+    title: 'WordPress user sitemap enumerates author archives'
+    description: 'Reports when the user sitemap (/wp-sitemap-users-1.xml) is served, which lists every author archive URL — i.e. every login-name slug — in one document. Read-only GET probe.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: wp-registration-open
+    version: '1.0'
+    title: 'WordPress self-registration enabled'
+    description: 'Reports when /wp-login.php?action=register serves the registration form, i.e. the installation accepts self-registration. A hardened installation answers the login form with registration disabled. Read-only GET probe.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: wp-app-password-surface
+    version: '1.0'
+    title: 'WordPress application-password page reachable without a session'
+    description: 'Reports when /wp-admin/authorize-application.php answers an anonymous client with the application-password authorization page instead of redirecting to the login screen. The page is the entry point that mints credentials, so it must sit behind a session. Read-only GET probe.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: wp-rest-app-passwords
+    version: '1.0'
+    title: 'WordPress REST application-password route readable anonymously'
+    description: 'Reports when /wp-json/wp/v2/users/<id>/application-passwords answers an anonymous GET with an application-password record. The route requires the account''s own authorization: 401 is the correct answer and is reported clean. Read-only GET probe.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-862
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: wp-asset-version
+    version: '1.0'
+    title: 'WordPress asset URLs disclose component versions'
+    description: 'Reads the pages the crawl already fetched and reports WordPress core and component asset URLs that carry a ?ver= version query (wp-includes/...?ver=6.4.2). A hardened installation strips the query. This check issues no request of its own; a version is a fingerprint and is never a severity on its own (FP-3).'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 0
 
   # ---------------------------------------------------------------- M4 misconfiguration & exposure
   - module: M4

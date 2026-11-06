@@ -49,6 +49,20 @@ opt-in and never handle the credential: the session lives in the HTTP client's c
 the findings carry redacted exchanges only. This is the half of ch03#19 that S6 recorded as
 blocked on "a successful login, which would mean supplying real credentials" — ADR-240.1.
 
+**The WordPress ecosystem family** (WP-25, REQ-DET-018) is the twenty-six checks in
+``m3/wordpress.py``: the CMS surface a stock installation publishes to an unauthenticated
+client — the ``wp-config.php`` source and the backup names beside it, the XML-RPC endpoint and
+its RSD document, the REST route index and user/settings/application-password routes, the
+uploads/plugins/themes directory listings, plugin and theme readiness artefacts, ``readme.html``
+and ``?ver=``-carrying asset URLs, the debug log, installer and upgrade residue, the
+unauthenticated AJAX entry point, the publicly reachable cron endpoint, author-archive and
+user-sitemap enumeration, self-registration and the application-password page. Every one is an
+L1 read-only probe (one ``OPTIONS`` for the cron endpoint, which cannot trigger the job it
+reports as reachable), every one names a ``WSTG-*`` mapping, and the whole family is silent on
+its two decoys — a hardened installation and a WAF-fronted one
+(``tests/lab/wordpress_lab.py``). The count is carried by the generator: see
+``coverage_matrix.md`` and ``python -m arachne.tools.counts``.
+
 **What this stage does not do** (recorded rather than implied): POST-body injection, DOM-sink
 verification in a browser, session fixation, and the families deferred to S10. See
 ADR-100.4-100.7.
@@ -117,6 +131,7 @@ from arachne.modules.m3.surface_families import (
 from arachne.modules.m3.takeover import SubdomainTakeover
 from arachne.modules.m3.transport import CorsAudit, OpenRedirect, RateLimitAudit
 from arachne.modules.m3.websocket_depth import WebSocketInjection, WebSocketUpgradeAuth
+from arachne.modules.m3.wordpress import WordPressChecks
 from arachne.modules.registry import ModuleGroup
 
 __all__ = ["M3", "M3_CHECKS"]
@@ -201,6 +216,11 @@ M3_CHECKS: tuple[type[Module], ...] = (
     CacheDeception,
     AuthzBypass,
     InputValidationAudit,
+    # WP-25 CMS family A (REQ-DET-018): the WordPress ecosystem surface — configuration and
+    # backup exposure, XML-RPC and the REST API surface, user/author/sitemap enumeration,
+    # plugin and theme inventory, the debug log, installer residue, the cron endpoint, the
+    # registration and application-password surfaces. Every one is L1 and read-only.
+    *WordPressChecks,
 )
 
 #: The M3 module group . Bump the version when the check set or a check's
@@ -221,9 +241,12 @@ M3 = ModuleGroup(
         "depth/cost and resolver-authorization probes and the WebSocket upgrade-auth and "
         "inert-message-relay probes, plus the WP-08 breadth families: LDAP, XPath, code and "
         "command-argument injection, host- and email-header injection, web cache deception, "
-        "authorization-schema bypass and numeric input validation."
+        "authorization-schema bypass and numeric input validation, plus the WP-25 WordPress "
+        "ecosystem family: wp-config and backup exposure, the XML-RPC and REST API surface, "
+        "user/author/sitemap enumeration, plugin and theme inventory, the debug log, installer "
+        "residue, the cron endpoint and the registration and application-password surfaces."
     ),
-    version="2.4.0",
+    version="2.5.0",
     research_chapter="ch03",
     checks=M3_CHECKS,
 )

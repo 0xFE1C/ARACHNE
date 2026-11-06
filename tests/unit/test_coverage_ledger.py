@@ -77,6 +77,40 @@ WP12_IDS: frozenset[str] = frozenset({"m5.image-scan", "m5.do-posture"})
 #: credential, so it adds a check without adding a research item.
 WP20_IDS: frozenset[str] = frozenset({"m2.ssh-auth"})
 
+#: WP-25's WordPress ecosystem family (REQ-DET-018); excluded for the same reason. Every one
+#: cites ``ch03#19``/``ch03#31``/``ch03#35``, methods the corpus already mapped, so the family
+#: adds twenty-six checks without adding a research item.
+WP25_IDS: frozenset[str] = frozenset(
+    {
+        "m3.wp-config-backup",
+        "m3.wp-config-source",
+        "m3.wp-xmlrpc-surface",
+        "m3.wp-xmlrpc-rsd",
+        "m3.wp-rest-index",
+        "m3.wp-rest-users",
+        "m3.wp-rest-user-record",
+        "m3.wp-rest-route-param",
+        "m3.wp-rest-settings-unauth",
+        "m3.wp-uploads-listing",
+        "m3.wp-plugins-listing",
+        "m3.wp-themes-listing",
+        "m3.wp-plugin-readme",
+        "m3.wp-theme-stylesheet",
+        "m3.wp-readme-version",
+        "m3.wp-asset-version",
+        "m3.wp-debug-log",
+        "m3.wp-installer-residue",
+        "m3.wp-upgrade-residue",
+        "m3.wp-admin-ajax-surface",
+        "m3.wp-cron-surface",
+        "m3.wp-author-enumeration",
+        "m3.wp-user-sitemap",
+        "m3.wp-registration-open",
+        "m3.wp-app-password-surface",
+        "m3.wp-rest-app-passwords",
+    }
+)
+
 
 @pytest.fixture(scope="module")
 def registry() -> ModuleRegistry:
@@ -142,13 +176,15 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     wp11 = {record.id for record in ledger.records if record.id in WP11_IDS}
     wp12 = {record.id for record in ledger.records if record.id in WP12_IDS}
     wp20 = {record.id for record in ledger.records if record.id in WP20_IDS}
-    assert len(ids - mcp - wp08 - wp09 - wp10 - wp11 - wp12 - wp20) == 152
+    wp25 = {record.id for record in ledger.records if record.id in WP25_IDS}
+    assert len(ids - mcp - wp08 - wp09 - wp10 - wp11 - wp12 - wp20 - wp25) == 152
     assert len(mcp) == 3
     assert len(wp08) == 9
     assert len(wp10) == 5
     assert len(wp11) == 1
     assert len(wp12) == 2
     assert len(wp20) == 1
+    assert len(wp25) == 26
 
 
 # ------------------------------------------------------------------ REQ-DET-003 WSTG
