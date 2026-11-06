@@ -203,6 +203,11 @@ controls:
     checks:
       - m1.bucket-hunt
       - m3.api-surface
+      - m3.drupal-config-backup
+      - m3.joomla-config-backup
+      - m3.magento-config-backup
+      - m3.moodle-config-backup
+      - m3.prestashop-config-backup
       - m3.wp-config-backup
       - m4.api-doc-exposure
       - m4.backup-file-hunt

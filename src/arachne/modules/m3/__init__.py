@@ -63,6 +63,19 @@ its two decoys — a hardened installation and a WAF-fronted one
 (``tests/lab/wordpress_lab.py``). The count is carried by the generator: see
 ``coverage_matrix.md`` and ``python -m arachne.tools.counts``.
 
+**The CMS family B** (WP-26, REQ-DET-019) is the thirty checks in ``m3/cms_family_b.py``: the
+same CMS surface for Joomla, Drupal, Moodle, PrestaShop and Magento — the configuration file
+served as source and the backup names beside it, the administrative login surface (which is also
+the installation's *default-credential* surface, reported as a reachable configuration and never
+tested: no check sends a credential or attempts a login), the platform's version artefact, the
+installation/upgrade residue the installation window leaves behind, and the published API route.
+Every one is an L1 read-only ``GET`` probe, every one names a ``WSTG-*`` mapping, and the whole
+family is silent on its decoys — one hardened installation per system plus a WAF-fronted one
+(``tests/lab/cms_lab.py``). Two guards carry that: each signal needs the platform's own
+structural marker, and it needs the body to name its own platform, so the five installations are
+decoys for one another. The count is carried by the generator: see ``coverage_matrix.md`` and
+``python -m arachne.tools.counts``.
+
 **What this stage does not do** (recorded rather than implied): POST-body injection, DOM-sink
 verification in a browser, session fixation, and the families deferred to S10. See
 ADR-100.4-100.7.
@@ -95,6 +108,7 @@ from arachne.modules.m3.advanced_protocol import (
 from arachne.modules.m3.authenticated import AuthenticatedSurface, SessionLogout
 from arachne.modules.m3.client import XssOracle
 from arachne.modules.m3.client_secret import ClientSecretVerify
+from arachne.modules.m3.cms_family_b import CmsFamilyBChecks
 from arachne.modules.m3.dom_xss import DomSinkCheck
 from arachne.modules.m3.exposure import ApiSurface, SecurityHeaders
 from arachne.modules.m3.files import TraversalOracle, UploadAudit
@@ -221,6 +235,12 @@ M3_CHECKS: tuple[type[Module], ...] = (
     # plugin and theme inventory, the debug log, installer residue, the cron endpoint, the
     # registration and application-password surfaces. Every one is L1 and read-only.
     *WordPressChecks,
+    # WP-26 CMS family B (REQ-DET-019): the Joomla, Drupal, Moodle, PrestaShop and Magento
+    # surface — configuration source and backup exposure, the administrative login surface
+    # (the default-credential surface, reported as configuration and never tested), version
+    # disclosure, installation and upgrade residue and the published API route. Every one is
+    # L1 and read-only.
+    *CmsFamilyBChecks,
 )
 
 #: The M3 module group . Bump the version when the check set or a check's
@@ -244,9 +264,12 @@ M3 = ModuleGroup(
         "authorization-schema bypass and numeric input validation, plus the WP-25 WordPress "
         "ecosystem family: wp-config and backup exposure, the XML-RPC and REST API surface, "
         "user/author/sitemap enumeration, plugin and theme inventory, the debug log, installer "
-        "residue, the cron endpoint and the registration and application-password surfaces."
+        "residue, the cron endpoint and the registration and application-password surfaces, "
+        "plus the WP-26 CMS family B: the Joomla, Drupal, Moodle, PrestaShop and Magento "
+        "configuration, backup, administrative-login, version, installer-residue and API-route "
+        "surfaces."
     ),
-    version="2.5.0",
+    version="2.6.0",
     research_chapter="ch03",
     checks=M3_CHECKS,
 )

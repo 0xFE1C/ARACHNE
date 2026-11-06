@@ -92,7 +92,9 @@ def test_the_module_exposes_the_core_and_extended_checks() -> None:
     # client-secret check — 47. WP-08 adds the four CWE Top 25 emitters and the five
     # injection families (REQ-DET-004/009) — 56. WP-11 adds the DOM-sink browser check
     # (REQ-DET-015) — 57. WP-25 adds the WordPress ecosystem family (REQ-DET-018) — 83.
-    assert len(ids) == 83, ids
+    # WP-26 adds the CMS family B (REQ-DET-019): Joomla, Drupal, Moodle, PrestaShop and
+    # Magento — 113.
+    assert len(ids) == 113, ids
     assert len(set(ids)) == len(ids)
     # The proof ladder's declarations are part of the module's contract: the L2+ rows are
     # all opt-in, and only rce-echo/state-marker demand the state-change attestation.

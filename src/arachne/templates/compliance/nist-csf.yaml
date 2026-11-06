@@ -86,6 +86,11 @@ controls:
       - m2.os-fingerprint
       - m2.service-fingerprint
       - m3.api-surface
+      - m3.drupal-config-backup
+      - m3.joomla-config-backup
+      - m3.magento-config-backup
+      - m3.moodle-config-backup
+      - m3.prestashop-config-backup
       - m3.wp-config-backup
   - id: "ID.IM-02"
     title: "Improvements are identified from security tests and exercises, including those done in coordination with suppliers and relevant third parties"

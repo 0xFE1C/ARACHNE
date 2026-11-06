@@ -17,8 +17,9 @@
 
 # 1.0 (S6/S10/S15) the original families; 1.1 (WP-08) the four CWE Top 25 emitters and the
 # five missing injection families (REQ-DET-004, REQ-DET-009); 1.2 (WP-25) the WordPress
-# ecosystem surface inventory (REQ-DET-018).
-version: "1.2"
+# ecosystem surface inventory (REQ-DET-018); 1.3 (WP-26) the Joomla, Drupal, Moodle,
+# PrestaShop and Magento surface inventory (REQ-DET-019).
+version: "1.3"
 
 # --------------------------------------------------------------------------- parameter hints
 # Which parameter names a family is tried against. A family is only attempted where its hint
@@ -738,3 +739,165 @@ wordpress:
   registration_markers: ["id=\"registerform\"", "action=register", "user_login"]
   app_password_paths: ["/wp-admin/authorize-application.php"]
   app_password_markers: ["application password", "authorize-application", "application_name"]
+
+# --------------------------------------------------------------------------- CMS family B (WP-26, REQ-DET-019)
+# The Joomla, Drupal, Moodle, PrestaShop and Magento surface. As with the WordPress section
+# above, every entry is a **well-known path** an installation publishes, not a probe payload:
+# the family is read-only inventory and configuration inspection, so an operator narrowing or
+# extending the paths narrows or extends the exposed-surface inventory without touching the
+# checks. Nothing here is a payload, a credential or a state change — every request the family
+# makes is a GET, and the administrative-surface checks report the *login surface*, never a
+# login attempt.
+#
+# Two marker rules the checks rely on, and which an operator editing this section must keep:
+#   1. a `*_markers` entry is the platform's own markup (a form id, a component name, a
+#      configuration identifier), never a bare status or a generic word;
+#   2. every check additionally requires the platform's own name in the body, so one system's
+#      checks stay silent on the other four installations and on a block page that names the
+#      platform without carrying its markup.
+joomla:
+  # The configuration file: the source itself and the backup/spill names a text editor or a
+  # deployment rollback leaves beside it. The markers are the *identifiers* the configuration
+  # declares; the check reports those names, never a value.
+  config_source_paths: ["/configuration.php", "/configuration.php.txt"]
+  config_backup_paths:
+    [
+      "/configuration.php~",
+      "/configuration.php.bak",
+      "/configuration.php.save",
+      "/configuration.php.old",
+      "/configuration.php.orig",
+      "/configuration.php.bkp",
+      "/configuration.php.php.bak",
+    ]
+  source_markers: ["<?php", "public $"]
+  config_markers:
+    ["public $user", "public $password", "public $db", "public $dbprefix", "public $secret", "$host"]
+  # The administrator login. com_login is Joomla's own login component; mod-login its login
+  # module. This is the default-credential surface, reported as a reachable configuration.
+  admin_paths: ["/administrator/", "/administrator/index.php"]
+  admin_markers: ["com_login", "mod-login", "form-login", "task=login"]
+  # The version manifest Joomla 3/4 ships, and the language manifest beside it.
+  version_paths:
+    ["/administrator/manifests/files/joomla.xml", "/language/en-GB/en-GB.xml", "/README.txt"]
+  version_markers: ["joomla", "<version>", "manifest"]
+  version_regex: '<version>\s*([0-9][\w.\-]*)\s*</version>'
+  # The web installer, which belongs to the installation window and not to a running site.
+  installer_paths: ["/installation/index.php", "/installation/"]
+  installer_markers: ["joomla installer", "joomla installation", "installation", "install"]
+  # The Webservices API route (Joomla 4). It answers an anonymous caller with its own JSON
+  # error envelope, which is the record that the route is served.
+  api_paths: ["/api/index.php/v1/", "/api/index.php/v1/users"]
+
+drupal:
+  config_source_paths: ["/sites/default/settings.php", "/sites/default/settings.php.txt"]
+  config_backup_paths:
+    [
+      "/sites/default/settings.php.bak",
+      "/sites/default/settings.php~",
+      "/sites/default/settings.php.save",
+      "/sites/default/settings.php.old",
+      "/sites/default/settings.php.orig",
+      "/sites/default/settings.php.bkp",
+      "/sites/default/default.settings.php",
+    ]
+  source_markers: ["<?php"]
+  config_markers: ["$databases", "hash_salt", "$settings"]
+  admin_paths: ["/user/login", "/admin"]
+  admin_markers: ["user_login_form", "edit-name", "edit-pass", "form_id"]
+  version_paths: ["/core/CHANGELOG.txt", "/CHANGELOG.txt", "/core/COPYRIGHT.txt"]
+  version_markers: ["drupal", "changelog", "copyright"]
+  version_regex: 'Drupal\s+([0-9][\w.\-]*)'
+  installer_paths: ["/core/install.php", "/install.php", "/core/authorize.php"]
+  installer_markers: ["drupal installer", "drupal installation", "already installed", "install"]
+  api_paths: ["/jsonapi", "/jsonapi/"]
+
+moodle:
+  config_source_paths: ["/config.php", "/config.php.txt"]
+  config_backup_paths:
+    [
+      "/config.php.bak",
+      "/config.php~",
+      "/config.php.save",
+      "/config.php.old",
+      "/config.php.orig",
+      "/config.php.bkp",
+      "/config.php.disabled",
+    ]
+  source_markers: ["<?php"]
+  config_markers: ["$cfg->dbtype", "$cfg->dbname", "$cfg->wwwroot", "$cfg->dbuser", "$cfg->dataroot"]
+  admin_paths: ["/login/index.php", "/login/"]
+  # logintoken is the per-session token Moodle's own login form carries.
+  admin_markers: ["logintoken", "loginform", "login_username"]
+  version_paths: ["/lib/upgrade.txt", "/admin/environment.xml"]
+  version_markers: ["moodle", "<moodle", "==="]
+  version_regex: '(?:===\s*|<MOODLE[^>]*\bversion=")([0-9][\w.\-]*)'
+  installer_paths: ["/install.php", "/admin/install.php"]
+  installer_markers: ["moodle installer", "moodle installation", "installation", "install"]
+  api_paths: ["/webservice/rest/server.php", "/login/token.php"]
+
+prestashop:
+  # settings.inc.php is the 1.6 configuration; parameters.php the 1.7+ one.
+  config_source_paths:
+    ["/config/settings.inc.php", "/app/config/parameters.php", "/config/settings.inc.php.txt"]
+  config_backup_paths:
+    [
+      "/config/settings.inc.php.bak",
+      "/config/settings.inc.php~",
+      "/config/settings.inc.php.old",
+      "/config/settings.inc.php.orig",
+      "/config/settings.inc.php.save",
+      "/app/config/parameters.php.bak",
+      "/app/config/parameters.php~",
+      "/app/config/parameters.php.old",
+    ]
+  source_markers: ["<?php"]
+  config_markers:
+    [
+      "_db_server_",
+      "_db_name_",
+      "_db_user_",
+      "_db_prefix_",
+      "database_host",
+      "database_name",
+      "database_user",
+      "database_prefix",
+    ]
+  # The back-office directory is renamed at install time, so the candidates are the operator's
+  # list; login_form and submit_login are the back office's own form markup.
+  admin_paths: ["/admin/", "/admin-dev/", "/administrator/", "/admin1/"]
+  admin_markers: ["login_form", "submit_login", "passwd"]
+  version_paths: ["/README.md", "/docs/CHANGELOG.txt", "/INSTALL.txt"]
+  version_markers: ["prestashop", "changelog", "release"]
+  version_regex: 'PrestaShop\s+v?([0-9][\w.\-]*)'
+  installer_paths: ["/install/index.php", "/install/", "/install-dev/index.php"]
+  installer_markers:
+    ["prestashop installer", "prestashop installation", "installation", "install"]
+  # The webservice answers an anonymous caller with its own Basic realm.
+  api_paths: ["/api/", "/api/products"]
+
+magento:
+  # env.php is the 2.x configuration; local.xml the 1.x one.
+  config_source_paths: ["/app/etc/env.php", "/app/etc/local.xml", "/app/etc/env.php.txt"]
+  config_backup_paths:
+    [
+      "/app/etc/env.php.bak",
+      "/app/etc/env.php~",
+      "/app/etc/env.php.old",
+      "/app/etc/env.php.orig",
+      "/app/etc/local.xml.bak",
+      "/app/etc/local.xml~",
+      "/app/etc/local.xml.old",
+    ]
+  source_markers: ["<?php", "<?xml"]
+  config_markers: ["'db'", "'table_prefix'", "'connection'", "'dbname'", "'crypt'", "<host>", "<username>"]
+  admin_paths: ["/admin/", "/admin"]
+  # adminhtml-auth-login is the backend login body class; login[username] the field name.
+  admin_markers: ["adminhtml-auth-login", "login[username]", "login[password]", "form-login"]
+  version_paths: ["/magento_version", "/RELEASE_NOTES.txt"]
+  version_markers: ["magento"]
+  version_regex: '(?:Magento/|Magento\s+v?)([0-9][\w.\-]*)'
+  installer_paths: ["/setup/", "/setup/index.php", "/downloader/"]
+  installer_markers: ["magento setup", "setup wizard", "installation wizard", "setup"]
+  # The REST store routes the platform marks anonymously accessible.
+  api_paths: ["/rest/V1/store/storeViews", "/rest/V1/store/storeConfigs"]

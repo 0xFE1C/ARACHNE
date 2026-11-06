@@ -29,7 +29,7 @@
 # disagree, so a plan can never describe a check differently from the code that runs it.
 # S4 adds the M2 rows the registry implements; M3-M6 below are still *planned* only and the
 # plan marks them `implemented: false`.
-catalog_version: "1.13"
+catalog_version: "1.14"
 checks:
   # ---------------------------------------------------------------- M1 recon & attack surface
   # Implemented in S3 (arachne/modules/m1/). The rows below are generated from the check
@@ -1001,6 +1001,341 @@ checks:
     target_kinds:
     - url
     estimated_requests: 0
+
+  # ---------------------------------------------------------------- WP-26 CMS family B
+  # The Joomla, Drupal, Moodle, PrestaShop and Magento surface (REQ-DET-019): every row
+  # is generated from the check metadata below, so the planner describes exactly what
+  # the registry runs.
+  - module: M3
+    name: joomla-config-source
+    version: '1.0'
+    title: 'Joomla configuration served as source'
+    description: 'Reports when configuration.php (or a .txt copy of it) answers with the PHP source of the Joomla configuration instead of executing it: the response carries the PHP open tag and the configuration''s own public property declarations ($user, $password, $db, $secret). A correctly served configuration.php outputs nothing. The finding names the identifiers, never a value. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-540
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: joomla-config-backup
+    version: '1.0'
+    title: 'Joomla configuration backup file exposed'
+    description: 'Probes the backup and editor-spill names Joomla deployments leave beside configuration.php (.bak, ~, .save, .old, .orig, .bkp, .php.bak) and reports one that is served as configuration source. The finding names the configuration identifiers the file declares ($user, $password, $db, $secret), never a value. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-530
+    target_kinds:
+    - url
+    estimated_requests: 9
+  - module: M3
+    name: joomla-admin-surface
+    version: '1.0'
+    title: 'Joomla administrator login surface reachable'
+    description: 'Reports when the Joomla administrator entry point (/administrator/) answers an anonymous GET with the platform''s own login form (the com_login component, the mod-login module or the task=login form action). This is the installation''s default-credential surface: the finding reports that the surface is reachable, as a configuration observation, and the check sends no credential and attempts no login. Read-only GET probes.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: joomla-version-disclosure
+    version: '1.0'
+    title: 'Joomla core version disclosed'
+    description: 'Reports when the Joomla version manifest (/administrator/manifests/files/joomla.xml) or a language manifest publishes the core version. A version is a fingerprint and is never a severity on its own (FP-3): the check reports the version and leaves the CVE correlation to the intelligence stage. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M3
+    name: joomla-installer-residue
+    version: '1.0'
+    title: 'Joomla installation directory reachable'
+    description: 'Reports when the Joomla web installer (/installation/) is reachable by an unauthenticated client and answers with its own installation page. The installation directory belongs to the installation window; a running site removes it. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: joomla-api-surface
+    version: '1.0'
+    title: 'Joomla Webservices API route published'
+    description: 'Reports when the Joomla Webservices API route (/api/index.php/v1/) answers an anonymous GET with the API''s own JSON error envelope ({"errors": [...]}) instead of a generic 404. The claim is that the API plugin is enabled and the route is served — the anonymous caller is refused, and the envelope is that refusal''s record — not that any resource is readable. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: drupal-config-source
+    version: '1.0'
+    title: 'Drupal settings served as source'
+    description: 'Reports when sites/default/settings.php answers with the PHP source of the Drupal configuration instead of executing it: the response carries the PHP open tag and the configuration''s own $databases and $settings declarations. A correctly served settings.php outputs nothing. The finding names the identifiers, never a value. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-540
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: drupal-config-backup
+    version: '1.0'
+    title: 'Drupal settings backup file exposed'
+    description: 'Probes the backup, editor-spill and shipped-template names Drupal deployments leave beside settings.php (.bak, ~, .save, .old, .orig, .bkp, default.settings.php) and reports one that is served as configuration source. The finding names the configuration identifiers the file declares ($databases, $settings, hash_salt), never a value. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-530
+    target_kinds:
+    - url
+    estimated_requests: 9
+  - module: M3
+    name: drupal-admin-surface
+    version: '1.0'
+    title: 'Drupal administrative login surface reachable'
+    description: 'Reports when the Drupal login entry point (/user/login, or /admin, which redirects there) answers an anonymous GET with the platform''s own login form (the user_login_form form id and its edit-name/edit-pass fields). This is the installation''s default-credential surface: the finding reports that the surface is reachable, as a configuration observation, and the check sends no credential and attempts no login. Read-only GET probes.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M3
+    name: drupal-version-disclosure
+    version: '1.0'
+    title: 'Drupal core version disclosed'
+    description: 'Reports when the Drupal changelog (/core/CHANGELOG.txt, or its pre-8 location) publishes the core version in its own header line. A version is a fingerprint and is never a severity on its own (FP-3). Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M3
+    name: drupal-installer-residue
+    version: '1.0'
+    title: 'Drupal installation entry point reachable'
+    description: 'Reports when Drupal''s install script (/core/install.php, or its pre-8 location) answers an anonymous client with its own installation page instead of being removed or blocked. The install entry point belongs to the installation window. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M3
+    name: drupal-api-surface
+    version: '1.0'
+    title: 'Drupal JSON:API index published'
+    description: 'Reports when Drupal''s JSON:API index (/jsonapi) answers an anonymous GET with the JSON:API document that names every resource type the installation publishes. The index is the API''s own inventory document; site building may also expose content through it. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: moodle-config-source
+    version: '1.0'
+    title: 'Moodle configuration served as source'
+    description: 'Reports when config.php answers with the PHP source of the Moodle configuration instead of executing it: the response carries the PHP open tag and the $CFG declarations (dbtype, dbname, wwwroot). A correctly served config.php outputs nothing. The finding names the identifiers, never a value. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-540
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: moodle-config-backup
+    version: '1.0'
+    title: 'Moodle configuration backup file exposed'
+    description: 'Probes the backup, editor-spill and superseded names Moodle deployments leave beside config.php (.bak, ~, .save, .old, .orig, .bkp, config.php.disabled) and reports one that is served as configuration source. The finding names the $CFG identifiers the file declares, never a value. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-530
+    target_kinds:
+    - url
+    estimated_requests: 9
+  - module: M3
+    name: moodle-admin-surface
+    version: '1.0'
+    title: 'Moodle login surface reachable'
+    description: 'Reports when the Moodle login entry point (/login/index.php) answers an anonymous GET with the platform''s own login form (the loginform form id and its logintoken field). This is the installation''s default-credential surface: the finding reports that the surface is reachable, as a configuration observation, and the check sends no credential and attempts no login. Read-only GET probes.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: moodle-version-disclosure
+    version: '1.0'
+    title: 'Moodle release version disclosed'
+    description: 'Reports when the Moodle upgrade history (/lib/upgrade.txt) or the environment manifest (/admin/environment.xml) publishes the release version in its own header. A version is a fingerprint and is never a severity on its own (FP-3). Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M3
+    name: moodle-installer-residue
+    version: '1.0'
+    title: 'Moodle installation script reachable'
+    description: 'Reports when Moodle''s web installer (/install.php) answers an anonymous client with its own installation page instead of being removed or blocked. The install script belongs to the installation window. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: moodle-api-surface
+    version: '1.0'
+    title: 'Moodle REST webservice endpoint published'
+    description: 'Reports when Moodle''s webservice endpoint (/webservice/rest/server.php) answers an anonymous GET with the platform''s own webservice exception document (<EXCEPTION class="webservice_access_exception">) instead of a generic 404. The claim is that the webservice endpoint is enabled and served — the anonymous caller is refused by the platform''s own envelope — not that any function is callable. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: prestashop-config-source
+    version: '1.0'
+    title: 'PrestaShop configuration served as source'
+    description: 'Reports when a PrestaShop configuration file (config/settings.inc.php for 1.6, app/config/parameters.php for 1.7+) answers with the PHP source of the configuration instead of executing it: the response carries the PHP open tag and the file''s own declarations (_DB_NAME_, _COOKIE_KEY_, database_host/database_password). A correctly served configuration writes nothing. The finding names the identifiers, never a value. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-540
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M3
+    name: prestashop-config-backup
+    version: '1.0'
+    title: 'PrestaShop configuration backup file exposed'
+    description: 'Probes the backup and editor-spill names PrestaShop deployments leave beside the configuration (settings.inc.php.bak, parameters.php.bak, their ~/.save/.old/.orig variants) and reports one that is served as configuration source. The finding names the identifiers the file declares, never a value. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-530
+    target_kinds:
+    - url
+    estimated_requests: 11
+  - module: M3
+    name: prestashop-admin-surface
+    version: '1.0'
+    title: 'PrestaShop back office login surface reachable'
+    description: 'Reports when the PrestaShop back office answers an anonymous GET with the platform''s own employee login form (the login_form form id and its submitLogin control). The back-office directory is renamed at install time, so the check probes a bounded list of candidate directory names (the operator''s list, from the payload corpus). This is the installation''s default-credential surface: the finding reports that the surface is reachable, as a configuration observation, and the check sends no credential and attempts no login. Read-only GET probes.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 6
+  - module: M3
+    name: prestashop-version-disclosure
+    version: '1.0'
+    title: 'PrestaShop release version disclosed'
+    description: 'Reports when a PrestaShop release document (README.md, docs/CHANGELOG.txt, INSTALL.txt) publishes the version in its own header. A version is a fingerprint and is never a severity on its own (FP-3). Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M3
+    name: prestashop-installer-residue
+    version: '1.0'
+    title: 'PrestaShop installation wizard reachable'
+    description: 'Reports when the PrestaShop web installer (/install/, or the 1.6 install-dev directory) answers an anonymous client with its own installation wizard instead of being removed or blocked. The installer belongs to the installation window. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M3
+    name: prestashop-api-surface
+    version: '1.0'
+    title: 'PrestaShop webservice endpoint published'
+    description: 'Reports when the PrestaShop webservice (/api/) answers an anonymous GET with the platform''s own Basic authentication challenge (WWW-Authenticate: Basic realm="PrestaShop Webservice"), which is the endpoint''s own advertisement that it is served. The finding reports the realm and the status; the check sends no credential and attempts no authentication. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: magento-config-source
+    version: '1.0'
+    title: 'Magento configuration served as source'
+    description: 'Reports when a Magento configuration file (app/etc/env.php for 2.x, app/etc/local.xml for 1.x) answers with the file''s source instead of executing it: the PHP file carries its own ''db''/crypt declarations and the XML file its host/username elements. A correctly served configuration writes nothing over HTTP. The finding names the identifiers, never a value. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-540
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: magento-config-backup
+    version: '1.0'
+    title: 'Magento configuration backup file exposed'
+    description: 'Probes the backup and editor-spill names Magento deployments leave beside app/etc (env.php.bak, local.xml.bak, their ~/.save/.old/.orig variants) and reports one that is served as configuration source. The database credential and the encryption key live in these files. The finding names the identifiers, never a value. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-530
+    target_kinds:
+    - url
+    estimated_requests: 11
+  - module: M3
+    name: magento-admin-surface
+    version: '1.0'
+    title: 'Magento admin login surface reachable'
+    description: 'Reports when the Magento admin answers an anonymous GET with the platform''s own backend login page (the adminhtml-auth-login body class and the login[username]/login[password] field names). The admin path is configurable, so the check probes the operator''s bounded candidate list. This is the installation''s default-credential surface: the finding reports that the surface is reachable, as a configuration observation, and the check sends no credential and attempts no login. Read-only GET probes.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M3
+    name: magento-version-disclosure
+    version: '1.0'
+    title: 'Magento version and edition disclosed'
+    description: 'Reports when the Magento version endpoint (/magento_version) or a release document (RELEASE_NOTES.txt) publishes the version and edition in the platform''s own form. A version is a fingerprint and is never a severity on its own (FP-3). Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M3
+    name: magento-installer-residue
+    version: '1.0'
+    title: 'Magento setup wizard reachable'
+    description: 'Reports when the Magento setup wizard (/setup/) or the 1.x Connect Manager (/downloader/) answers an anonymous client with its own installation page instead of being removed or blocked. The setup wizard belongs to the installation window. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M3
+    name: magento-api-surface
+    version: '1.0'
+    title: 'Magento REST API store routes published'
+    description: 'Reports when a Magento REST route that the platform marks anonymously accessible (/rest/V1/store/storeViews, /rest/V1/store/storeConfigs) answers with the platform''s own store records: a JSON array of store or website objects. The finding reports the route and the record count; it claims nothing about the authenticated half of the API. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
 
   # ---------------------------------------------------------------- M4 misconfiguration & exposure
   - module: M4

@@ -111,6 +111,24 @@ WP25_IDS: frozenset[str] = frozenset(
     }
 )
 
+#: WP-26's CMS family B (REQ-DET-019); excluded for the same reason. Every one cites
+#: ``ch03#19`` or ``ch03#31``, methods the corpus already mapped, so the family adds thirty
+#: checks without adding a research item.
+WP26_IDS: frozenset[str] = frozenset(
+    {
+        f"m3.{cms}-{name}"
+        for cms in ("joomla", "drupal", "moodle", "prestashop", "magento")
+        for name in (
+            "config-source",
+            "config-backup",
+            "admin-surface",
+            "version-disclosure",
+            "installer-residue",
+            "api-surface",
+        )
+    }
+)
+
 
 @pytest.fixture(scope="module")
 def registry() -> ModuleRegistry:
@@ -177,7 +195,8 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     wp12 = {record.id for record in ledger.records if record.id in WP12_IDS}
     wp20 = {record.id for record in ledger.records if record.id in WP20_IDS}
     wp25 = {record.id for record in ledger.records if record.id in WP25_IDS}
-    assert len(ids - mcp - wp08 - wp09 - wp10 - wp11 - wp12 - wp20 - wp25) == 152
+    wp26 = {record.id for record in ledger.records if record.id in WP26_IDS}
+    assert len(ids - mcp - wp08 - wp09 - wp10 - wp11 - wp12 - wp20 - wp25 - wp26) == 152
     assert len(mcp) == 3
     assert len(wp08) == 9
     assert len(wp10) == 5
@@ -185,6 +204,7 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     assert len(wp12) == 2
     assert len(wp20) == 1
     assert len(wp25) == 26
+    assert len(wp26) == 30
 
 
 # ------------------------------------------------------------------ REQ-DET-003 WSTG
