@@ -26,6 +26,7 @@ Two rules keep it honest:
 from __future__ import annotations
 
 import fnmatch
+import functools
 import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -225,6 +226,17 @@ def load_narrative_templates(path: str | None = None) -> TemplateSet:
         return parse_narrative_templates(
             _safe_yaml(text, source=str(resolved)), source=str(resolved)
         )
+    return _shipped_narrative_templates()
+
+
+@functools.cache
+def _shipped_narrative_templates() -> TemplateSet:
+    """The packaged narrative templates, parsed once per process.
+
+    A frozen model over a file that ships inside the package; it is ~0.3 s to parse and one
+    scan parsed it four times, once per analysis phase. No arguments: the shipped resource is a
+    constant of the installation. An explicit ``path`` is never cached.
+    """
     resource = files("arachne.templates")
     for part in DEFAULT_NARRATIVE_RESOURCE:
         resource = resource.joinpath(part)

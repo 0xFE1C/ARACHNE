@@ -18,6 +18,7 @@ everything area SIM does to it:
 from __future__ import annotations
 
 import asyncio
+import shutil
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -164,12 +165,23 @@ def _definition() -> TargetDefinition:
     )
 
 
-@pytest.fixture
-def scanned(tmp_path: Path) -> Iterator[tuple[ScanServices, int]]:
-    """A real M2 scan of the loopback lab, persisted in a real store."""
+@pytest.fixture(scope="module")
+def scanned_template(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> Iterator[tuple[Path, Path, int]]:
+    """One real M2 scan of the loopback lab, persisted in a template store.
+
+    The five tests below assert different properties of *the same* scan, and scanning is the
+    expensive part (a few thousand socket probes against the loopback lab). Building it once
+    and handing each test its own copy of the resulting SQLite file keeps every test's
+    isolation — a fresh store, no simulation points written by a sibling, no shared mutable
+    service — while paying for the scan a single time. The copy is a file copy.
+    """
+    directory = tmp_path_factory.mktemp("sim")
     with m2_lab() as lab:
-        catalog = _write_lab_catalog(lab, tmp_path)
-        services = build_services(_settings(tmp_path / "sim.db", catalog), check_schema=False)
+        catalog = _write_lab_catalog(lab, directory)
+        template = directory / "template.db"
+        services = build_services(_settings(template, catalog), check_schema=False)
         create_all(services.engine)
         try:
             handlers = build_handlers(
@@ -197,9 +209,28 @@ def scanned(tmp_path: Path) -> Iterator[tuple[ScanServices, int]]:
                 )
             )
             assert session.scan_id is not None
-            yield services, int(session.scan_id)
+            scan_id = int(session.scan_id)
         finally:
+            # Close before yielding: the store runs in WAL mode, so a copy taken while a
+            # writer is still connected can miss the committed-but-uncheckpointed tail of the
+            # scan. Closing checkpoints it, which is what makes the per-test copies exact.
             services.close()
+        yield template, catalog, scan_id
+
+
+@pytest.fixture
+def scanned(
+    scanned_template: tuple[Path, Path, int], tmp_path: Path
+) -> Iterator[tuple[ScanServices, int]]:
+    """A fresh store holding the shared scan: the template copied per test."""
+    template, catalog, scan_id = scanned_template
+    database = tmp_path / "sim.db"
+    shutil.copyfile(template, database)
+    services = build_services(_settings(database, catalog), check_schema=False)
+    try:
+        yield services, scan_id
+    finally:
+        services.close()
 
 
 def _audit_actions(services: ScanServices) -> list[str]:

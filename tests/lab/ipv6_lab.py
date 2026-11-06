@@ -64,6 +64,9 @@ class _Ipv6Server:
 
     def _handle(self, connection: socket.socket) -> None:
         try:
+            # TCP_NODELAY: the IPv6 twin of tests/lab/arachne_lab.py's reason — small writes
+            # with Nagle on stall ~40 ms per round trip against a delaying peer on loopback.
+            connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             connection.settimeout(5.0)
             self.handler(connection)
         except Exception:  # a fixture must never fail a test by raising in its thread

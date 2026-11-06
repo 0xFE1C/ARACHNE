@@ -232,6 +232,9 @@ class CloudLab:
 class _Handler(BaseHTTPRequestHandler):
     server_version = "arachne-cloud-lab/1.0"
     protocol_version = "HTTP/1.1"
+    # TCP_NODELAY: the same Nagle/delayed-ACK stall as tests/lab/web_lab.py (42 ms → 0.8 ms per
+    # request on loopback).
+    disable_nagle_algorithm = True
     lab: CloudLab
 
     def log_message(self, format: str, *args: object) -> None:  # noqa: A002 - stdlib signature
@@ -388,7 +391,9 @@ def start_cloud_lab() -> Iterator[CloudLab]:
     port = server.server_address[1]
     lab.port = port
     lab.base_url = f"http://127.0.0.1:{port}/"
-    thread = threading.Thread(target=server.serve_forever, name="arachne-cloud-lab", daemon=True)
+    thread = threading.Thread(
+        target=server.serve_forever, args=(0.05,), name="arachne-cloud-lab", daemon=True
+    )
     thread.start()
     try:
         yield lab

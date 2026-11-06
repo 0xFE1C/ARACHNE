@@ -424,6 +424,9 @@ class _StubEndpoint(BaseHTTPRequestHandler):
     """A loopback endpoint that records what it received."""
 
     received: list[dict] = []
+    # TCP_NODELAY: the same Nagle/delayed-ACK stall as tests/lab/web_lab.py (42 ms → 0.8 ms per
+    # request on loopback).
+    disable_nagle_algorithm = True
 
     def do_POST(self) -> None:
         length = int(self.headers.get("content-length", "0"))
@@ -448,7 +451,7 @@ class _StubEndpoint(BaseHTTPRequestHandler):
 def stub_endpoint():  # type: ignore[no-untyped-def]
     _StubEndpoint.received = []
     server = ThreadingHTTPServer(("127.0.0.1", 0), _StubEndpoint)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread = threading.Thread(target=server.serve_forever, args=(0.05,), daemon=True)
     thread.start()
     try:
         yield f"http://127.0.0.1:{server.server_address[1]}", _StubEndpoint.received

@@ -32,9 +32,6 @@ import tarfile
 import zipfile
 from pathlib import Path
 
-import pytest
-from build import ProjectBuilder
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 #: The trees a user reads as source and as tests. REQ-DOC-006's acceptance criterion names
@@ -85,25 +82,6 @@ def references_to_scaffolding(paths: tuple[str, ...]) -> list[str]:
             if any(needle in path.read_bytes() for needle in needles):
                 offenders.append(str(path.relative_to(REPO_ROOT)))
     return offenders
-
-
-@pytest.fixture(scope="module")
-def distributions(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, Path]:
-    """Build the wheel and the sdist with the project's own backend, into a scratch directory.
-
-    :class:`build.ProjectBuilder` reads ``[build-system]`` from ``pyproject.toml`` and invokes
-    that backend's PEP 517 hooks, so the artefacts inspected here are the project's own output
-    rather than a hand-rolled stand-in. The backend is imported from this interpreter rather
-    than an isolated environment, which is why ``build`` and ``hatchling`` are development
-    dependencies: the suite never reaches for PyPI to answer a question about its own tree.
-    """
-    outdir = tmp_path_factory.mktemp("dist")
-    builder = ProjectBuilder(str(REPO_ROOT))
-    sdist = Path(builder.build("sdist", str(outdir)))
-    wheel = Path(builder.build("wheel", str(outdir)))
-    assert wheel.suffix == ".whl", f"the backend produced {wheel.name}, not a wheel"
-    assert sdist.name.endswith(".tar.gz"), f"the backend produced {sdist.name}, not an sdist"
-    return wheel, sdist
 
 
 def _members(wheel: Path, sdist: Path) -> list[tuple[str, list[str]]]:

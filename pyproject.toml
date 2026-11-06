@@ -111,7 +111,9 @@ only-include = ["/src", "/tests", "/migrations", "/README.md", "/alembic.ini"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["src", "tests"]
+# `tools` is the development tooling (REQ-QUAL-015). It is a source root for import
+# classification only: it is not in the wheel and not in the sdist.
+src = ["src", "tests", "tools"]
 extend-exclude = [".venv", "migrations/versions", "build", "dist"]
 
 [tool.ruff.lint]
@@ -192,14 +194,24 @@ ignore = [
 # creates prepended to it — so a pinned absolute path would test a different thing than the
 # page describes. The argv is a fixed list of literals; nothing untrusted is spliced into it.
 "src/arachne/tools/quickstart.py" = ["S603", "S607"]
+# The handoff gate (REQ-QUAL-013) runs the quality gates at a target commit and asks the
+# checkout's own `git`, `ruff`, `mypy` and `python` — resolved from PATH, because each gate has
+# to answer the question the operator's toolchain would ask, exactly as the CI jobs do. Every
+# argv is a fixed list of literals with no shell and a timeout; the only values that enter one
+# are a repository path and a commit sha, which are data arguments, never a program name. This
+# exemption lived on the module when it was shipped; it moved with the module out of `src/`.
+"tools/wp_check.py" = ["S607"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["arachne"]
+known-first-party = ["arachne", "tools"]
 
 # ---------------------------------------------------------------- mypy (type)
 [tool.mypy]
 python_version = "3.11"
-files = ["src"]
+# `tools` is the development tooling (REQ-QUAL-015): it is not shipped, but it is code this
+# repository maintains, so `mypy` with no arguments checks it under the same strict settings
+# as the product. The CI `types` job names `src` only; this is the stricter local gate.
+files = ["src", "tools"]
 strict = true
 warn_unreachable = true
 warn_no_return = true
@@ -236,6 +248,10 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
+# The development tooling lives in the repository-root `tools` package (REQ-QUAL-015), not in
+# `src`, so a bare `pytest tests` would not otherwise import it. The repository root is the
+# distribution's import root for it, exactly as it is for `tools.wp_check` on the command line.
+pythonpath = ["."]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 addopts = "-ra --strict-markers --strict-config --durations=25"

@@ -137,6 +137,9 @@ def manifest_list(child: ImageSpec, *, tag: str = "latest") -> dict[str, Any]:
 class _Handler(BaseHTTPRequestHandler):
     server_version = "arachne-image-registry/1.0"
     protocol_version = "HTTP/1.1"
+    # TCP_NODELAY: the same Nagle/delayed-ACK stall as tests/lab/web_lab.py (42 ms → 0.8 ms per
+    # request on loopback).
+    disable_nagle_algorithm = True
     lab: ImageRegistry
 
     def log_message(self, format: str, *args: object) -> None:  # noqa: A002 - stdlib signature
@@ -203,7 +206,7 @@ def start_image_registry(repositories: dict[str, ImageSpec]) -> Iterator[ImageRe
     lab.port = port
     lab.base_url = f"http://127.0.0.1:{port}/"
     thread = threading.Thread(
-        target=server.serve_forever, name="arachne-image-registry", daemon=True
+        target=server.serve_forever, args=(0.05,), name="arachne-image-registry", daemon=True
     )
     thread.start()
     try:

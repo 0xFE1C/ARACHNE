@@ -396,6 +396,12 @@ class _ArcTCPServer(socketserver.ThreadingTCPServer):
         self.arc = arc
         super().__init__(address, _ArcHandler)
 
+    def get_request(self) -> tuple[socket.socket, tuple[str, int]]:
+        """Accept a connection with TCP_NODELAY: same loopback Nagle stall as the HTTP lab."""
+        connection, address = super().get_request()
+        connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        return connection, address
+
 
 @dataclass
 class ArcLabFixture:
@@ -442,7 +448,9 @@ def start_arc_lab() -> Iterator[ArcLabFixture]:
     """Start the ARC/1 lab on an ephemeral loopback port and yield it, stopping it on exit."""
     arc = ArcServer()
     server = _ArcTCPServer(("127.0.0.1", 0), arc)
-    thread = threading.Thread(target=server.serve_forever, name="arc-lab", daemon=True)
+    thread = threading.Thread(
+        target=server.serve_forever, args=(0.05,), name="arc-lab", daemon=True
+    )
     thread.start()
     host, port = server.server_address[:2]
     fixture = ArcLabFixture(host=host, port=port, arc=arc, server=server, _thread=thread)

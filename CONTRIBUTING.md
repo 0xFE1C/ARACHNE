@@ -78,7 +78,7 @@ python -m arachne.tools.credentials_gate .
 |---|---|---|
 | `ruff check` | `pyproject.toml` `[tool.ruff.lint]` — E, W, F, I, N, UP, B, A, C4, DTZ, T10, T20, PIE, PTH, RET, RUF, S, SIM, ASYNC | Repo-wide. Do not add a path exclusion to hide a violation. |
 | `ruff format` | `line-length = 100` | Repo-wide. |
-| `mypy` | `strict = true`, `files = ["src"]`, `warn_unreachable` | `src/` only; tests are typed loosely on purpose. |
+| `mypy` | `strict = true`, `files = ["src", "tools"]`, `warn_unreachable` | The product and the development tooling; tests are typed loosely on purpose. |
 | `pytest` | `pyproject.toml` `[tool.pytest.ini_options]` | `asyncio_mode = auto`; `--strict-markers`. |
 
 ### 3.2 Style that the linter cannot check
@@ -195,6 +195,20 @@ package a session may implement, a delivery plan defines each package's requirem
 and a handoff gate checks the result. None of that scaffolding is part of a release — the
 product ships `docs/`, not the plan — so it is not described here, and a contributor does not
 need it: the gates in §3 are the same either way.
+
+The two gates that *read* the scaffolding live in the repository-root `tools` package, which is
+development tooling: it is not in the wheel and not in the sdist (a test asserts both), so it
+never reaches a user and the shipped tree never names the scaffolding. With an activated
+environment, from the repository root:
+
+```bash
+python -m tools.wp_check WP-24          # verify a completed work package from the repository
+python -m tools.preamble_check .        # every prompt block matches the shared preamble
+```
+
+`wp_check` prints one line per check and exits non-zero on any failure; its seventh check runs
+the §3 gates at the work package's commit in a fresh process, which is why it is slow. Pass
+`--no-gates` to skip it. Neither tool is on the import path of any packaged module.
 
 One work package per session. A failing work package is fixed before the next starts. Every
 deviation is recorded in the tracker, not in the code.

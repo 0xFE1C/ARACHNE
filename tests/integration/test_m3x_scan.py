@@ -147,6 +147,9 @@ class _CallbackServer(BaseHTTPRequestHandler):
 
     hits: list[str] = []
     protocol_version = "HTTP/1.1"
+    # TCP_NODELAY: the same Nagle/delayed-ACK stall as tests/lab/web_lab.py (42 ms → 0.8 ms per
+    # request on loopback).
+    disable_nagle_algorithm = True
 
     def log_message(self, format: str, *args: object) -> None:  # noqa: A002 - stdlib signature
         return
@@ -175,7 +178,7 @@ def callback() -> Iterator[str]:
     _CallbackServer.hits = []
     server = ThreadingHTTPServer(("127.0.0.1", 0), _CallbackServer)
     server.daemon_threads = True
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread = threading.Thread(target=server.serve_forever, args=(0.05,), daemon=True)
     thread.start()
     try:
         yield f"http://127.0.0.1:{server.server_address[1]}"

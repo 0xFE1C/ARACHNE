@@ -214,6 +214,10 @@ class SshLabServer:
             except (TimeoutError, OSError):
                 continue
             with connection:
+                # TCP_NODELAY: the banner and the KEXINIT are separate small writes, and with
+                # Nagle on each waits ~40 ms for the peer's delayed ACK on loopback (measured on
+                # the HTTP lab: 42 ms → 0.8 ms per request). The fixture's latency is overhead.
+                connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
                 connection.settimeout(5.0)
                 try:
                     self._handle(connection)

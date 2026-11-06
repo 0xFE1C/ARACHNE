@@ -17,6 +17,7 @@ catalog and the QA gate over it; this module owns the lookup the analyzer needs.
 
 from __future__ import annotations
 
+import functools
 import re
 from collections.abc import Iterable, Mapping
 from importlib.resources import files
@@ -259,6 +260,19 @@ def load_remediation_catalog(path: str | None = None) -> RemediationCatalog:
         return parse_remediation_catalog(
             _safe_yaml(text, source=str(resolved)), source=str(resolved)
         )
+    return _shipped_remediation_catalog()
+
+
+@functools.cache
+def _shipped_remediation_catalog() -> RemediationCatalog:
+    """The packaged catalog, parsed once per process.
+
+    It is a frozen model over a file that ships inside the package, so re-reading and
+    re-parsing it is pure waste: the catalog takes ~0.5 s to parse, and each analysis phase
+    builds its own analyzer, so one scan parsed it four times. The cache takes no arguments on
+    purpose — the shipped resource is a constant of the installation. A caller that passes an
+    explicit ``path`` is not cached, so a file rewritten between two calls is still re-read.
+    """
     resource = files("arachne.templates")
     for part in DEFAULT_REMEDIATION_RESOURCE:
         resource = resource.joinpath(part)

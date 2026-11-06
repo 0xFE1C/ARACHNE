@@ -27,6 +27,7 @@ evidence-quality and FP-heuristic terms of each named in
 
 from __future__ import annotations
 
+import functools
 import math
 import re
 from collections.abc import Mapping
@@ -256,6 +257,17 @@ def load_vector_table(path: str | None = None) -> VectorTable:
         except (OSError, yaml.YAMLError) as exc:
             raise ConfigurationError(f"cannot read {resolved}: {exc}") from exc
         return parse_vector_table(data, source=str(resolved))
+    return _shipped_vector_table()
+
+
+@functools.cache
+def _shipped_vector_table() -> VectorTable:
+    """The packaged CVSS vector table, parsed once per process.
+
+    A frozen model over a file that ships inside the package, parsed four times per scan
+    because each analysis phase builds its own analyzer. No arguments: the shipped resource is
+    a constant of the installation. An explicit ``path`` is never cached.
+    """
     resource = files("arachne.templates")
     for part in DEFAULT_VECTOR_RESOURCE:
         resource = resource.joinpath(part)

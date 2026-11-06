@@ -30,6 +30,7 @@ what makes the narrative explainable and the report defensible.
 from __future__ import annotations
 
 import fnmatch
+import functools
 import re
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
@@ -378,6 +379,17 @@ def load_rule_set(path: str | None = None) -> RuleSet:
         except OSError as exc:
             raise ConfigurationError(f"cannot read {resolved}: {exc}") from exc
         return parse_rule_set(_safe_yaml(text, source=str(resolved)), source=str(resolved))
+    return _shipped_rule_set()
+
+
+@functools.cache
+def _shipped_rule_set() -> RuleSet:
+    """The packaged rule corpus, parsed once per process.
+
+    A frozen model over a file that ships inside the package; it is ~0.4 s to parse and one
+    scan parsed it twice. No arguments: the shipped resource is a constant of the installation.
+    An explicit ``path`` is never cached, so a rule file rewritten between calls is re-read.
+    """
     resource = files("arachne.templates")
     for part in DEFAULT_RULES_RESOURCE:
         resource = resource.joinpath(part)

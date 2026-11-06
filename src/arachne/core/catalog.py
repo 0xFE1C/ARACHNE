@@ -11,6 +11,7 @@ Loading is strict: unknown fields, a duplicate ``(module, name)`` or an unknown
 
 from __future__ import annotations
 
+import functools
 import re
 from importlib.resources import files
 from pathlib import Path
@@ -166,7 +167,7 @@ def default_catalog_text() -> str:
 def load_catalog(path: str | Path | None = None) -> PlanningCatalog:
     """Load the catalogue from ``path``, or the bundled default when ``path`` is None."""
     if path is None:
-        return load_catalog_from_text(default_catalog_text(), source="bundled catalogue")
+        return _bundled_catalog()
     resolved = Path(path).expanduser()
     if not resolved.is_file():
         msg = f"check catalogue {resolved} does not exist or is not a file"
@@ -176,3 +177,15 @@ def load_catalog(path: str | Path | None = None) -> PlanningCatalog:
     except OSError as exc:
         raise ConfigurationError(f"cannot read check catalogue {resolved}: {exc}") from exc
     return load_catalog_from_text(text, source=str(resolved))
+
+
+@functools.cache
+def _bundled_catalog() -> PlanningCatalog:
+    """The catalogue that ships with ARACHNE, parsed once per process.
+
+    A frozen model over a packaged file, and the plan is built more than once per scan, so
+    re-parsing it is pure waste — it is the largest of the packaged YAML documents. No
+    arguments: the bundled catalogue is a constant of the installation. A caller that passes an
+    explicit ``path`` (or its own text) is not cached.
+    """
+    return load_catalog_from_text(default_catalog_text(), source="bundled catalogue")

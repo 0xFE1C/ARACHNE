@@ -845,6 +845,13 @@ class _Handler(BaseHTTPRequestHandler):
 
     server_version = "arachne-lab/1.0"
     protocol_version = "HTTP/1.1"
+    # ``TCP_NODELAY`` on every accepted connection. A small response written in several
+    # ``send_header`` calls over loopback is the textbook Nagle/delayed-ACK case: without this
+    # each request stalls ~40 ms waiting for the peer's ACK. Measured on this lab, sequentially:
+    # 42.1 ms/request with the default and 0.81 ms/request with the flag. The fixture's latency
+    # is pure overhead — the scans assert on findings, not on transport timing — so it is
+    # removed here rather than compensated for with a longer timeout.
+    disable_nagle_algorithm = True
     lab: WebLab  # injected by the server factory below
 
     # ------------------------------------------------------------------ plumbing
@@ -2751,7 +2758,15 @@ def start_web_lab(
     port = server.server_address[1]
     lab.port = port
     lab.base_url = f"http://127.0.0.1:{port}/"
-    thread = threading.Thread(target=server.serve_forever, name="arachne-web-lab", daemon=True)
+    # ``poll_interval=0.05``, not the 0.5 s default: ``server.shutdown()`` blocks until the
+    # serve loop notices, so the default adds up to half a second of pure delay to every lab
+    # teardown — and several modules create a lab per test.
+    thread = threading.Thread(
+        target=server.serve_forever,
+        args=(0.05,),
+        name="arachne-web-lab",
+        daemon=True,
+    )
     thread.start()
     try:
         yield lab

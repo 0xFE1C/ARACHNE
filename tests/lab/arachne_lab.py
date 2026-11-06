@@ -154,6 +154,11 @@ class _TcpServer:
 
     def _handle(self, connection: socket.socket) -> None:
         try:
+            # TCP_NODELAY on the fixture's side of the exchange. A banner-plus-KEXINIT reply is
+            # several small writes; with Nagle on and the peer delaying its ACK, each round trip
+            # stalls ~40 ms on loopback (measured on the HTTP lab: 42 ms → 0.8 ms per request).
+            # The fixture's latency is pure overhead, so it is removed here.
+            connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             connection.settimeout(5.0)
             self.handler(connection)
         except Exception:  # a fixture must never fail a test by raising in its thread

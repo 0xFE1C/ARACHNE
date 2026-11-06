@@ -117,6 +117,27 @@ def _denials_naming(harness: ApiHarness, resource_id: Any) -> list[Any]:
     ]
 
 
+def _listed_values(response: Any) -> set[str]:
+    """The scalar field values of a collection listing, as strings.
+
+    Compared by equality, never by substring. The rows carry timestamps
+    (``2026-11-06T13:06:42.522078+00:00``), so ``str(target) not in text`` reports a leak for
+    row 22 as soon as any timestamp happens to contain "22" — a flake that depends on the
+    clock rather than on tenancy.
+    """
+    payload = response.json()
+    rows = payload
+    if isinstance(payload, dict):
+        rows = next((value for value in payload.values() if isinstance(value, list)), [])
+    values: set[str] = set()
+    for row in rows:
+        if isinstance(row, dict):
+            values.update(
+                str(value) for value in row.values() if isinstance(value, (str, int, float))
+            )
+    return values
+
+
 def assert_collection_hides(
     harness: ApiHarness, case: TenantCase, target: Any, *, label: str
 ) -> None:
@@ -130,14 +151,14 @@ def assert_collection_hides(
     method, path = case.collection.split(" ", 1)
     owner = _call(harness, method, path, headers=_headers(_bound_key(harness, TENANT_B), method))
     assert owner.status_code == 200, owner.text
-    assert str(target) in owner.text, (
+    assert str(target) in _listed_values(owner), (
         f"{label}: the owner's own listing does not contain {target!r}, so the check is vacuous"
     )
     neighbour = _call(
         harness, method, path, headers=_headers(_bound_key(harness, TENANT_A), method)
     )
     assert neighbour.status_code == 200, neighbour.text
-    assert str(target) not in neighbour.text, (
+    assert str(target) not in _listed_values(neighbour), (
         f"{label}: {path} listed another tenant's {case.resource} ({target!r})"
     )
 

@@ -95,6 +95,9 @@ class FakeOpenAI:
 
         class Handler(BaseHTTPRequestHandler):
             protocol_version = "HTTP/1.1"
+            # TCP_NODELAY: the same Nagle/delayed-ACK stall as tests/lab/web_lab.py (42 ms →
+            # 0.8 ms per request on loopback). An AI-mode scan makes one call per step.
+            disable_nagle_algorithm = True
 
             def do_POST(self) -> None:
                 length = int(self.headers.get("content-length") or 0)
@@ -183,7 +186,7 @@ class FakeOpenAI:
         server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         server.daemon_threads = True
         self._server = server
-        self._thread = threading.Thread(target=server.serve_forever, daemon=True)
+        self._thread = threading.Thread(target=server.serve_forever, args=(0.05,), daemon=True)
         self._thread.start()
         return self
 

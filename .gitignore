@@ -31,6 +31,15 @@ coverage.xml
 !tests/fixtures/repo/.env
 *.pem
 *.key
+# The TLS lab's key pair and the feed-signing public key are synthetic fixtures generated for
+# the tests, and the suite cannot run without them: `tests/unit/test_m2_data.py` asserts they
+# are present ("`expired.key` is a test fixture the TLS tests need"), and
+# `tests/fixtures/intel/kev.sig` is committed but unverifiable without its public key. They were
+# ignored, so the TLS, mTLS, HTTP/3, IPv6-parity and intel-feed tests failed in every checkout
+# that was not the machine which generated them. Negated for the same reason as the fake `.env`
+# above: these are fixtures, not credentials.
+!tests/fixtures/lab/*.key
+!tests/fixtures/intel/*.pem
 
 # ---- runtime artifacts ----
 *.db
