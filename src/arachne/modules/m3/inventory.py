@@ -150,6 +150,11 @@ class Page:
     #: Which secret detectors fired on the raw body (the value is already redacted — this is
     #: how M4's exposure checks learn "this page carries an AWS key" without the key).
     secret_kinds: tuple[str, ...] = ()
+    #: True when the shared client replaced a non-text body with its byte-count placeholder
+    #: (F-08-04): the bytes are never decoded, so a check that reports a *download* (an
+    #: actuator heap dump) establishes it from this flag and the response headers rather than
+    #: from bytes it cannot read (WP-27).
+    binary: bool = False
 
     @property
     def is_html(self) -> bool:
@@ -508,6 +513,7 @@ def page_from_exchange(exchange: HttpExchange) -> Page:
         cookies=tuple(exchange.cookies),
         truncated=exchange.body_truncated,
         secret_kinds=tuple(exchange.secret_kinds),
+        binary=exchange.body_is_binary,
     )
 
 

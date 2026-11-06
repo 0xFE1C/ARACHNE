@@ -6,7 +6,7 @@ the numbered methods in `docs/research/`.
 
 - research corpus: `docs/research`
 - source roots: `src/arachne/modules`
-- references found: **232**
+- references found: **257**
 - coverage: **148/175 (84.6%)**
 
 ## Summary
@@ -115,7 +115,7 @@ the numbered methods in `docs/research/`.
 | 16 | HTTP request smuggling | yes | `smuggling-oracle` |
 | 17 | Web cache poisoning audit | yes | `cache-deception`, `cache-poison-audit` |
 | 18 | Insecure direct object reference | yes | `authz-bypass`, `idor-oracle` |
-| 19 | Authentication and session management | yes | `auth-session-audit`, `authenticated-surface`, `f`, `session-logout`, `wp-app-password-surface`, `wp-author-enumeration`, `wp-registration-open`, `wp-rest-app-passwords`, `wp-rest-route-param`, `wp-rest-user-record`, `wp-rest-users`, `wp-user-sitemap` |
+| 19 | Authentication and session management | yes | `auth-session-audit`, `authenticated-surface`, `f`, `session-logout`, `str`, `wp-app-password-surface`, `wp-author-enumeration`, `wp-registration-open`, `wp-rest-app-passwords`, `wp-rest-route-param`, `wp-rest-user-record`, `wp-rest-users`, `wp-user-sitemap` |
 | 20 | JWT implementation audit | yes | `jwt-audit` |
 | 21 | OAuth 2.0 flow audit | yes | `oauth-flow-audit` |
 | 22 | SAML assertion audit | yes | `saml-audit` |
@@ -127,7 +127,7 @@ the numbered methods in `docs/research/`.
 | 28 | Second-order injection | no | — |
 | 29 | Race condition and TOCTOU probing | yes | `race-oracle` |
 | 30 | Business logic abuse testing | yes | `business-logic-audit`, `input-validation-audit` |
-| 31 | API surface enumeration | yes | `api-surface`, `f`, `wp-admin-ajax-surface`, `wp-asset-version`, `wp-config-backup`, `wp-config-source`, `wp-debug-log`, `wp-installer-residue`, `wp-plugin-readme`, `wp-plugins-listing`, `wp-readme-version`, `wp-rest-index`, `wp-rest-settings-unauth`, `wp-theme-stylesheet`, `wp-themes-listing`, `wp-upgrade-residue`, `wp-uploads-listing`, `wp-xmlrpc-rsd`, `wp-xmlrpc-surface` |
+| 31 | API surface enumeration | yes | `api-surface`, `f`, `str`, `wp-admin-ajax-surface`, `wp-asset-version`, `wp-config-backup`, `wp-config-source`, `wp-debug-log`, `wp-installer-residue`, `wp-plugin-readme`, `wp-plugins-listing`, `wp-readme-version`, `wp-rest-index`, `wp-rest-settings-unauth`, `wp-theme-stylesheet`, `wp-themes-listing`, `wp-upgrade-residue`, `wp-uploads-listing`, `wp-xmlrpc-rsd`, `wp-xmlrpc-surface` |
 | 32 | GraphQL endpoint audit | yes | `graphql-audit`, `graphql-depth-abuse`, `graphql-resolver-auth` |
 | 33 | WebSocket handshake and message audit | yes | `websocket-audit`, `websocket-injection`, `websocket-upgrade-auth` |
 | 34 | Subdomain takeover detection | yes | `subdomain-takeover` |

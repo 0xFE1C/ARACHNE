@@ -29,7 +29,7 @@
 # disagree, so a plan can never describe a check differently from the code that runs it.
 # S4 adds the M2 rows the registry implements; M3-M6 below are still *planned* only and the
 # plan marks them `implemented: false`.
-catalog_version: "1.14"
+catalog_version: "1.15"
 checks:
   # ---------------------------------------------------------------- M1 recon & attack surface
   # Implemented in S3 (arachne/modules/m1/). The rows below are generated from the check
@@ -2868,3 +2868,282 @@ checks:
     - url
     estimated_requests: 6
     requires_active_checks: true
+  # ---------------------------------------------------------------- WP-27 application servers
+  # The server and framework surface (REQ-DET-020): Spring Boot, Django, Rails, Laravel,
+  # Tomcat, JBoss, WebLogic, ColdFusion and IIS. Every check is an L1 read-only GET probe;
+  # the management-console checks report a reachable surface and never send a credential.
+  - module: M3
+    name: spring-boot-actuator-index
+    version: '1.0'
+    title: 'Spring Boot actuator endpoint index published'
+    description: 'Reports when the Spring Boot actuator index answers an anonymous GET with its own endpoint map: the JSON document carries a "_links" object whose entries are the actuator endpoints the application exposes. The index itself is an inventory of the management surface; the check names the endpoints it lists and makes no claim about which of them disclose data. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: spring-boot-actuator-env
+    version: '1.0'
+    title: 'Spring Boot actuator configuration surface readable'
+    description: 'Reports when an actuator configuration endpoint answers an anonymous GET with its own JSON document: the response carries Spring''s environment structure (propertySources and activeProfiles for /actuator/env, contexts for configprops, mappings and beans). The finding names the property *sources* and the property *names* the document declares, never a value. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M3
+    name: spring-boot-heapdump
+    version: '1.0'
+    title: 'Spring Boot actuator heap dump endpoint enabled'
+    description: 'Reports when the actuator''s heap-dump route answers an anonymous GET with a binary download rather than the application''s JSON or an error page: either the shared client classifies the body as non-text (a real heap dump is an HPROF binary, and its bytes are never decoded or stored), or the readable body begins with the HPROF magic ''JAVA PROFILE''. The finding reports that the endpoint is enabled and serves a download, with its content type and size; the dump is fetched once and never parsed. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: django-debug-page
+    version: '1.0'
+    title: 'Django debug error page disclosed'
+    description: 'Reports when Django answers a request for a non-existent path with its own technical page: the response carries Django''s debug markup (the ''You''re seeing this error because you have DEBUG = True'' notice plus the URL-pattern or traceback section) instead of a plain 404. With DEBUG on, that page discloses the settings, the URL configuration and, for an exception, the stack. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-209
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: django-debug-toolbar
+    version: '1.0'
+    title: 'Django debug toolbar endpoints served'
+    description: 'Reports when the django-debug-toolbar''s own endpoints (/__debug__/ and its panel renderer) answer an anonymous request with the toolbar''s markup or JSON (the djDebug container, the DJDT cookie contract or a panel payload) instead of a 404. The toolbar exposes the SQL, settings and request data of every rendered page. Read-only GET probes; no panel is rendered with attacker input.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-497
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: django-media-listing
+    version: '1.0'
+    title: 'Django development media directory listed'
+    description: 'Reports when Django''s development static/media server answers an anonymous GET with a directory index: the response carries the ''Directory listing for'' heading and the entry list that django.views.static renders for a media or static root, rather than a 404. The check reports the path and the entry count, never the file contents. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-548
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M3
+    name: rails-info-properties
+    version: '1.0'
+    title: 'Rails development info properties disclosed'
+    description: 'Reports when the Rails info controller''s /rails/info/properties answers an anonymous GET with its properties table: the response names the Rails version, the Ruby version and the application root, which the route only serves while the application runs in development mode. The finding reports the properties the page declares. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-497
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: rails-info-routes
+    version: '1.0'
+    title: 'Rails route table disclosed'
+    description: 'Reports when /rails/info/routes answers an anonymous GET with the application''s route table: the response carries the Rails route listing''s own columns (Prefix, Verb, URI Pattern, Controller#Action) and names the issuing framework. The table is a complete map of the application''s endpoints. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: laravel-debug-page
+    version: '1.0'
+    title: 'Laravel debug error page disclosed'
+    description: 'Reports when Laravel answers a request for a non-existent path with its own debug error page rather than a plain 404: the response carries the Ignition/Whoops markup (the ignition container, the APP_DEBUG notice or the ''Whoops'' frame list) and names the framework. With the debug page on, an exception discloses the environment, the route list and the file paths. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-209
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: laravel-ignition-surface
+    version: '1.0'
+    title: 'Laravel Ignition debug endpoints served'
+    description: 'Reports when the Ignition debug component''s endpoints (/\_ignition/health-check and the /\_ignition index) answer an anonymous GET with Ignition''s own document (the can_execute_commands health payload or the Ignition landing markup) instead of a 404. The route set belongs to local development; the check reports that it is reachable and sends no request that would evaluate a solution. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-497
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: tomcat-manager-surface
+    version: '1.0'
+    title: 'Tomcat Manager application reachable'
+    description: 'Reports when the Tomcat manager application answers an anonymous client with its own Basic challenge (WWW-Authenticate: Basic realm="Tomcat Manager Application") or with its own manager page (the /manager/html deployment console). The finding reports that the surface is reachable: the check sends no credential and attempts no login. Read-only GET probes.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M3
+    name: tomcat-host-manager-surface
+    version: '1.0'
+    title: 'Tomcat Host Manager application reachable'
+    description: 'Reports when the Tomcat host-manager application answers an anonymous client with its own Basic challenge (WWW-Authenticate: Basic realm="Tomcat Host Manager Application") or with its own virtual-host page. The finding reports that the surface is reachable: the check sends no credential and attempts no login. Read-only GET probes.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: tomcat-examples-surface
+    version: '1.0'
+    title: 'Tomcat default example applications reachable'
+    description: 'Reports when the example and documentation web applications Tomcat ships by default (/examples/ and /docs/) answer an anonymous GET with the project''s own pages, naming Apache Tomcat. The documentation application publishes the server version and the examples application ships sample servlets; both belong to a stock installation and are removed in a hardened one. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: jboss-jmx-console
+    version: '1.0'
+    title: 'JBoss JMX console reachable'
+    description: 'Reports when the JBoss JMX console (/jmx-console/ and its HtmlAdaptor) answers an anonymous GET with the console''s own page: the response names the JMX agent view and the issuing JBoss server. The console exposes every registered MBean operation, and the check reports that it is reachable without sending any MBean invocation. Read-only GET probes.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: jboss-web-console
+    version: '1.0'
+    title: 'JBoss web console reachable'
+    description: 'Reports when the JBoss web console (/web-console/ and its ServerInfo view) answers an anonymous GET with the console''s own page or the ServerInfo JSP''s content, naming the issuing JBoss server. The page publishes the server''s configuration and deployment inventory; the check reports reachability and reads nothing further. Read-only GET probes.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: jboss-admin-console
+    version: '1.0'
+    title: 'JBoss administration console reachable'
+    description: 'Reports when the JBoss administration console (/admin-console/) answers an anonymous GET with the console''s own page or its login view, naming the issuing JBoss server. The console is the server''s management surface; the check reports that it is reachable and sends no credential and attempts no login. Read-only GET probes.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: weblogic-console
+    version: '1.0'
+    title: 'WebLogic administration console reachable'
+    description: 'Reports when the Oracle WebLogic Server administration console (/console/ and its login form) answers an anonymous GET with the console''s own page or login markup (the j_security_check form action), naming the issuing server. The console is the domain''s management surface; the check reports that it is reachable and sends no credential and attempts no login. Read-only GET probes.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: weblogic-uddi-explorer
+    version: '1.0'
+    title: 'WebLogic UDDI explorer reachable'
+    description: 'Reports when the UDDI explorer application WebLogic deploys by default (/uddiexplorer/) answers an anonymous GET with its own search page, naming WebLogic and the UDDI registry surface. The application belongs to the server''s default deployment and is removed in a hardened one. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: weblogic-wsat
+    version: '1.0'
+    title: 'WebLogic wls-wsat component reachable'
+    description: 'Reports when the wls-wsat component WebLogic Server deploys by default (/wls-wsat/) answers an anonymous GET with the component''s own page or endpoint listing, naming the Web Services Atomic Transaction surface. The component is a SOAP endpoint; the check establishes that it is deployed and publishes no SOAP message, so no service is invoked. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: coldfusion-administrator
+    version: '1.0'
+    title: 'ColdFusion administrator console reachable'
+    description: 'Reports when the ColdFusion administrator (/CFIDE/administrator/ and its index) answers an anonymous GET with the administrator''s own page, naming the ColdFusion administrator and the CFIDE tree. The console exposes the server''s datasources, scheduled tasks and mappings; the check reports that it is reachable and sends no credential and attempts no login. Read-only GET probes.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: coldfusion-scripts-directory
+    version: '1.0'
+    title: 'ColdFusion CFIDE scripts directory listed'
+    description: 'Reports when the ColdFusion CFIDE scripts tree (/CFIDE/scripts/) answers an anonymous GET with a directory index or one of the editor components it bundles (the FCKeditor file-manager connector), naming the CFIDE path. The tree is served by the installation''s web server and is removed in a hardened one. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-548
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: coldfusion-version-disclosure
+    version: '1.0'
+    title: 'ColdFusion version disclosed'
+    description: 'Reports when the ColdFusion administrator''s own pages publish the server''s version (the administrator footer''s build string), naming ColdFusion. A version is a fingerprint and is never a severity on its own (FP-3): the check reports the version and leaves the CVE correlation to the intelligence stage. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: iis-short-name-disclosure
+    version: '1.0'
+    title: 'IIS 8.3 short-name behaviour observable'
+    description: 'Reports when IIS answers a request for a tilde short-name path with its own 400 error page (''HTTP Error 400. The request is badly formed.'') and a Server header naming IIS, while a request for an equally non-existent long name answers 404. That difference is the observable 8.3 short-name behaviour the tilde trick measures; the check reports the probe and the server banner and enumerates no name it did not probe. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: iis-trace-viewer
+    version: '1.0'
+    title: 'ASP.NET trace viewer served'
+    description: 'Reports when the ASP.NET trace viewer (/trace.axd) answers an anonymous GET with its own page: the response carries the viewer''s own headings (Requests to this Application, Trace Information) and names the .NET runtime that serves it. With tracing enabled the page publishes every recent request''s form, cookie and server variable data. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-497
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: iis-legacy-password-surface
+    version: '1.0'
+    title: 'IIS legacy password-change surface reachable'
+    description: 'Reports when the legacy IIS password-change components (/iisadmpwd/ and its .htr handlers, /scripts/iisadmin/) answer an anonymous GET with the Internet Services Administrator''s own page rather than a 404. The components belong to retired IIS releases and a current installation removes them; the check reports that they are served and submits no password. Read-only GET probes.'
+    research_ref: ch03#19
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4

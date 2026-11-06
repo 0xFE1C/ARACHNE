@@ -135,8 +135,9 @@ def test_the_shipped_checks_are_annotated_l1() -> None:
     # the network behind the same scope gate as the SMB one -> 169. WP-25's twenty-six
     # WordPress checks are all L1 (one of them, m3.wp-cron-surface, is active because its
     # reachability probe is an OPTIONS) -> 195. WP-26's thirty CMS checks are all L1, and all
-    # of them are plain GET probes -> 225.
-    assert len(original) == 225
+    # of them are plain GET probes -> 225. WP-27's twenty-five application-server checks are
+    # all L1 GET probes too -> 250.
+    assert len(original) == 250
     assert all(m.proof in {ProofLevel.L0, ProofLevel.L1} for m in original)
     assert {m.id for m in original if m.proof is ProofLevel.L0} == {"m1.mobile-artifact"}
     assert all(not m.requires_state_attestation for m in original)

@@ -98,8 +98,11 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # credential check (REQ-CREDS-006), opt-in like the SMB one -> 176. WP-25 adds the
     # WordPress ecosystem family (REQ-DET-018), all default-on read-only L1 probes -> 202.
     # WP-26 adds the CMS family B (REQ-DET-019) — the Joomla, Drupal, Moodle, PrestaShop and
-    # Magento checks, all default-on read-only L1 GET probes -> 232.
-    assert len(registry.checks()) == 232
+    # Magento checks, all default-on read-only L1 GET probes -> 232. WP-27 adds the
+    # application-server and framework family (REQ-DET-020) — the Spring Boot, Django, Rails,
+    # Laravel, Tomcat, JBoss, WebLogic, ColdFusion and IIS checks, all default-on read-only L1
+    # GET probes -> 257.
+    assert len(registry.checks()) == 257
     # M1's code-secret-mining, M2's SNMP and ICS checks, M4's metadata-ssrf and
     # default-credentials checks, M3's ssrf-probe, M5's imds-ssrf / azure-mi-audit and
     # M6's deception-listeners / ad-attack-path, S13's m1.bucket-hunt, S15's six
@@ -117,7 +120,8 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # WP-20's m2.ssh-auth is active as well (it authenticates) -> 99. WP-25's
     # m3.wp-cron-surface is active because it is the family's one non-GET interaction (the
     # OPTIONS reachability probe that cannot trigger the job it reports) -> 100. WP-26's
-    # thirty CMS checks are all plain GETs, so the active count does not move.
+    # thirty CMS checks are all plain GETs, so the active count does not move. WP-27's
+    # twenty-five application-server checks are all plain GETs too.
     assert registry.totals()["active_checks"] == 100
     # S15: the six L2+ declarations are exactly the proof ladder's opt-in rows. S29 adds one
     # more: m3.client-secret-verify, the L2 dynamic verification of a client-side credential.
@@ -240,8 +244,8 @@ def test_a_plugin_extends_an_existing_module(monkeypatch) -> None:  # type: igno
     )
     registry = ModuleRegistry.discover()
     assert registry.module_ids() == ("M1", "M2", "M3", "M4", "M5", "M6")
-    # The shipped set (232 at WP-26) plus the plugin's one extra check.
-    assert len(registry.checks()) == 233
+    # The shipped set (257 at WP-27) plus the plugin's one extra check.
+    assert len(registry.checks()) == 258
     assert registry.group("M1").origin == "builtin+extra"  # type: ignore[union-attr]
 
 

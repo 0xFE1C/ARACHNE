@@ -93,8 +93,9 @@ def test_the_module_exposes_the_core_and_extended_checks() -> None:
     # injection families (REQ-DET-004/009) — 56. WP-11 adds the DOM-sink browser check
     # (REQ-DET-015) — 57. WP-25 adds the WordPress ecosystem family (REQ-DET-018) — 83.
     # WP-26 adds the CMS family B (REQ-DET-019): Joomla, Drupal, Moodle, PrestaShop and
-    # Magento — 113.
-    assert len(ids) == 113, ids
+    # Magento — 113. WP-27 adds the application-server and framework family (REQ-DET-020):
+    # Spring Boot, Django, Rails, Laravel, Tomcat, JBoss, WebLogic, ColdFusion and IIS — 138.
+    assert len(ids) == 138, ids
     assert len(set(ids)) == len(ids)
     # The proof ladder's declarations are part of the module's contract: the L2+ rows are
     # all opt-in, and only rce-echo/state-marker demand the state-change attestation.

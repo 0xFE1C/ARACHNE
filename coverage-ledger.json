@@ -2,7 +2,7 @@
   "ledger_version": "1.0",
   "generated_at": "2026-11-06",
   "registry_version": "registry-1.0",
-  "registry_digest": "sha256:20bdd11869e21bd8cd83bebd9f5025a208e1416b8e04d4866ee01fd228cab87c",
+  "registry_digest": "sha256:c25307cc0ba5ac349507823ea2a11fe043c8489fbdd6bfee5af54fc3c991b788",
   "framework_versions": {
     "WSTG": "4.2",
     "API": "2023",
@@ -13,7 +13,7 @@
   },
   "last_verified_note": "last_verified is the date the corpus was last exercised by the test suite: the ledger is regenerated after a full suite run, and every registered check is run by it. A per-check date arrives with the verification-record store (REQ-PROOF-*). It is committed content, not a wall-clock read, so --check is byte-stable.",
   "totals": {
-    "checks": 232,
+    "checks": 257,
     "cwe_only_checks": 0
   },
   "wstg": {
@@ -246,11 +246,18 @@
           "m2.smb-enum",
           "m2.ssdp-discovery",
           "m3.api-surface",
+          "m3.coldfusion-administrator",
+          "m3.coldfusion-version-disclosure",
           "m3.drupal-admin-surface",
           "m3.drupal-api-surface",
           "m3.drupal-installer-residue",
           "m3.drupal-version-disclosure",
           "m3.graphql-audit",
+          "m3.iis-legacy-password-surface",
+          "m3.iis-short-name-disclosure",
+          "m3.jboss-admin-console",
+          "m3.jboss-jmx-console",
+          "m3.jboss-web-console",
           "m3.joomla-admin-surface",
           "m3.joomla-api-surface",
           "m3.joomla-installer-residue",
@@ -267,6 +274,16 @@
           "m3.prestashop-api-surface",
           "m3.prestashop-installer-residue",
           "m3.prestashop-version-disclosure",
+          "m3.rails-info-routes",
+          "m3.spring-boot-actuator-env",
+          "m3.spring-boot-actuator-index",
+          "m3.spring-boot-heapdump",
+          "m3.tomcat-examples-surface",
+          "m3.tomcat-host-manager-surface",
+          "m3.tomcat-manager-surface",
+          "m3.weblogic-console",
+          "m3.weblogic-uddi-explorer",
+          "m3.weblogic-wsat",
           "m3.wp-admin-ajax-surface",
           "m3.wp-app-password-surface",
           "m3.wp-asset-version",
@@ -3111,6 +3128,420 @@
       "cwe": "CWE-200"
     },
     {
+      "id": "m3.spring-boot-actuator-index",
+      "module": "M3",
+      "title": "Spring Boot actuator endpoint index published",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "CWE-200",
+        "ATT&CK-T1592.002"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.spring-boot-actuator-env",
+      "module": "M3",
+      "title": "Spring Boot actuator configuration surface readable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "WSTG-CONF-05",
+        "CWE-200",
+        "ATT&CK-T1552"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.spring-boot-heapdump",
+      "module": "M3",
+      "title": "Spring Boot actuator heap dump endpoint enabled",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "CWE-200",
+        "ATT&CK-T1552"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.django-debug-page",
+      "module": "M3",
+      "title": "Django debug error page disclosed",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "WSTG-ERRH-01",
+        "WSTG-ERRH-02",
+        "CWE-209"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-209"
+    },
+    {
+      "id": "m3.django-debug-toolbar",
+      "module": "M3",
+      "title": "Django debug toolbar endpoints served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-ERRH-01",
+        "CWE-497"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-497"
+    },
+    {
+      "id": "m3.django-media-listing",
+      "module": "M3",
+      "title": "Django development media directory listed",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-03",
+        "WSTG-CONF-04",
+        "CWE-548"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-548"
+    },
+    {
+      "id": "m3.rails-info-properties",
+      "module": "M3",
+      "title": "Rails development info properties disclosed",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "WSTG-INFO-02",
+        "WSTG-INFO-08",
+        "CWE-497"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-497"
+    },
+    {
+      "id": "m3.rails-info-routes",
+      "module": "M3",
+      "title": "Rails route table disclosed",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.laravel-debug-page",
+      "module": "M3",
+      "title": "Laravel debug error page disclosed",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "WSTG-ERRH-01",
+        "WSTG-ERRH-02",
+        "CWE-209"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-209"
+    },
+    {
+      "id": "m3.laravel-ignition-surface",
+      "module": "M3",
+      "title": "Laravel Ignition debug endpoints served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-ERRH-01",
+        "CWE-497"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-497"
+    },
+    {
+      "id": "m3.tomcat-manager-surface",
+      "module": "M3",
+      "title": "Tomcat Manager application reachable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "CWE-200",
+        "ATT&CK-T1592.002"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.tomcat-host-manager-surface",
+      "module": "M3",
+      "title": "Tomcat Host Manager application reachable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "CWE-200",
+        "ATT&CK-T1592.002"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.tomcat-examples-surface",
+      "module": "M3",
+      "title": "Tomcat default example applications reachable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-02",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.jboss-jmx-console",
+      "module": "M3",
+      "title": "JBoss JMX console reachable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "CWE-200",
+        "ATT&CK-T1592.002"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.jboss-web-console",
+      "module": "M3",
+      "title": "JBoss web console reachable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.jboss-admin-console",
+      "module": "M3",
+      "title": "JBoss administration console reachable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-IDNT-04",
+        "CWE-200",
+        "ATT&CK-T1592.002"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.weblogic-console",
+      "module": "M3",
+      "title": "WebLogic administration console reachable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-IDNT-04",
+        "CWE-200",
+        "ATT&CK-T1592.002"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.weblogic-uddi-explorer",
+      "module": "M3",
+      "title": "WebLogic UDDI explorer reachable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.weblogic-wsat",
+      "module": "M3",
+      "title": "WebLogic wls-wsat component reachable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "CWE-200",
+        "ATT&CK-T1592.002"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.coldfusion-administrator",
+      "module": "M3",
+      "title": "ColdFusion administrator console reachable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-IDNT-04",
+        "CWE-200",
+        "ATT&CK-T1592.002"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.coldfusion-scripts-directory",
+      "module": "M3",
+      "title": "ColdFusion CFIDE scripts directory listed",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-03",
+        "WSTG-CONF-04",
+        "CWE-548"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-548"
+    },
+    {
+      "id": "m3.coldfusion-version-disclosure",
+      "module": "M3",
+      "title": "ColdFusion version disclosed",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-02",
+        "WSTG-INFO-08",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.iis-short-name-disclosure",
+      "module": "M3",
+      "title": "IIS 8.3 short-name behaviour observable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-03",
+        "WSTG-INFO-02",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.iis-trace-viewer",
+      "module": "M3",
+      "title": "ASP.NET trace viewer served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-ERRH-01",
+        "CWE-497"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-497"
+    },
+    {
+      "id": "m3.iis-legacy-password-surface",
+      "module": "M3",
+      "title": "IIS legacy password-change surface reachable",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-CONF-05",
+        "CWE-200",
+        "ATT&CK-T1592.002"
+      ],
+      "last_verified": "2026-11-06",
+      "cwe": "CWE-200"
+    },
+    {
       "id": "m4.security-header-review",
       "module": "M4",
       "title": "Security response headers missing or weak",
@@ -4283,6 +4714,10 @@
       "title": "Fingerprint Web Server",
       "checks": [
         "m2.http-fingerprint",
+        "m3.coldfusion-version-disclosure",
+        "m3.iis-short-name-disclosure",
+        "m3.rails-info-properties",
+        "m3.tomcat-examples-surface",
         "m3.wp-author-enumeration"
       ]
     },
@@ -4339,10 +4774,19 @@
         "m2.grpc-reflection",
         "m3.api-surface",
         "m3.drupal-api-surface",
+        "m3.jboss-jmx-console",
+        "m3.jboss-web-console",
         "m3.joomla-api-surface",
         "m3.magento-api-surface",
         "m3.moodle-api-surface",
         "m3.prestashop-api-surface",
+        "m3.rails-info-routes",
+        "m3.spring-boot-actuator-index",
+        "m3.spring-boot-heapdump",
+        "m3.tomcat-host-manager-surface",
+        "m3.tomcat-manager-surface",
+        "m3.weblogic-uddi-explorer",
+        "m3.weblogic-wsat",
         "m3.wp-admin-ajax-surface",
         "m3.wp-rest-index",
         "m3.wp-rest-route-param",
@@ -4369,11 +4813,13 @@
       "checks": [
         "m1.favicon-hash",
         "m2.favicon-hash",
+        "m3.coldfusion-version-disclosure",
         "m3.drupal-version-disclosure",
         "m3.joomla-version-disclosure",
         "m3.magento-version-disclosure",
         "m3.moodle-version-disclosure",
         "m3.prestashop-version-disclosure",
+        "m3.rails-info-properties",
         "m3.wp-asset-version",
         "m3.wp-plugin-readme",
         "m3.wp-readme-version",
@@ -4449,16 +4895,20 @@
       "state": "mapped",
       "title": "Test Application Platform Configuration",
       "checks": [
+        "m3.django-debug-page",
         "m3.drupal-config-source",
         "m3.drupal-installer-residue",
         "m3.joomla-config-source",
         "m3.joomla-installer-residue",
+        "m3.laravel-debug-page",
         "m3.magento-config-source",
         "m3.magento-installer-residue",
         "m3.moodle-config-source",
         "m3.moodle-installer-residue",
         "m3.prestashop-config-source",
         "m3.prestashop-installer-residue",
+        "m3.rails-info-properties",
+        "m3.spring-boot-actuator-env",
         "m3.wp-debug-log",
         "m3.wp-installer-residue",
         "m3.wp-plugins-listing",
@@ -4483,8 +4933,11 @@
       "state": "mapped",
       "title": "Test File Extensions Handling for Sensitive Information",
       "checks": [
+        "m3.coldfusion-scripts-directory",
+        "m3.django-media-listing",
         "m3.drupal-config-backup",
         "m3.drupal-config-source",
+        "m3.iis-short-name-disclosure",
         "m3.joomla-config-backup",
         "m3.joomla-config-source",
         "m3.magento-config-backup",
@@ -4503,7 +4956,10 @@
       "state": "mapped",
       "title": "Review Old Backup and Unreferenced Files for Sensitive Information",
       "checks": [
+        "m3.coldfusion-scripts-directory",
+        "m3.django-media-listing",
         "m3.drupal-config-backup",
+        "m3.iis-legacy-password-surface",
         "m3.joomla-config-backup",
         "m3.magento-config-backup",
         "m3.moodle-config-backup",
@@ -4525,16 +4981,34 @@
       "title": "Enumerate Infrastructure and Application Admin Interfaces",
       "checks": [
         "m3.authenticated-surface",
+        "m3.coldfusion-administrator",
+        "m3.django-debug-toolbar",
         "m3.drupal-admin-surface",
         "m3.drupal-installer-residue",
+        "m3.iis-legacy-password-surface",
+        "m3.iis-trace-viewer",
+        "m3.jboss-admin-console",
+        "m3.jboss-jmx-console",
+        "m3.jboss-web-console",
         "m3.joomla-admin-surface",
         "m3.joomla-installer-residue",
+        "m3.laravel-ignition-surface",
         "m3.magento-admin-surface",
         "m3.magento-installer-residue",
         "m3.moodle-admin-surface",
         "m3.moodle-installer-residue",
         "m3.prestashop-admin-surface",
         "m3.prestashop-installer-residue",
+        "m3.rails-info-routes",
+        "m3.spring-boot-actuator-env",
+        "m3.spring-boot-actuator-index",
+        "m3.spring-boot-heapdump",
+        "m3.tomcat-examples-surface",
+        "m3.tomcat-host-manager-surface",
+        "m3.tomcat-manager-surface",
+        "m3.weblogic-console",
+        "m3.weblogic-uddi-explorer",
+        "m3.weblogic-wsat",
         "m3.wp-app-password-surface",
         "m3.wp-cron-surface",
         "m3.wp-installer-residue",
@@ -4633,11 +5107,14 @@
       "title": "Testing for Account Enumeration and Guessable User Account",
       "checks": [
         "m3.auth-session-audit",
+        "m3.coldfusion-administrator",
         "m3.drupal-admin-surface",
+        "m3.jboss-admin-console",
         "m3.joomla-admin-surface",
         "m3.magento-admin-surface",
         "m3.moodle-admin-surface",
         "m3.prestashop-admin-surface",
+        "m3.weblogic-console",
         "m3.wp-admin-ajax-surface",
         "m3.wp-author-enumeration",
         "m3.wp-registration-open",
@@ -5008,6 +5485,11 @@
       "state": "mapped",
       "title": "Testing for Improper Error Handling",
       "checks": [
+        "m3.django-debug-page",
+        "m3.django-debug-toolbar",
+        "m3.iis-trace-viewer",
+        "m3.laravel-debug-page",
+        "m3.laravel-ignition-surface",
         "m3.wp-debug-log",
         "m4.verbose-errors"
       ]
@@ -5017,6 +5499,8 @@
       "state": "mapped",
       "title": "Testing for Stack Traces",
       "checks": [
+        "m3.django-debug-page",
+        "m3.laravel-debug-page",
         "m4.verbose-errors"
       ]
     },

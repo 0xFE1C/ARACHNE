@@ -76,6 +76,20 @@ structural marker, and it needs the body to name its own platform, so the five i
 decoys for one another. The count is carried by the generator: see ``coverage_matrix.md`` and
 ``python -m arachne.tools.counts``.
 
+**The application-server and framework family** (WP-27, REQ-DET-020) is the twenty-five checks
+in ``m3/app_servers.py``: the Spring Boot actuator index, configuration surfaces and heap dump;
+the Django debug page, debug toolbar and development media listing; the Rails info controller;
+the Laravel debug page and Ignition endpoints; the Tomcat manager, host-manager and default
+webapps; the JBoss JMX, web and administration consoles; the WebLogic administration console,
+UDDI explorer and ``wls-wsat`` component; the ColdFusion administrator, ``CFIDE`` scripts tree
+and version disclosure; and the IIS short-name behaviour, ASP.NET trace viewer and legacy
+``iisadmpwd`` surface. Every one is an L1 read-only ``GET`` probe, every one names a ``WSTG-*``
+mapping, and the management-console checks report a reachable *surface* — they send no
+credential and attempt no login. The whole family is silent on its decoys: one
+production-configured instance per framework plus a WAF-fronted one, and each framework's
+installation is a decoy for the other eight's checks. The count is carried by the generator:
+see ``coverage_matrix.md`` and ``python -m arachne.tools.counts``.
+
 **What this stage does not do** (recorded rather than implied): POST-body injection, DOM-sink
 verification in a browser, session fixation, and the families deferred to S10. See
 ADR-100.4-100.7.
@@ -105,6 +119,7 @@ from arachne.modules.m3.advanced_protocol import (
     RequestSmugglingOracle,
     SsrfProbe,
 )
+from arachne.modules.m3.app_servers import AppServerChecks
 from arachne.modules.m3.authenticated import AuthenticatedSurface, SessionLogout
 from arachne.modules.m3.client import XssOracle
 from arachne.modules.m3.client_secret import ClientSecretVerify
@@ -241,6 +256,13 @@ M3_CHECKS: tuple[type[Module], ...] = (
     # disclosure, installation and upgrade residue and the published API route. Every one is
     # L1 and read-only.
     *CmsFamilyBChecks,
+    # WP-27 application servers and web frameworks (REQ-DET-020): the Spring Boot actuator and
+    # heap-dump surface, the Django debug and media paths, the Rails and Laravel debug surfaces,
+    # the Tomcat manager and host-manager, the JBoss console family, the WebLogic console family,
+    # the ColdFusion administrator and the IIS family of extensions and short-name behaviour.
+    # Every one is an L1 read-only GET probe; the console checks report a reachable surface and
+    # never send a credential.
+    *AppServerChecks,
 )
 
 #: The M3 module group . Bump the version when the check set or a check's
@@ -267,9 +289,12 @@ M3 = ModuleGroup(
         "residue, the cron endpoint and the registration and application-password surfaces, "
         "plus the WP-26 CMS family B: the Joomla, Drupal, Moodle, PrestaShop and Magento "
         "configuration, backup, administrative-login, version, installer-residue and API-route "
-        "surfaces."
+        "surfaces, plus the WP-27 application-server and framework family: the Spring Boot "
+        "actuator and heap-dump surface, the Django debug and media paths, the Rails and Laravel "
+        "debug surfaces, the Tomcat manager and host-manager, the JBoss, WebLogic and ColdFusion "
+        "consoles and the IIS extension and short-name surfaces."
     ),
-    version="2.6.0",
+    version="2.7.0",
     research_chapter="ch03",
     checks=M3_CHECKS,
 )
