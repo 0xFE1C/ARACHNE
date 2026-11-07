@@ -23,7 +23,8 @@ from arachne.modules.m4.corpus import (
 # --------------------------------------------------------------------------- shipped data
 def test_the_shipped_corpus_parses_and_covers_every_family() -> None:
     corpus = load_corpus()
-    assert corpus.version == "1.0"
+    # 1.1 (WP-29) added the infrastructure-artifact groups (REQ-DET-022).
+    assert corpus.version == "1.1"
     assert len(corpus.env_paths()) >= 10
     assert {"git", "svn", "hg"} <= {probe.family for probe in corpus.vcs_probes()}
     assert ".sql" in corpus.backup_extensions()
@@ -47,6 +48,35 @@ def test_the_shipped_corpus_parses_and_covers_every_family() -> None:
     assert corpus.user_fields() and corpus.valid_markers()
     assert corpus.unauth_path_hints()
     assert {item.product for item in corpus.credential_products()} >= {"Jenkins"}
+
+
+def test_the_shipped_artifact_groups_cover_every_check_family() -> None:
+    """WP-29's groups: one per check, every probe carrying a marker or a binary suffix."""
+    corpus = load_corpus()
+    groups = corpus.artifact_groups()
+    assert len(groups) == 24, groups
+    assert len(set(groups)) == len(groups)
+    binary = set(corpus.artifact_binary_extensions())
+    assert {".tfplan", ".swp", ".ds_store"} <= binary
+    # The two credential-bearing groups are confirmed by the redactor rather than by a marker,
+    # so they are the only groups whose probes may carry neither (the WP-29 acceptance test
+    # drives those two against the redaction assertions).
+    detector_groups = {"dvcs_credentials", "ci_pipeline_secret"}
+    for group in groups:
+        probes = corpus.artifact_probes(group)
+        assert probes, group
+        assert all(probe.path.startswith("/") for probe in probes), group
+        for probe in probes:
+            if group in detector_groups:
+                continue
+            # Every other probe is confirmable without decoding a body: its own marker, or a
+            # suffix the corpus declares binary.
+            suffix = f".{probe.path.rpartition('.')[2].lower()}"
+            assert probe.markers or suffix in binary, probe.path
+    # An unknown group degrades to "no probes" rather than raising, so an operator-supplied
+    # corpus without the section still runs every other M4 check.
+    assert corpus.artifact_probes("no-such-group") == ()
+    assert corpus.artifact_min_bytes() > 0
 
 
 def test_the_shipped_wordlists_are_bounded_and_deduplicated() -> None:

@@ -7,7 +7,7 @@
 #
 # Placeholders use angle brackets (`<bucket>`, `<origin>`) and are replaced literally, so a
 # value can never be interpreted as a format string.
-version: "1.0"
+version: "1.1"
 
 # --------------------------------------------------------------- exposed configuration
 env:
@@ -479,3 +479,460 @@ default_credentials:
       fields: {pma_username: root, pma_password: ""}
       success_markers: ["Server:", "Database", "phpMyAdmin"]
       failure_markers: ["Cannot log in to the MySQL server", "login"]
+
+# --------------------------------------------------------------- infrastructure artifacts
+# WP-29 (REQ-DET-022): source control, CI pipelines and the infrastructure state they leak.
+# One *group* per check: the paths that artifact is served from, the artifact's own content
+# markers, and the family label the finding carries. A group is a path inventory like the
+# sections above, so an operator can prune or extend it without touching code.
+#
+# A marker is the artifact's own content — a struct key, a manifest keyword, a file signature
+# — never a status code and never a word a generic page happens to carry: the decoy is a
+# server that answers every artifact path with its own 404 or a generic error page, and a
+# check that fired on either would be reporting the server's refusal as an exposure.
+artifacts:
+  # Bodies below this many bytes are too small to be a real artifact, unless the answer is a
+  # declared binary (which is decided from the status, the content type and the suffix).
+  min_bytes: 24
+  # Suffixes whose content is binary by nature: a non-HTML 2xx answer to one of these is the
+  # finding, and the body is never decoded to "confirm" it (the client caps it anyway).
+  binary_extensions: [".tfplan", ".plan", ".swp", ".swo", ".swn", ".un~", ".jks", ".p12", ".pfx", ".keystore", ".ppk", ".ds_store", ".db", ".tmp"]
+
+  groups:
+    # ------------------------------------------------------------ DVCS artifacts
+    dvcs_reflog:
+      - path: "/.git/logs/HEAD"
+        family: git
+        markers: ["checkout: moving from", "clone: from", "commit (initial)"]
+      - path: "/.git/logs/refs/heads/main"
+        family: git
+        markers: ["checkout: moving from", "clone: from", "commit (initial)"]
+      - path: "/.git/logs/refs/heads/master"
+        family: git
+        markers: ["checkout: moving from", "clone: from", "commit (initial)"]
+    # A DVCS configuration or credential store whose own content carries credential material:
+    # a remote URL with embedded userinfo, or the credential-helper store. The proof is the
+    # redactor's detector firing on the served body, never a value.
+    dvcs_credentials:
+      - path: "/.git/config"
+        family: git
+        markers: []
+      - path: "/.git-credentials"
+        family: git
+        markers: []
+      - path: "/.git/modules/config"
+        family: git
+        markers: []
+    dvcs_legacy:
+      - path: "/.bzr/README"
+        family: bzr
+        markers: ["This is a Bazaar"]
+      - path: "/.bzr/branch/branch.conf"
+        family: bzr
+        markers: ["branch nick", "parent_location"]
+      - path: "/CVS/Entries"
+        family: cvs
+        markers: ["/1.1/", "TEXT//"]
+      - path: "/CVS/Root"
+        family: cvs
+        markers: [":pserver:", ":ext:"]
+      - path: "/.fslckout"
+        family: fossil
+        markers: ["SQLite format"]
+
+    # ------------------------------------------------------------ CI pipeline definitions
+    ci_github_workflow:
+      - path: "/.github/workflows/ci.yml"
+        family: github-actions
+        markers: ["runs-on:", "jobs:", "steps:"]
+      - path: "/.github/workflows/main.yml"
+        family: github-actions
+        markers: ["runs-on:", "jobs:", "steps:"]
+      - path: "/.github/workflows/build.yml"
+        family: github-actions
+        markers: ["runs-on:", "jobs:", "steps:"]
+      - path: "/.github/workflows/deploy.yml"
+        family: github-actions
+        markers: ["runs-on:", "jobs:", "steps:"]
+      - path: "/.github/workflows/release.yml"
+        family: github-actions
+        markers: ["runs-on:", "jobs:", "steps:"]
+      - path: "/.github/workflows/test.yml"
+        family: github-actions
+        markers: ["runs-on:", "jobs:", "steps:"]
+      - path: "/.github/dependabot.yml"
+        family: github-actions
+        markers: ["package-ecosystem:", "directory:"]
+    ci_pipeline_definition:
+      - path: "/.gitlab-ci.yml"
+        family: gitlab
+        markers: ["stages:", "script:", "image:"]
+      - path: "/Jenkinsfile"
+        family: jenkins
+        markers: ["pipeline {", "agent ", "stages {"]
+      - path: "/.travis.yml"
+        family: travis
+        markers: ["language:", "script:", "sudo:"]
+      - path: "/.circleci/config.yml"
+        family: circleci
+        markers: ["version: 2", "jobs:", "workflows:"]
+      - path: "/azure-pipelines.yml"
+        family: azure-pipelines
+        markers: ["trigger:", "pool:", "steps:"]
+      - path: "/bitbucket-pipelines.yml"
+        family: bitbucket
+        markers: ["pipelines:", "step:", "image:"]
+      - path: "/.drone.yml"
+        family: drone
+        markers: ["kind: pipeline", "steps:", "image:"]
+      - path: "/appveyor.yml"
+        family: appveyor
+        markers: ["build_script:", "install:", "image:"]
+      - path: "/.woodpecker.yml"
+        family: woodpecker
+        markers: ["pipeline:", "steps:", "image:"]
+      - path: "/buildkite.yml"
+        family: buildkite
+        markers: ["steps:", "command:"]
+    # A pipeline definition whose own content carries credential material (the redactor's
+    # detector fired). The same inventory as above; the claim is the secret, not the file.
+    ci_pipeline_secret:
+      - path: "/.github/workflows/deploy.yml"
+        family: github-actions
+        markers: []
+      - path: "/.github/workflows/release.yml"
+        family: github-actions
+        markers: []
+      - path: "/.gitlab-ci.yml"
+        family: gitlab
+        markers: []
+      - path: "/Jenkinsfile"
+        family: jenkins
+        markers: []
+      - path: "/.travis.yml"
+        family: travis
+        markers: []
+      - path: "/.circleci/config.yml"
+        family: circleci
+        markers: []
+
+    # ------------------------------------------------------------ Terraform state
+    terraform_state:
+      - path: "/terraform.tfstate"
+        family: terraform-state
+        markers: ["terraform_version", "lineage", "resources"]
+      - path: "/terraform.tfstate.backup"
+        family: terraform-state
+        markers: ["terraform_version", "lineage", "resources"]
+      - path: "/state/terraform.tfstate"
+        family: terraform-state
+        markers: ["terraform_version", "lineage", "resources"]
+      - path: "/infra/terraform.tfstate"
+        family: terraform-state
+        markers: ["terraform_version", "lineage", "resources"]
+      - path: "/terraform/terraform.tfstate"
+        family: terraform-state
+        markers: ["terraform_version", "lineage", "resources"]
+      - path: "/env/prod/terraform.tfstate"
+        family: terraform-state
+        markers: ["terraform_version", "lineage", "resources"]
+    terraform_plan:
+      - path: "/terraform.tfplan"
+        family: terraform-plan
+        markers: ["format_version", "planned_values", "resource_changes"]
+      - path: "/plan.tfplan"
+        family: terraform-plan
+        markers: ["format_version", "planned_values"]
+      - path: "/tfplan"
+        family: terraform-plan
+        markers: ["format_version", "planned_values"]
+      - path: "/plan.out"
+        family: terraform-plan
+        markers: ["format_version", "planned_values"]
+      - path: "/.terraform/plan"
+        family: terraform-plan
+        markers: ["format_version", "planned_values"]
+      - path: "/terraform.plan.json"
+        family: terraform-plan
+        markers: ["format_version", "planned_values"]
+    terraform_lock:
+      - path: "/.terraform.lock.hcl"
+        family: terraform-lock
+        markers: ["provider \"", "constraints", "hashes"]
+      - path: "/.terraform/modules/modules.json"
+        family: terraform-modules
+        markers: ["\"Source\":", "\"Dir\":"]
+      - path: "/.terraform/terraform.tfstate"
+        family: terraform-state
+        markers: ["terraform_version", "lineage"]
+
+    # ------------------------------------------------------------ cloud credential files
+    cloud_aws_credentials:
+      - path: "/.aws/credentials"
+        family: aws
+        markers: ["aws_access_key_id", "aws_secret_access_key", "[default]"]
+      - path: "/.aws/config"
+        family: aws
+        markers: ["[default]", "region =", "[profile "]
+      - path: "/aws/credentials"
+        family: aws
+        markers: ["aws_access_key_id", "aws_secret_access_key", "[default]"]
+    cloud_cli_credentials:
+      - path: "/.config/gcloud/application_default_credentials.json"
+        family: gcloud
+        markers: ["\"type\": \"authorized_user\"", "refresh_token", "client_id"]
+      - path: "/.config/gcloud/credentials.json"
+        family: gcloud
+        markers: ["\"type\":", "access_token", "refresh_token"]
+      - path: "/gcloud/application_default_credentials.json"
+        family: gcloud
+        markers: ["\"type\":", "refresh_token"]
+      - path: "/.azure/azureProfile.json"
+        family: azure
+        markers: ["\"subscriptions\"", "\"isDefault\""]
+      - path: "/.azure/accessTokens.json"
+        family: azure
+        markers: ["\"expiresOn\"", "\"subscription\""]
+    cloud_service_account_key:
+      - path: "/service-account.json"
+        family: service-account
+        markers: ["\"type\": \"service_account\"", "private_key_id", "client_email"]
+      - path: "/gcp-service-account.json"
+        family: service-account
+        markers: ["\"type\": \"service_account\"", "private_key_id", "client_email"]
+      - path: "/firebase-adminsdk.json"
+        family: service-account
+        markers: ["\"type\": \"service_account\"", "private_key_id", "client_email"]
+      - path: "/serviceAccountKey.json"
+        family: service-account
+        markers: ["\"type\": \"service_account\"", "private_key_id", "client_email"]
+      - path: "/credentials.json"
+        family: service-account
+        markers: ["\"type\": \"service_account\"", "private_key_id", "client_email"]
+      - path: "/keys/service-account.json"
+        family: service-account
+        markers: ["\"type\": \"service_account\"", "private_key_id", "client_email"]
+
+    # ------------------------------------------------------------ container & orchestration
+    container_compose:
+      - path: "/docker-compose.yml"
+        family: compose
+        markers: ["services:", "image:", "container_name:"]
+      - path: "/docker-compose.yaml"
+        family: compose
+        markers: ["services:", "image:", "container_name:"]
+      - path: "/compose.yaml"
+        family: compose
+        markers: ["services:", "image:", "container_name:"]
+      - path: "/docker-compose.prod.yml"
+        family: compose
+        markers: ["services:", "image:", "container_name:"]
+      - path: "/docker-compose.override.yml"
+        family: compose
+        markers: ["services:", "image:", "container_name:"]
+    container_dockerfile:
+      - path: "/Dockerfile"
+        family: dockerfile
+        markers: ["FROM ", "RUN ", "WORKDIR "]
+      - path: "/Dockerfile.prod"
+        family: dockerfile
+        markers: ["FROM ", "RUN ", "WORKDIR "]
+      - path: "/docker/Dockerfile"
+        family: dockerfile
+        markers: ["FROM ", "RUN ", "WORKDIR "]
+      - path: "/build/Dockerfile"
+        family: dockerfile
+        markers: ["FROM ", "RUN ", "WORKDIR "]
+      - path: "/Dockerfile.dev"
+        family: dockerfile
+        markers: ["FROM ", "RUN ", "WORKDIR "]
+    orchestration_manifest:
+      - path: "/k8s/deployment.yaml"
+        family: kubernetes
+        markers: ["apiVersion:", "kind: Deployment", "spec:"]
+      - path: "/kubernetes/deployment.yaml"
+        family: kubernetes
+        markers: ["apiVersion:", "kind: Deployment", "spec:"]
+      - path: "/manifests/deployment.yml"
+        family: kubernetes
+        markers: ["apiVersion:", "kind: Deployment", "spec:"]
+      - path: "/deployment.yaml"
+        family: kubernetes
+        markers: ["apiVersion:", "kind: Deployment", "spec:"]
+      - path: "/helm/values.yaml"
+        family: helm
+        markers: ["image:", "replicaCount:", "resources:"]
+      - path: "/chart/values.yaml"
+        family: helm
+        markers: ["image:", "replicaCount:", "resources:"]
+      - path: "/k8s/secret.yaml"
+        family: kubernetes
+        markers: ["kind: Secret", "data:", "stringData:"]
+      - path: "/rancher-compose.yml"
+        family: rancher
+        markers: ["services:", "image:", "labels:"]
+
+    # ------------------------------------------------------------ editor residue
+    editor_swap:
+      - path: "/.index.php.swp"
+        family: vim
+        markers: ["b0VIM"]
+      - path: "/.env.swp"
+        family: vim
+        markers: ["b0VIM"]
+      - path: "/.config.php.swp"
+        family: vim
+        markers: ["b0VIM"]
+      - path: "/.index.php.swo"
+        family: vim
+        markers: ["b0VIM"]
+      - path: "/.app.py.un~"
+        family: vim
+        markers: ["b0VIM"]
+      # Emacs's autosave and lock names contain ``#``, which is a URL *fragment* delimiter, so
+      # the octet must be percent-encoded or the request goes to ``/`` with a fragment and the
+      # artefact is never asked for. The encodings below are the file names as a URL.
+      - path: "/%23index.php%23"
+        family: emacs
+        markers: ["<?php", "autosave"]
+      - path: "/.%23index.php"
+        family: emacs
+        markers: ["<?php", "automatically generated"]
+    editor_backup_residue:
+      - path: "/.env~"
+        family: dotenv
+        markers: ["DB_PASSWORD=", "SECRET_KEY="]
+      - path: "/index.php~"
+        family: source
+        markers: ["<?php"]
+      - path: "/wp-config.php~"
+        family: source
+        markers: ["DB_NAME", "<?php"]
+      - path: "/app.py~"
+        family: source
+        markers: ["import ", "def "]
+    editor_os_metadata:
+      - path: "/.DS_Store"
+        family: macos
+        markers: ["Bud1"]
+      - path: "/Thumbs.db"
+        family: windows
+        markers: []
+      - path: "/desktop.ini"
+        family: windows
+        markers: ["[.ShellClassInfo]"]
+      - path: "/.directory"
+        family: freedesktop
+        markers: ["[Desktop Entry]"]
+
+    # ------------------------------------------------------------ credential & authorization
+    credential_package_manager:
+      - path: "/.npmrc"
+        family: npm
+        markers: ["_authtoken", "//registry", "always-auth"]
+      - path: "/.yarnrc.yml"
+        family: yarn
+        markers: ["npmRegistries", "npmAuthToken"]
+      - path: "/.pypirc"
+        family: pypi
+        markers: ["[distutils]", "[pypi]", "repository"]
+      - path: "/.gem/credentials"
+        family: rubygems
+        markers: [":rubygems_api_key:"]
+      - path: "/.m2/settings.xml"
+        family: maven
+        markers: ["<settings", "<servers>", "<password>"]
+      - path: "/.nuget/NuGet.Config"
+        family: nuget
+        markers: ["<configuration>", "<packageSources>"]
+      - path: "/.config/pip/pip.conf"
+        family: pip
+        markers: ["index-url", "extra-index-url"]
+    credential_registry_auth:
+      - path: "/.docker/config.json"
+        family: docker
+        markers: ["\"auths\"", "\"auth\"", "\"identitytoken\""]
+      - path: "/.dockercfg"
+        family: docker
+        markers: ["\"auth\"", "\"email\""]
+      - path: "/.docker/config.json.prod"
+        family: docker
+        markers: ["\"auths\"", "\"auth\""]
+    credential_authorization:
+      - path: "/.htaccess"
+        family: htaccess
+        markers: ["<FilesMatch", "AuthType Basic", "Require "]
+      - path: "/.ssh/authorized_keys"
+        family: ssh
+        markers: ["ssh-rsa AAAA", "ssh-ed25519 AAAA", "ecdsa-sha2-"]
+      - path: "/authorized_keys"
+        family: ssh
+        markers: ["ssh-rsa AAAA", "ssh-ed25519 AAAA", "ecdsa-sha2-"]
+      - path: "/.ssh/config"
+        family: ssh
+        markers: ["Host ", "IdentityFile", "ProxyCommand"]
+
+    # ------------------------------------------------------------ environment variants
+    env_variant:
+      - path: "/.env.staging"
+        family: dotenv
+        markers: ["DB_PASSWORD=", "DB_HOST=", "SECRET_KEY="]
+      - path: "/.env.prod"
+        family: dotenv
+        markers: ["DB_PASSWORD=", "DB_HOST=", "SECRET_KEY="]
+      - path: "/.env.dev"
+        family: dotenv
+        markers: ["DB_PASSWORD=", "DB_HOST=", "SECRET_KEY="]
+      - path: "/.env.test"
+        family: dotenv
+        markers: ["DB_PASSWORD=", "DB_HOST=", "SECRET_KEY="]
+      - path: "/.env.qa"
+        family: dotenv
+        markers: ["DB_PASSWORD=", "DB_HOST=", "SECRET_KEY="]
+      - path: "/.env.ci"
+        family: dotenv
+        markers: ["DB_PASSWORD=", "DB_HOST=", "SECRET_KEY="]
+      - path: "/.env.production.local"
+        family: dotenv
+        markers: ["DB_PASSWORD=", "DB_HOST=", "SECRET_KEY="]
+      - path: "/local.env"
+        family: dotenv
+        markers: ["DB_PASSWORD=", "DB_HOST=", "SECRET_KEY="]
+    env_secret_file:
+      - path: "/.env.vault"
+        family: dotenv-vault
+        markers: ["DOTENV_VAULT", "DOTENV_KEY"]
+      - path: "/secrets.env"
+        family: dotenv
+        markers: ["AWS_ACCESS_KEY_ID=", "DB_PASSWORD=", "SECRET_KEY="]
+      - path: "/.env.keys"
+        family: dotenv-vault
+        markers: ["DOTENV_KEY"]
+      - path: "/secrets.yml"
+        family: rails-secrets
+        markers: ["secret_key_base:", "production:"]
+      - path: "/config/secrets.yml"
+        family: rails-secrets
+        markers: ["secret_key_base:", "production:"]
+      - path: "/credentials.env"
+        family: dotenv
+        markers: ["AWS_ACCESS_KEY_ID=", "DB_PASSWORD="]
+    app_config_secret:
+      - path: "/settings.py"
+        family: django
+        markers: ["SECRET_KEY", "DATABASES", "INSTALLED_APPS"]
+      - path: "/local_settings.py"
+        family: django
+        markers: ["SECRET_KEY", "DATABASES"]
+      - path: "/appsettings.Development.json"
+        family: dotnet
+        markers: ["\"ConnectionStrings\"", "\"Logging\""]
+      - path: "/appsettings.json"
+        family: dotnet
+        markers: ["\"ConnectionStrings\"", "\"Logging\""]
+      - path: "/web.config"
+        family: dotnet
+        markers: ["<configuration>", "<connectionStrings>", "<appSettings>"]
+      - path: "/config/parameters.yml"
+        family: symfony
+        markers: ["parameters:", "database_password", "secret:"]

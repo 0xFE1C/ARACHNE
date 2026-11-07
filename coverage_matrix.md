@@ -6,7 +6,7 @@ the numbered methods in `docs/research/`.
 
 - research corpus: `docs/research`
 - source roots: `src/arachne/modules`
-- references found: **281**
+- references found: **305**
 - coverage: **148/175 (84.6%)**
 
 ## Summary
@@ -137,9 +137,9 @@ the numbered methods in `docs/research/`.
 
 | # | Method | Mapped | Checks |
 |---|---|---|---|
-| 1 | `.env` and dotfile exposure | yes | `env-file-probe` |
-| 2 | VCS metadata exposure | yes | `vcs-exposure` |
-| 3 | Backup and archive file discovery | yes | `backup-file-hunt` |
+| 1 | `.env` and dotfile exposure | yes | `app-config-secret-exposed`, `authorization-file-exposed`, `aws-credential-file-exposed`, `cloud-cli-credential-exposed`, `env-file-probe`, `env-secret-file-exposed`, `env-variant-exposed`, `os-metadata-residue-exposed`, `package-manager-credential-exposed`, `registry-auth-exposed` |
+| 2 | VCS metadata exposure | yes | `git-credentials-exposed`, `git-reflog-exposure`, `legacy-vcs-metadata`, `vcs-exposure` |
+| 3 | Backup and archive file discovery | yes | `backup-file-hunt`, `editor-backup-residue-exposed`, `vim-swap-exposed` |
 | 4 | JavaScript source map exposure | yes | `sourcemap-exposure` |
 | 5 | API documentation exposure | yes | `api-doc-exposure` |
 | 6 | Verbose error and stack-trace exposure | yes | `verbose-errors` |
@@ -151,7 +151,7 @@ the numbered methods in `docs/research/`.
 | 12 | Datastore management interface exposure | yes | `datastore-surface` |
 | 13 | Object storage bucket exposure | yes | `bucket-exposure` |
 | 14 | Client-side secret exposure | yes | `client-secrets` |
-| 15 | Private key and certificate exposure | yes | `key-exposure` |
+| 15 | Private key and certificate exposure | yes | `cloud-service-account-key-exposed`, `key-exposure` |
 | 16 | Security header configuration review | yes | `security-header-review` |
 | 17 | TLS configuration review | yes | `tls-config-review` |
 | 18 | Cookie flag audit | yes | `cookie-flag-audit` |
@@ -160,7 +160,7 @@ the numbered methods in `docs/research/`.
 | 21 | WebDAV verb exposure | yes | `webdav-verbs` |
 | 22 | Legacy service and endpoint exposure | yes | `legacy-services` |
 | 23 | `robots.txt` and sitemap analysis | yes | `robots-sitemap` |
-| 24 | Hidden endpoint discovery | yes | `hidden-endpoint-hunt` |
+| 24 | Hidden endpoint discovery | yes | `ci-pipeline-definition-exposed`, `ci-pipeline-secret-exposed`, `container-compose-exposed`, `dockerfile-exposed`, `github-workflow-exposed`, `hidden-endpoint-hunt`, `orchestration-manifest-exposed`, `terraform-lock-exposed`, `terraform-plan-exposed`, `terraform-state-exposed` |
 | 25 | Staging and pre-production exposure | yes | `staging-exposure` |
 | 26 | Cloud metadata endpoint reachability | yes | `metadata-ssrf` |
 | 27 | WordPress surface enumeration | yes | `wordpress-surface` |

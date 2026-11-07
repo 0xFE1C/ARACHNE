@@ -2,7 +2,7 @@
   "ledger_version": "1.0",
   "generated_at": "2026-11-07",
   "registry_version": "registry-1.0",
-  "registry_digest": "sha256:e34b67a84e1f53b015eb5e7cd7a6ba6dc41916a708199557271f80c9df819dc4",
+  "registry_digest": "sha256:c644388e4f6607b7a8ac26a055f1baf89ee6481aa11976ba972ef29dab4e3afa",
   "framework_versions": {
     "WSTG": "4.2",
     "API": "2023",
@@ -13,7 +13,7 @@
   },
   "last_verified_note": "last_verified is the date the corpus was last exercised by the test suite: the ledger is regenerated after a full suite run, and every registered check is run by it. A per-check date arrives with the verification-record store (REQ-PROOF-*). It is committed content, not a wall-clock read, so --check is byte-stable.",
   "totals": {
-    "checks": 281,
+    "checks": 305,
     "cwe_only_checks": 0
   },
   "wstg": {
@@ -315,7 +315,9 @@
           "m3.wp-xmlrpc-rsd",
           "m3.wp-xmlrpc-surface",
           "m4.api-doc-exposure",
+          "m4.app-config-secret-exposed",
           "m4.env-file-probe",
+          "m4.env-variant-exposed",
           "m4.hidden-endpoint-hunt",
           "m4.robots-sitemap",
           "m4.wordpress-surface",
@@ -4412,6 +4414,388 @@
       "cwe": "CWE-22"
     },
     {
+      "id": "m4.git-reflog-exposure",
+      "module": "M4",
+      "title": "Version-control reflog served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-03",
+        "WSTG-CONF-04",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.git-credentials-exposed",
+      "module": "M4",
+      "title": "Credentials served in version-control configuration",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-03",
+        "WSTG-CONF-04",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.legacy-vcs-metadata",
+      "module": "M4",
+      "title": "Legacy version-control metadata served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-03",
+        "WSTG-CONF-04",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.github-workflow-exposed",
+      "module": "M4",
+      "title": "Continuous-integration workflow definition served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.ci-pipeline-definition-exposed",
+      "module": "M4",
+      "title": "Continuous-integration pipeline definition served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.ci-pipeline-secret-exposed",
+      "module": "M4",
+      "title": "Credential material carried in a served pipeline definition",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "CWE-798"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "m4.terraform-state-exposed",
+      "module": "M4",
+      "title": "Terraform state file served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.terraform-plan-exposed",
+      "module": "M4",
+      "title": "Terraform plan artifact served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.terraform-lock-exposed",
+      "module": "M4",
+      "title": "Terraform dependency lock state served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.aws-credential-file-exposed",
+      "module": "M4",
+      "title": "Cloud provider credential file served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.cloud-cli-credential-exposed",
+      "module": "M4",
+      "title": "Cloud CLI credential store served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.cloud-service-account-key-exposed",
+      "module": "M4",
+      "title": "Cloud service-account key served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "CWE-321"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-321"
+    },
+    {
+      "id": "m4.container-compose-exposed",
+      "module": "M4",
+      "title": "Container composition manifest served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.dockerfile-exposed",
+      "module": "M4",
+      "title": "Container build definition served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.orchestration-manifest-exposed",
+      "module": "M4",
+      "title": "Orchestration manifest served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.vim-swap-exposed",
+      "module": "M4",
+      "title": "Editor swap or autosave file served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-03",
+        "WSTG-CONF-04",
+        "CWE-530"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-530"
+    },
+    {
+      "id": "m4.editor-backup-residue-exposed",
+      "module": "M4",
+      "title": "Editor backup copy served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-03",
+        "WSTG-CONF-04",
+        "CWE-530"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-530"
+    },
+    {
+      "id": "m4.os-metadata-residue-exposed",
+      "module": "M4",
+      "title": "Operating-system metadata file served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.package-manager-credential-exposed",
+      "module": "M4",
+      "title": "Package-manager credential configuration served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.registry-auth-exposed",
+      "module": "M4",
+      "title": "Container-registry credential configuration served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.authorization-file-exposed",
+      "module": "M4",
+      "title": "Authorization file served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.env-variant-exposed",
+      "module": "M4",
+      "title": "Environment file variant served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m4.env-secret-file-exposed",
+      "module": "M4",
+      "title": "Environment or secrets file served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.app-config-secret-exposed",
+      "module": "M4",
+      "title": "Application configuration file served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-04",
+        "WSTG-INFO-05",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
       "id": "m5.leaked-cloud-keys",
       "module": "M5",
       "title": "Leaked cloud credential material in artifacts",
@@ -5170,7 +5554,24 @@
         "m1.doc-metadata",
         "m1.mobile-artifact",
         "m3.edge-function-sourcemap",
+        "m4.app-config-secret-exposed",
+        "m4.authorization-file-exposed",
+        "m4.aws-credential-file-exposed",
+        "m4.ci-pipeline-definition-exposed",
         "m4.client-secrets",
+        "m4.cloud-cli-credential-exposed",
+        "m4.container-compose-exposed",
+        "m4.dockerfile-exposed",
+        "m4.env-secret-file-exposed",
+        "m4.env-variant-exposed",
+        "m4.github-workflow-exposed",
+        "m4.orchestration-manifest-exposed",
+        "m4.os-metadata-residue-exposed",
+        "m4.package-manager-credential-exposed",
+        "m4.registry-auth-exposed",
+        "m4.terraform-lock-exposed",
+        "m4.terraform-plan-exposed",
+        "m4.terraform-state-exposed",
         "m5.gcp-sa-keys",
         "m5.image-history-secrets",
         "m5.leaked-cloud-keys",
@@ -5377,7 +5778,12 @@
         "m3.prestashop-config-source",
         "m3.wp-config-backup",
         "m3.wp-config-source",
-        "m4.vcs-exposure"
+        "m4.editor-backup-residue-exposed",
+        "m4.git-credentials-exposed",
+        "m4.git-reflog-exposure",
+        "m4.legacy-vcs-metadata",
+        "m4.vcs-exposure",
+        "m4.vim-swap-exposed"
       ]
     },
     {
@@ -5396,11 +5802,35 @@
         "m3.wp-config-backup",
         "m3.wp-config-source",
         "m3.wp-uploads-listing",
+        "m4.app-config-secret-exposed",
+        "m4.authorization-file-exposed",
+        "m4.aws-credential-file-exposed",
         "m4.backup-file-hunt",
+        "m4.ci-pipeline-definition-exposed",
+        "m4.ci-pipeline-secret-exposed",
+        "m4.cloud-cli-credential-exposed",
+        "m4.cloud-service-account-key-exposed",
+        "m4.container-compose-exposed",
+        "m4.dockerfile-exposed",
+        "m4.editor-backup-residue-exposed",
         "m4.env-file-probe",
+        "m4.env-secret-file-exposed",
+        "m4.env-variant-exposed",
+        "m4.git-credentials-exposed",
+        "m4.git-reflog-exposure",
+        "m4.github-workflow-exposed",
         "m4.key-exposure",
+        "m4.legacy-vcs-metadata",
+        "m4.orchestration-manifest-exposed",
+        "m4.os-metadata-residue-exposed",
+        "m4.package-manager-credential-exposed",
+        "m4.registry-auth-exposed",
         "m4.sourcemap-exposure",
+        "m4.terraform-lock-exposed",
+        "m4.terraform-plan-exposed",
+        "m4.terraform-state-exposed",
         "m4.vcs-exposure",
+        "m4.vim-swap-exposed",
         "m5.tfstate-exposure"
       ]
     },

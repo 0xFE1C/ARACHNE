@@ -137,8 +137,9 @@ def test_the_shipped_checks_are_annotated_l1() -> None:
     # reachability probe is an OPTIONS) -> 195. WP-26's thirty CMS checks are all L1, and all
     # of them are plain GET probes -> 225. WP-27's twenty-five application-server checks are
     # all L1 GET probes too -> 250. WP-28's twenty-four API and modern-web checks are all L1 as
-    # well (three of them an OPTIONS preflight, which is HTTP's own safe method) -> 274.
-    assert len(original) == 274
+    # well (three of them an OPTIONS preflight, which is HTTP's own safe method) -> 274;
+    # WP-29's twenty-four infrastructure-artifact checks are all L1 plain GET probes -> 298.
+    assert len(original) == 298
     assert all(m.proof in {ProofLevel.L0, ProofLevel.L1} for m in original)
     assert {m.id for m in original if m.proof is ProofLevel.L0} == {"m1.mobile-artifact"}
     assert all(not m.requires_state_attestation for m in original)

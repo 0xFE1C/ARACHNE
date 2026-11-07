@@ -140,6 +140,7 @@ controls:
     checks:
       - m2.smb-auth
       - m2.ssh-auth
+      - m4.cloud-service-account-key-exposed
       - m4.default-credentials
       - m4.key-exposure
   - id: "5.3"
@@ -370,9 +371,29 @@ controls:
   - id: "16.8"
     title: "Separate Production and Non-Production Systems"
     checks:
+      - m4.authorization-file-exposed
+      - m4.aws-credential-file-exposed
+      - m4.ci-pipeline-definition-exposed
+      - m4.ci-pipeline-secret-exposed
+      - m4.cloud-cli-credential-exposed
+      - m4.container-compose-exposed
       - m4.debug-endpoints
+      - m4.dockerfile-exposed
+      - m4.editor-backup-residue-exposed
+      - m4.env-secret-file-exposed
+      - m4.git-credentials-exposed
+      - m4.git-reflog-exposure
+      - m4.github-workflow-exposed
+      - m4.legacy-vcs-metadata
+      - m4.orchestration-manifest-exposed
+      - m4.package-manager-credential-exposed
+      - m4.registry-auth-exposed
       - m4.staging-exposure
+      - m4.terraform-lock-exposed
+      - m4.terraform-plan-exposed
+      - m4.terraform-state-exposed
       - m4.vcs-exposure
+      - m4.vim-swap-exposed
   - id: "16.10"
     title: "Apply Secure Design Principles in Application Architectures"
     checks:

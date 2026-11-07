@@ -178,13 +178,40 @@ def test_build_coverage_reports_the_m1_m2_m3_and_m4_rows() -> None:
     assert ch04.total == 30
     assert ch04.mapped == 30
     mapped_m4 = {item.method.ref: item.checks for item in ch04.methods if item.mapped}
-    assert mapped_m4["ch04#1"] == ("env-file-probe",)
-    assert mapped_m4["ch04#2"] == ("vcs-exposure",)
+    # WP-29's twenty-four infrastructure-artifact checks cite the five ch04 methods their
+    # evidence bears on — dotfile/config exposure, VCS metadata, backup and editor artifacts,
+    # private key material and hidden-path discovery — all of which the corpus already mapped,
+    # so the mapped count is unchanged. Their names come out of the scanner correctly because
+    # the family's ``_meta()`` factory takes ``name=`` as a keyword (the defect WP-25 ... WP-28
+    # recorded applies to a factory whose check name is a *positional* argument).
+    assert mapped_m4["ch04#1"] == (
+        "app-config-secret-exposed",
+        "authorization-file-exposed",
+        "aws-credential-file-exposed",
+        "cloud-cli-credential-exposed",
+        "env-file-probe",
+        "env-secret-file-exposed",
+        "env-variant-exposed",
+        "os-metadata-residue-exposed",
+        "package-manager-credential-exposed",
+        "registry-auth-exposed",
+    )
+    assert mapped_m4["ch04#2"] == (
+        "git-credentials-exposed",
+        "git-reflog-exposure",
+        "legacy-vcs-metadata",
+        "vcs-exposure",
+    )
     assert mapped_m4["ch04#13"] == ("bucket-exposure",)
     # S13 additions
     assert mapped_m4["ch04#23"] == ("robots-sitemap",)
     assert mapped_m4["ch04#6"] == ("verbose-errors",)
-    assert "ch04#3" in mapped_m4  # backup-file-hunt
+    assert mapped_m4["ch04#3"] == (
+        "backup-file-hunt",
+        "editor-backup-residue-exposed",
+        "vim-swap-exposed",
+    )
+    assert mapped_m4["ch04#15"] == ("cloud-service-account-key-exposed", "key-exposure")
     mapped = {item.method.ref: item.checks for item in ch01.methods if item.mapped}
     assert mapped["ch01#1"] == ("dork-sweep",)
     assert mapped["ch01#5"] == ("internetdb-triage",)

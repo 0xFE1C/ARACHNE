@@ -39,6 +39,17 @@ check                                      ref         what it establishes
 ``m4.alias-traversal``                     ch04#30     static-alias path traversal
 ========================================  ==========  ==========================================
 
+**WP-29 (REQ-DET-022).** The twenty-four ``artifacts.py`` checks are the source-control, CI
+and infrastructure-artifact family: the ``.git`` reflog, a DVCS configuration or credential
+store carrying credentials, the legacy VCS families (Bazaar/CVS/Fossil), the GitHub
+Actions workflows, the other CI pipeline definitions, credential material inside a served
+pipeline, Terraform state/plan/lock artifacts, the AWS credential file, the cloud CLIs'
+credential stores, cloud service-account keys, Compose files and Dockerfiles, Kubernetes/
+Helm/Rancher manifests, vim/Emacs swap and backup residue, operating-system metadata files,
+package-manager and registry credential configuration, authorization files, environment-file
+variants, secrets files and framework configuration files. Each is a bounded ``GET`` sweep of
+one corpus group (``templates/m4/probes.yaml`` → ``artifacts.groups``).
+
 **Numbering.** As for M1/M2/M3, ``research_ref`` values are the canonical method numbers of
 ``docs/research/04-exposure-and-misconfiguration.md`` (the universe G-01 counts); the
 check **ids** are the corpus's.
@@ -62,6 +73,7 @@ M4's checks pass only the detector *names* into evidence. The operator's sidecar
 from __future__ import annotations
 
 from arachne.modules.base import Module
+from arachne.modules.m4.artifacts import ArtifactChecks
 from arachne.modules.m4.client import ClientSecrets
 from arachne.modules.m4.cloud import BucketExposure, MetadataSsrf
 from arachne.modules.m4.files import (
@@ -134,6 +146,7 @@ M4_CHECKS: tuple[type[Module], ...] = (
     RobotsSitemap,
     WordpressSurface,
     AliasTraversal,
+    *ArtifactChecks,
 )
 
 #: The M4 module group . Bump the version when the set or a check's
@@ -147,9 +160,14 @@ M4 = ModuleGroup(
         "documents, debug surfaces, directory listings, admin dashboards, staging "
         "environments, stalking-horse routes, public object-store buckets, header/TLS/cookie/"
         "CORS/email-authentication posture, unsafe verbs, user enumeration, anonymous APIs, "
-        "cloud-metadata reachability and vendor-default credentials."
+        "cloud-metadata reachability, vendor-default credentials, and the source-control, CI "
+        "and infrastructure artifacts a deployment leaves reachable (the git reflog and "
+        "credential stores, CI pipeline definitions and the secrets they carry, Terraform "
+        "state/plan/lock files, cloud credential files, container and orchestration "
+        "manifests, editor swap and backup residue, package-manager and registry credential "
+        "configuration, authorization files, and the environment-file variants)."
     ),
-    version="1.0.0",
+    version="1.1.0",
     research_chapter="ch04",
     checks=M4_CHECKS,
 )

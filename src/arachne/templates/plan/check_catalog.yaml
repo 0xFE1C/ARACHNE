@@ -29,7 +29,7 @@
 # disagree, so a plan can never describe a check differently from the code that runs it.
 # S4 adds the M2 rows the registry implements; M3-M6 below are still *planned* only and the
 # plan marks them `implemented: false`.
-catalog_version: "1.16"
+catalog_version: "1.17"
 checks:
   # ---------------------------------------------------------------- M1 recon & attack surface
   # Implemented in S3 (arachne/modules/m1/). The rows below are generated from the check
@@ -1598,6 +1598,270 @@ checks:
     estimated_requests: 10
     requires_active_checks: true
 
+  - module: M4
+    name: git-reflog-exposure
+    version: "1.0"
+    title: Version-control reflog served
+    description: >-
+      Requests /.git/logs/HEAD and the per-branch reflog and reports one that is served. A reflog proves the repository's history is readable from the web root and names the branch movements, the commit identifiers and the committer identities of every local change. The finding reports the artifact path and the reflog action markers; it does not download objects and does not reconstruct history. Read-only GET probes.
+    research_ref: ch04#2
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 3
+  - module: M4
+    name: git-credentials-exposed
+    version: "1.0"
+    title: Credentials served in version-control configuration
+    description: >-
+      Requests /.git/config and the credential-helper store and reports one whose own content carries credential material, which the client's redactor proves by reporting the detector that fired on the body. The finding names the path, the file family and the detector names; the credential value was redacted at capture time and never reaches the check. A configuration file that names a remote without credentials is not reported here. Read-only GET probes; nothing is cloned.
+    research_ref: ch04#2
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 3
+  - module: M4
+    name: legacy-vcs-metadata
+    version: "1.0"
+    title: Legacy version-control metadata served
+    description: >-
+      Requests the metadata of the version-control systems a migration left behind — Bazaar's branch configuration, CVS's Entries and Root, Fossil's checkout database — and reports the ones served. Each is confirmed by its own content (a branch nick, a CVS path revision line, a SQLite payload, a pserver root), so a 404 or an error page is never the finding. Read-only GET probes.
+    research_ref: ch04#2
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 6
+  - module: M4
+    name: github-workflow-exposed
+    version: "1.0"
+    title: Continuous-integration workflow definition served
+    description: >-
+      Requests the workflow definitions a repository keeps under .github/workflows and the Dependabot configuration, and reports the ones served. The finding is confirmed by the workflow document's own keys (a runner selector beside a job and a step list), so the deployment's refusal is not mistaken for a pipeline. The artifact names the path and the job keys; any credential the workflow carries is redacted at capture. Read-only GET probes.
+    research_ref: ch04#24
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 7
+  - module: M4
+    name: ci-pipeline-definition-exposed
+    version: "1.0"
+    title: Continuous-integration pipeline definition served
+    description: >-
+      Requests the pipeline definitions of the other common CI systems — GitLab, Jenkins, Travis, CircleCI, Azure Pipelines, Bitbucket, Drone, AppVeyor, Woodpecker and Buildkite — and reports the ones served. Each is confirmed by that system's own document shape (a stage list, a declarative pipeline block, a step list with an image), which is what tells a published pipeline apart from the server's error page. Read-only GET probes.
+    research_ref: ch04#24
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 10
+  - module: M4
+    name: ci-pipeline-secret-exposed
+    version: "1.0"
+    title: Credential material carried in a served pipeline definition
+    description: >-
+      Requests the pipeline definitions a CI system reads and reports one whose own body carries credential material, which the client's redactor proves by reporting the detector that fired (a provider access key, a private key, a credentialed connection string). The finding names the path and the detector names; the value was redacted at capture time. A pipeline definition that carries no credential is not reported — it is the other check's finding. Read-only GET probes.
+    research_ref: ch04#24
+    proof: L1
+    cwe: CWE-798
+    target_kinds: [url]
+    estimated_requests: 6
+  - module: M4
+    name: terraform-state-exposed
+    version: "1.0"
+    title: Terraform state file served
+    description: >-
+      Requests the Terraform state file at the locations a deployment leaves it and reports one that is served. The state document is confirmed by its own structure (a Terraform format version beside a lineage identifier and a resource list), and it names every managed resource, its attributes and any credential a resource declaration stored. The finding reports the path and the document's key names; a value the redactor detected is reported by detector name only. Read-only GET probes.
+    research_ref: ch04#24
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 6
+  - module: M4
+    name: terraform-plan-exposed
+    version: "1.0"
+    title: Terraform plan artifact served
+    description: >-
+      Requests the plan artifacts a pipeline writes beside the state and reports one that is served. A plan is recognised by the document's own format version and planned values, or — for the binary form, whose bytes are never decoded — by the declared plan suffix answered with a non-HTML type. A plan describes the next change to the infrastructure, which is what makes publishing it a disclosure rather than a curiosity. Read-only GET probes.
+    research_ref: ch04#24
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 6
+  - module: M4
+    name: terraform-lock-exposed
+    version: "1.0"
+    title: Terraform dependency lock state served
+    description: >-
+      Requests the provider lock file and the module manifest a working directory keeps under .terraform and reports the ones served. Together they name every provider and module version the infrastructure is built from, which is the supply-chain inventory an attacker would otherwise have to guess. Confirmed by each file's own structure (provider blocks with constraints, a module list with sources and directories). Read-only GET probes.
+    research_ref: ch04#24
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 3
+  - module: M4
+    name: aws-credential-file-exposed
+    version: "1.0"
+    title: Cloud provider credential file served
+    description: >-
+      Requests the AWS credential file and configuration at the location the CLI and the SDKs read them and reports the ones served. The file is confirmed by its own keys (an access key identifier, a secret access key, a profile section) and the finding names the path, the profile names and the detectors that fired; the key values were redacted at capture time and never reach the check. Read-only GET probes.
+    research_ref: ch04#1
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 3
+  - module: M4
+    name: cloud-cli-credential-exposed
+    version: "1.0"
+    title: Cloud CLI credential store served
+    description: >-
+      Requests the credential stores the cloud command-line tools keep under the home directory — the Google Cloud application-default credentials and credentials file, and the Azure profile and token cache — and reports the ones served. Each is confirmed by its own document keys, and the finding names the path and the detector that fired where one did (a JSON web token in the token cache, a private key in a credential document): the values are redacted at capture time. Read-only GET probes.
+    research_ref: ch04#1
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 5
+  - module: M4
+    name: cloud-service-account-key-exposed
+    version: "1.0"
+    title: Cloud service-account key served
+    description: >-
+      Requests the service-account key documents a deployment commonly leaves in the web root and reports the ones served. A key document is confirmed by its own fields (a service-account type, a key identifier, a client address), and the private half it carries is redacted at capture time — the finding reports the detector names, the path and the document's field names, never the key. Read-only GET probes.
+    research_ref: ch04#15
+    proof: L1
+    cwe: CWE-321
+    target_kinds: [url]
+    estimated_requests: 6
+  - module: M4
+    name: container-compose-exposed
+    version: "1.0"
+    title: Container composition manifest served
+    description: >-
+      Requests the Compose manifests a service is deployed with and reports the ones served. The manifest is confirmed by its own keys (a services mapping beside an image reference and a container name), which is what distinguishes it from an ordinary YAML document. It names the services, their images and the environment each is given — including any connection string, whose value the redactor blanks at capture. Read-only GET probes.
+    research_ref: ch04#24
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 5
+  - module: M4
+    name: dockerfile-exposed
+    version: "1.0"
+    title: Container build definition served
+    description: >-
+      Requests the Dockerfile at the paths a build leaves it and reports the ones served. The file is confirmed by its own instructions (a base image beside a build step and a working directory), so the server's refusal is not mistaken for it. A build definition names the base image and its version, the packages installed, the internal hosts a step reaches and any build argument a pipeline passed in. Read-only GET probes.
+    research_ref: ch04#24
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 5
+  - module: M4
+    name: orchestration-manifest-exposed
+    version: "1.0"
+    title: Orchestration manifest served
+    description: >-
+      Requests the orchestration manifests a deployment publishes — Kubernetes Deployments and Secrets, Helm values files and a Rancher composition file — and reports the ones served. Each is confirmed by its own document shape (an API version beside a kind and a spec, or a values file's image and replica keys). The manifest names the workload's image, its replicas and its secret references; an inline connection string is redacted at capture. Read-only GET probes.
+    research_ref: ch04#24
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 8
+  - module: M4
+    name: vim-swap-exposed
+    version: "1.0"
+    title: Editor swap or autosave file served
+    description: >-
+      Requests the hidden swap and autosave files an interrupted editing session leaves beside a file — vim's dot-prefixed .swp/.swo/.un~ siblings and Emacs's #file# and .#file forms — and reports the ones served. A swap file is the buffer's stored blocks, so it carries the file's contents as they were being edited, including any credential that was in it; it is recognised from the suffix and the answer's type, and its bytes are never decoded. Read-only GET probes.
+    research_ref: ch04#3
+    proof: L1
+    cwe: CWE-530
+    target_kinds: [url]
+    estimated_requests: 7
+  - module: M4
+    name: editor-backup-residue-exposed
+    version: "1.0"
+    title: Editor backup copy served
+    description: >-
+      Requests the tilde-suffixed copies an editor writes on save and reports the ones served. The copy is confirmed by the content family of the file it backs up — a dotenv body, PHP source, a Python module — which is what makes it a copy of a real file rather than the not-found page's echo of the path. A backup copy of a configuration file carries the values the live file was changed to remove. Read-only GET probes.
+    research_ref: ch04#3
+    proof: L1
+    cwe: CWE-530
+    target_kinds: [url]
+    estimated_requests: 4
+  - module: M4
+    name: os-metadata-residue-exposed
+    version: "1.0"
+    title: Operating-system metadata file served
+    description: >-
+      Requests the metadata files a desktop operating system leaves in a directory that was uploaded or archived — .DS_Store, Thumbs.db, desktop.ini and .directory — and reports the ones served. Each is recognised from its own marker or from its declared binary suffix, never from the server's answer alone. These files name the directory's entries, which is a listing an operator did not intend to publish. Read-only GET probes.
+    research_ref: ch04#1
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 4
+  - module: M4
+    name: package-manager-credential-exposed
+    version: "1.0"
+    title: Package-manager credential configuration served
+    description: >-
+      Requests the credential configuration the package managers read (.npmrc, .yarnrc.yml, .pypirc, the RubyGems credential store, Maven's settings, NuGet's configuration and pip's configuration) and reports the ones served. Each is confirmed by its own keys — a registry host beside an auth-token key, a servers section with a password element, an index URL — which is what a refusal page cannot imitate. Any credential value is redacted at capture time. Read-only GET probes.
+    research_ref: ch04#1
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 7
+  - module: M4
+    name: registry-auth-exposed
+    version: "1.0"
+    title: Container-registry credential configuration served
+    description: >-
+      Requests the Docker client's credential configuration at the locations it is read and reports the ones served. The document is confirmed by its own keys (a registries mapping whose entries carry an encoded credential or an identity token), and the finding names the file family and the detector that fired where one did; the encoded credential is redacted at capture time. A served registry credential lets a reader pull every private image the host can. Read-only GET probes.
+    research_ref: ch04#1
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 3
+  - module: M4
+    name: authorization-file-exposed
+    version: "1.0"
+    title: Authorization file served
+    description: >-
+      Requests the authorization files a deployment writes — an Apache access-control file and the SSH authorized-keys files — and reports the ones served. Each is confirmed by its own directives (an authentication type beside a require rule, a public-key line, a host block), which is what tells the file apart from the server's own refusal. An authorized-keys file names the accounts and key types that may log in; the keys are public, and no private half is requested. Read-only GET probes.
+    research_ref: ch04#1
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 4
+  - module: M4
+    name: env-variant-exposed
+    version: "1.0"
+    title: Environment file variant served
+    description: >-
+      Requests the environment-file variants the shipped dotenv probe does not name — the staging, prod, dev, test, qa and ci forms, a layered production override and a local-suffixed name — and reports the ones served. A file is confirmed by the assignment keys an environment file carries (an application key beside a database password and a secret key), which is what a not-found page cannot imitate. The values were redacted at capture time. Read-only GET probes.
+    research_ref: ch04#1
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [url]
+    estimated_requests: 8
+  - module: M4
+    name: env-secret-file-exposed
+    version: "1.0"
+    title: Environment or secrets file served
+    description: >-
+      Requests the files whose whole purpose is to hold secrets — the dotenv-vault documents and their key file, a secrets environment file, a Ruby secrets document and a credentials environment file — and reports the ones served. Each is confirmed by its own keys (a vault key, an access key identifier beside a database password, a secret key base), never by the status code. The values are redacted at capture time and the finding reports the key names and the detectors. Read-only GET probes.
+    research_ref: ch04#1
+    proof: L1
+    cwe: CWE-538
+    target_kinds: [url]
+    estimated_requests: 6
+  - module: M4
+    name: app-config-secret-exposed
+    version: "1.0"
+    title: Application configuration file served
+    description: >-
+      Requests the framework configuration files a deployment leaves in the web root and reports the ones served — a Django settings module and its local override, the .NET app settings and web configuration, and a Symfony parameters file. Each is confirmed by its own keys (a secret key beside the database settings, a connection-strings section, a parameters mapping with a database password). The finding names the path and the key names; the values were redacted at capture time. Read-only GET probes.
+    research_ref: ch04#1
+    proof: L1
+    cwe: CWE-200
+    target_kinds: [url]
+    estimated_requests: 6
   # ---------------------------------------------------------------- M5 cloud, container, supply chain
   - module: M5
     name: leaked-cloud-keys

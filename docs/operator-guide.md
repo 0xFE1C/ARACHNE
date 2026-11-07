@@ -220,6 +220,34 @@ at capture time, so they never reach evidence.
 | `ARACHNE_M4_METADATA_SSRF` | `false` | Allow `m4.metadata-ssrf` to send the metadata GET through a discovered sink. |
 | `ARACHNE_M4_PROBES` | *(bundled)* | Replace the M4 probe corpus/wordlists. |
 
+**Artifact exposure (WP-29, REQ-DET-022).** Twenty-four of M4's checks are the
+source-control, CI and infrastructure-artifact family, and they are operated exactly like the
+rest of M4: read-only `GET` probes of bounded path inventories, no opt-in, no attestation.
+They cover the `.git` reflog and a DVCS configuration or credential store carrying
+credentials; the GitHub Actions workflows and the other CI pipeline definitions, plus
+credential material inside a served pipeline; Terraform state, plan and dependency-lock
+artifacts; the AWS credential file, the cloud CLIs' credential stores and cloud
+service-account keys; Compose files, Dockerfiles and the Kubernetes/Helm/Rancher manifests;
+vim swap, editor backup and operating-system metadata residue; the package-manager and
+container-registry credential configuration and the authorization files (`.htaccess`,
+`authorized_keys`); and the environment-file variants, secrets files and framework
+configuration files. Three properties are worth knowing when you read a finding from this
+family:
+
+* **A refusal is not a finding.** The decoy the requirement names is a server that answers
+  every artifact path with its own 404 or a generic error page, and each check requires the
+  *artifact's own content* (or a suffix the corpus declares binary) — never a status code,
+  and never a word the page happens to carry. A soft 404 that answers `200` and quotes the
+  path it was asked for is silent too.
+* **Nothing is downloaded to confirm an artifact.** Every request goes through the shared
+  client, which reads at most the body limit (`ARACHNE_HTTP_MAX_BODY_BYTES`, 64 KiB) and
+  marks the body truncated; the finding records the bytes it captured and that limit. A large
+  plan file is reported from its suffix and its answer's type, not from its bytes.
+* **Secrets are redacted at capture.** Where an artifact carries credential material, the
+  finding names the redactor's *detectors* (`aws-access-key-id`, `github-token`,
+  `credentialed-url`, `jwt`, `private-key`) and the key names — never a value. The two checks
+  whose whole claim is the credential fire only when a detector fired on the served body.
+
 ### 2.8 M5 — Cloud, container & supply chain
 
 | Variable | Default | Meaning |

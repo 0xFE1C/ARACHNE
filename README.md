@@ -5,8 +5,8 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3b82f6" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white" alt="Python 3.11+">
-  <img src="https://img.shields.io/badge/checks-281-8b5cf6" alt="281 registered checks">
-  <img src="https://img.shields.io/badge/tests-5,669-22c55e" alt="5,669 tests">
+  <img src="https://img.shields.io/badge/checks-305-8b5cf6" alt="305 registered checks">
+  <img src="https://img.shields.io/badge/tests-5,688-22c55e" alt="5,687 tests">
   <img src="https://img.shields.io/badge/engine-heuristic_%2B_AI-f59e0b" alt="Dual engine">
   <img src="https://img.shields.io/badge/proof_ladder-L0%E2%80%93L4-ef4444" alt="Proof ladder L0–L4">
   <img src="https://img.shields.io/badge/mypy-strict-0ea5e9" alt="mypy strict">
@@ -46,11 +46,11 @@ it — safely — and to **show its work**:
 
 | | |
 |:---|:---|
-| 🕷️ **281 registered checks** | 6 modules: recon/OSINT · network · web · misconfiguration · cloud/supply-chain · AI-era |
+| 🕷️ **305 registered checks** | 6 modules: recon/OSINT · network · web · misconfiguration · cloud/supply-chain · AI-era |
 | 🪜 **Proof ladder L0–L4** | passive → read-only → out-of-band → one-shot command → minimal state change (auto-restored) |
 | ⚙️ **Dual engine** | heuristic (127 rules, deterministic) + AI (7 provider adapters) — parity-guaranteed |
 | 🖥️ **Run it your way** | CLI · REST API + web UI · scheduler · distributed agents · CI gate · air-gapped |
-| 🧪 **5,669 tests** | incl. a 59-test safety suite and ground-truth labs with false-positive traps |
+| 🧪 **5,688 tests** | incl. a 59-test safety suite and ground-truth labs with false-positive traps |
 | 🔏 **Tamper-evident** | hash-chained audit trail; `arachne verify-chain` detects any modification |
 | 🔑 **Asymmetric signing** | Ed25519 alongside HMAC — an auditor with only the public key verifies and cannot forge |
 | 📋 **Generated compliance maps** | CIS · ISO 27001 · NIST CSF · PCI DSS, built from check metadata with the unassessed remainder named |
@@ -70,7 +70,7 @@ flowchart LR
         GATES["Safety gates<br/>scope · attestation · proof"]
         RUN["Scoped execution<br/>rate-limited · redacted · audited"]
     end
-    subgraph modules["Detection — 281 checks, 6 modules"]
+    subgraph modules["Detection — 305 checks, 6 modules"]
         M1["M1<br/>Recon/OSINT"]
         M2["M2<br/>Network"]
         M3["M3<br/>Web"]
@@ -162,7 +162,7 @@ own.
 | **M1** Recon & OSINT | 17 | dork sweeps, subdomains, certificate transparency, breach exposure, provider drift (Shodan/Censys) |
 | **M2** Network & Services | 32 | ports, fingerprints, TLS & mTLS enforcement, DNS/AXFR, SMB and SSH auth, database & ICS probing, SMTP transport, HTTP/3 parity, read-only AD CS enumeration, CVE correlation |
 | **M3** Web Application | 162 | SQLi/XSS/SSRF/IDOR, command & template injection, XXE, smuggling, cache poisoning, GraphQL, JWT/OAuth/SAML, DOM-XSS in a headless browser, the WordPress and CMS-family-B (Joomla/Drupal/Moodle/PrestaShop/Magento) surface inventories, the application-server family (Spring Boot, Django, Rails, Laravel, Tomcat, JBoss, WebLogic, ColdFusion, IIS), and the API and modern-web surface (OpenAPI/Swagger documents and an unauthenticated declared operation, GraphQL introspection/suggestions/IDE, the browser-facing gRPC surface, WebSocket origin handling, serverless and edge-function endpoints, and CORS) |
-| **M4** Misconfiguration | 29 | `.env`/`.git` exposure, backups, debug endpoints, headers, cookies, default credentials |
+| **M4** Misconfiguration | 53 | `.env`/`.git` exposure, backups, debug endpoints, headers, cookies, default credentials, and the source-control, CI and infrastructure artifacts (git reflog and credential stores, CI pipeline definitions and their secrets, Terraform state/plan/lock, cloud credential files, container and orchestration manifests, editor residue, credential and authorization files, environment-file variants) |
 | **M5** Cloud & Supply Chain | 22 | IMDS/metadata, buckets, Kubernetes, registries, native image scanning, CI/CD, dependency confusion, IAM, DigitalOcean posture |
 | **M6** AI-era & Post-Exploit | 19 | webshell signatures, secret scanning, LPE, AD attack paths, GenAI surface, MCP security, the Agentic Top 10 surface, Sigma hunts |
 

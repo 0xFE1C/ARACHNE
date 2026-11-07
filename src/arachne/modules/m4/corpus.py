@@ -25,6 +25,7 @@ import yaml
 from arachne.core.errors import ConfigurationError
 
 __all__ = [
+    "ArtifactProbe",
     "BackupSignature",
     "BucketProvider",
     "CredentialProduct",
@@ -102,6 +103,21 @@ class CredentialProduct:
 
 @dataclass(frozen=True, slots=True)
 class BackupSignature:
+    family: str
+    markers: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ArtifactProbe:
+    """One infrastructure-artifact path and the content that proves the artifact (WP-29).
+
+    ``markers`` is the artifact's *own* content: a struct key, a manifest keyword, a file
+    signature. An empty list is deliberate — it means the artifact has no text marker and the
+    answer is decided from the suffix (a declared binary) or from the redactor (a
+    credential-bearing artifact), never from a body word.
+    """
+
+    path: str
     family: str
     markers: tuple[str, ...]
 
@@ -372,6 +388,39 @@ class M4Corpus:
 
     def key_extensions(self) -> tuple[str, ...]:
         return self.strings("key_material", "key_extensions")
+
+    # ------------------------------------------------------------------ infrastructure artifacts
+    def artifact_groups(self) -> tuple[str, ...]:
+        """Every artifact group the corpus defines (one check per group)."""
+        groups = self.mapping("artifacts", "groups")
+        return tuple(str(name) for name in groups)
+
+    def artifact_probes(self, group: str) -> tuple[ArtifactProbe, ...]:
+        """The path inventory of one artifact group, with its proven content markers."""
+        value = self._get("artifacts", "groups", group)
+        if not isinstance(value, (list, tuple)) or not value:
+            return ()
+        probes: list[ArtifactProbe] = []
+        for entry in value:
+            if not isinstance(entry, Mapping) or "path" not in entry:
+                continue
+            probes.append(
+                ArtifactProbe(
+                    path=str(entry["path"]),
+                    family=str(entry.get("family", group)),
+                    markers=tuple(str(item) for item in entry.get("markers") or ()),
+                )
+            )
+        return tuple(probes)
+
+    def artifact_binary_extensions(self) -> tuple[str, ...]:
+        """Suffixes whose content is binary by nature: a non-HTML 2xx is the finding."""
+        return tuple(
+            extension.lower() for extension in self.strings("artifacts", "binary_extensions")
+        )
+
+    def artifact_min_bytes(self) -> int:
+        return self.integer("artifacts", "min_bytes", default=24)
 
     # ------------------------------------------------------------------ headers
     def header_baseline(self, *, https: bool) -> tuple[str, ...]:

@@ -54,6 +54,7 @@ controls:
     checks:
       - m3.authz-bypass
       - m3.idor-oracle
+      - m4.authorization-file-exposed
       - m5.iam-review
   - id: "A.5.16"
     title: "Identity management"
@@ -65,8 +66,18 @@ controls:
     title: "Authentication information"
     checks:
       - m1.code-secret-mining
+      - m4.app-config-secret-exposed
+      - m4.aws-credential-file-exposed
+      - m4.ci-pipeline-secret-exposed
+      - m4.cloud-cli-credential-exposed
+      - m4.cloud-service-account-key-exposed
       - m4.env-file-probe
+      - m4.env-secret-file-exposed
+      - m4.env-variant-exposed
+      - m4.git-credentials-exposed
       - m4.key-exposure
+      - m4.package-manager-credential-exposed
+      - m4.registry-auth-exposed
       - m5.gcp-sa-keys
       - m5.image-history-secrets
       - m5.leaked-cloud-keys
@@ -116,6 +127,10 @@ controls:
     title: "Intellectual property rights"
     checks:
       - m1.code-secret-mining
+      - m4.git-credentials-exposed
+      - m4.git-reflog-exposure
+      - m4.legacy-vcs-metadata
+      - m4.os-metadata-residue-exposed
       - m4.sourcemap-exposure
       - m4.vcs-exposure
   - id: "A.5.33"
@@ -127,7 +142,12 @@ controls:
     title: "Privacy and protection of PII"
     checks:
       - m1.breach-exposure
+      - m4.app-config-secret-exposed
       - m4.env-file-probe
+      - m4.env-secret-file-exposed
+      - m4.env-variant-exposed
+      - m4.terraform-plan-exposed
+      - m4.terraform-state-exposed
       - m5.image-history-secrets
   - id: "A.6.7"
     title: "Remote working"
@@ -155,8 +175,13 @@ controls:
     title: "Access to source code"
     checks:
       - m1.code-secret-mining
+      - m4.ci-pipeline-definition-exposed
+      - m4.editor-backup-residue-exposed
+      - m4.git-reflog-exposure
+      - m4.github-workflow-exposed
       - m4.sourcemap-exposure
       - m4.vcs-exposure
+      - m4.vim-swap-exposed
   - id: "A.8.5"
     title: "Secure authentication"
     checks:
@@ -187,8 +212,10 @@ controls:
   - id: "A.8.9"
     title: "Configuration management"
     checks:
+      - m4.container-compose-exposed
       - m4.cookie-flag-audit
       - m4.cors-config-review
+      - m4.orchestration-manifest-exposed
       - m4.security-header-review
       - m4.tls-config-review
       - m5.k8s-exposure
@@ -223,10 +250,32 @@ controls:
       - m3.weblogic-console
       - m3.wp-config-backup
       - m4.api-doc-exposure
+      - m4.app-config-secret-exposed
+      - m4.authorization-file-exposed
+      - m4.aws-credential-file-exposed
       - m4.backup-file-hunt
       - m4.bucket-exposure
+      - m4.ci-pipeline-definition-exposed
+      - m4.ci-pipeline-secret-exposed
+      - m4.cloud-cli-credential-exposed
+      - m4.cloud-service-account-key-exposed
+      - m4.container-compose-exposed
+      - m4.dockerfile-exposed
+      - m4.editor-backup-residue-exposed
+      - m4.env-variant-exposed
+      - m4.git-reflog-exposure
+      - m4.github-workflow-exposed
+      - m4.legacy-vcs-metadata
+      - m4.orchestration-manifest-exposed
+      - m4.os-metadata-residue-exposed
+      - m4.package-manager-credential-exposed
+      - m4.registry-auth-exposed
       - m4.sourcemap-exposure
+      - m4.terraform-lock-exposed
+      - m4.terraform-plan-exposed
+      - m4.terraform-state-exposed
       - m4.vcs-exposure
+      - m4.vim-swap-exposed
   - id: "A.8.13"
     title: "Information backup"
     checks:
@@ -321,6 +370,8 @@ controls:
       - m3.mass-assign-audit
       - m3.proto-pollution
       - m3.xpath-injection
+      - m4.dockerfile-exposed
+      - m4.terraform-lock-exposed
   - id: "A.8.29"
     title: "Security testing in development and acceptance"
     checks:

@@ -103,8 +103,13 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # Laravel, Tomcat, JBoss, WebLogic, ColdFusion and IIS checks, all default-on read-only L1
     # GET probes -> 257. WP-28 adds the API and modern-web surface family (REQ-DET-021) — the
     # OpenAPI/Swagger, GraphQL, browser-facing gRPC, WebSocket-origin, serverless/edge and CORS
-    # checks, all default-on L1 reads (three of them an OPTIONS preflight) -> 281.
-    assert len(registry.checks()) == 281
+    # checks, all default-on L1 reads (three of them an OPTIONS preflight) -> 281. WP-29 adds
+    # the source-control, CI and infrastructure-artifact family (REQ-DET-022) — the git
+    # reflog and credential store, the CI pipeline definitions, Terraform state/plan/lock,
+    # cloud credential files, container and orchestration manifests, editor residue, the
+    # credential and authorization files and the environment-file variants, all default-on
+    # read-only L1 GET probes -> 305.
+    assert len(registry.checks()) == 305
     # M1's code-secret-mining, M2's SNMP and ICS checks, M4's metadata-ssrf and
     # default-credentials checks, M3's ssrf-probe, M5's imds-ssrf / azure-mi-audit and
     # M6's deception-listeners / ad-attack-path, S13's m1.bucket-hunt, S15's six
@@ -125,7 +130,8 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # thirty CMS checks are all plain GETs, so the active count does not move. WP-27's
     # twenty-five application-server checks are all plain GETs too. WP-28's three
     # OPTIONS-preflight checks (the gRPC-Web preflight and the two CORS preflight readings) are
-    # active for the same reason m3.wp-cron-surface is -> 103.
+    # active for the same reason m3.wp-cron-surface is -> 103. WP-29's twenty-four
+    # infrastructure-artifact checks are all plain GETs, so the active count does not move.
     assert registry.totals()["active_checks"] == 103
     # S15: the six L2+ declarations are exactly the proof ladder's opt-in rows. S29 adds one
     # more: m3.client-secret-verify, the L2 dynamic verification of a client-side credential.
@@ -248,8 +254,8 @@ def test_a_plugin_extends_an_existing_module(monkeypatch) -> None:  # type: igno
     )
     registry = ModuleRegistry.discover()
     assert registry.module_ids() == ("M1", "M2", "M3", "M4", "M5", "M6")
-    # The shipped set (281 at WP-28) plus the plugin's one extra check.
-    assert len(registry.checks()) == 282
+    # The shipped set (305 at WP-29) plus the plugin's one extra check.
+    assert len(registry.checks()) == 306
     assert registry.group("M1").origin == "builtin+extra"  # type: ignore[union-attr]
 
 
