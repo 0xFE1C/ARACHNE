@@ -54,7 +54,18 @@ controls:
     checks:
       - m3.authz-bypass
       - m3.idor-oracle
+      - m4.activemq-console-exposed
       - m4.authorization-file-exposed
+      - m4.broker-console-exposed
+      - m4.caddy-admin-api-exposed
+      - m4.docker-api-exposed
+      - m4.kubelet-readonly-exposed
+      - m4.kubernetes-dashboard-exposed
+      - m4.nats-monitoring-exposed
+      - m4.nginx-stub-status-exposed
+      - m4.podman-api-exposed
+      - m4.registry-catalog-exposed
+      - m4.registry-dashboard-exposed
       - m5.iam-review
   - id: "A.5.16"
     title: "Identity management"
@@ -66,6 +77,7 @@ controls:
     title: "Authentication information"
     checks:
       - m1.code-secret-mining
+      - m4.apache-htpasswd-exposed
       - m4.app-config-secret-exposed
       - m4.aws-credential-file-exposed
       - m4.ci-pipeline-secret-exposed
@@ -159,8 +171,18 @@ controls:
     title: "Privileged access rights"
     checks:
       - m3.idor-oracle
+      - m4.activemq-console-exposed
       - m4.actuator-exposure
+      - m4.broker-console-exposed
+      - m4.caddy-admin-api-exposed
       - m4.dashboard-exposure
+      - m4.docker-api-exposed
+      - m4.kubelet-readonly-exposed
+      - m4.kubernetes-dashboard-exposed
+      - m4.nats-monitoring-exposed
+      - m4.podman-api-exposed
+      - m4.registry-catalog-exposed
+      - m4.registry-dashboard-exposed
       - m4.unauth-api-audit
       - m5.iam-review
   - id: "A.8.3"
@@ -212,11 +234,22 @@ controls:
   - id: "A.8.9"
     title: "Configuration management"
     checks:
+      - m4.apache-config-file-exposed
+      - m4.apache-default-page
+      - m4.cacheable-session-response
+      - m4.caddy-config-file-exposed
       - m4.container-compose-exposed
       - m4.cookie-flag-audit
       - m4.cors-config-review
+      - m4.iis-applicationhost-exposed
+      - m4.iis-default-page
+      - m4.nginx-config-file-exposed
+      - m4.nginx-default-page
+      - m4.nginx-stub-status-exposed
       - m4.orchestration-manifest-exposed
       - m4.security-header-review
+      - m4.server-version-disclosure
+      - m4.stack-header-disclosure
       - m4.tls-config-review
       - m5.k8s-exposure
       - m5.tfstate-exposure
@@ -249,12 +282,17 @@ controls:
       - m3.tomcat-manager-surface
       - m3.weblogic-console
       - m3.wp-config-backup
+      - m4.apache-config-file-exposed
+      - m4.apache-htpasswd-exposed
       - m4.api-doc-exposure
       - m4.app-config-secret-exposed
       - m4.authorization-file-exposed
+      - m4.autoindex-json-exposed
+      - m4.autoindex-xml-exposed
       - m4.aws-credential-file-exposed
       - m4.backup-file-hunt
       - m4.bucket-exposure
+      - m4.caddy-config-file-exposed
       - m4.ci-pipeline-definition-exposed
       - m4.ci-pipeline-secret-exposed
       - m4.cloud-cli-credential-exposed
@@ -265,12 +303,16 @@ controls:
       - m4.env-variant-exposed
       - m4.git-reflog-exposure
       - m4.github-workflow-exposed
+      - m4.iis-applicationhost-exposed
       - m4.legacy-vcs-metadata
+      - m4.nginx-config-file-exposed
       - m4.orchestration-manifest-exposed
       - m4.os-metadata-residue-exposed
       - m4.package-manager-credential-exposed
       - m4.registry-auth-exposed
+      - m4.server-version-disclosure
       - m4.sourcemap-exposure
+      - m4.stack-header-disclosure
       - m4.terraform-lock-exposed
       - m4.terraform-plan-exposed
       - m4.terraform-state-exposed
@@ -371,6 +413,7 @@ controls:
       - m3.proto-pollution
       - m3.xpath-injection
       - m4.dockerfile-exposed
+      - m4.registry-catalog-exposed
       - m4.terraform-lock-exposed
   - id: "A.8.29"
     title: "Security testing in development and acceptance"

@@ -6,7 +6,7 @@ the numbered methods in `docs/research/`.
 
 - research corpus: `docs/research`
 - source roots: `src/arachne/modules`
-- references found: **305**
+- references found: **329**
 - coverage: **148/175 (84.6%)**
 
 ## Summary
@@ -143,22 +143,22 @@ the numbered methods in `docs/research/`.
 | 4 | JavaScript source map exposure | yes | `sourcemap-exposure` |
 | 5 | API documentation exposure | yes | `api-doc-exposure` |
 | 6 | Verbose error and stack-trace exposure | yes | `verbose-errors` |
-| 7 | Debug endpoint discovery | yes | `debug-endpoints` |
+| 7 | Debug endpoint discovery | yes | `debug-endpoints`, `nginx-stub-status-exposed` |
 | 8 | Spring Boot Actuator exposure | yes | `actuator-exposure` |
-| 9 | Directory listing detection | yes | `directory-listing` |
+| 9 | Directory listing detection | yes | `autoindex-json-exposed`, `autoindex-xml-exposed`, `directory-listing` |
 | 10 | Default credential checking | yes | `default-credentials` |
-| 11 | Administrative dashboard exposure | yes | `dashboard-exposure` |
-| 12 | Datastore management interface exposure | yes | `datastore-surface` |
+| 11 | Administrative dashboard exposure | yes | `broker-console-exposed`, `caddy-admin-api-exposed`, `dashboard-exposure`, `kubernetes-dashboard-exposed`, `registry-dashboard-exposed` |
+| 12 | Datastore management interface exposure | yes | `activemq-console-exposed`, `datastore-surface`, `docker-api-exposed`, `kubelet-readonly-exposed`, `nats-monitoring-exposed`, `podman-api-exposed`, `registry-catalog-exposed` |
 | 13 | Object storage bucket exposure | yes | `bucket-exposure` |
 | 14 | Client-side secret exposure | yes | `client-secrets` |
 | 15 | Private key and certificate exposure | yes | `cloud-service-account-key-exposed`, `key-exposure` |
-| 16 | Security header configuration review | yes | `security-header-review` |
+| 16 | Security header configuration review | yes | `security-header-review`, `server-version-disclosure`, `stack-header-disclosure` |
 | 17 | TLS configuration review | yes | `tls-config-review` |
-| 18 | Cookie flag audit | yes | `cookie-flag-audit` |
+| 18 | Cookie flag audit | yes | `cacheable-session-response`, `cookie-flag-audit` |
 | 19 | CORS configuration review | yes | `cors-config-review` |
 | 20 | Email authentication record review | yes | `email-auth-review` |
 | 21 | WebDAV verb exposure | yes | `webdav-verbs` |
-| 22 | Legacy service and endpoint exposure | yes | `legacy-services` |
+| 22 | Legacy service and endpoint exposure | yes | `apache-config-file-exposed`, `apache-default-page`, `apache-htpasswd-exposed`, `caddy-config-file-exposed`, `iis-applicationhost-exposed`, `iis-default-page`, `legacy-services`, `nginx-config-file-exposed`, `nginx-default-page` |
 | 23 | `robots.txt` and sitemap analysis | yes | `robots-sitemap` |
 | 24 | Hidden endpoint discovery | yes | `ci-pipeline-definition-exposed`, `ci-pipeline-secret-exposed`, `container-compose-exposed`, `dockerfile-exposed`, `github-workflow-exposed`, `hidden-endpoint-hunt`, `orchestration-manifest-exposed`, `terraform-lock-exposed`, `terraform-plan-exposed`, `terraform-state-exposed` |
 | 25 | Staging and pre-production exposure | yes | `staging-exposure` |

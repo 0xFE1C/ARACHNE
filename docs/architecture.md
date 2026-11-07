@@ -24,11 +24,11 @@ flowchart TB
         HTTP["Scoped HTTP client<br/>rate-limit · redact-at-capture · audit"]
     end
 
-    subgraph det["Detection modules — 305 checks"]
+    subgraph det["Detection modules — 329 checks"]
         M1["M1 Recon/OSINT (17)"]
         M2["M2 Network (32)"]
         M3["M3 Web (162)"]
-        M4["M4 Misconfig (53)"]
+        M4["M4 Misconfig (77)"]
         M5["M5 Cloud/Supply (22)"]
         M6["M6 AI-era (19)"]
     end
@@ -160,7 +160,7 @@ flowchart LR
 src/arachne/
 ├── core/          # config, safety (Scope), http client, lifecycle, orchestrator,
 │                  # planner, redaction, audit sink
-├── modules/       # m1..m6 detection modules, registry (305 checks), handlers
+├── modules/       # m1..m6 detection modules, registry (329 checks), handlers
 ├── analyzer/      # scoring, rules, correlation, FP tuning, narrative, remediation
 ├── ai/            # engine, stages, providers (7), budget, cache, privacy, reliability
 ├── report/        # builder, renderers (MD/HTML/JSON/PDF), diff, evidence, OWASP

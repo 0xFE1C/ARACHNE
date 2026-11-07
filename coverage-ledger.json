@@ -2,7 +2,7 @@
   "ledger_version": "1.0",
   "generated_at": "2026-11-07",
   "registry_version": "registry-1.0",
-  "registry_digest": "sha256:c644388e4f6607b7a8ac26a055f1baf89ee6481aa11976ba972ef29dab4e3afa",
+  "registry_digest": "sha256:47fa8df030f602a64264efb5c6f10e38e990fa5b28d67e85f1933ca04ab2d961",
   "framework_versions": {
     "WSTG": "4.2",
     "API": "2023",
@@ -13,7 +13,7 @@
   },
   "last_verified_note": "last_verified is the date the corpus was last exercised by the test suite: the ledger is regenerated after a full suite run, and every registered check is run by it. A per-check date arrives with the verification-record store (REQ-PROOF-*). It is committed content, not a wall-clock read, so --check is byte-stable.",
   "totals": {
-    "checks": 305,
+    "checks": 329,
     "cwe_only_checks": 0
   },
   "wstg": {
@@ -314,12 +314,17 @@
           "m3.wp-user-sitemap",
           "m3.wp-xmlrpc-rsd",
           "m3.wp-xmlrpc-surface",
+          "m4.apache-default-page",
           "m4.api-doc-exposure",
           "m4.app-config-secret-exposed",
           "m4.env-file-probe",
           "m4.env-variant-exposed",
           "m4.hidden-endpoint-hunt",
+          "m4.iis-default-page",
+          "m4.nginx-default-page",
           "m4.robots-sitemap",
+          "m4.server-version-disclosure",
+          "m4.stack-header-disclosure",
           "m4.wordpress-surface",
           "m6.template-scan"
         ]
@@ -337,6 +342,17 @@
           "m3.openapi-operation-unauth",
           "m3.openfaas-gateway-exposed",
           "m3.websocket-upgrade-auth",
+          "m4.activemq-console-exposed",
+          "m4.broker-console-exposed",
+          "m4.caddy-admin-api-exposed",
+          "m4.docker-api-exposed",
+          "m4.kubelet-readonly-exposed",
+          "m4.kubernetes-dashboard-exposed",
+          "m4.nats-monitoring-exposed",
+          "m4.nginx-stub-status-exposed",
+          "m4.podman-api-exposed",
+          "m4.registry-catalog-exposed",
+          "m4.registry-dashboard-exposed",
           "m4.unauth-api-audit",
           "m5.docker-socket",
           "m5.k8s-exposure",
@@ -4796,6 +4812,390 @@
       "cwe": "CWE-200"
     },
     {
+      "id": "m4.nginx-default-page",
+      "module": "M4",
+      "title": "Stock nginx default page served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "WSTG-INFO-02",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m4.nginx-stub-status-exposed",
+      "module": "M4",
+      "title": "nginx stub_status endpoint reachable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-02",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m4.nginx-config-file-exposed",
+      "module": "M4",
+      "title": "nginx configuration file served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.apache-default-page",
+      "module": "M4",
+      "title": "Stock Apache default page served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "WSTG-INFO-02",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m4.apache-config-file-exposed",
+      "module": "M4",
+      "title": "Apache configuration file served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.apache-htpasswd-exposed",
+      "module": "M4",
+      "title": "Apache basic-auth password file served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-ATHN-02",
+        "WSTG-CONF-04",
+        "CWE-522"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-522"
+    },
+    {
+      "id": "m4.iis-default-page",
+      "module": "M4",
+      "title": "Stock IIS default page served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "WSTG-INFO-02",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m4.iis-applicationhost-exposed",
+      "module": "M4",
+      "title": "IIS server configuration file served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.caddy-admin-api-exposed",
+      "module": "M4",
+      "title": "Caddy admin API reachable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "WSTG-CONF-05",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m4.caddy-config-file-exposed",
+      "module": "M4",
+      "title": "Caddy configuration file served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "WSTG-INFO-05",
+        "CWE-538"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-538"
+    },
+    {
+      "id": "m4.autoindex-json-exposed",
+      "module": "M4",
+      "title": "Directory published as a machine-readable JSON index",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "WSTG-INFO-05",
+        "CWE-548"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-548"
+    },
+    {
+      "id": "m4.autoindex-xml-exposed",
+      "module": "M4",
+      "title": "Directory published as a machine-readable XML index",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "WSTG-INFO-05",
+        "CWE-548"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-548"
+    },
+    {
+      "id": "m4.docker-api-exposed",
+      "module": "M4",
+      "title": "Container daemon API reachable without authentication (version query)",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "WSTG-CONF-05",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m4.podman-api-exposed",
+      "module": "M4",
+      "title": "Podman libpod API reachable without authentication (version query)",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "WSTG-CONF-05",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m4.kubernetes-dashboard-exposed",
+      "module": "M4",
+      "title": "Kubernetes Dashboard reachable behind the API-server proxy",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "WSTG-CONF-05",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m4.kubelet-readonly-exposed",
+      "module": "M4",
+      "title": "Kubelet read-only endpoint reachable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "WSTG-CONF-05",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m4.registry-catalog-exposed",
+      "module": "M4",
+      "title": "Container registry catalogue reachable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "WSTG-CONF-05",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m4.registry-dashboard-exposed",
+      "module": "M4",
+      "title": "Container registry dashboard reachable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "WSTG-CONF-05",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m4.activemq-console-exposed",
+      "module": "M4",
+      "title": "ActiveMQ console or Jolokia endpoint reachable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "WSTG-CONF-05",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m4.nats-monitoring-exposed",
+      "module": "M4",
+      "title": "Message-broker monitoring endpoint reachable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "WSTG-CONF-05",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m4.broker-console-exposed",
+      "module": "M4",
+      "title": "Message-broker console reachable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "WSTG-CONF-05",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m4.server-version-disclosure",
+      "module": "M4",
+      "title": "Server product and version disclosed in a response header",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-02",
+        "WSTG-INFO-08",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m4.stack-header-disclosure",
+      "module": "M4",
+      "title": "Application stack and version disclosed in a response header",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-02",
+        "WSTG-INFO-08",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m4.cacheable-session-response",
+      "module": "M4",
+      "title": "Response establishing a session is cacheable by a shared cache",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "WSTG-SESS-02",
+        "CWE-524"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-524"
+    },
+    {
       "id": "m5.leaked-cloud-keys",
       "module": "M5",
       "title": "Leaked cloud credential material in artifacts",
@@ -5519,7 +5919,13 @@
         "m3.iis-short-name-disclosure",
         "m3.rails-info-properties",
         "m3.tomcat-examples-surface",
-        "m3.wp-author-enumeration"
+        "m3.wp-author-enumeration",
+        "m4.apache-default-page",
+        "m4.iis-default-page",
+        "m4.nginx-default-page",
+        "m4.nginx-stub-status-exposed",
+        "m4.server-version-disclosure",
+        "m4.stack-header-disclosure"
       ]
     },
     {
@@ -5554,9 +5960,13 @@
         "m1.doc-metadata",
         "m1.mobile-artifact",
         "m3.edge-function-sourcemap",
+        "m4.apache-config-file-exposed",
         "m4.app-config-secret-exposed",
         "m4.authorization-file-exposed",
+        "m4.autoindex-json-exposed",
+        "m4.autoindex-xml-exposed",
         "m4.aws-credential-file-exposed",
+        "m4.caddy-config-file-exposed",
         "m4.ci-pipeline-definition-exposed",
         "m4.client-secrets",
         "m4.cloud-cli-credential-exposed",
@@ -5565,6 +5975,8 @@
         "m4.env-secret-file-exposed",
         "m4.env-variant-exposed",
         "m4.github-workflow-exposed",
+        "m4.iis-applicationhost-exposed",
+        "m4.nginx-config-file-exposed",
         "m4.orchestration-manifest-exposed",
         "m4.os-metadata-residue-exposed",
         "m4.package-manager-credential-exposed",
@@ -5654,6 +6066,8 @@
         "m3.wp-plugin-readme",
         "m3.wp-readme-version",
         "m3.wp-theme-stylesheet",
+        "m4.server-version-disclosure",
+        "m4.stack-header-disclosure",
         "m4.wordpress-surface"
       ]
     },
@@ -5712,7 +6126,16 @@
         "m2.ssdp-discovery",
         "m2.ssh-auth",
         "m2.ssh-enum",
+        "m4.activemq-console-exposed",
+        "m4.broker-console-exposed",
         "m4.datastore-surface",
+        "m4.docker-api-exposed",
+        "m4.kubelet-readonly-exposed",
+        "m4.kubernetes-dashboard-exposed",
+        "m4.nats-monitoring-exposed",
+        "m4.podman-api-exposed",
+        "m4.registry-catalog-exposed",
+        "m4.registry-dashboard-exposed",
         "m5.managed-datastores",
         "m6.ad-attack-path",
         "m6.cve-epss-correlation",
@@ -5747,8 +6170,19 @@
         "m3.wp-themes-listing",
         "m3.wp-upgrade-residue",
         "m3.wp-uploads-listing",
+        "m4.apache-config-file-exposed",
+        "m4.apache-default-page",
+        "m4.autoindex-json-exposed",
+        "m4.autoindex-xml-exposed",
+        "m4.cacheable-session-response",
+        "m4.caddy-admin-api-exposed",
+        "m4.caddy-config-file-exposed",
         "m4.directory-listing",
         "m4.email-auth-review",
+        "m4.iis-applicationhost-exposed",
+        "m4.iis-default-page",
+        "m4.nginx-config-file-exposed",
+        "m4.nginx-default-page",
         "m4.staging-exposure",
         "m5.cicd-audit",
         "m5.cloud-posture",
@@ -5802,6 +6236,7 @@
         "m3.wp-config-backup",
         "m3.wp-config-source",
         "m3.wp-uploads-listing",
+        "m4.apache-htpasswd-exposed",
         "m4.app-config-secret-exposed",
         "m4.authorization-file-exposed",
         "m4.aws-credential-file-exposed",
@@ -5885,11 +6320,22 @@
         "m3.wp-rest-users",
         "m3.wp-upgrade-residue",
         "m3.wp-xmlrpc-surface",
+        "m4.activemq-console-exposed",
         "m4.actuator-exposure",
+        "m4.broker-console-exposed",
+        "m4.caddy-admin-api-exposed",
         "m4.dashboard-exposure",
         "m4.datastore-surface",
         "m4.debug-endpoints",
+        "m4.docker-api-exposed",
         "m4.hidden-endpoint-hunt",
+        "m4.kubelet-readonly-exposed",
+        "m4.kubernetes-dashboard-exposed",
+        "m4.nats-monitoring-exposed",
+        "m4.nginx-stub-status-exposed",
+        "m4.podman-api-exposed",
+        "m4.registry-catalog-exposed",
+        "m4.registry-dashboard-exposed",
         "m5.docker-socket",
         "m5.k8s-exposure",
         "m5.registry-scan",
@@ -6015,6 +6461,7 @@
       "state": "mapped",
       "title": "Testing for Default Credentials",
       "checks": [
+        "m4.apache-htpasswd-exposed",
         "m4.default-credentials"
       ]
     },
@@ -6133,6 +6580,7 @@
       "title": "Testing for Cookies Attributes",
       "checks": [
         "m3.security-headers",
+        "m4.cacheable-session-response",
         "m4.cookie-flag-audit"
       ]
     },

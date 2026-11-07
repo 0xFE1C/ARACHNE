@@ -92,6 +92,7 @@ controls:
       - m3.xpath-injection
       - m3.xss-oracle
       - m3.xxe-oracle
+      - m4.cacheable-session-response
       - m5.dep-confusion
       - m5.sbom-review
   - id: "7"
@@ -100,7 +101,15 @@ controls:
       - m3.authz-bypass
       - m3.idor-oracle
       - m3.mass-assign-audit
+      - m4.activemq-console-exposed
+      - m4.broker-console-exposed
       - m4.dashboard-exposure
+      - m4.docker-api-exposed
+      - m4.kubelet-readonly-exposed
+      - m4.kubernetes-dashboard-exposed
+      - m4.nats-monitoring-exposed
+      - m4.podman-api-exposed
+      - m4.registry-dashboard-exposed
       - m4.unauth-api-audit
       - m5.iam-review
   - id: "8"

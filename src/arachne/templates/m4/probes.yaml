@@ -7,7 +7,7 @@
 #
 # Placeholders use angle brackets (`<bucket>`, `<origin>`) and are replaced literally, so a
 # value can never be interpreted as a format string.
-version: "1.1"
+version: "1.2"
 
 # --------------------------------------------------------------- exposed configuration
 env:
@@ -936,3 +936,347 @@ artifacts:
       - path: "/config/parameters.yml"
         family: symfony
         markers: ["parameters:", "database_password", "secret:"]
+
+# --------------------------------------------------------------- server platforms
+# WP-30 (REQ-DET-023). One group per check: the paths that check sweeps and the content that
+# proves the answer is the artefact rather than a refusal. Nothing here is confirmed by a
+# status code — a path whose answer is the server's own 404, its error page, a ``401``
+# challenge or an echoing soft-404 satisfies no marker, which is what keeps this family silent
+# on a hardened installation. The two auto-index groups and the two container-runtime groups
+# deliberately name *different* paths, so each planted answer proves exactly one claim.
+servers:
+  # Bodies below this many bytes are too small to be a served page or configuration file.
+  min_bytes: 24
+  groups:
+    # ---------------------------------------------------------------- nginx
+    nginx_default_page:
+      - path: "/"
+        family: nginx
+        markers: ["Welcome to nginx!", "Thank you for using nginx"]
+      - path: "/index.nginx-debian.html"
+        family: nginx
+        markers: ["Welcome to nginx!", "Thank you for using nginx"]
+      - path: "/nginx-default.html"
+        family: nginx
+        markers: ["Welcome to nginx!", "Thank you for using nginx"]
+      - path: "/usr/share/nginx/html/index.html"
+        family: nginx
+        markers: ["Welcome to nginx!", "Thank you for using nginx"]
+    nginx_stub_status:
+      - path: "/nginx_status"
+        family: nginx
+        markers: ["Active connections:", "server accepts handled requests"]
+      - path: "/status"
+        family: nginx
+        markers: ["Active connections:", "server accepts handled requests"]
+      - path: "/stub_status"
+        family: nginx
+        markers: ["Active connections:", "server accepts handled requests"]
+      - path: "/basic_status"
+        family: nginx
+        markers: ["Active connections:", "server accepts handled requests"]
+      - path: "/nginx-status"
+        family: nginx
+        markers: ["Active connections:", "server accepts handled requests"]
+    nginx_config_file:
+      - path: "/nginx.conf"
+        family: nginx
+        markers: ["worker_processes", "events {", "http {"]
+      - path: "/nginx.conf.default"
+        family: nginx
+        markers: ["worker_processes", "events {", "http {"]
+      - path: "/conf/nginx.conf"
+        family: nginx
+        markers: ["worker_processes", "events {", "http {"]
+      - path: "/etc/nginx/nginx.conf"
+        family: nginx
+        markers: ["worker_processes", "events {", "http {"]
+      - path: "/usr/local/nginx/conf/nginx.conf"
+        family: nginx
+        markers: ["worker_processes", "events {", "http {"]
+
+    # ---------------------------------------------------------------- Apache
+    apache_default_page:
+      - path: "/"
+        family: apache
+        markers: ["Apache2 Debian Default Page", "Apache HTTP Server Test Page", "It works!"]
+      - path: "/index.html"
+        family: apache
+        markers: ["Apache2 Debian Default Page", "Apache HTTP Server Test Page", "It works!"]
+      - path: "/var/www/html/index.html"
+        family: apache
+        markers: ["Apache2 Debian Default Page", "Apache HTTP Server Test Page", "It works!"]
+      - path: "/usr/share/httpd/noindex/index.html"
+        family: apache
+        markers: ["Apache2 Debian Default Page", "Apache HTTP Server Test Page", "It works!"]
+      - path: "/noindex/index.html"
+        family: apache
+        markers: ["Apache2 Debian Default Page", "Apache HTTP Server Test Page", "It works!"]
+    apache_config_file:
+      - path: "/apache2.conf"
+        family: apache
+        markers: ["ServerRoot", "LoadModule", "DocumentRoot"]
+      - path: "/httpd.conf"
+        family: apache
+        markers: ["ServerRoot", "LoadModule", "DocumentRoot"]
+      - path: "/conf/httpd.conf"
+        family: apache
+        markers: ["ServerRoot", "LoadModule", "DocumentRoot"]
+      - path: "/etc/apache2/apache2.conf"
+        family: apache
+        markers: ["ServerRoot", "LoadModule", "DocumentRoot"]
+      - path: "/etc/httpd/conf/httpd.conf"
+        family: apache
+        markers: ["ServerRoot", "LoadModule", "DocumentRoot"]
+    apache_htpasswd_exposed:
+      - path: "/.htpasswd"
+        family: apache-auth
+        markers: [":$apr1$", ":{SHA}", ":$2y$"]
+      - path: "/htpasswd"
+        family: apache-auth
+        markers: [":$apr1$", ":{SHA}", ":$2y$"]
+      - path: "/conf/.htpasswd"
+        family: apache-auth
+        markers: [":$apr1$", ":{SHA}", ":$2y$"]
+      - path: "/.htpasswd.bak"
+        family: apache-auth
+        markers: [":$apr1$", ":{SHA}", ":$2y$"]
+      - path: "/etc/apache2/.htpasswd"
+        family: apache-auth
+        markers: [":$apr1$", ":{SHA}", ":$2y$"]
+
+    # ---------------------------------------------------------------- IIS
+    iis_default_page:
+      - path: "/"
+        family: iis
+        markers: ["IIS Windows Server", "Internet Information Services"]
+      - path: "/iisstart.htm"
+        family: iis
+        markers: ["IIS Windows Server", "Internet Information Services"]
+      - path: "/iisstart.html"
+        family: iis
+        markers: ["IIS Windows Server", "Internet Information Services"]
+    iis_applicationhost_config:
+      - path: "/applicationHost.config"
+        family: iis
+        markers: ["<system.applicationHost>", "<applicationPools>", "<siteDefaults>"]
+      - path: "/config/applicationHost.config"
+        family: iis
+        markers: ["<system.applicationHost>", "<applicationPools>", "<siteDefaults>"]
+      - path: "/Microsoft.Web.Administration/applicationHost.config"
+        family: iis
+        markers: ["<system.applicationHost>", "<applicationPools>", "<siteDefaults>"]
+      - path: "/administration.config"
+        family: iis
+        markers: ["<moduleProviders>", "<modules>", "<system.webServer>"]
+      - path: "/config/administration.config"
+        family: iis
+        markers: ["<moduleProviders>", "<modules>", "<system.webServer>"]
+
+    # ---------------------------------------------------------------- Caddy
+    caddy_admin_api_exposed:
+      - path: "/config/"
+        family: caddy
+        markers: ["automatic_https", "storage_clean_interval"]
+      - path: "/config/apps"
+        family: caddy
+        markers: ["automatic_https", "storage_clean_interval"]
+      - path: "/config/apps/http"
+        family: caddy
+        markers: ['"servers"', '"listen"']
+      - path: "/config/apps/tls"
+        family: caddy
+        markers: ['"automation"', '"certificates"']
+    caddy_config_file_exposed:
+      - path: "/Caddyfile"
+        family: caddy
+        markers: ["reverse_proxy", "file_server", "encode gzip"]
+      - path: "/Caddyfile.json"
+        family: caddy
+        markers: ['"apps"', '"admin"']
+      - path: "/etc/caddy/Caddyfile"
+        family: caddy
+        markers: ["reverse_proxy", "file_server", "encode gzip"]
+      - path: "/conf/Caddyfile"
+        family: caddy
+        markers: ["reverse_proxy", "file_server", "encode gzip"]
+
+    # ---------------------------------------------------------------- directory indexing
+    # The two *machine-readable* index formats: the shipped ``m4.directory-listing`` check
+    # already claims the HTML auto-index, so this family claims the JSON and XML forms a
+    # server publishes when ``autoindex_format`` is changed.
+    autoindex_json_exposed:
+      - path: "/static/"
+        family: nginx-json
+        markers: ['"type":"directory"', '"type": "directory"']
+      - path: "/assets/"
+        family: nginx-json
+        markers: ['"type":"directory"', '"type": "directory"']
+      - path: "/media/"
+        family: nginx-json
+        markers: ['"type":"directory"', '"type": "directory"']
+    autoindex_xml_exposed:
+      - path: "/files/"
+        family: nginx-xml
+        markers: ["<listing>", "<directory mtime="]
+      - path: "/downloads/"
+        family: nginx-xml
+        markers: ["<listing>", "<directory mtime="]
+      - path: "/archive/"
+        family: nginx-xml
+        markers: ["<listing>", "<directory mtime="]
+
+    # ---------------------------------------------------------------- container runtimes
+    # Read-only *version queries*, and nothing else. The pitfall is explicit: a daemon socket
+    # that answers a version query is the finding; issuing a command through it is not
+    # permitted at L1 and is out of scope permanently, so no other endpoint is named here.
+    docker_api_exposed:
+      - path: "/version"
+        family: docker
+        markers: ['"ApiVersion"', '"MinAPIVersion"']
+      - path: "/v1.24/version"
+        family: docker
+        markers: ['"ApiVersion"', '"MinAPIVersion"']
+      - path: "/v1.41/version"
+        family: docker
+        markers: ['"ApiVersion"', '"MinAPIVersion"']
+      - path: "/v1.43/version"
+        family: docker
+        markers: ['"ApiVersion"', '"MinAPIVersion"']
+      - path: "/v1.44/version"
+        family: docker
+        markers: ['"ApiVersion"', '"MinAPIVersion"']
+      - path: "/v1.45/version"
+        family: docker
+        markers: ['"ApiVersion"', '"MinAPIVersion"']
+    podman_api_exposed:
+      - path: "/libpod/version"
+        family: podman
+        markers: ['"OsArch"', '"Built"']
+      - path: "/v1.40.0/libpod/version"
+        family: podman
+        markers: ['"OsArch"', '"Built"']
+      - path: "/v1.41.0/libpod/version"
+        family: podman
+        markers: ['"OsArch"', '"Built"']
+      - path: "/v4.9.0/libpod/version"
+        family: podman
+        markers: ['"OsArch"', '"Built"']
+      - path: "/v4.4.0/libpod/version"
+        family: podman
+        markers: ['"OsArch"', '"Built"']
+
+    # ---------------------------------------------------------------- orchestration & registries
+    kubernetes_dashboard_exposed:
+      - path: "/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/"
+        family: kubernetes-dashboard
+        markers: ["Kubernetes Dashboard", "k8sDashboard"]
+      - path: "/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/"
+        family: kubernetes-dashboard
+        markers: ["Kubernetes Dashboard", "k8sDashboard"]
+      - path: "/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/"
+        family: kubernetes-dashboard
+        markers: ["Kubernetes Dashboard", "k8sDashboard"]
+    kubelet_readonly_exposed:
+      - path: "/pods"
+        family: kubelet
+        markers: ['"kind": "PodList"', '"kind":"PodList"']
+      - path: "/pods/"
+        family: kubelet
+        markers: ['"kind": "PodList"', '"kind":"PodList"']
+      - path: "/runningpods/"
+        family: kubelet
+        markers: ['"kind": "PodList"', '"kind":"PodList"']
+      - path: "/spec"
+        family: kubelet
+        markers: ["maxPods", "kubeletEndpoint"]
+    registry_catalog_exposed:
+      - path: "/v2/_catalog"
+        family: registry
+        markers: ['"repositories"']
+      - path: "/v2/_catalog?n=100"
+        family: registry
+        markers: ['"repositories"']
+    registry_dashboard_exposed:
+      - path: "/api/v2.0/systeminfo"
+        family: harbor
+        markers: ["harbor_version", "registry_storage_provider_name"]
+      - path: "/service/rest/v1/status"
+        family: nexus
+        markers: ['"edition"', '"distribution"']
+      - path: "/artifactory/api/system/version"
+        family: artifactory
+        markers: ['"addons"', '"revision"']
+      - path: "/api/system/status"
+        family: portainer
+        markers: ['"Status"', '"Version"']
+
+    # ---------------------------------------------------------------- message brokers
+    activemq_console_exposed:
+      - path: "/admin/"
+        family: activemq
+        markers: ["ActiveMQ Console", "Apache ActiveMQ"]
+      - path: "/admin/index.jsp"
+        family: activemq
+        markers: ["ActiveMQ Console", "Apache ActiveMQ"]
+      - path: "/jolokia/version"
+        family: activemq
+        markers: ['"agent"', '"protocol"']
+      - path: "/api/jolokia/version"
+        family: activemq
+        markers: ['"agent"', '"protocol"']
+    nats_monitoring_exposed:
+      - path: "/varz"
+        family: nats
+        markers: ["server_id", "max_connections", "in_msgs"]
+      - path: "/connz"
+        family: nats
+        markers: ["server_id", "max_connections", "in_msgs"]
+      - path: "/subsz"
+        family: nats
+        markers: ["server_id", "max_connections", "in_msgs"]
+      - path: "/routez"
+        family: nats
+        markers: ["server_id", "max_connections", "in_msgs"]
+      - path: "/jsz"
+        family: nats
+        markers: ["server_id", "max_connections", "in_msgs"]
+    broker_console_exposed:
+      - path: "/emqx/"
+        family: emqx
+        markers: ["EMQX Dashboard"]
+      - path: "/rocketmq/"
+        family: rocketmq
+        markers: ["RocketMQ Console"]
+      - path: "/kafka-ui/"
+        family: kafka-ui
+        markers: ["Kafka UI"]
+      - path: "/pulsar-manager/"
+        family: pulsar-manager
+        markers: ["Pulsar Manager"]
+
+  # --------------------------------------------------------------- header defaults
+  # The header, cookie and caching defaults of the server families. FP-3 governs severity: a
+  # product/version in a banner is a *signal*, never a severity claim on its own, so both
+  # banner checks ship at ``low`` and say in their evidence that no vulnerability is claimed.
+  headers:
+    server_header: "server"
+    # A ``Server`` value that names a product *and* a version. ``Caddy`` (no version) and a
+    # bare ``webserver`` do not match, which is the whole point: no version, no disclosure.
+    server_version_regex: '(?i)\b(?:nginx|apache|microsoft-iis|openresty|lighttpd|iis|jetty|tomcat|gunicorn|uvicorn|werkzeug|kestrel|envoy|traefik|litespeed|cloudflare)/v?[0-9]'
+    # Headers that disclose the stack running behind the server (the IIS/PHP/ASP.NET defaults).
+    stack_headers: ["x-powered-by", "x-aspnet-version", "x-aspnetmvc-version", "x-generator"]
+    cache_control_header: "cache-control"
+    expires_header: "expires"
+    # Any of these in ``Cache-Control`` keeps a session response out of a shared cache.
+    private_directives: ["no-store", "no-cache", "private"]
+    # The directives that *entitle* a shared cache to store a response. A response that merely
+    # omits Cache-Control is not reported: "no header" is the common case on any dynamic page,
+    # and the check requires the server to say "store this" while also setting a session
+    # cookie. (The first draft fired on the absent header and measured a 42 % false-positive
+    # rate on the shared M4 lab — see the WP-30 handoff.)
+    shared_cache_directives: ["public", "max-age", "s-maxage"]
+    session_cookie_names:
+      ["phpsessid", "jsessionid", "asp.net_sessionid", "connect.sid", "sessionid",
+       "laravel_session", "csrftoken"]
+    session_cookie_tokens: ["sess", "auth", "sid", "token", "jwt"]

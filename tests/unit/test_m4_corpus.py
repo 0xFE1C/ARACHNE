@@ -23,8 +23,9 @@ from arachne.modules.m4.corpus import (
 # --------------------------------------------------------------------------- shipped data
 def test_the_shipped_corpus_parses_and_covers_every_family() -> None:
     corpus = load_corpus()
-    # 1.1 (WP-29) added the infrastructure-artifact groups (REQ-DET-022).
-    assert corpus.version == "1.1"
+    # 1.1 (WP-29) added the infrastructure-artifact groups (REQ-DET-022); 1.2 (WP-30) the
+    # server-platform groups and the header-default settings (REQ-DET-023).
+    assert corpus.version == "1.2"
     assert len(corpus.env_paths()) >= 10
     assert {"git", "svn", "hg"} <= {probe.family for probe in corpus.vcs_probes()}
     assert ".sql" in corpus.backup_extensions()
@@ -77,6 +78,43 @@ def test_the_shipped_artifact_groups_cover_every_check_family() -> None:
     # corpus without the section still runs every other M4 check.
     assert corpus.artifact_probes("no-such-group") == ()
     assert corpus.artifact_min_bytes() > 0
+
+
+def test_the_shipped_server_groups_cover_every_platform_check() -> None:
+    """WP-30's groups: one per probe check, every probe carrying its own content marker."""
+    from arachne.modules.m4.servers import GROUPS_BY_AREA
+
+    corpus = load_corpus()
+    groups = [group for groups in GROUPS_BY_AREA.values() for group in groups]
+    assert len(groups) == 21, groups
+    assert len(set(groups)) == len(groups)
+    for group in groups:
+        probes = corpus.server_probes(group)
+        assert probes, group
+        assert all(probe.path.startswith("/") for probe in probes), group
+        # No group in this family is decided by a suffix or by the redactor: every probe is
+        # confirmed by a marker from the artefact's own content.
+        assert all(probe.markers for probe in probes), group
+        # A marker that is a substring of its own path would match an echoing soft-404.
+        for probe in probes:
+            assert all(marker.lower() not in probe.path.lower() for marker in probe.markers), (
+                group,
+                probe.path,
+            )
+    assert set(groups) == set(corpus.server_groups())
+    # The container-runtime groups name version endpoints only (the pitfall: a read-only
+    # version query is the finding, a command through the socket is out of scope forever).
+    for group in ("docker_api_exposed", "podman_api_exposed"):
+        assert all("version" in probe.path for probe in corpus.server_probes(group)), group
+    # The header-default settings are data too, and an unknown group degrades to "no probes".
+    assert corpus.server_min_bytes() > 0
+    assert corpus.server_header_name() == "server"
+    assert corpus.server_version_regex() is not None
+    assert corpus.stack_headers()
+    assert corpus.cache_private_directives()
+    assert corpus.server_shared_cache_directives()
+    assert corpus.server_session_cookie_names()
+    assert corpus.server_probes("no-such-group") == ()
 
 
 def test_the_shipped_wordlists_are_bounded_and_deduplicated() -> None:

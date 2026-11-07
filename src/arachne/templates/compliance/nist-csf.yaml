@@ -55,6 +55,7 @@ controls:
     title: "The confidentiality, integrity, and availability of data-at-rest are protected"
     checks:
       - m4.bucket-exposure
+      - m4.cacheable-session-response
       - m4.datastore-surface
       - m5.firebase-rules
       - m5.managed-datastores
@@ -200,6 +201,7 @@ controls:
       - m3.idor-oracle
       - m3.mass-assign-audit
       - m4.dashboard-exposure
+      - m4.kubernetes-dashboard-exposed
       - m4.unauth-api-audit
       - m5.iam-review
   - id: "PR.PS-05"

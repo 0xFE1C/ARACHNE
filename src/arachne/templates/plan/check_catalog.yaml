@@ -29,7 +29,7 @@
 # disagree, so a plan can never describe a check differently from the code that runs it.
 # S4 adds the M2 rows the registry implements; M3-M6 below are still *planned* only and the
 # plan marks them `implemented: false`.
-catalog_version: "1.17"
+catalog_version: "1.18"
 checks:
   # ---------------------------------------------------------------- M1 recon & attack surface
   # Implemented in S3 (arachne/modules/m1/). The rows below are generated from the check
@@ -3679,3 +3679,267 @@ checks:
     - url
     estimated_requests: 3
     requires_active_checks: true
+  - module: M4
+    name: nginx-default-page
+    version: '1.0'
+    title: Stock nginx default page served
+    description: Requests the welcome page a freshly installed nginx serves and reports it when the site itself answers with it. The page is confirmed by its own text, so a 404, an error page or a hardened site's front page is never the finding. Its presence discloses that the virtual host was never configured — the deployment is serving the package's default document root — and it names the server product. Read-only GET probes.
+    research_ref: ch04#22
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M4
+    name: nginx-stub-status-exposed
+    version: '1.0'
+    title: nginx stub_status endpoint reachable without authentication
+    description: Requests the locations nginx's stub_status module is commonly mounted at and reports one whose own counters are served. The answer is confirmed by the module's output (its connection counters and request line), never by a status code. The counters disclose live traffic volume, the number of connections and the server's operating state to an unauthenticated caller. Read-only GET probes.
+    research_ref: ch04#7
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 6
+  - module: M4
+    name: nginx-config-file-exposed
+    version: '1.0'
+    title: nginx configuration file served
+    description: Requests the nginx configuration file at the locations a misconfigured document root or an alias exposes and reports one that is served. The file is confirmed by its own directives (the worker and event configuration beside the http block), so a refusal page is never mistaken for it. A served configuration names the virtual hosts, the upstreams, the include paths and often the credential a proxy sets. Read-only GET probes.
+    research_ref: ch04#22
+    proof: L1
+    cwe: CWE-538
+    target_kinds:
+    - url
+    estimated_requests: 6
+  - module: M4
+    name: apache-default-page
+    version: '1.0'
+    title: Stock Apache default page served
+    description: Requests the default page the distribution's Apache package installs and reports it when it is the site's own answer. The page is confirmed by its own text (the distribution's welcome wording), which is what tells it apart from the server's refusal pages. It discloses an unconfigured virtual host and the exact distribution of the server. Read-only GET probes.
+    research_ref: ch04#22
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 6
+  - module: M4
+    name: apache-config-file-exposed
+    version: '1.0'
+    title: Apache configuration file served
+    description: Requests the Apache configuration file at the locations a misconfigured document root exposes and reports one that is served. It is confirmed by its own directives (the server root, the loaded modules and the document root), which is what a refusal page cannot imitate. A served configuration names the virtual hosts, the enabled modules and the directories the server will serve. Read-only GET probes.
+    research_ref: ch04#22
+    proof: L1
+    cwe: CWE-538
+    target_kinds:
+    - url
+    estimated_requests: 6
+  - module: M4
+    name: apache-htpasswd-exposed
+    version: '1.0'
+    title: Apache basic-auth password file served
+    description: Requests the password file an Apache realm authenticates against and reports one that is served. A password entry is confirmed by the hash format itself (an Apache MD5, SHA or bcrypt entry), never by the file name alone. The file names the accounts of the realm and carries the salted digests of their passwords, which is the whole credential store for that realm. This is a different claim from ``m4.authorization-file-exposed``, which reports a served ``.htaccess`` rule file. Read-only GET probes.
+    research_ref: ch04#22
+    proof: L1
+    cwe: CWE-522
+    target_kinds:
+    - url
+    estimated_requests: 6
+  - module: M4
+    name: iis-default-page
+    version: '1.0'
+    title: Stock IIS default page served
+    description: Requests the welcome page a default IIS installation serves and reports it when the site's own answer is that page. It is confirmed by its own wording (the Windows Server welcome text and the Internet Information Services product name). It discloses an unconfigured site and the server family. Read-only GET probes.
+    research_ref: ch04#22
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M4
+    name: iis-applicationhost-exposed
+    version: '1.0'
+    title: IIS server configuration file served
+    description: Requests the IIS server configuration and administration files and reports the ones served. Each is confirmed by its own XML elements (the application-host and pool sections, the module providers), so an ASP.NET application's own ``web.config`` — a different file with a different claim — is not reported here. The server configuration lists every site, application pool, binding and module the server runs. Read-only GET probes.
+    research_ref: ch04#22
+    proof: L1
+    cwe: CWE-538
+    target_kinds:
+    - url
+    estimated_requests: 6
+  - module: M4
+    name: caddy-admin-api-exposed
+    version: '1.0'
+    title: Caddy admin API reachable without authentication
+    description: 'Performs a read-only GET of Caddy''s admin API configuration endpoints and reports one that returns the running configuration. The answer is confirmed by the configuration document''s own keys (the automatic-HTTPS and storage settings, the server list), never by a status code. The admin API is Caddy''s control plane: a caller who can read the configuration learns every listener, proxy target and TLS policy. Only GET is issued — nothing is loaded, changed or reloaded. Read-only GET probes.'
+    research_ref: ch04#11
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M4
+    name: caddy-config-file-exposed
+    version: '1.0'
+    title: Caddy configuration file served
+    description: Requests the Caddyfile at the locations a misconfigured document root or alias exposes and reports one that is served. It is confirmed by its own directives (the reverse-proxy and file-server directives, the encoding rule), which is what a refusal page cannot imitate. A served Caddyfile names the upstreams, the static roots and the TLS settings of every site the server publishes. Read-only GET probes.
+    research_ref: ch04#22
+    proof: L1
+    cwe: CWE-538
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M4
+    name: autoindex-json-exposed
+    version: '1.0'
+    title: Directory published as a machine-readable JSON index
+    description: 'Requests directories that are commonly auto-indexed and reports one whose answer is a listing in the JSON form of the index (nginx''s autoindex_format json, or an equivalent). The answer is confirmed by the document''s own entry records, not by a status code. It is a different claim from ``m4.directory-listing``, which reports the HTML auto-index: a data document is the listing a script consumes, so it survives an operator''s attempt to hide the browsable page. Read-only GET probes.'
+    research_ref: ch04#9
+    proof: L1
+    cwe: CWE-548
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M4
+    name: autoindex-xml-exposed
+    version: '1.0'
+    title: Directory published as a machine-readable XML index
+    description: Requests directories that are commonly auto-indexed and reports one whose answer is a listing in the XML form of the index. The answer is confirmed by the listing document's own elements (its listing root and per-entry directory records with their modification times), not by a status code. As with the JSON form, the claim is the data-document index rather than the browsable page. Read-only GET probes.
+    research_ref: ch04#9
+    proof: L1
+    cwe: CWE-548
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M4
+    name: docker-api-exposed
+    version: '1.0'
+    title: Container daemon API reachable without authentication (version query)
+    description: 'Issues a single read-only GET of the Docker Engine API''s version endpoint and reports it when the daemon answers with its own version document. Nothing else is ever asked of the daemon: no container is listed, started, stopped or inspected, and no command is issued through it (the evidence records ``command_issued: false``). That a remote caller can read the version at all is the finding, and it is the whole finding — an unauthenticated daemon socket is a remote-control interface, and this check deliberately stops at the door. Read-only GET probe.'
+    research_ref: ch04#12
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 7
+  - module: M4
+    name: podman-api-exposed
+    version: '1.0'
+    title: Podman libpod API reachable without authentication (version query)
+    description: 'Issues a single read-only GET of Podman''s libpod version endpoint and reports it when the daemon answers with its own version document (confirmed by that document''s own fields, not by a status code). As with the Docker Engine API, no other endpoint is named and no command is issued: the claim is that the libpod service is reachable from the scanning position without authentication. Read-only GET probe.'
+    research_ref: ch04#12
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 6
+  - module: M4
+    name: kubernetes-dashboard-exposed
+    version: '1.0'
+    title: Kubernetes Dashboard reachable behind the API-server proxy
+    description: Requests the API-server proxy paths that publish the Kubernetes Dashboard and reports one that answers with the dashboard itself, confirmed by its own title and application markers. The proxy path is reachable from wherever the API server is; when it answers without a credential the dashboard's views — workloads, secrets, logs — are one click away for a caller who should not have them. Read-only GET probes.
+    research_ref: ch04#11
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M4
+    name: kubelet-readonly-exposed
+    version: '1.0'
+    title: Kubelet read-only endpoint reachable without authentication
+    description: Requests the kubelet's historically unauthenticated read-only endpoint and reports one that returns the node's own pod list or its kubelet configuration. The answer is confirmed by the document's own kind and fields, never by a status code. The read-only port publishes every pod on the node with its spec, images and host paths, which is a complete map of the workload for a caller who never authenticated. Read-only GET probes.
+    research_ref: ch04#12
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M4
+    name: registry-catalog-exposed
+    version: '1.0'
+    title: Container registry catalogue reachable without authentication
+    description: 'Requests the registry API''s catalogue endpoint and reports it when the registry answers with its repository list, confirmed by that document''s own key. Listing the catalogue is a read: no manifest is pulled and no blob is fetched. It discloses every repository the registry holds, which is the supply-chain inventory — including the internal images an operator never published. Read-only GET probes.'
+    research_ref: ch04#12
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M4
+    name: registry-dashboard-exposed
+    version: '1.0'
+    title: Container registry dashboard reachable without authentication
+    description: 'Requests the system endpoints of the registry products a deployment publishes — Harbor, Nexus Repository, Artifactory and Portainer — and reports one that answers unauthenticated, confirmed by that product''s own system document. Each endpoint is a read: it reports the product''s version and status and exposes the interface a reader would then browse. Read-only GET probes.'
+    research_ref: ch04#11
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M4
+    name: activemq-console-exposed
+    version: '1.0'
+    title: ActiveMQ console or Jolokia endpoint reachable without authentication
+    description: Requests the ActiveMQ web console and its Jolokia management endpoint and reports the ones that answer unauthenticated, each confirmed by its own content (the console's own title, or Jolokia's agent and protocol document). Jolokia publishes the broker's configuration attribute by attribute; the console publishes its queues and their message counts. RabbitMQ is deliberately not covered here — ``m4.dashboard-exposure`` already fingerprints it. Read-only GET probes.
+    research_ref: ch04#12
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M4
+    name: nats-monitoring-exposed
+    version: '1.0'
+    title: Message-broker monitoring endpoint reachable without authentication
+    description: Requests the NATS server's monitoring endpoints and reports the ones that answer unauthenticated, each confirmed by that document's own fields (the server identifier and connection counters, the connection and subscription listings). The listings name the clients connected to the broker and the subjects they subscribe to. Read-only GET probes.
+    research_ref: ch04#12
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 6
+  - module: M4
+    name: broker-console-exposed
+    version: '1.0'
+    title: Message-broker console reachable without authentication
+    description: Requests the management consoles of the message brokers the shipped dashboard corpus does not name — EMQX, the RocketMQ console, Kafka UI and Pulsar Manager — and reports the ones that answer unauthenticated, each confirmed by that product's own rendered title. A broker console lists the topics, queues and consumers and usually publishes a test-publish form, which is why an exposed one is reported rather than dismissed as a monitoring page. Read-only GET probes.
+    research_ref: ch04#11
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 5
+  - module: M4
+    name: server-version-disclosure
+    version: '1.0'
+    title: Server product and version disclosed in a response header
+    description: 'Reads the Server response header of every crawled page and reports one that names a product *and* a version. Per FP-3 a version banner is a signal, not a severity claim: the finding states which header disclosed what and correlates no CVE. A banner with no version (Server: Caddy) or a generic one (Server: webserver) is not reported, because it discloses no version to fingerprint. No new request is made — the header is read from the crawl. Read-only.'
+    research_ref: ch04#16
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 0
+  - module: M4
+    name: stack-header-disclosure
+    version: '1.0'
+    title: Application stack and version disclosed in a response header
+    description: 'Reads the response headers of every crawled page and reports the ones that disclose the stack running behind the server — X-Powered-By, the ASP.NET and ASP.NET MVC version headers, a generator header. Per FP-3 this is a signal, not a severity claim: the finding names the header and the value it carried and correlates no CVE. The IIS and PHP defaults are the reason this is a *platform* default rather than an application bug. No new request is made. Read-only.'
+    research_ref: ch04#16
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 0
+  - module: M4
+    name: cacheable-session-response
+    version: '1.0'
+    title: Response establishing a session is cacheable by a shared cache
+    description: 'Reads the structural cookie projection of every crawled page and reports a response that establishes session state (it sets a session-like cookie) while its own Cache-Control *tells a shared cache to store it* — a public, max-age or s-maxage directive, or an Expires date, with no no-store/no-cache/private beside it. That combination is what lets a cache in front of the application hand one caller''s session page to the next. A response that merely omits Cache-Control is deliberately **not** reported: absent headers are the common case on any dynamic page, and the first draft of this check measured a 42 % false-positive rate on the shared M4 lab for exactly that reason (see the WP-30 handoff). The cookie''s *name* is read; its value was dropped at capture and never reaches the check. This is the caching default of a server family, distinct from m4.cookie-flag-audit, which reports the missing Secure/HttpOnly/SameSite attributes on the cookie itself. No new request is made. Read-only.'
+    research_ref: ch04#18
+    proof: L1
+    cwe: CWE-524
+    target_kinds:
+    - url
+    estimated_requests: 0

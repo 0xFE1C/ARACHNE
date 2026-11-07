@@ -50,6 +50,20 @@ package-manager and registry credential configuration, authorization files, envi
 variants, secrets files and framework configuration files. Each is a bounded ``GET`` sweep of
 one corpus group (``templates/m4/probes.yaml`` → ``artifacts.groups``).
 
+**WP-30 (REQ-DET-023).** The twenty-four ``servers.py`` checks are the server, platform and
+runtime-configuration family: the nginx welcome page, ``stub_status`` and a served
+``nginx.conf``; Apache's default page, ``httpd.conf`` and the basic-auth ``.htpasswd``; the IIS
+welcome page and ``applicationHost.config``; Caddy's admin API and ``Caddyfile``; the
+machine-readable (JSON/XML) directory indexes the shipped HTML listing check does not claim;
+the Docker and Podman daemons answered to a **version query only**; the Kubernetes Dashboard,
+the kubelet read-only endpoint, the registry ``_catalog`` and the registry dashboards; the
+ActiveMQ, NATS, EMQX, RocketMQ, Kafka UI and Pulsar broker consoles (RabbitMQ stays with
+``dashboard-exposure``, which already fingerprints it); and the header, cookie and caching
+defaults of each family — a version-bearing ``Server`` banner, the stack headers, and a
+session response a shared cache may store. Each probe check is a bounded ``GET`` sweep of one
+corpus group (``templates/m4/probes.yaml`` → ``servers.groups``); the three header checks read
+the crawl and issue no request of their own.
+
 **Numbering.** As for M1/M2/M3, ``research_ref`` values are the canonical method numbers of
 ``docs/research/04-exposure-and-misconfiguration.md`` (the universe G-01 counts); the
 check **ids** are the corpus's.
@@ -92,6 +106,7 @@ from arachne.modules.m4.hardening import (
     WordpressSurface,
 )
 from arachne.modules.m4.identity import DefaultCredentials, UnauthApiAudit, UserEnumeration
+from arachne.modules.m4.servers import ServerChecks
 from arachne.modules.m4.surfaces import (
     ApiDocExposure,
     DashboardExposure,
@@ -147,6 +162,7 @@ M4_CHECKS: tuple[type[Module], ...] = (
     WordpressSurface,
     AliasTraversal,
     *ArtifactChecks,
+    *ServerChecks,
 )
 
 #: The M4 module group . Bump the version when the set or a check's
@@ -165,9 +181,14 @@ M4 = ModuleGroup(
         "credential stores, CI pipeline definitions and the secrets they carry, Terraform "
         "state/plan/lock files, cloud credential files, container and orchestration "
         "manifests, editor swap and backup residue, package-manager and registry credential "
-        "configuration, authorization files, and the environment-file variants)."
+        "configuration, authorization files, the environment-file variants, and the server, "
+        "platform and runtime configuration a deployment leaves at its defaults (the nginx, "
+        "Apache, IIS and Caddy default pages and configuration files, the machine-readable "
+        "directory indexes, the container-runtime version endpoints, the orchestration and "
+        "registry dashboards, the message-broker consoles, and the header, cookie and caching "
+        "defaults of each server family)."
     ),
-    version="1.1.0",
+    version="1.2.0",
     research_chapter="ch04",
     checks=M4_CHECKS,
 )

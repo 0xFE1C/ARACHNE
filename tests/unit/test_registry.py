@@ -108,8 +108,13 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # reflog and credential store, the CI pipeline definitions, Terraform state/plan/lock,
     # cloud credential files, container and orchestration manifests, editor residue, the
     # credential and authorization files and the environment-file variants, all default-on
-    # read-only L1 GET probes -> 305.
-    assert len(registry.checks()) == 305
+    # read-only L1 GET probes -> 305. WP-30 adds the server, platform and runtime-configuration
+    # family (REQ-DET-023) — the nginx, Apache, IIS and Caddy default pages and configuration
+    # files, the machine-readable directory indexes, the Docker/Podman version endpoints, the
+    # Kubernetes Dashboard, kubelet, registry catalogue and registry dashboards, the ActiveMQ,
+    # NATS, EMQX, RocketMQ, Kafka UI and Pulsar consoles, and the three header/cookie/caching
+    # defaults checks, all default-on read-only L1 reads -> 329.
+    assert len(registry.checks()) == 329
     # M1's code-secret-mining, M2's SNMP and ICS checks, M4's metadata-ssrf and
     # default-credentials checks, M3's ssrf-probe, M5's imds-ssrf / azure-mi-audit and
     # M6's deception-listeners / ad-attack-path, S13's m1.bucket-hunt, S15's six
@@ -254,8 +259,8 @@ def test_a_plugin_extends_an_existing_module(monkeypatch) -> None:  # type: igno
     )
     registry = ModuleRegistry.discover()
     assert registry.module_ids() == ("M1", "M2", "M3", "M4", "M5", "M6")
-    # The shipped set (305 at WP-29) plus the plugin's one extra check.
-    assert len(registry.checks()) == 306
+    # The shipped set (329 at WP-30) plus the plugin's one extra check.
+    assert len(registry.checks()) == 330
     assert registry.group("M1").origin == "builtin+extra"  # type: ignore[union-attr]
 
 

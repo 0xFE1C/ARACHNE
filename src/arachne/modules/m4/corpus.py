@@ -422,6 +422,73 @@ class M4Corpus:
     def artifact_min_bytes(self) -> int:
         return self.integer("artifacts", "min_bytes", default=24)
 
+    # ------------------------------------------------------------------ server platforms
+    # WP-30 (REQ-DET-023): the ``servers`` section. Like ``artifacts``, the checks are almost
+    # entirely data — one group per check, plus the header-default settings of each family.
+    def server_groups(self) -> tuple[str, ...]:
+        """Every server-platform group the corpus defines (one check per group)."""
+        groups = self.mapping("servers", "groups")
+        return tuple(str(name) for name in groups)
+
+    def server_probes(self, group: str) -> tuple[ArtifactProbe, ...]:
+        """The path inventory of one server group, with its proven content markers."""
+        value = self._get("servers", "groups", group)
+        if not isinstance(value, (list, tuple)) or not value:
+            return ()
+        probes: list[ArtifactProbe] = []
+        for entry in value:
+            if not isinstance(entry, Mapping) or "path" not in entry:
+                continue
+            probes.append(
+                ArtifactProbe(
+                    path=str(entry["path"]),
+                    family=str(entry.get("family", group)),
+                    markers=tuple(str(item) for item in entry.get("markers") or ()),
+                )
+            )
+        return tuple(probes)
+
+    def server_min_bytes(self) -> int:
+        return self.integer("servers", "min_bytes", default=24)
+
+    def server_header_name(self) -> str:
+        return self.string("servers", "headers", "server_header", default="server")
+
+    def server_version_regex(self) -> re.Pattern[str] | None:
+        return self.pattern("servers", "headers", "server_version_regex")
+
+    def stack_headers(self) -> tuple[str, ...]:
+        return tuple(name.lower() for name in self.strings("servers", "headers", "stack_headers"))
+
+    def cache_control_header(self) -> str:
+        return self.string("servers", "headers", "cache_control_header", default="cache-control")
+
+    def expires_header(self) -> str:
+        return self.string("servers", "headers", "expires_header", default="expires")
+
+    def cache_private_directives(self) -> tuple[str, ...]:
+        return tuple(
+            directive.lower()
+            for directive in self.strings("servers", "headers", "private_directives")
+        )
+
+    def server_session_cookie_names(self) -> frozenset[str]:
+        return frozenset(
+            name.lower() for name in self.strings("servers", "headers", "session_cookie_names")
+        )
+
+    def server_shared_cache_directives(self) -> tuple[str, ...]:
+        """The ``Cache-Control`` directives that *entitle* a shared cache to store an answer."""
+        return tuple(
+            directive.lower()
+            for directive in self.strings("servers", "headers", "shared_cache_directives")
+        )
+
+    def server_session_cookie_tokens(self) -> tuple[str, ...]:
+        return tuple(
+            token.lower() for token in self.strings("servers", "headers", "session_cookie_tokens")
+        )
+
     # ------------------------------------------------------------------ headers
     def header_baseline(self, *, https: bool) -> tuple[str, ...]:
         return tuple(name.lower() for name in self.strings("headers", "https" if https else "http"))
@@ -588,7 +655,12 @@ def parse_corpus(data: Any, *, source: str = "<memory>") -> M4Corpus:
     corpus = M4Corpus(version=version, source=source, raw=data)
     # Compile the regexes the checks depend on, so a broken corpus fails here rather than
     # mid-scan. Everything else degrades to "no entries" (a corpus may omit a family).
-    for name in ("env_assignment_regex", "sourcemap_reference_regex", "directory_entry_regex"):
+    for name in (
+        "env_assignment_regex",
+        "sourcemap_reference_regex",
+        "directory_entry_regex",
+        "server_version_regex",
+    ):
         getattr(corpus, name)()
     return corpus
 

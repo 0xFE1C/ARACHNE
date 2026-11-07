@@ -119,8 +119,19 @@ controls:
     checks:
       - m2.smb-auth
       - m2.ssh-auth
+      - m4.activemq-console-exposed
+      - m4.broker-console-exposed
+      - m4.caddy-admin-api-exposed
       - m4.dashboard-exposure
       - m4.default-credentials
+      - m4.docker-api-exposed
+      - m4.kubelet-readonly-exposed
+      - m4.kubernetes-dashboard-exposed
+      - m4.nats-monitoring-exposed
+      - m4.nginx-stub-status-exposed
+      - m4.podman-api-exposed
+      - m4.registry-catalog-exposed
+      - m4.registry-dashboard-exposed
   - id: "4.8"
     title: "Uninstall or Disable Unnecessary Services on Enterprise Assets and Software"
     checks:
@@ -142,7 +153,9 @@ controls:
       - m2.ssh-auth
       - m4.cloud-service-account-key-exposed
       - m4.default-credentials
+      - m4.docker-api-exposed
       - m4.key-exposure
+      - m4.podman-api-exposed
   - id: "5.3"
     title: "Disable Dormant Accounts"
     checks:
@@ -155,6 +168,8 @@ controls:
       - m3.idor-oracle
       - m4.actuator-exposure
       - m4.dashboard-exposure
+      - m4.kubelet-readonly-exposed
+      - m4.kubernetes-dashboard-exposed
       - m5.iam-review
   - id: "5.5"
     title: "Establish and Maintain an Inventory of Service Accounts"
@@ -178,8 +193,11 @@ controls:
   - id: "6.5"
     title: "Require MFA for Administrative Access"
     checks:
+      - m4.activemq-console-exposed
       - m4.actuator-exposure
+      - m4.broker-console-exposed
       - m4.dashboard-exposure
+      - m4.registry-dashboard-exposed
       - m5.k8s-exposure
   - id: "6.6"
     title: "Establish and Maintain an Inventory of Authentication and Authorization Systems"
@@ -364,6 +382,7 @@ controls:
   - id: "16.7"
     title: "Use Standard Hardening Configuration Templates for Application Infrastructure"
     checks:
+      - m4.cacheable-session-response
       - m4.cookie-flag-audit
       - m4.security-header-review
       - m4.tls-config-review
@@ -371,8 +390,14 @@ controls:
   - id: "16.8"
     title: "Separate Production and Non-Production Systems"
     checks:
+      - m4.apache-config-file-exposed
+      - m4.apache-default-page
+      - m4.apache-htpasswd-exposed
       - m4.authorization-file-exposed
+      - m4.autoindex-json-exposed
+      - m4.autoindex-xml-exposed
       - m4.aws-credential-file-exposed
+      - m4.caddy-config-file-exposed
       - m4.ci-pipeline-definition-exposed
       - m4.ci-pipeline-secret-exposed
       - m4.cloud-cli-credential-exposed
@@ -384,10 +409,16 @@ controls:
       - m4.git-credentials-exposed
       - m4.git-reflog-exposure
       - m4.github-workflow-exposed
+      - m4.iis-applicationhost-exposed
+      - m4.iis-default-page
       - m4.legacy-vcs-metadata
+      - m4.nginx-config-file-exposed
+      - m4.nginx-default-page
       - m4.orchestration-manifest-exposed
       - m4.package-manager-credential-exposed
       - m4.registry-auth-exposed
+      - m4.server-version-disclosure
+      - m4.stack-header-disclosure
       - m4.staging-exposure
       - m4.terraform-lock-exposed
       - m4.terraform-plan-exposed

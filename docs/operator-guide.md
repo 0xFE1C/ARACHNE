@@ -248,6 +248,34 @@ family:
   `credentialed-url`, `jwt`, `private-key`) and the key names — never a value. The two checks
   whose whole claim is the credential fire only when a detector fired on the served body.
 
+**Server, platform and runtime configuration (WP-30, REQ-DET-023).** The other twenty-four
+checks of M4 are the server and platform family, operated the same way: read-only `GET` probes
+of bounded path inventories with no opt-in and no attestation, plus three checks that read the
+response headers of the crawl the scan already made and issue no request at all. They cover the
+nginx, Apache, IIS and Caddy stock default pages and configuration files (including the Apache
+basic-auth `.htpasswd` and the IIS `applicationHost.config`); the machine-readable JSON and XML
+directory indexes; the Docker Engine and Podman libpod **version endpoints**; the Kubernetes
+Dashboard behind the API-server proxy, the kubelet read-only endpoint, the registry `_catalog`
+and the registry dashboards (Harbor, Nexus, Artifactory, Portainer); the ActiveMQ, NATS, EMQX,
+RocketMQ, Kafka UI and Pulsar consoles (RabbitMQ stays with `m4.dashboard-exposure`, which
+already fingerprints it); and the header, cookie and caching defaults — a `Server` banner that
+names a version, the stack headers (`X-Powered-By`, `X-AspNet-Version`), and a session response
+a shared cache may store. Four properties matter when you read one of these findings:
+
+* **A default page is not automatically a finding.** Each check requires a `2xx` answer *and*
+  content that is the artefact's own; an installation that answers a management path with a
+  `401` challenge is reported clean, which is what the hardened decoy proves.
+* **A container daemon is asked its version and nothing else.** `m4.docker-api-exposed` and
+  `m4.podman-api-exposed` name version endpoints only, never a container list or an inspect:
+  issuing a command through a daemon socket is out of scope permanently, and the finding
+  records `command_issued: false` so that is checkable from the evidence.
+* **A version banner is a signal, not a severity claim.** Per the detection programme's FP-3
+  rule the two banner checks ship at `low`, name the header line they read and correlate no
+  CVE; raise a severity from them only with a verified vulnerable version range behind it.
+* **Nothing is executed or changed.** No server is started, stopped, reloaded or reconfigured,
+  no configuration is loaded into anything, and no directory index is expanded beyond the
+  entries the answer already carried.
+
 ### 2.8 M5 — Cloud, container & supply chain
 
 | Variable | Default | Meaning |

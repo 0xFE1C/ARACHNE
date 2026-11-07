@@ -52,9 +52,10 @@ def test_bundled_catalogue_covers_every_module_and_is_versioned() -> None:
     # (REQ-DET-015); 1.13 (WP-25) the WordPress ecosystem family (REQ-DET-018); 1.14 (WP-26)
     # the CMS family B (REQ-DET-019); 1.15 (WP-27) the application-server and framework family
     # (REQ-DET-020); 1.16 (WP-28) the API and modern-web surface family (REQ-DET-021);
-    # 1.17 (WP-29) the source-control, CI and infrastructure-artifact family (REQ-DET-022).
+    # 1.17 (WP-29) the source-control, CI and infrastructure-artifact family (REQ-DET-022);
+    # 1.18 (WP-30) the server, platform and runtime-configuration family (REQ-DET-023).
     # tests/unit/test_registry.py keeps the catalogue and the registry in step.
-    assert catalog.catalog_version == "1.17"
+    assert catalog.catalog_version == "1.18"
     assert catalog.modules() == ("M1", "M2", "M3", "M4", "M5", "M6")
     assert len(catalog.checks) >= 30
     # "Version everything" : every check carries a version and a
@@ -71,14 +72,15 @@ def test_bundled_catalogue_covers_every_module_and_is_versioned() -> None:
     # (m2.ssh-auth) brings it to 168; WP-25's twenty-six L1 WordPress rows bring it to 194;
     # WP-26's thirty L1 CMS family B rows bring it to 224; WP-27's twenty-five L1 application-
     # server rows bring it to 249; WP-28's twenty-four L1 API and modern-web rows bring it to
-    # 273; WP-29's twenty-four L1 infrastructure-artifact rows bring it to 297.
+    # 273; WP-29's twenty-four L1 infrastructure-artifact rows bring it to 297; WP-30's
+    # twenty-four L1 server/platform rows bring it to 321.
     # The seven L2+ rows are opt-in, and only rce-echo/state-marker demand the
     # state-change attestation.
     # (S29's tenth depth row, m1.mobile-artifact, declares L0 — it is the one check that
     # contacts nothing at all — so it is in neither list and is pinned here explicitly.)
     originals = [check for check in catalog.checks if check.proof.value == "L1"]
     ladder = [check for check in catalog.checks if check.proof.value in {"L2", "L3", "L4"}]
-    assert len(originals) == 297
+    assert len(originals) == 321
     assert {check.name for check in catalog.checks if check.proof.value == "L0"} == {
         "mobile-artifact"
     }
