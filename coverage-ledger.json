@@ -1,8 +1,8 @@
 {
   "ledger_version": "1.0",
-  "generated_at": "2026-11-06",
+  "generated_at": "2026-11-07",
   "registry_version": "registry-1.0",
-  "registry_digest": "sha256:c25307cc0ba5ac349507823ea2a11fe043c8489fbdd6bfee5af54fc3c991b788",
+  "registry_digest": "sha256:e34b67a84e1f53b015eb5e7cd7a6ba6dc41916a708199557271f80c9df819dc4",
   "framework_versions": {
     "WSTG": "4.2",
     "API": "2023",
@@ -13,7 +13,7 @@
   },
   "last_verified_note": "last_verified is the date the corpus was last exercised by the test suite: the ledger is regenerated after a full suite run, and every registered check is run by it. A per-check date arrives with the verification-record store (REQ-PROOF-*). It is committed content, not a wall-clock read, so --check is byte-stable.",
   "totals": {
-    "checks": 257,
+    "checks": 281,
     "cwe_only_checks": 0
   },
   "wstg": {
@@ -252,7 +252,12 @@
           "m3.drupal-api-surface",
           "m3.drupal-installer-residue",
           "m3.drupal-version-disclosure",
+          "m3.gcf-function-endpoint",
           "m3.graphql-audit",
+          "m3.graphql-ide-exposed",
+          "m3.graphql-introspection-get",
+          "m3.graphql-mutation-surface",
+          "m3.graphql-suggestion-disclosure",
           "m3.iis-legacy-password-surface",
           "m3.iis-short-name-disclosure",
           "m3.jboss-admin-console",
@@ -270,17 +275,24 @@
           "m3.moodle-api-surface",
           "m3.moodle-installer-residue",
           "m3.moodle-version-disclosure",
+          "m3.netlify-function-endpoint",
+          "m3.openapi-document-exposed",
           "m3.prestashop-admin-surface",
           "m3.prestashop-api-surface",
           "m3.prestashop-installer-residue",
           "m3.prestashop-version-disclosure",
           "m3.rails-info-routes",
+          "m3.redoc-exposed",
           "m3.spring-boot-actuator-env",
           "m3.spring-boot-actuator-index",
           "m3.spring-boot-heapdump",
+          "m3.swagger-document-exposed",
+          "m3.swagger-resources-index",
+          "m3.swagger-ui-exposed",
           "m3.tomcat-examples-surface",
           "m3.tomcat-host-manager-surface",
           "m3.tomcat-manager-surface",
+          "m3.vercel-function-endpoint",
           "m3.weblogic-console",
           "m3.weblogic-uddi-explorer",
           "m3.weblogic-wsat",
@@ -319,6 +331,9 @@
           "m2.ics-probe",
           "m2.ot-protocol-probe",
           "m2.snmp-enum",
+          "m3.grpc-connect-endpoint",
+          "m3.openapi-operation-unauth",
+          "m3.openfaas-gateway-exposed",
           "m3.websocket-upgrade-auth",
           "m4.unauth-api-audit",
           "m5.docker-socket",
@@ -468,7 +483,7 @@
         "WSTG-INFO-01",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -485,7 +500,7 @@
         "WSTG-INFO-01",
         "CWE-798"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-798"
     },
     {
@@ -501,7 +516,7 @@
         "WSTG-CONF-01",
         "CWE-1035"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1035"
     },
     {
@@ -516,7 +531,7 @@
       "framework": [
         "WSTG-INFO-04"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": null
     },
     {
@@ -531,7 +546,7 @@
       "framework": [
         "WSTG-INFO-04"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": null
     },
     {
@@ -546,7 +561,7 @@
       "framework": [
         "WSTG-INFO-04"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": null
     },
     {
@@ -562,7 +577,7 @@
         "WSTG-INFO-01",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -577,7 +592,7 @@
       "framework": [
         "WSTG-INFO-01"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": null
     },
     {
@@ -592,7 +607,7 @@
         "WSTG-INFO-06",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -608,7 +623,7 @@
         "WSTG-INFO-10",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -625,7 +640,7 @@
         "WSTG-INFO-08",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -641,7 +656,7 @@
         "WSTG-CONF-11",
         "CWE-284"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-284"
     },
     {
@@ -656,7 +671,7 @@
         "WSTG-INFO-05",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -672,7 +687,7 @@
         "WSTG-CONF-01",
         "CWE-668"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-668"
     },
     {
@@ -688,7 +703,7 @@
         "WSTG-INFO-04",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -704,7 +719,7 @@
         "WSTG-INFO-01",
         "CWE-522"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-522"
     },
     {
@@ -719,7 +734,7 @@
         "WSTG-INFO-05",
         "CWE-798"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-798"
     },
     {
@@ -736,7 +751,7 @@
       "framework": [
         "WSTG-CONF-01"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": null
     },
     {
@@ -754,7 +769,7 @@
       "framework": [
         "WSTG-CONF-01"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": null
     },
     {
@@ -771,7 +786,7 @@
       "framework": [
         "WSTG-CONF-01"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": null
     },
     {
@@ -789,7 +804,7 @@
       "framework": [
         "WSTG-CONF-01"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": null
     },
     {
@@ -807,7 +822,7 @@
         "WSTG-INFO-09",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -824,7 +839,7 @@
         "WSTG-INFO-08",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -843,7 +858,7 @@
         "WSTG-CRYP-01",
         "CWE-327"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-327"
     },
     {
@@ -862,7 +877,7 @@
         "WSTG-CRYP-01",
         "CWE-295"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-295"
     },
     {
@@ -878,7 +893,7 @@
         "WSTG-CONF-07",
         "CWE-693"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-693"
     },
     {
@@ -896,7 +911,7 @@
         "WSTG-CONF-01",
         "CWE-306"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-306"
     },
     {
@@ -915,7 +930,7 @@
         "WSTG-CONF-01",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -934,7 +949,7 @@
         "WSTG-CONF-01",
         "CWE-284"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-284"
     },
     {
@@ -953,7 +968,7 @@
         "WSTG-CONF-01",
         "CWE-287"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-287"
     },
     {
@@ -972,7 +987,7 @@
         "WSTG-CONF-01",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -990,7 +1005,7 @@
       "framework": [
         "WSTG-CONF-01"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": null
     },
     {
@@ -1010,7 +1025,7 @@
         "CWE-319",
         "CWE-441"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-319"
     },
     {
@@ -1026,7 +1041,7 @@
         "WSTG-CONF-01",
         "CWE-287"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-287"
     },
     {
@@ -1045,7 +1060,7 @@
         "WSTG-CONF-01",
         "CWE-284"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-284"
     },
     {
@@ -1063,7 +1078,7 @@
       "framework": [
         "WSTG-CONF-01"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": null
     },
     {
@@ -1081,7 +1096,7 @@
       "framework": [
         "WSTG-CONF-01"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": null
     },
     {
@@ -1097,7 +1112,7 @@
         "WSTG-INFO-10",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -1115,7 +1130,7 @@
         "WSTG-CONF-01",
         "CWE-306"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-306"
     },
     {
@@ -1131,7 +1146,7 @@
         "WSTG-CONF-01",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -1147,7 +1162,7 @@
         "WSTG-CONF-01",
         "CWE-521"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-521"
     },
     {
@@ -1166,7 +1181,7 @@
         "WSTG-CONF-01",
         "CWE-1035"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1035"
     },
     {
@@ -1185,7 +1200,7 @@
         "WSTG-CONF-01",
         "CWE-1392"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1392"
     },
     {
@@ -1204,7 +1219,7 @@
         "WSTG-CONF-01",
         "CWE-1392"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1392"
     },
     {
@@ -1222,7 +1237,7 @@
         "WSTG-CRYP-03",
         "CWE-319"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-319"
     },
     {
@@ -1241,7 +1256,7 @@
         "API9:2023",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -1259,7 +1274,7 @@
         "WSTG-CRYP-03",
         "CWE-522"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-522"
     },
     {
@@ -1277,7 +1292,7 @@
         "WSTG-CONF-01",
         "CWE-306"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-306"
     },
     {
@@ -1297,7 +1312,7 @@
         "WSTG-CONF-01",
         "CWE-269"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-269"
     },
     {
@@ -1315,7 +1330,7 @@
         "API8:2023",
         "CWE-693"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-693"
     },
     {
@@ -1332,7 +1347,7 @@
         "API9:2023",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -1349,7 +1364,7 @@
         "WSTG-CONF-10",
         "CWE-350"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-350"
     },
     {
@@ -1365,7 +1380,7 @@
         "WSTG-SESS-05",
         "CWE-352"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-352"
     },
     {
@@ -1380,7 +1395,7 @@
         "WSTG-INPV-11",
         "CWE-502"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-502"
     },
     {
@@ -1395,7 +1410,7 @@
         "WSTG-INPV-05",
         "CWE-89"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-89"
     },
     {
@@ -1411,7 +1426,7 @@
         "WSTG-INPV-18",
         "CWE-1336"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1336"
     },
     {
@@ -1426,7 +1441,7 @@
         "WSTG-INPV-07",
         "CWE-611"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-611"
     },
     {
@@ -1441,7 +1456,7 @@
         "WSTG-INPV-12",
         "CWE-78"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-78"
     },
     {
@@ -1457,7 +1472,7 @@
         "WSTG-INPV-01",
         "CWE-79"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-79"
     },
     {
@@ -1472,7 +1487,7 @@
         "WSTG-ATHZ-01",
         "CWE-22"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-22"
     },
     {
@@ -1488,7 +1503,7 @@
         "WSTG-CLNT-02",
         "CWE-79"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-79"
     },
     {
@@ -1503,7 +1518,7 @@
         "WSTG-CLNT-04",
         "CWE-601"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-601"
     },
     {
@@ -1519,7 +1534,7 @@
         "WSTG-CLNT-13",
         "CWE-942"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-942"
     },
     {
@@ -1535,7 +1550,7 @@
         "WSTG-INPV-15",
         "CWE-444"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-444"
     },
     {
@@ -1550,7 +1565,7 @@
         "WSTG-INPV-04",
         "CWE-235"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-235"
     },
     {
@@ -1566,7 +1581,7 @@
         "API1:2023",
         "CWE-639"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-639"
     },
     {
@@ -1584,7 +1599,7 @@
         "API2:2023",
         "CWE-287"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-287"
     },
     {
@@ -1602,7 +1617,7 @@
         "API2:2023",
         "CWE-347"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-347"
     },
     {
@@ -1618,7 +1633,7 @@
         "API2:2023",
         "CWE-601"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-601"
     },
     {
@@ -1634,7 +1649,7 @@
         "API2:2023",
         "CWE-347"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-347"
     },
     {
@@ -1649,7 +1664,7 @@
         "API3:2023",
         "CWE-915"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-915"
     },
     {
@@ -1666,7 +1681,7 @@
         "API3:2023",
         "CWE-1321"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1321"
     },
     {
@@ -1682,7 +1697,7 @@
         "API9:2023",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -1697,7 +1712,7 @@
         "WSTG-CLNT-10",
         "CWE-1385"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1385"
     },
     {
@@ -1715,7 +1730,7 @@
         "API6:2023",
         "CWE-840"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-840"
     },
     {
@@ -1731,7 +1746,7 @@
         "WSTG-BUSL-05",
         "CWE-362"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-362"
     },
     {
@@ -1746,7 +1761,7 @@
         "WSTG-INPV-15",
         "CWE-444"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-444"
     },
     {
@@ -1764,7 +1779,7 @@
         "API4:2023",
         "CWE-770"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-770"
     },
     {
@@ -1780,7 +1795,7 @@
         "WSTG-BUSL-09",
         "CWE-434"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-434"
     },
     {
@@ -1796,7 +1811,7 @@
         "API7:2023",
         "CWE-918"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-918"
     },
     {
@@ -1811,7 +1826,7 @@
         "WSTG-INPV-05",
         "CWE-943"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-943"
     },
     {
@@ -1826,7 +1841,7 @@
         "WSTG-ATHZ-01",
         "CWE-22"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-22"
     },
     {
@@ -1841,7 +1856,7 @@
         "WSTG-ATHZ-01",
         "CWE-98"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-98"
     },
     {
@@ -1856,7 +1871,7 @@
         "WSTG-INPV-15",
         "CWE-113"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-113"
     },
     {
@@ -1873,7 +1888,7 @@
         "API9:2023",
         "CWE-284"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-284"
     },
     {
@@ -1888,7 +1903,7 @@
         "WSTG-SESS-06",
         "CWE-613"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-613"
     },
     {
@@ -1903,7 +1918,7 @@
         "WSTG-INPV-05",
         "CWE-89"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-89"
     },
     {
@@ -1918,7 +1933,7 @@
         "WSTG-INPV-07",
         "CWE-611"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-611"
     },
     {
@@ -1933,7 +1948,7 @@
         "WSTG-INPV-12",
         "CWE-78"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-78"
     },
     {
@@ -1949,7 +1964,7 @@
         "WSTG-INPV-18",
         "CWE-1336"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1336"
     },
     {
@@ -1964,7 +1979,7 @@
         "WSTG-INPV-12",
         "CWE-78"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-78"
     },
     {
@@ -1979,7 +1994,7 @@
         "WSTG-INPV-05",
         "CWE-89"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-89"
     },
     {
@@ -1995,7 +2010,7 @@
         "API4:2023",
         "CWE-770"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-770"
     },
     {
@@ -2011,7 +2026,7 @@
         "API5:2023",
         "CWE-862"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-862"
     },
     {
@@ -2027,7 +2042,7 @@
         "API2:2023",
         "CWE-306"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-306"
     },
     {
@@ -2042,7 +2057,7 @@
         "WSTG-CLNT-10",
         "CWE-1385"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1385"
     },
     {
@@ -2057,7 +2072,7 @@
         "WSTG-CLNT-02",
         "CWE-522"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-522"
     },
     {
@@ -2072,7 +2087,7 @@
         "WSTG-INPV-06",
         "CWE-90"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-90"
     },
     {
@@ -2087,7 +2102,7 @@
         "WSTG-INPV-09",
         "CWE-643"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-643"
     },
     {
@@ -2102,7 +2117,7 @@
         "WSTG-INPV-11",
         "CWE-94"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-94"
     },
     {
@@ -2117,7 +2132,7 @@
         "WSTG-INPV-12",
         "CWE-77"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-77"
     },
     {
@@ -2132,7 +2147,7 @@
         "WSTG-INPV-17",
         "CWE-644"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-644"
     },
     {
@@ -2147,7 +2162,7 @@
         "WSTG-INPV-10",
         "CWE-93"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-93"
     },
     {
@@ -2162,7 +2177,7 @@
         "WSTG-ATHN-06",
         "CWE-524"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-524"
     },
     {
@@ -2177,7 +2192,7 @@
         "WSTG-ATHZ-02",
         "CWE-863"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-863"
     },
     {
@@ -2192,7 +2207,7 @@
         "WSTG-BUSL-01",
         "CWE-20"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-20"
     },
     {
@@ -2209,7 +2224,7 @@
         "CWE-530",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-530"
     },
     {
@@ -2226,7 +2241,7 @@
         "CWE-540",
         "ATT&CK-T1552"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-540"
     },
     {
@@ -2243,7 +2258,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2259,7 +2274,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2276,7 +2291,7 @@
         "API9:2023",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2293,7 +2308,7 @@
         "API9:2023",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2309,7 +2324,7 @@
         "API9:2023",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2326,7 +2341,7 @@
         "API9:2023",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2343,7 +2358,7 @@
         "API5:2023",
         "CWE-862"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-862"
     },
     {
@@ -2359,7 +2374,7 @@
         "WSTG-CONF-04",
         "CWE-548"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-548"
     },
     {
@@ -2376,7 +2391,7 @@
         "CWE-548",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-548"
     },
     {
@@ -2393,7 +2408,7 @@
         "CWE-548",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-548"
     },
     {
@@ -2410,7 +2425,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2427,7 +2442,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2444,7 +2459,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2460,7 +2475,7 @@
         "WSTG-ERRH-01",
         "CWE-532"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-532"
     },
     {
@@ -2476,7 +2491,7 @@
         "WSTG-CONF-05",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2492,7 +2507,7 @@
         "WSTG-CONF-05",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2509,7 +2524,7 @@
         "API9:2023",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2525,7 +2540,7 @@
         "WSTG-CONF-05",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2541,7 +2556,7 @@
         "WSTG-INFO-02",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2557,7 +2572,7 @@
         "WSTG-INFO-03",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2573,7 +2588,7 @@
         "WSTG-IDNT-04",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2589,7 +2604,7 @@
         "WSTG-CONF-05",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2606,7 +2621,7 @@
         "API5:2023",
         "CWE-862"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-862"
     },
     {
@@ -2623,7 +2638,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2640,7 +2655,7 @@
         "CWE-540",
         "ATT&CK-T1552"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-540"
     },
     {
@@ -2657,7 +2672,7 @@
         "CWE-530",
         "ATT&CK-T1552"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-530"
     },
     {
@@ -2674,7 +2689,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2691,7 +2706,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2707,7 +2722,7 @@
         "WSTG-CONF-05",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2723,7 +2738,7 @@
         "API9:2023",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2740,7 +2755,7 @@
         "CWE-540",
         "ATT&CK-T1552"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-540"
     },
     {
@@ -2757,7 +2772,7 @@
         "CWE-530",
         "ATT&CK-T1552"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-530"
     },
     {
@@ -2774,7 +2789,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2791,7 +2806,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2807,7 +2822,7 @@
         "WSTG-CONF-05",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2823,7 +2838,7 @@
         "API9:2023",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2840,7 +2855,7 @@
         "CWE-540",
         "ATT&CK-T1552"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-540"
     },
     {
@@ -2857,7 +2872,7 @@
         "CWE-530",
         "ATT&CK-T1552"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-530"
     },
     {
@@ -2874,7 +2889,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2891,7 +2906,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2907,7 +2922,7 @@
         "WSTG-CONF-05",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2923,7 +2938,7 @@
         "API9:2023",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2940,7 +2955,7 @@
         "CWE-540",
         "ATT&CK-T1552"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-540"
     },
     {
@@ -2957,7 +2972,7 @@
         "CWE-530",
         "ATT&CK-T1552"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-530"
     },
     {
@@ -2974,7 +2989,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -2991,7 +3006,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3007,7 +3022,7 @@
         "WSTG-CONF-05",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3024,7 +3039,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3041,7 +3056,7 @@
         "CWE-540",
         "ATT&CK-T1552"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-540"
     },
     {
@@ -3058,7 +3073,7 @@
         "CWE-530",
         "ATT&CK-T1552"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-530"
     },
     {
@@ -3075,7 +3090,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3092,7 +3107,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3108,7 +3123,7 @@
         "WSTG-CONF-05",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3124,7 +3139,7 @@
         "API9:2023",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3141,7 +3156,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3158,7 +3173,7 @@
         "CWE-200",
         "ATT&CK-T1552"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3175,7 +3190,7 @@
         "CWE-200",
         "ATT&CK-T1552"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3192,7 +3207,7 @@
         "WSTG-ERRH-02",
         "CWE-209"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-209"
     },
     {
@@ -3208,7 +3223,7 @@
         "WSTG-ERRH-01",
         "CWE-497"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-497"
     },
     {
@@ -3224,7 +3239,7 @@
         "WSTG-CONF-04",
         "CWE-548"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-548"
     },
     {
@@ -3241,7 +3256,7 @@
         "WSTG-INFO-08",
         "CWE-497"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-497"
     },
     {
@@ -3257,7 +3272,7 @@
         "WSTG-INFO-06",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3274,7 +3289,7 @@
         "WSTG-ERRH-02",
         "CWE-209"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-209"
     },
     {
@@ -3290,7 +3305,7 @@
         "WSTG-ERRH-01",
         "CWE-497"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-497"
     },
     {
@@ -3307,7 +3322,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3324,7 +3339,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3340,7 +3355,7 @@
         "WSTG-INFO-02",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3357,7 +3372,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3373,7 +3388,7 @@
         "WSTG-INFO-06",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3390,7 +3405,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3407,7 +3422,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3423,7 +3438,7 @@
         "WSTG-INFO-06",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3440,7 +3455,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3457,7 +3472,7 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3473,7 +3488,7 @@
         "WSTG-CONF-04",
         "CWE-548"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-548"
     },
     {
@@ -3489,7 +3504,7 @@
         "WSTG-INFO-08",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3505,7 +3520,7 @@
         "WSTG-INFO-02",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3521,7 +3536,7 @@
         "WSTG-ERRH-01",
         "CWE-497"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-497"
     },
     {
@@ -3538,8 +3553,410 @@
         "CWE-200",
         "ATT&CK-T1592.002"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.openapi-document-exposed",
+      "module": "M3",
+      "title": "OpenAPI document published without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-APIT-01",
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "API9:2023",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.swagger-document-exposed",
+      "module": "M3",
+      "title": "Swagger 2.0 document published without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-APIT-01",
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "API9:2023",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.swagger-ui-exposed",
+      "module": "M3",
+      "title": "Swagger UI interface served without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-APIT-01",
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "API9:2023",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.redoc-exposed",
+      "module": "M3",
+      "title": "ReDoc interface served without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-APIT-01",
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "API9:2023",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.swagger-resources-index",
+      "module": "M3",
+      "title": "API documentation resource index served",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-APIT-01",
+        "WSTG-INFO-06",
+        "API9:2023",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.openapi-operation-unauth",
+      "module": "M3",
+      "title": "API operation answers an unauthenticated request",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-APIT-01",
+        "WSTG-CONF-05",
+        "API2:2023",
+        "API5:2023",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m3.graphql-introspection-get",
+      "module": "M3",
+      "title": "GraphQL introspection enabled over GET",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-APIT-01",
+        "API9:2023",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.graphql-suggestion-disclosure",
+      "module": "M3",
+      "title": "GraphQL field suggestions disclosed",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-APIT-01",
+        "WSTG-ERRH-02",
+        "API9:2023",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.graphql-ide-exposed",
+      "module": "M3",
+      "title": "GraphQL IDE served without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-APIT-01",
+        "WSTG-INFO-06",
+        "API9:2023",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.graphql-mutation-surface",
+      "module": "M3",
+      "title": "GraphQL mutation surface published",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-APIT-01",
+        "API9:2023",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.grpc-connect-endpoint",
+      "module": "M3",
+      "title": "gRPC service method reachable over HTTP without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-APIT-01",
+        "WSTG-INFO-06",
+        "API2:2023",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m3.grpc-web-preflight",
+      "module": "M3",
+      "title": "gRPC-Web CORS preflight permissive",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-APIT-01",
+        "WSTG-CLNT-07",
+        "API8:2023",
+        "CWE-942"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-942"
+    },
+    {
+      "id": "m3.websocket-origin-null",
+      "module": "M3",
+      "title": "WebSocket upgrade accepted for the null origin",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-07",
+        "WSTG-CLNT-10",
+        "CWE-1385"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-1385"
+    },
+    {
+      "id": "m3.websocket-origin-sibling",
+      "module": "M3",
+      "title": "WebSocket upgrade accepted for a sibling subdomain",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-07",
+        "WSTG-CLNT-10",
+        "CWE-1385"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-1385"
+    },
+    {
+      "id": "m3.websocket-origin-suffix-spoof",
+      "module": "M3",
+      "title": "WebSocket upgrade accepted for a suffix-spoofed origin",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-07",
+        "WSTG-CLNT-10",
+        "CWE-1385"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-1385"
+    },
+    {
+      "id": "m3.netlify-function-endpoint",
+      "module": "M3",
+      "title": "Netlify function endpoint reachable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.vercel-function-endpoint",
+      "module": "M3",
+      "title": "Vercel function route reachable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.gcf-function-endpoint",
+      "module": "M3",
+      "title": "Serverless function invoked without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m3.openfaas-gateway-exposed",
+      "module": "M3",
+      "title": "OpenFaaS gateway function inventory exposed",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-06",
+        "API2:2023",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m3.edge-function-sourcemap",
+      "module": "M3",
+      "title": "Edge function bundle source map published",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "WSTG-INFO-05",
+        "CWE-540"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-540"
+    },
+    {
+      "id": "m3.cors-subdomain-trust",
+      "module": "M3",
+      "title": "CORS policy reflects a sibling subdomain",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-07",
+        "WSTG-CLNT-13",
+        "CWE-942"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-942"
+    },
+    {
+      "id": "m3.cors-suffix-spoof",
+      "module": "M3",
+      "title": "CORS policy accepts a suffix-spoofed origin",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-07",
+        "WSTG-CLNT-13",
+        "CWE-942"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-942"
+    },
+    {
+      "id": "m3.cors-preflight-methods",
+      "module": "M3",
+      "title": "CORS preflight authorizes state-changing methods",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-07",
+        "WSTG-CLNT-13",
+        "API8:2023",
+        "CWE-942"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-942"
+    },
+    {
+      "id": "m3.cors-preflight-headers",
+      "module": "M3",
+      "title": "CORS preflight authorizes arbitrary request headers",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CLNT-07",
+        "WSTG-CLNT-13",
+        "API8:2023",
+        "CWE-942"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-942"
     },
     {
       "id": "m4.security-header-review",
@@ -3555,7 +3972,7 @@
         "API8:2023",
         "CWE-693"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-693"
     },
     {
@@ -3571,7 +3988,7 @@
         "WSTG-SESS-09",
         "CWE-614"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-614"
     },
     {
@@ -3587,7 +4004,7 @@
         "WSTG-INFO-05",
         "CWE-798"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-798"
     },
     {
@@ -3602,7 +4019,7 @@
         "WSTG-CONF-04",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3618,7 +4035,7 @@
         "WSTG-CONF-04",
         "CWE-538"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-538"
     },
     {
@@ -3633,7 +4050,7 @@
         "WSTG-CONF-04",
         "CWE-530"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-530"
     },
     {
@@ -3648,7 +4065,7 @@
         "WSTG-CONF-04",
         "CWE-321"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-321"
     },
     {
@@ -3663,7 +4080,7 @@
         "WSTG-CONF-04",
         "CWE-540"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-540"
     },
     {
@@ -3679,7 +4096,7 @@
         "API9:2023",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3694,7 +4111,7 @@
         "WSTG-CONF-05",
         "CWE-489"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-489"
     },
     {
@@ -3710,7 +4127,7 @@
         "API8:2023",
         "CWE-548"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-548"
     },
     {
@@ -3725,7 +4142,7 @@
         "WSTG-CONF-05",
         "CWE-284"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-284"
     },
     {
@@ -3741,7 +4158,7 @@
         "WSTG-INFO-06",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3756,7 +4173,7 @@
         "WSTG-CONF-02",
         "CWE-1188"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1188"
     },
     {
@@ -3772,7 +4189,7 @@
         "API5:2023",
         "CWE-306"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-306"
     },
     {
@@ -3789,7 +4206,7 @@
         "WSTG-CONF-11",
         "CWE-732"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-732"
     },
     {
@@ -3804,7 +4221,7 @@
         "WSTG-CLNT-07",
         "CWE-942"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-942"
     },
     {
@@ -3820,7 +4237,7 @@
         "WSTG-CRYP-01",
         "CWE-326"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-326"
     },
     {
@@ -3836,7 +4253,7 @@
         "WSTG-CONF-02",
         "CWE-290"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-290"
     },
     {
@@ -3852,7 +4269,7 @@
         "WSTG-INPV-03",
         "CWE-650"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-650"
     },
     {
@@ -3867,7 +4284,7 @@
         "WSTG-IDNT-04",
         "CWE-204"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-204"
     },
     {
@@ -3883,7 +4300,7 @@
         "API7:2023",
         "CWE-918"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-918"
     },
     {
@@ -3898,7 +4315,7 @@
         "WSTG-ATHN-02",
         "CWE-1392"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1392"
     },
     {
@@ -3914,7 +4331,7 @@
         "WSTG-ERRH-02",
         "CWE-209"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-209"
     },
     {
@@ -3929,7 +4346,7 @@
         "WSTG-CONF-05",
         "CWE-497"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-497"
     },
     {
@@ -3945,7 +4362,7 @@
         "WSTG-CONF-05",
         "CWE-668"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-668"
     },
     {
@@ -3960,7 +4377,7 @@
         "WSTG-INFO-03",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3976,7 +4393,7 @@
         "WSTG-INFO-08",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -3991,7 +4408,7 @@
         "WSTG-ATHZ-01",
         "CWE-22"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-22"
     },
     {
@@ -4008,7 +4425,7 @@
         "WSTG-INFO-05",
         "CWE-798"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-798"
     },
     {
@@ -4025,7 +4442,7 @@
         "WSTG-INFO-05",
         "CWE-798"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-798"
     },
     {
@@ -4042,7 +4459,7 @@
         "API5:2023",
         "CWE-269"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-269"
     },
     {
@@ -4059,7 +4476,7 @@
         "API8:2023",
         "CWE-16"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-16"
     },
     {
@@ -4075,7 +4492,7 @@
         "WSTG-CONF-02",
         "CWE-78"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-78"
     },
     {
@@ -4092,7 +4509,7 @@
         "API10:2023",
         "CWE-427"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-427"
     },
     {
@@ -4109,7 +4526,7 @@
         "API10:2023",
         "CWE-1104"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1104"
     },
     {
@@ -4125,7 +4542,7 @@
         "WSTG-INFO-05",
         "CWE-798"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-798"
     },
     {
@@ -4142,7 +4559,7 @@
         "WSTG-CONF-04",
         "CWE-312"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-312"
     },
     {
@@ -4159,7 +4576,7 @@
         "API10:2023",
         "CWE-1104"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1104"
     },
     {
@@ -4176,7 +4593,7 @@
         "API8:2023",
         "CWE-16"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-16"
     },
     {
@@ -4193,7 +4610,7 @@
         "WSTG-CONF-11",
         "CWE-732"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-732"
     },
     {
@@ -4209,7 +4626,7 @@
         "WSTG-CONF-11",
         "CWE-284"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-284"
     },
     {
@@ -4226,7 +4643,7 @@
         "API1:2023",
         "CWE-284"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-284"
     },
     {
@@ -4243,7 +4660,7 @@
         "WSTG-CONF-05",
         "CWE-306"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-306"
     },
     {
@@ -4259,7 +4676,7 @@
         "WSTG-CONF-05",
         "CWE-1104"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1104"
     },
     {
@@ -4275,7 +4692,7 @@
         "WSTG-CONF-05",
         "CWE-306"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-306"
     },
     {
@@ -4291,7 +4708,7 @@
         "API5:2023",
         "CWE-284"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-284"
     },
     {
@@ -4306,7 +4723,7 @@
         "WSTG-CONF-01",
         "CWE-668"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-668"
     },
     {
@@ -4321,7 +4738,7 @@
         "WSTG-CONF-05",
         "CWE-668"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-668"
     },
     {
@@ -4337,7 +4754,7 @@
         "API7:2023",
         "CWE-918"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-918"
     },
     {
@@ -4353,7 +4770,7 @@
         "API7:2023",
         "CWE-918"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-918"
     },
     {
@@ -4370,7 +4787,7 @@
         "WSTG-INFO-05",
         "CWE-798"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-798"
     },
     {
@@ -4387,7 +4804,7 @@
         "WSTG-INFO-05",
         "CWE-532"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-532"
     },
     {
@@ -4406,7 +4823,7 @@
         "WSTG-CONF-01",
         "CWE-1035"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1035"
     },
     {
@@ -4426,7 +4843,7 @@
         "WSTG-CONF-01",
         "CWE-269"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-269"
     },
     {
@@ -4444,7 +4861,7 @@
         "WSTG-INFO-05",
         "CWE-506"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-506"
     },
     {
@@ -4468,7 +4885,7 @@
         "ASI02:2026",
         "ASI03:2026"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1426"
     },
     {
@@ -4484,7 +4901,7 @@
         "CWE-287",
         "ASI03:2026"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-287"
     },
     {
@@ -4500,7 +4917,7 @@
         "CWE-306",
         "ASI07:2026"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-306"
     },
     {
@@ -4517,7 +4934,7 @@
         "CWE-918",
         "ASI07:2026"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-918"
     },
     {
@@ -4534,7 +4951,7 @@
         "LLM06:2025",
         "ASI02:2026"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-269"
     },
     {
@@ -4553,7 +4970,7 @@
         "LLM08:2025",
         "ASI06:2026"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-345"
     },
     {
@@ -4571,7 +4988,7 @@
         "LLM06:2025",
         "ASI09:2026"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-863"
     },
     {
@@ -4587,7 +5004,7 @@
         "CWE-306",
         "ASI10:2026"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-306"
     },
     {
@@ -4607,7 +5024,7 @@
         "CWE-778",
         "ATT&CK-T1059"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-778"
     },
     {
@@ -4627,7 +5044,7 @@
         "CWE-778",
         "ATT&CK-T1078"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-778"
     },
     {
@@ -4644,7 +5061,7 @@
         "WSTG-CONF-01",
         "CWE-269"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-269"
     },
     {
@@ -4659,7 +5076,7 @@
         "WSTG-INFO-05",
         "CWE-200"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-200"
     },
     {
@@ -4676,7 +5093,7 @@
         "WSTG-CONF-01",
         "CWE-1104"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-1104"
     },
     {
@@ -4691,7 +5108,7 @@
         "WSTG-INFO-05",
         "CWE-798"
       ],
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-07",
       "cwe": "CWE-798"
     }
   ],
@@ -4752,6 +5169,7 @@
       "checks": [
         "m1.doc-metadata",
         "m1.mobile-artifact",
+        "m3.edge-function-sourcemap",
         "m4.client-secrets",
         "m5.gcp-sa-keys",
         "m5.image-history-secrets",
@@ -4774,17 +5192,28 @@
         "m2.grpc-reflection",
         "m3.api-surface",
         "m3.drupal-api-surface",
+        "m3.gcf-function-endpoint",
+        "m3.graphql-ide-exposed",
+        "m3.grpc-connect-endpoint",
         "m3.jboss-jmx-console",
         "m3.jboss-web-console",
         "m3.joomla-api-surface",
         "m3.magento-api-surface",
         "m3.moodle-api-surface",
+        "m3.netlify-function-endpoint",
+        "m3.openapi-document-exposed",
+        "m3.openfaas-gateway-exposed",
         "m3.prestashop-api-surface",
         "m3.rails-info-routes",
+        "m3.redoc-exposed",
         "m3.spring-boot-actuator-index",
         "m3.spring-boot-heapdump",
+        "m3.swagger-document-exposed",
+        "m3.swagger-resources-index",
+        "m3.swagger-ui-exposed",
         "m3.tomcat-host-manager-surface",
         "m3.tomcat-manager-surface",
+        "m3.vercel-function-endpoint",
         "m3.weblogic-uddi-explorer",
         "m3.weblogic-wsat",
         "m3.wp-admin-ajax-surface",
@@ -4985,6 +5414,8 @@
         "m3.django-debug-toolbar",
         "m3.drupal-admin-surface",
         "m3.drupal-installer-residue",
+        "m3.edge-function-sourcemap",
+        "m3.gcf-function-endpoint",
         "m3.iis-legacy-password-surface",
         "m3.iis-trace-viewer",
         "m3.jboss-admin-console",
@@ -4997,15 +5428,23 @@
         "m3.magento-installer-residue",
         "m3.moodle-admin-surface",
         "m3.moodle-installer-residue",
+        "m3.netlify-function-endpoint",
+        "m3.openapi-document-exposed",
+        "m3.openapi-operation-unauth",
+        "m3.openfaas-gateway-exposed",
         "m3.prestashop-admin-surface",
         "m3.prestashop-installer-residue",
         "m3.rails-info-routes",
+        "m3.redoc-exposed",
         "m3.spring-boot-actuator-env",
         "m3.spring-boot-actuator-index",
         "m3.spring-boot-heapdump",
+        "m3.swagger-document-exposed",
+        "m3.swagger-ui-exposed",
         "m3.tomcat-examples-surface",
         "m3.tomcat-host-manager-surface",
         "m3.tomcat-manager-surface",
+        "m3.vercel-function-endpoint",
         "m3.weblogic-console",
         "m3.weblogic-uddi-explorer",
         "m3.weblogic-wsat",
@@ -5500,6 +5939,7 @@
       "title": "Testing for Stack Traces",
       "checks": [
         "m3.django-debug-page",
+        "m3.graphql-suggestion-disclosure",
         "m3.laravel-debug-page",
         "m4.verbose-errors"
       ]
@@ -5666,6 +6106,14 @@
       "title": "Testing Cross Origin Resource Sharing",
       "checks": [
         "m3.cors-audit",
+        "m3.cors-preflight-headers",
+        "m3.cors-preflight-methods",
+        "m3.cors-subdomain-trust",
+        "m3.cors-suffix-spoof",
+        "m3.grpc-web-preflight",
+        "m3.websocket-origin-null",
+        "m3.websocket-origin-sibling",
+        "m3.websocket-origin-suffix-spoof",
         "m4.cors-config-review"
       ]
     },
@@ -5692,6 +6140,9 @@
       "checks": [
         "m3.websocket-audit",
         "m3.websocket-injection",
+        "m3.websocket-origin-null",
+        "m3.websocket-origin-sibling",
+        "m3.websocket-origin-suffix-spoof",
         "m3.websocket-upgrade-auth"
       ]
     },
@@ -5714,7 +6165,11 @@
       "state": "mapped",
       "title": "Testing for Cross Site Script Inclusion",
       "checks": [
-        "m3.cors-audit"
+        "m3.cors-audit",
+        "m3.cors-preflight-headers",
+        "m3.cors-preflight-methods",
+        "m3.cors-subdomain-trust",
+        "m3.cors-suffix-spoof"
       ]
     },
     {
@@ -5724,7 +6179,19 @@
       "checks": [
         "m3.graphql-audit",
         "m3.graphql-depth-abuse",
-        "m3.graphql-resolver-auth"
+        "m3.graphql-ide-exposed",
+        "m3.graphql-introspection-get",
+        "m3.graphql-mutation-surface",
+        "m3.graphql-resolver-auth",
+        "m3.graphql-suggestion-disclosure",
+        "m3.grpc-connect-endpoint",
+        "m3.grpc-web-preflight",
+        "m3.openapi-document-exposed",
+        "m3.openapi-operation-unauth",
+        "m3.redoc-exposed",
+        "m3.swagger-document-exposed",
+        "m3.swagger-resources-index",
+        "m3.swagger-ui-exposed"
       ]
     }
   ],

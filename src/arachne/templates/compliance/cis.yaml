@@ -69,6 +69,11 @@ controls:
     title: "Configure Data Access Control Lists"
     checks:
       - m3.cors-audit
+      - m3.cors-preflight-headers
+      - m3.cors-preflight-methods
+      - m3.cors-subdomain-trust
+      - m3.cors-suffix-spoof
+      - m3.grpc-web-preflight
       - m3.idor-oracle
       - m4.bucket-exposure
       - m4.cors-config-review

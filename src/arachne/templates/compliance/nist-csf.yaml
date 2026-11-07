@@ -92,9 +92,11 @@ controls:
       - m3.joomla-config-backup
       - m3.magento-config-backup
       - m3.moodle-config-backup
+      - m3.openapi-document-exposed
       - m3.prestashop-config-backup
       - m3.spring-boot-actuator-env
       - m3.spring-boot-heapdump
+      - m3.swagger-document-exposed
       - m3.tomcat-manager-surface
       - m3.weblogic-console
       - m3.wp-config-backup

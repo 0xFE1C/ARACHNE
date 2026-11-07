@@ -70,10 +70,15 @@ controls:
       - m3.cmdi-oracle
       - m3.code-injection-oracle
       - m3.cors-audit
+      - m3.cors-preflight-headers
+      - m3.cors-preflight-methods
+      - m3.cors-subdomain-trust
+      - m3.cors-suffix-spoof
       - m3.crlf-injection
       - m3.csrf-audit
       - m3.deser-audit
       - m3.file-inclusion
+      - m3.grpc-web-preflight
       - m3.hpp-oracle
       - m3.input-validation-audit
       - m3.ldap-injection

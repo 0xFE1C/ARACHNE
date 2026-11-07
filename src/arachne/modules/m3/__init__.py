@@ -93,6 +93,25 @@ see ``coverage_matrix.md`` and ``python -m arachne.tools.counts``.
 **What this stage does not do** (recorded rather than implied): POST-body injection, DOM-sink
 verification in a browser, session fixation, and the families deferred to S10. See
 ADR-100.4-100.7.
+
+**The API and modern-web surface family** (WP-28, REQ-DET-021) is the twenty-four checks in
+``m3/api_surfaces.py``: the OpenAPI 3 and Swagger 2.0 documents a deployment publishes without
+authentication, the Swagger UI and ReDoc interfaces, the documentation resource index, and an
+operation the published document declares answering an *anonymous* GET; GraphQL introspection
+over GET, field-suggestion disclosure, the GraphiQL/Playground IDE and the mutation inventory
+the schema advertises; the browser-facing gRPC surface (the Connect protocol's GET form of a
+service method and the gRPC-Web preflight); WebSocket origin handling (the ``null`` origin, a
+sibling subdomain of the target's own host, and a host-suffix spoof); the serverless and
+edge-function endpoints (a Netlify function, a Vercel function route, a Cloud Functions
+invocation, an unauthenticated OpenFaaS gateway and a published bundle source map); and the CORS
+surface (sibling-subdomain trust, suffix spoof, and the two preflight readings: the methods and
+the request headers the policy authorizes). Every one is an L1 read-only probe on the client's
+anonymous path — ``GET`` everywhere but the three ``OPTIONS`` preflight rows, which are
+opt-in-active exactly as ``m3.wp-cron-surface`` is (F-01-09) — and every one is silent on its
+decoys: a conformant deployment that publishes its documentation deliberately *behind
+authentication* (the requirement's own decoy), a WAF-fronted one, and the five other surfaces'
+vulnerable installations. No check sends a credential, a body or a mutation. The count is
+carried by the generator: see ``coverage_matrix.md`` and ``python -m arachne.tools.counts``.
 """
 
 from __future__ import annotations
@@ -119,6 +138,7 @@ from arachne.modules.m3.advanced_protocol import (
     RequestSmugglingOracle,
     SsrfProbe,
 )
+from arachne.modules.m3.api_surfaces import ApiSurfaceChecks
 from arachne.modules.m3.app_servers import AppServerChecks
 from arachne.modules.m3.authenticated import AuthenticatedSurface, SessionLogout
 from arachne.modules.m3.client import XssOracle
@@ -263,6 +283,15 @@ M3_CHECKS: tuple[type[Module], ...] = (
     # Every one is an L1 read-only GET probe; the console checks report a reachable surface and
     # never send a credential.
     *AppServerChecks,
+    # WP-28 API and modern web surfaces (REQ-DET-021): the OpenAPI/Swagger document surface and
+    # an operation declared by a published document answering an anonymous GET, the GraphQL
+    # introspection/suggestion/IDE surface and the mutation inventory its schema publishes, the
+    # browser-facing gRPC surface (the Connect method's GET form and the gRPC-Web preflight),
+    # WebSocket origin handling (null, sibling subdomain, suffix spoof), the serverless and
+    # edge-function endpoints (Netlify, Vercel, Cloud Functions, an OpenFaaS gateway and a
+    # published bundle source map) and the CORS surface (sibling trust, suffix spoof and the two
+    # preflight readings). Every one is L1; the three OPTIONS preflight rows are opt-in-active.
+    *ApiSurfaceChecks,
 )
 
 #: The M3 module group . Bump the version when the check set or a check's
@@ -292,9 +321,14 @@ M3 = ModuleGroup(
         "surfaces, plus the WP-27 application-server and framework family: the Spring Boot "
         "actuator and heap-dump surface, the Django debug and media paths, the Rails and Laravel "
         "debug surfaces, the Tomcat manager and host-manager, the JBoss, WebLogic and ColdFusion "
-        "consoles and the IIS extension and short-name surfaces."
+        "consoles and the IIS extension and short-name surfaces, plus the WP-28 API and "
+        "modern-web surface family: the OpenAPI/Swagger document surface and an operation a "
+        "published document declares answering an anonymous GET, the GraphQL introspection, "
+        "suggestion, IDE and mutation-inventory surface, the browser-facing gRPC surface (the "
+        "Connect method's GET form and the gRPC-Web preflight), WebSocket origin handling, the "
+        "serverless and edge-function endpoints and the CORS surface with its preflight readings."
     ),
-    version="2.7.0",
+    version="2.8.0",
     research_chapter="ch03",
     checks=M3_CHECKS,
 )

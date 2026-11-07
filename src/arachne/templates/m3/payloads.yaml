@@ -19,8 +19,9 @@
 # five missing injection families (REQ-DET-004, REQ-DET-009); 1.2 (WP-25) the WordPress
 # ecosystem surface inventory (REQ-DET-018); 1.3 (WP-26) the Joomla, Drupal, Moodle,
 # PrestaShop and Magento surface inventory (REQ-DET-019); 1.4 (WP-27) the application-server
-# and framework surface inventory (REQ-DET-020).
-version: "1.4"
+# and framework surface inventory (REQ-DET-020); 1.5 (WP-28) the API and modern-web surface
+# inventory (REQ-DET-021).
+version: "1.5"
 
 # --------------------------------------------------------------------------- parameter hints
 # Which parameter names a family is tried against. A family is only attempted where its hint
@@ -962,3 +963,59 @@ iis:
   trace_paths: ["/trace.axd", "/Trace.axd"]
   legacy_password_paths:
     ["/iisadmpwd/aexp2b.asp", "/iisadmpwd/achg.htr", "/scripts/iisadmin/ism.dll"]
+
+# --------------------------------------------------------------------------- API and modern web
+# WP-28 (REQ-DET-021) the API and modern-web surface inventory: the OpenAPI/Swagger document
+# surface, the GraphQL endpoint surface, the browser-facing gRPC surface, WebSocket origin
+# handling, the serverless and edge-function endpoints and the CORS policy surface. Same two
+# rules as every other section: detection-only, and every confirmation is a *structural* fact
+# of the artefact (a JSON key beside its value, a completed handshake, a platform header, a
+# source-map document, an Access-Control-* triple) rather than a bare status or body word.
+api_openapi:
+  # Documents declaring OpenAPI 3 (the `openapi` version key) and Swagger 2.0 (`swagger`).
+  document_paths: ["/openapi.json", "/v3/api-docs", "/api-docs"]
+  v2_document_paths: ["/swagger.json", "/v2/api-docs", "/swagger/v1/swagger.json"]
+  # The browsing interfaces: their own bundle wiring plus the tool's name in the page.
+  ui_paths: ["/swagger-ui/index.html", "/swagger-ui.html", "/swagger/"]
+  ui_markers: ["swagger-ui", "swaggeruibundle", "swagger-ui-init", "swagger-ui-bundle"]
+  redoc_paths: ["/docs/", "/redoc", "/redoc.html"]
+  redoc_markers: ["<redoc", "redoc-standalone", "redoc.init", "redoc.min.js"]
+  # The springfox-style resource index, whose entries name a group and its document URL.
+  resource_index_paths: ["/swagger-resources", "/swagger-resources/configuration/ui"]
+
+graphql_api:
+  # The endpoint surface the four GraphQL checks probe.
+  endpoint_paths: ["/graphql", "/api/graphql", "/v1/graphql", "/gql"]
+  ide_paths: ["/graphiql", "/graphql"]
+  ide_markers: ["graphiql", "graphql playground", "graphql-playground", "apollo sandbox"]
+  # Every query below is a **query** operation: none of them is a mutation, and none is ever
+  # followed by one. The mutation inventory *reads* the schema's mutation type.
+  introspection_query: "query ArachneSchemaInventory { __schema { types { name kind } } }"
+  mutation_query: "query ArachneMutationInventory { __schema { mutationType { name fields { name } } } }"
+  suggestion_query: "query { __schema { arachneProbeNonexistentField } }"
+  suggestion_markers: ["did you mean", "cannot query field", "unknown field", "suggestions"]
+
+grpc_web:
+  # The browser-facing side of a gRPC service: the Connect protocol's GET form (a
+  # side-effect-free method only) and the gRPC-Web CORS preflight.
+  method_paths: ["/grpc.health.v1.Health/Check", "/grpc.health.v1.Health/Watch"]
+  probe_origins: ["https://arachne-grpc.invalid"]
+
+websocket_origin:
+  # The paths the three origin checks attempt their handshake on. The upgrade headers are the
+  # RFC 6455 example key from the standard itself; no frame is ever sent.
+  handshake_paths: ["/ws", "/socket.io/", "/realtime"]
+  probe_origins: ["arachne-probe", "arachne-sibling", "arachne-suffix.invalid"]
+
+serverless:
+  # The platform function routes and the edge bundle's source map beside it.
+  netlify_paths: ["/.netlify/functions/hello", "/.netlify/functions/index"]
+  vercel_paths: ["/api/hello", "/api/index"]
+  gcf_paths: ["/hello", "/api/hello"]
+  openfaas_paths: ["/system/functions"]
+  sourcemap_paths: ["/app.js.map", "/main.js.map", "/functions/index.js.map"]
+
+cors_policy:
+  # The API-shaped route the CORS checks probe and the reserved probe origin a preflight names.
+  paths: ["/api/config", "/api/v1/config"]
+  probe_origins: ["https://arachne-api.invalid"]

@@ -6,7 +6,7 @@ the numbered methods in `docs/research/`.
 
 - research corpus: `docs/research`
 - source roots: `src/arachne/modules`
-- references found: **257**
+- references found: **281**
 - coverage: **148/175 (84.6%)**
 
 ## Summary
@@ -119,7 +119,7 @@ the numbered methods in `docs/research/`.
 | 20 | JWT implementation audit | yes | `jwt-audit` |
 | 21 | OAuth 2.0 flow audit | yes | `oauth-flow-audit` |
 | 22 | SAML assertion audit | yes | `saml-audit` |
-| 23 | CORS policy audit | yes | `cors-audit` |
+| 23 | CORS policy audit | yes | `cors-audit`, `str` |
 | 24 | Security response header review | yes | `security-headers` |
 | 25 | HTTP parameter pollution | yes | `hpp-oracle` |
 | 26 | Mass assignment audit | yes | `mass-assign-audit` |
@@ -128,8 +128,8 @@ the numbered methods in `docs/research/`.
 | 29 | Race condition and TOCTOU probing | yes | `race-oracle` |
 | 30 | Business logic abuse testing | yes | `business-logic-audit`, `input-validation-audit` |
 | 31 | API surface enumeration | yes | `api-surface`, `f`, `str`, `wp-admin-ajax-surface`, `wp-asset-version`, `wp-config-backup`, `wp-config-source`, `wp-debug-log`, `wp-installer-residue`, `wp-plugin-readme`, `wp-plugins-listing`, `wp-readme-version`, `wp-rest-index`, `wp-rest-settings-unauth`, `wp-theme-stylesheet`, `wp-themes-listing`, `wp-upgrade-residue`, `wp-uploads-listing`, `wp-xmlrpc-rsd`, `wp-xmlrpc-surface` |
-| 32 | GraphQL endpoint audit | yes | `graphql-audit`, `graphql-depth-abuse`, `graphql-resolver-auth` |
-| 33 | WebSocket handshake and message audit | yes | `websocket-audit`, `websocket-injection`, `websocket-upgrade-auth` |
+| 32 | GraphQL endpoint audit | yes | `graphql-audit`, `graphql-depth-abuse`, `graphql-resolver-auth`, `str` |
+| 33 | WebSocket handshake and message audit | yes | `str`, `websocket-audit`, `websocket-injection`, `websocket-upgrade-auth` |
 | 34 | Subdomain takeover detection | yes | `subdomain-takeover` |
 | 35 | Rate limiting and anti-automation review | yes | `rate-limit-audit`, `wp-cron-surface` |
 

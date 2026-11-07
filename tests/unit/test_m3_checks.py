@@ -95,7 +95,9 @@ def test_the_module_exposes_the_core_and_extended_checks() -> None:
     # WP-26 adds the CMS family B (REQ-DET-019): Joomla, Drupal, Moodle, PrestaShop and
     # Magento — 113. WP-27 adds the application-server and framework family (REQ-DET-020):
     # Spring Boot, Django, Rails, Laravel, Tomcat, JBoss, WebLogic, ColdFusion and IIS — 138.
-    assert len(ids) == 138, ids
+    # WP-28 adds the API and modern-web surface family (REQ-DET-021): the OpenAPI/Swagger,
+    # GraphQL, browser-facing gRPC, WebSocket-origin, serverless/edge and CORS checks — 162.
+    assert len(ids) == 162, ids
     assert len(set(ids)) == len(ids)
     # The proof ladder's declarations are part of the module's contract: the L2+ rows are
     # all opt-in, and only rce-echo/state-marker demand the state-change attestation.

@@ -212,9 +212,12 @@ controls:
       - m3.laravel-debug-page
       - m3.magento-config-backup
       - m3.moodle-config-backup
+      - m3.openapi-document-exposed
+      - m3.openapi-operation-unauth
       - m3.prestashop-config-backup
       - m3.spring-boot-actuator-env
       - m3.spring-boot-heapdump
+      - m3.swagger-document-exposed
       - m3.tomcat-host-manager-surface
       - m3.tomcat-manager-surface
       - m3.weblogic-console
@@ -288,7 +291,12 @@ controls:
     title: "Application security requirements"
     checks:
       - m3.cors-audit
+      - m3.cors-preflight-headers
+      - m3.cors-preflight-methods
+      - m3.cors-subdomain-trust
+      - m3.cors-suffix-spoof
       - m3.csrf-audit
+      - m3.grpc-web-preflight
       - m3.security-headers
   - id: "A.8.27"
     title: "Secure system architecture and engineering principles"

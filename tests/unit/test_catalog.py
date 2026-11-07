@@ -51,9 +51,9 @@ def test_bundled_catalogue_covers_every_module_and_is_versioned() -> None:
     # five injection families (REQ-DET-004/009); 1.12 (WP-11) the DOM-sink browser row
     # (REQ-DET-015); 1.13 (WP-25) the WordPress ecosystem family (REQ-DET-018); 1.14 (WP-26)
     # the CMS family B (REQ-DET-019); 1.15 (WP-27) the application-server and framework family
-    # (REQ-DET-020).
+    # (REQ-DET-020); 1.16 (WP-28) the API and modern-web surface family (REQ-DET-021).
     # tests/unit/test_registry.py keeps the catalogue and the registry in step.
-    assert catalog.catalog_version == "1.15"
+    assert catalog.catalog_version == "1.16"
     assert catalog.modules() == ("M1", "M2", "M3", "M4", "M5", "M6")
     assert len(catalog.checks) >= 30
     # "Version everything" : every check carries a version and a
@@ -69,14 +69,15 @@ def test_bundled_catalogue_covers_every_module_and_is_versioned() -> None:
     # (m5.image-scan, m5.do-posture) bring it to 167; WP-20's one L1 SSH credential row
     # (m2.ssh-auth) brings it to 168; WP-25's twenty-six L1 WordPress rows bring it to 194;
     # WP-26's thirty L1 CMS family B rows bring it to 224; WP-27's twenty-five L1 application-
-    # server rows bring it to 249.
+    # server rows bring it to 249; WP-28's twenty-four L1 API and modern-web rows bring it to
+    # 273.
     # The seven L2+ rows are opt-in, and only rce-echo/state-marker demand the
     # state-change attestation.
     # (S29's tenth depth row, m1.mobile-artifact, declares L0 — it is the one check that
     # contacts nothing at all — so it is in neither list and is pinned here explicitly.)
     originals = [check for check in catalog.checks if check.proof.value == "L1"]
     ladder = [check for check in catalog.checks if check.proof.value in {"L2", "L3", "L4"}]
-    assert len(originals) == 249
+    assert len(originals) == 273
     assert {check.name for check in catalog.checks if check.proof.value == "L0"} == {
         "mobile-artifact"
     }

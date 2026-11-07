@@ -162,6 +162,38 @@ WP27_IDS: frozenset[str] = frozenset(
     }
 )
 
+#: WP-28's API and modern-web surface family (REQ-DET-021); excluded for the same reason. Every
+#: one cites ``ch03#23``, ``ch03#31``, ``ch03#32`` or ``ch03#33``, methods the corpus already
+#: mapped, so the family adds twenty-four checks without adding a research item.
+WP28_IDS: frozenset[str] = frozenset(
+    {
+        "m3.openapi-document-exposed",
+        "m3.swagger-document-exposed",
+        "m3.swagger-ui-exposed",
+        "m3.redoc-exposed",
+        "m3.swagger-resources-index",
+        "m3.openapi-operation-unauth",
+        "m3.graphql-introspection-get",
+        "m3.graphql-suggestion-disclosure",
+        "m3.graphql-ide-exposed",
+        "m3.graphql-mutation-surface",
+        "m3.grpc-connect-endpoint",
+        "m3.grpc-web-preflight",
+        "m3.websocket-origin-null",
+        "m3.websocket-origin-sibling",
+        "m3.websocket-origin-suffix-spoof",
+        "m3.netlify-function-endpoint",
+        "m3.vercel-function-endpoint",
+        "m3.gcf-function-endpoint",
+        "m3.openfaas-gateway-exposed",
+        "m3.edge-function-sourcemap",
+        "m3.cors-subdomain-trust",
+        "m3.cors-suffix-spoof",
+        "m3.cors-preflight-methods",
+        "m3.cors-preflight-headers",
+    }
+)
+
 
 @pytest.fixture(scope="module")
 def registry() -> ModuleRegistry:
@@ -230,7 +262,10 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     wp25 = {record.id for record in ledger.records if record.id in WP25_IDS}
     wp26 = {record.id for record in ledger.records if record.id in WP26_IDS}
     wp27 = {record.id for record in ledger.records if record.id in WP27_IDS}
-    assert len(ids - mcp - wp08 - wp09 - wp10 - wp11 - wp12 - wp20 - wp25 - wp26 - wp27) == 152
+    wp28 = {record.id for record in ledger.records if record.id in WP28_IDS}
+    assert (
+        len(ids - mcp - wp08 - wp09 - wp10 - wp11 - wp12 - wp20 - wp25 - wp26 - wp27 - wp28) == 152
+    )
     assert len(mcp) == 3
     assert len(wp08) == 9
     assert len(wp10) == 5
@@ -240,6 +275,7 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     assert len(wp25) == 26
     assert len(wp26) == 30
     assert len(wp27) == 25
+    assert len(wp28) == 24
 
 
 # ------------------------------------------------------------------ REQ-DET-003 WSTG

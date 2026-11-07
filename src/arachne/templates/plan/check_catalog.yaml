@@ -29,7 +29,7 @@
 # disagree, so a plan can never describe a check differently from the code that runs it.
 # S4 adds the M2 rows the registry implements; M3-M6 below are still *planned* only and the
 # plan marks them `implemented: false`.
-catalog_version: "1.15"
+catalog_version: "1.16"
 checks:
   # ---------------------------------------------------------------- M1 recon & attack surface
   # Implemented in S3 (arachne/modules/m1/). The rows below are generated from the check
@@ -3147,3 +3147,271 @@ checks:
     target_kinds:
     - url
     estimated_requests: 4
+  # ---------------------------------------------------------------- WP-28 API and modern web surfaces (REQ-DET-021)
+  - module: M3
+    name: openapi-document-exposed
+    version: '1.0'
+    title: OpenAPI document published without authentication
+    description: Reports when a JSON document declaring an OpenAPI 3 specification — the document's own 'openapi' version key beside its 'paths' object — is served to an anonymous client. The finding names the spec version and the operation paths the document declares, never a value. A deployment that publishes its documentation deliberately behind authentication answers a challenge and is not reported. Read-only GET probes.
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: swagger-document-exposed
+    version: '1.0'
+    title: Swagger 2.0 document published without authentication
+    description: Reports when a JSON document declaring the Swagger 2.0 specification — the document's own 'swagger' version key beside its 'paths' object — is served to an anonymous client. Swagger 2.0 is the pre-OpenAPI-3 generation and is still the live document of many published APIs; the finding names the version and the declared operation paths. Read-only GET probes.
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: swagger-ui-exposed
+    version: '1.0'
+    title: Swagger UI interface served without authentication
+    description: 'Reports when the Swagger UI browsing interface is served to an anonymous client: the HTML page carries Swagger UI''s own bundle wiring (''swagger-ui'' plus the SwaggerUIBundle or swagger-ui-init script it renders) and names the tool, which is how the interface is told apart from a page that merely links to one. An interactive console over an API surface is a discovery aid for whoever reaches it. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: redoc-exposed
+    version: '1.0'
+    title: ReDoc interface served without authentication
+    description: 'Reports when the ReDoc API documentation interface is served to an anonymous client: the HTML page carries ReDoc''s own renderer wiring (a redoc element or the redoc-standalone bundle) and names the tool. Like Swagger UI it turns a published document into a browsable console. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: swagger-resources-index
+    version: '1.0'
+    title: API documentation resource index served
+    description: 'Reports when the documentation resource index a springfox-style deployment publishes answers an anonymous client with its own JSON inventory: a list whose entries name a group and the URL its document is served from. The index is the map of every document the deployment publishes, and it is what makes the documents discoverable without guessing a path. Read-only GET probes.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: openapi-operation-unauth
+    version: '1.0'
+    title: API operation answers an unauthenticated request
+    description: Reads a published OpenAPI/Swagger document, takes the read-only GET operations it declares, and reports one that answers an anonymous request with a success status and no authentication challenge — the unauthenticated-invocation half of the API surface scope. The finding names the document, the operation path and the status; no request body, no write verb and no credential is ever sent. Read-only GET probes.
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 6
+  - module: M3
+    name: graphql-introspection-get
+    version: '1.0'
+    title: GraphQL introspection enabled over GET
+    description: 'Reports when a GraphQL endpoint answers an anonymous GET carrying the introspection query with its own schema result (the __schema object beside queryType and the type list). Introspection is a development and tooling feature; left on in production it publishes the whole schema — every type, field and mutation name — to anyone who asks. Reported at medium: it is frequently deliberate. Read-only GET; the operation sent is a query, never a mutation.'
+    research_ref: ch03#32
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: graphql-suggestion-disclosure
+    version: '1.0'
+    title: GraphQL field suggestions disclosed
+    description: 'Reports when a GraphQL endpoint answers a query naming a field that does not exist with a suggestion (''Did you mean ...'') or a validation message naming the field it could not find. The suggestion engine turns a blind field-name guess into a guided walk of the schema even where introspection is disabled. Reported at low: the answer is an error message, not data. Read-only GET probe.'
+    research_ref: ch03#32
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: graphql-ide-exposed
+    version: '1.0'
+    title: GraphQL IDE served without authentication
+    description: 'Reports when a GraphQL in-browser IDE (GraphiQL, GraphQL Playground or Apollo Sandbox) is served to an anonymous client: the HTML page carries the IDE''s own bundle wiring and names the tool. The IDE gives whoever reaches it a clickable schema browser and a console over the endpoint. Read-only GET probe.'
+    research_ref: ch03#32
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: graphql-mutation-surface
+    version: '1.0'
+    title: GraphQL mutation surface published
+    description: 'Reads the mutation inventory a GraphQL schema publishes to an anonymous client: the introspection query returns the mutation type''s name and its fields, so the write surface — every operation that changes state — is enumerable by anyone who reaches the endpoint. The finding names the mutations; no mutation is ever sent. Reported at low: the schema is a description, not a state change. Read-only GET probe.'
+    research_ref: ch03#32
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 2
+  - module: M3
+    name: grpc-connect-endpoint
+    version: '1.0'
+    title: gRPC service method reachable over HTTP without authentication
+    description: 'Reports when the browser-facing side of a gRPC service answers an anonymous HTTP GET: the Connect protocol defines a GET form for methods that are side-effect free, so an endpoint that answers it publishes the service''s method names and their messages over plain HTTP to anyone who can reach the origin. The check probes the standard health method and reports its answer; no RPC with a side effect is ever called. Read-only GET.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: grpc-web-preflight
+    version: '1.0'
+    title: gRPC-Web CORS preflight permissive
+    description: 'Sends the CORS preflight a browser would send before a gRPC-Web call and reports a policy that reflects an arbitrary origin *and* authorizes the gRPC-Web request headers (x-grpc-web, grpc-timeout, content-type). That combination lets any site call the service from a visitor''s browser. Reported at low: it is a policy statement, not a call — no RPC is sent. Read-only OPTIONS probe.'
+    research_ref: ch03#23
+    proof: L1
+    cwe: CWE-942
+    target_kinds:
+    - url
+    estimated_requests: 3
+    requires_active_checks: true
+  - module: M3
+    name: websocket-origin-null
+    version: '1.0'
+    title: WebSocket upgrade accepted for the null origin
+    description: 'Attempts the RFC 6455 upgrade with the literal null origin — what a sandboxed iframe or a data: URL sends — and reports a server that completes it. Accepting null means the origin check is absent or treats the least trustworthy value on the wire as trusted. The handshake is abandoned immediately: no frame is sent. Read-only GET upgrade probe.'
+    research_ref: ch03#33
+    proof: L1
+    cwe: CWE-1385
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: websocket-origin-sibling
+    version: '1.0'
+    title: WebSocket upgrade accepted for a sibling subdomain
+    description: 'Attempts the RFC 6455 upgrade with an origin on a *sibling* subdomain of the target''s own host and reports a server that completes it. A deployment that trusts every host under a domain trusts every other tenant, staging instance and abandoned subdomain under it too. The handshake is abandoned immediately: no frame is sent. Read-only GET upgrade probe.'
+    research_ref: ch03#33
+    proof: L1
+    cwe: CWE-1385
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: websocket-origin-suffix-spoof
+    version: '1.0'
+    title: WebSocket upgrade accepted for a suffix-spoofed origin
+    description: 'Attempts the RFC 6455 upgrade with an origin whose host merely *ends with* the target''s own host — the shape an origin check written with a suffix or substring test accepts — and reports a server that completes it. The attacker''s own domain is the suffix, so every visitor to that domain is a cross-site WebSocket hijacking vector. The handshake is abandoned immediately: no frame is sent. Read-only GET upgrade probe.'
+    research_ref: ch03#33
+    proof: L1
+    cwe: CWE-1385
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: netlify-function-endpoint
+    version: '1.0'
+    title: Netlify function endpoint reachable without authentication
+    description: Reports when a Netlify function route answers an anonymous request and the answer carries Netlify's own invocation header (x-nf-request-id), which is how the platform marks a response it produced by running the deploy's function. A function invoked without authentication is an entry point into the deployment's own code. Read-only GET probe.
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: vercel-function-endpoint
+    version: '1.0'
+    title: Vercel function route reachable without authentication
+    description: Reports when a function route on a Vercel deployment (/api/...) answers an anonymous request and carries Vercel's own platform header (x-vercel-id), which is what marks a response the platform produced. The finding names the route and the status; a production deployment whose function requires authorization answers a challenge and is not reported. Read-only GET probe.
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: gcf-function-endpoint
+    version: '1.0'
+    title: Serverless function invoked without authentication
+    description: Reports when an endpoint answers an anonymous request with a header the function runtime itself sets per invocation (function-execution-id, which Cloud Functions attaches to the response it produced), so the answer is the function's own output rather than a static page. A function that runs for an unauthenticated caller is an entry point into the deployment's code. Read-only GET probe.
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: openfaas-gateway-exposed
+    version: '1.0'
+    title: OpenFaaS gateway function inventory exposed
+    description: 'Reports when the OpenFaaS gateway answers an anonymous request for its function inventory: the JSON array names each deployed function and the image it runs. An unauthenticated gateway is both an inventory of the deployment and an invocation path for every function in it. The finding names the functions, never a value. Read-only GET probe.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: edge-function-sourcemap
+    version: '1.0'
+    title: Edge function bundle source map published
+    description: 'Reports when a source map beside a deployed JavaScript bundle answers an anonymous request with a real map document (version 3 and a non-empty sources list). A source map reverses the bundler''s work: the function''s original source, its module structure and often its comments are readable from it, and bundles built for the edge commonly ship one by default. The check names the map and the sources count, never the declarations in it. Read-only GET probe.'
+    research_ref: ch03#31
+    proof: L1
+    cwe: CWE-540
+    target_kinds:
+    - url
+    estimated_requests: 4
+  - module: M3
+    name: cors-subdomain-trust
+    version: '1.0'
+    title: CORS policy reflects a sibling subdomain
+    description: Sends a simple cross-origin request whose Origin is a sibling subdomain of the target's own host and reports a policy that reflects it back. Reflecting any host under the deployment's domain is the trust decision that turns one weak subdomain into cross-origin read access to this one. The probe is one read-only GET; no credential is sent and nothing is read from the answer beyond the policy headers.
+    research_ref: ch03#23
+    proof: L1
+    cwe: CWE-942
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: cors-suffix-spoof
+    version: '1.0'
+    title: CORS policy accepts a suffix-spoofed origin
+    description: Sends a simple cross-origin request whose Origin host merely *ends with* the target's own host (the target's host, a dot, then the attacker's domain) and reports a policy that reflects it. That answer is the fingerprint of an origin check written with a suffix or substring test, which any attacker can satisfy with a domain of their own. The probe is one read-only GET; no credential is sent.
+    research_ref: ch03#23
+    proof: L1
+    cwe: CWE-942
+    target_kinds:
+    - url
+    estimated_requests: 3
+  - module: M3
+    name: cors-preflight-methods
+    version: '1.0'
+    title: CORS preflight authorizes state-changing methods
+    description: 'Sends the CORS preflight a browser would send before a state-changing call and reports a policy that reflects an arbitrary origin *and* lists a write verb — PUT, PATCH or DELETE, or a wildcard — among the methods it authorizes. The policy is what decides whether any site may drive those verbs from a visitor''s browser. Reported at low: it is a policy statement, and no state-changing request is ever sent. Read-only OPTIONS probe.'
+    research_ref: ch03#23
+    proof: L1
+    cwe: CWE-942
+    target_kinds:
+    - url
+    estimated_requests: 3
+    requires_active_checks: true
+  - module: M3
+    name: cors-preflight-headers
+    version: '1.0'
+    title: CORS preflight authorizes arbitrary request headers
+    description: 'Sends the CORS preflight a browser would send to attach an authorization header and reports a policy that reflects an arbitrary origin *and* answers with a wildcard header list (or names authorization explicitly). Together the two let any site attach a caller''s own credentials to a cross-origin request. Reported at low: it is a policy statement, and no credential is sent. Read-only OPTIONS probe.'
+    research_ref: ch03#23
+    proof: L1
+    cwe: CWE-942
+    target_kinds:
+    - url
+    estimated_requests: 3
+    requires_active_checks: true
