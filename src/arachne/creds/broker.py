@@ -29,12 +29,14 @@ from arachne.core.audit import AuditAction, Auditor, AuditOutcome
 from arachne.core.errors import CredentialError, CredentialScopeError
 from arachne.core.logging import get_logger
 from arachne.core.vault import (
+    AWS_CREDENTIAL_KINDS,
     CLOUD_CREDENTIAL_KINDS,
     WEB_CREDENTIAL_KINDS,
     CredentialHandle,
     CredentialStore,
     release_seam,
 )
+from arachne.creds.aws import sign_request
 from arachne.creds.session import (
     DEFAULT_PASSWORD_FIELDS,
     DEFAULT_USER_FIELDS,
@@ -479,6 +481,55 @@ class CredentialBroker:
             "GET",
             url,
             headers=request_headers,
+            follow_redirects=False,
+        )
+
+    async def authorized_aws(
+        self,
+        client: Any,
+        *,
+        url: str,
+        method: str,
+        service: str,
+        region: str,
+        payload: bytes = b"",
+        headers: Mapping[str, str] | None = None,
+    ) -> Any:
+        """One read-only AWS API call signed with a vault-supplied ``aws-role``, or ``None``.
+
+        This is the SigV4 counterpart of :meth:`authorized_get`. The check names the operation
+        (a target URL built from the read-only operation table, its method, the service and the
+        region); the broker selects an ``aws-role`` credential scoped to that URL — the same
+        scope check and the same ``credential.released`` audit record as every other release —
+        reads the material, derives the signing key, signs this one request and drops
+        everything. The client captures a redacted exchange, so the check sees the response
+        without ever seeing the access key or the secret.
+
+        ``None`` has the same meaning as in ``authorized_get``: no credential was selected,
+        held, scoped to this URL, or released. The refusal is already audited, so a check
+        reports a skip rather than inventing an unsigned result — the posture of an account is
+        never claimed from an unauthenticated read.
+        """
+        handle = self.handle_for(AWS_CREDENTIAL_KINDS, url=url)
+        if handle is None:
+            return None
+        material = handle.material(release_seam())
+        signed = sign_request(
+            method=method,
+            url=url,
+            service=service,
+            region=region,
+            access_key=material.username_value,
+            secret_key=material.secret_value(),
+            session_token=material.extra_value("session_token") or None,
+            payload=payload,
+            headers=headers,
+        )
+        return await client.request(
+            method,
+            url,
+            headers=signed,
+            content=payload or None,
             follow_redirects=False,
         )
 

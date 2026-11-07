@@ -729,6 +729,17 @@ class M5Settings:
     posture_max_resources: int = 200
     posture_max_bytes: int = 1_048_576
     posture_token: SecretStr | None = None
+    #: The AWS region the read-only posture checks sign their requests for (WP-31,
+    #: REQ-DET-024). SigV4 signs the region into the credential scope, so a request signed for
+    #: the wrong region is refused by the service rather than silently misread. The checks name
+    #: no endpoint of their own: they read the ``aws-posture:<base>`` reference the operator
+    #: declared and sign for this region. ``us-east-1`` is AWS's own default region.
+    aws_region: str = "us-east-1"
+    #: How many resources one AWS posture check enumerates before it stops (a bucket list or
+    #: an instance list must not turn one check into an account dump). The public-bucket
+    #: pitfall is the reason: a finding is established from the first page, so the bound is
+    #: deliberate and raising it costs rate budget rather than accuracy.
+    aws_max_resources: int = 5
 
     def __post_init__(self) -> None:
         for label, value in (
@@ -739,6 +750,7 @@ class M5Settings:
             ("max_repo_files", self.max_repo_files),
             ("posture_max_resources", self.posture_max_resources),
             ("posture_max_bytes", self.posture_max_bytes),
+            ("aws_max_resources", self.aws_max_resources),
             ("image_max_layers", self.image_max_layers),
             ("image_max_layer_bytes", self.image_max_layer_bytes),
             ("image_max_unpacked_bytes", self.image_max_unpacked_bytes),
@@ -2765,6 +2777,8 @@ class Settings:
                 posture_max_resources=_env_int(source, "ARACHNE_M5_POSTURE_MAX_RESOURCES", 200),
                 posture_max_bytes=_env_int(source, "ARACHNE_M5_POSTURE_MAX_BYTES", 1_048_576),
                 posture_token=_env_secret(source, "ARACHNE_M5_POSTURE_TOKEN"),
+                aws_region=_env_str(source, "ARACHNE_M5_AWS_REGION") or "us-east-1",
+                aws_max_resources=_env_int(source, "ARACHNE_M5_AWS_MAX_RESOURCES", 5),
             ),
             m5_probes=_env_str(source, "ARACHNE_M5_PROBES") or None,
             m6=M6Settings(

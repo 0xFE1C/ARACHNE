@@ -66,6 +66,13 @@ controls:
       - m4.podman-api-exposed
       - m4.registry-catalog-exposed
       - m4.registry-dashboard-exposed
+      - m5.aws-iam-role-public-trust
+      - m5.aws-iam-user-wildcard-policy
+      - m5.aws-kms-key-policy-public
+      - m5.aws-lambda-policy-public
+      - m5.aws-lambda-url-auth-none
+      - m5.aws-sns-topic-public
+      - m5.aws-sqs-policy-public
       - m5.iam-review
   - id: "A.5.16"
     title: "Identity management"
@@ -90,6 +97,9 @@ controls:
       - m4.key-exposure
       - m4.package-manager-credential-exposed
       - m4.registry-auth-exposed
+      - m5.aws-iam-password-policy-weak
+      - m5.aws-iam-root-access-key
+      - m5.aws-iam-root-mfa-disabled
       - m5.gcp-sa-keys
       - m5.image-history-secrets
       - m5.leaked-cloud-keys
@@ -99,6 +109,8 @@ controls:
       - m3.idor-oracle
       - m4.dashboard-exposure
       - m4.unauth-api-audit
+      - m5.aws-iam-role-public-trust
+      - m5.aws-iam-user-wildcard-policy
       - m5.iam-review
   - id: "A.5.19"
     title: "Information security in supplier relationships"
@@ -119,6 +131,8 @@ controls:
   - id: "A.5.23"
     title: "Information security for use of cloud services"
     checks:
+      - m5.aws-s3-public-acl
+      - m5.aws-s3-public-policy
       - m5.bucket-enumerator
       - m5.firebase-rules
       - m5.iam-review
@@ -184,6 +198,7 @@ controls:
       - m4.registry-catalog-exposed
       - m4.registry-dashboard-exposed
       - m4.unauth-api-audit
+      - m5.aws-iam-root-access-key
       - m5.iam-review
   - id: "A.8.3"
     title: "Information access restriction"
@@ -191,6 +206,11 @@ controls:
       - m3.idor-oracle
       - m4.bucket-exposure
       - m4.unauth-api-audit
+      - m5.aws-account-public-access-block-missing
+      - m5.aws-lambda-url-auth-none
+      - m5.aws-s3-public-access-block-missing
+      - m5.aws-s3-public-acl
+      - m5.aws-s3-public-policy
       - m5.firebase-rules
       - m5.supabase-rls
   - id: "A.8.4"
@@ -215,6 +235,7 @@ controls:
       - m3.saml-audit
       - m3.session-logout
       - m4.default-credentials
+      - m5.aws-iam-root-mfa-disabled
   - id: "A.8.6"
     title: "Capacity management"
     checks:
@@ -228,6 +249,7 @@ controls:
     title: "Management of technical vulnerabilities"
     checks:
       - m2.cve-correlate
+      - m5.aws-ecr-scan-on-push-disabled
       - m6.cve-epss-correlation
       - m6.exploit-match
       - m6.template-scan
@@ -322,11 +344,16 @@ controls:
     title: "Information backup"
     checks:
       - m4.backup-file-hunt
+      - m5.aws-s3-versioning-disabled
       - m5.managed-datastores
   - id: "A.8.15"
     title: "Logging"
     checks:
       - m3.auth-session-audit
+      - m5.aws-cloudtrail-logging-disabled
+      - m5.aws-cloudtrail-not-multiregion
+      - m5.aws-eks-audit-logging-off
+      - m5.aws-s3-logging-disabled
   - id: "A.8.16"
     title: "Monitoring activities"
     checks:
@@ -350,6 +377,11 @@ controls:
       - m2.ftp-anonymous
       - m2.legacy-services
       - m4.tls-config-review
+      - m5.aws-ec2-imdsv1-allowed
+      - m5.aws-ec2-security-group-open-rdp
+      - m5.aws-ec2-security-group-open-ssh
+      - m5.aws-eks-public-endpoint
+      - m5.aws-rds-publicly-accessible
   - id: "A.8.21"
     title: "Security of network services"
     checks:
@@ -361,6 +393,8 @@ controls:
     title: "Segregation of networks"
     checks:
       - m4.staging-exposure
+      - m5.aws-ec2-security-group-open-rdp
+      - m5.aws-ec2-security-group-open-ssh
       - m5.docker-socket
       - m5.k8s-exposure
   - id: "A.8.24"
@@ -369,6 +403,13 @@ controls:
       - m2.tls-deep-scan
       - m3.jwt-audit
       - m4.tls-config-review
+      - m5.aws-account-ebs-encryption-off
+      - m5.aws-ec2-ebs-unencrypted
+      - m5.aws-ecr-repository-public
+      - m5.aws-kms-key-policy-public
+      - m5.aws-kms-rotation-disabled
+      - m5.aws-rds-unencrypted
+      - m5.aws-s3-unencrypted
   - id: "A.8.25"
     title: "Secure development life cycle"
     checks:
@@ -415,6 +456,7 @@ controls:
       - m4.dockerfile-exposed
       - m4.registry-catalog-exposed
       - m4.terraform-lock-exposed
+      - m5.aws-ecr-scan-on-push-disabled
   - id: "A.8.29"
     title: "Security testing in development and acceptance"
     checks:

@@ -2676,6 +2676,36 @@ entries:
       - "https://cwe.mitre.org/data/definitions/524.html"
       - "https://owasp.org/www-community/attacks/Web_Cache_Deception"
 
+  - id: aws-root-single-factor
+    cwe: CWE-308
+    checks: [m5.aws-iam-root-mfa-disabled]
+    summary: "Enrol a hardware or virtual MFA device on the AWS account root user and stop using the root identity for everyday work."
+    steps:
+      - "1. Register at least one MFA device on the root user (a hardware token for the strongest posture)."
+      - "2. Create the administrative roles the workload actually needs and stop signing in as root."
+      - "3. Remove any root API access keys and confirm the account summary reports AccountMFAEnabled=1 and AccountAccessKeysPresent=0."
+    verify:
+      - "1. Sign in as root from a fresh browser; the console must demand the second factor."
+      - "2. Re-read GetAccountSummary and confirm both root fields are in the hardened state."
+    references:
+      - "https://cwe.mitre.org/data/definitions/308.html"
+      - "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html"
+
+  - id: aws-kms-key-rotation
+    cwe: CWE-320
+    checks: [m5.aws-kms-rotation-disabled]
+    summary: "Enable automatic key rotation on customer-managed KMS keys, or re-wrap the data under a new key on a schedule the account can evidence."
+    steps:
+      - "1. Enable key rotation for each customer-managed symmetric key (kms:EnableKeyRotation is a state change an operator makes, not a scan)."
+      - "2. Where rotation cannot be enabled, record the re-wrap/re-encrypt schedule and the owner against the key."
+      - "3. Keep AWS-managed keys out of the finding set: their rotation is the service's decision."
+    verify:
+      - "1. Read GetKeyRotationStatus for the key and confirm KeyRotationEnabled=true."
+      - "2. Re-run the posture check and confirm the key is no longer reported."
+    references:
+      - "https://cwe.mitre.org/data/definitions/320.html"
+      - "https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html"
+
 # ----------------------------------------------------------------- fallback
 default:
   id: default-generic

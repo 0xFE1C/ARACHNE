@@ -264,10 +264,10 @@ a browser engine inside the scanner is a new attack surface and the operator opt
 
 | What | Result |
 |---|---|
-| Tests | **5,709** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Tests | **5,753** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
 | Primary safety suite | **59 tests** in `tests/test_safety.py`; **340** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol, mobile and API/modern-web fixtures with planted false-positive traps |
-| Strict type checking | clean under `mypy --strict` across the **440** Python modules in `src/` |
+| Strict type checking | clean under `mypy --strict` across the **442** Python modules in `src/` |
 | Lint | clean over the whole repository (the badge's scope is the tree, not `src/` and `tests/`) |
 | Research coverage | **148/175 (84.6%)** of the corpus's numbered methods have an implementing check |
 

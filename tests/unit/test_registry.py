@@ -113,8 +113,11 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # files, the machine-readable directory indexes, the Docker/Podman version endpoints, the
     # Kubernetes Dashboard, kubelet, registry catalogue and registry dashboards, the ActiveMQ,
     # NATS, EMQX, RocketMQ, Kafka UI and Pulsar consoles, and the three header/cookie/caching
-    # defaults checks, all default-on read-only L1 reads -> 329.
-    assert len(registry.checks()) == 329
+    # defaults checks, all default-on read-only L1 reads -> 329. WP-31 adds the AWS read-only
+    # service posture family (REQ-DET-024) — thirty-one credential-gated L1 reads across S3,
+    # IAM, EC2 and instance metadata, RDS, EKS, Lambda, CloudTrail, KMS, SQS/SNS, ECR and the
+    # account-level defaults -> 360.
+    assert len(registry.checks()) == 360
     # M1's code-secret-mining, M2's SNMP and ICS checks, M4's metadata-ssrf and
     # default-credentials checks, M3's ssrf-probe, M5's imds-ssrf / azure-mi-audit and
     # M6's deception-listeners / ad-attack-path, S13's m1.bucket-hunt, S15's six
@@ -137,7 +140,9 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # OPTIONS-preflight checks (the gRPC-Web preflight and the two CORS preflight readings) are
     # active for the same reason m3.wp-cron-surface is -> 103. WP-29's twenty-four
     # infrastructure-artifact checks are all plain GETs, so the active count does not move.
-    assert registry.totals()["active_checks"] == 103
+    # WP-30's twenty-four server checks are plain GETs too. WP-31's thirty-one AWS posture
+    # checks are all active (they make a credentialed API read) -> 134.
+    assert registry.totals()["active_checks"] == 134
     # S15: the six L2+ declarations are exactly the proof ladder's opt-in rows. S29 adds one
     # more: m3.client-secret-verify, the L2 dynamic verification of a client-side credential.
     assert registry.totals()["proof_l2plus"] == 7
@@ -260,7 +265,7 @@ def test_a_plugin_extends_an_existing_module(monkeypatch) -> None:  # type: igno
     registry = ModuleRegistry.discover()
     assert registry.module_ids() == ("M1", "M2", "M3", "M4", "M5", "M6")
     # The shipped set (329 at WP-30) plus the plugin's one extra check.
-    assert len(registry.checks()) == 330
+    assert len(registry.checks()) == 361
     assert registry.group("M1").origin == "builtin+extra"  # type: ignore[union-attr]
 
 

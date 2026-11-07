@@ -102,10 +102,65 @@ CLOUD_PROVIDER_MATRIX: tuple[CloudProviderEntry, ...] = (
             "m5.iam-review",
             "m5.cloud-posture",
             "m5.leaked-cloud-keys",
+            # WP-31 (REQ-DET-024): the read-only service posture family.
+            "m5.aws-s3-public-acl",
+            "m5.aws-s3-public-policy",
+            "m5.aws-s3-public-access-block-missing",
+            "m5.aws-s3-unencrypted",
+            "m5.aws-s3-versioning-disabled",
+            "m5.aws-s3-logging-disabled",
+            "m5.aws-iam-root-mfa-disabled",
+            "m5.aws-iam-root-access-key",
+            "m5.aws-iam-password-policy-weak",
+            "m5.aws-iam-user-wildcard-policy",
+            "m5.aws-iam-role-public-trust",
+            "m5.aws-ec2-imdsv1-allowed",
+            "m5.aws-ec2-security-group-open-ssh",
+            "m5.aws-ec2-security-group-open-rdp",
+            "m5.aws-ec2-ebs-unencrypted",
+            "m5.aws-rds-publicly-accessible",
+            "m5.aws-rds-unencrypted",
+            "m5.aws-eks-public-endpoint",
+            "m5.aws-eks-audit-logging-off",
+            "m5.aws-lambda-policy-public",
+            "m5.aws-lambda-url-auth-none",
+            "m5.aws-cloudtrail-not-multiregion",
+            "m5.aws-cloudtrail-logging-disabled",
+            "m5.aws-kms-key-policy-public",
+            "m5.aws-kms-rotation-disabled",
+            "m5.aws-sqs-policy-public",
+            "m5.aws-sns-topic-public",
+            "m5.aws-ecr-repository-public",
+            "m5.aws-ecr-scan-on-push-disabled",
+            "m5.aws-account-public-access-block-missing",
+            "m5.aws-account-ebs-encryption-off",
         ),
         reason=(
             "Public storage, IAM policy, a declared read-only config snapshot and "
-            "credential artifacts are covered by the existing read-only checks."
+            "credential artifacts are covered by the existing read-only checks. WP-31 adds "
+            "the read-only service posture family (S3, IAM, EC2 and instance metadata, RDS, "
+            "EKS, Lambda, CloudTrail, KMS, SQS/SNS, ECR and the account-level defaults); its "
+            "closed operation allowlist is "
+            "``arachne.modules.m5.aws_posture.AWS_READ_OPERATIONS``, whose GET half is "
+            "declared here and whose other half is the two JSON-RPC ``POST`` reads KMS and "
+            "ECR only expose (both read-verb actions, both refused by ``AwsReadOperation`` "
+            "if they are not). No create, modify or delete call is representable."
+        ),
+        operations=(
+            ("GET", "/s3/"),
+            ("GET", "/s3/{bucket}"),
+            ("GET", "/s3control/v20180820/configuration/publicAccessBlock"),
+            ("GET", "/iam/"),
+            ("GET", "/ec2/"),
+            ("GET", "/rds/"),
+            ("GET", "/eks/clusters"),
+            ("GET", "/eks/clusters/{cluster}"),
+            ("GET", "/lambda/2015-03-31/functions/"),
+            ("GET", "/lambda/2015-03-31/functions/{function}/policy"),
+            ("GET", "/lambda/2021-10-31/functions/{function}/url"),
+            ("GET", "/cloudtrail/"),
+            ("GET", "/sqs/"),
+            ("GET", "/sns/"),
         ),
     ),
     CloudProviderEntry(

@@ -283,6 +283,8 @@ a shared cache may store. Four properties matter when you read one of these find
 | `ARACHNE_M5_MAX_PATHS` | `40` | Per-check probe cap. |
 | `ARACHNE_M5_MAX_FINDINGS` | `8` | Per-check finding cap. |
 | `ARACHNE_M5_MAX_BUCKET_NAMES` | `8` | Bucket-name candidates from one domain. |
+| `ARACHNE_M5_AWS_REGION` | `us-east-1` | Region the AWS read-only posture checks sign their requests for. |
+| `ARACHNE_M5_AWS_MAX_RESOURCES` | `5` | How many resources one AWS posture check enumerates before it stops. |
 | `ARACHNE_M5_IMDS_PROBE` | `false` | Allow `m5.imds-ssrf` to send the metadata GET. |
 | `ARACHNE_M5_VALIDATE_CLOUD_KEYS` | `false` | Allow read-only validation call for a found cloud key. |
 | `ARACHNE_M5_IMAGE_SCAN` | `true` | Native container-image scanning: resolve the manifest, fetch the layers in scope, unpack into a temporary directory and match advisories. No external tool. |
@@ -2236,6 +2238,27 @@ authorization and proof gates as any other scan, and the hard rules hold: **read
 against cloud control planes, no enforcement action by default**.
 
 ### 32.1 Continuous cloud-config schedules (REQ-POSTURE-001)
+
+### AWS read-only service posture (REQ-DET-024)
+
+The `m5.aws-*` family audits an AWS account's own read APIs and reports the defaults that
+decide what is reachable from outside it. Declare the API base the operator's
+least-privilege read-only role is scoped to as a cloud target, and store the role's static
+credential in the vault as an `aws-role` entry (access key id in `--username`, the secret in
+the secret, an optional STS session token as `extra.session_token`):
+
+```
+arachne vault put aws-read-only --kind aws-role --username AKIA... --host api.example.invalid
+arachne scan --target aws-posture:https://api.example.invalid --credential aws-read-only
+```
+
+Every call is signed with SigV4 for `ARACHNE_M5_AWS_REGION` by the credential broker, one
+request per release, so no check ever sees the key. The module's operation allowlist
+(`arachne.modules.m5.aws_posture.AWS_READ_OPERATIONS`) is a closed set of read actions: no
+create, modify or delete call is representable, and the only `POST` entries are the two
+JSON-RPC services whose *read* API is `POST` (KMS and ECR). With no credential selected the
+family skips and sends nothing; with one that the API refuses it skips rather than reporting a
+clean account.
 
 `m5.cloud-posture` reads a cloud-config **state snapshot** with one bounded read-only
 GET. The canonical input is the normalized export

@@ -30,6 +30,13 @@ controls:
       - m2.legacy-services
       - m2.port-scan
       - m2.rdp-vnc-detect
+      - m5.aws-account-public-access-block-missing
+      - m5.aws-ec2-imdsv1-allowed
+      - m5.aws-ec2-security-group-open-rdp
+      - m5.aws-ec2-security-group-open-ssh
+      - m5.aws-eks-public-endpoint
+      - m5.aws-rds-publicly-accessible
+      - m5.aws-s3-public-access-block-missing
   - id: "2"
     title: "Apply Secure Configurations to All System Components"
     checks:
@@ -46,6 +53,17 @@ controls:
       - m4.backup-file-hunt
       - m4.bucket-exposure
       - m4.datastore-surface
+      - m5.aws-account-ebs-encryption-off
+      - m5.aws-ec2-ebs-unencrypted
+      - m5.aws-ecr-repository-public
+      - m5.aws-kms-key-policy-public
+      - m5.aws-kms-rotation-disabled
+      - m5.aws-rds-unencrypted
+      - m5.aws-s3-public-acl
+      - m5.aws-s3-public-policy
+      - m5.aws-s3-unencrypted
+      - m5.aws-sns-topic-public
+      - m5.aws-sqs-policy-public
       - m5.firebase-rules
       - m5.managed-datastores
       - m5.supabase-rls
@@ -93,6 +111,7 @@ controls:
       - m3.xss-oracle
       - m3.xxe-oracle
       - m4.cacheable-session-response
+      - m5.aws-ecr-scan-on-push-disabled
       - m5.dep-confusion
       - m5.sbom-review
   - id: "7"
@@ -111,6 +130,11 @@ controls:
       - m4.podman-api-exposed
       - m4.registry-dashboard-exposed
       - m4.unauth-api-audit
+      - m5.aws-iam-role-public-trust
+      - m5.aws-iam-root-access-key
+      - m5.aws-iam-user-wildcard-policy
+      - m5.aws-lambda-policy-public
+      - m5.aws-lambda-url-auth-none
       - m5.iam-review
   - id: "8"
     title: "Identify Users and Authenticate Access to System Components"
@@ -124,10 +148,16 @@ controls:
       - m3.session-logout
       - m4.default-credentials
       - m4.user-enumeration
+      - m5.aws-iam-password-policy-weak
+      - m5.aws-iam-root-mfa-disabled
   - id: "10"
     title: "Log and Monitor All Access to System Components and Cardholder Data"
     checks:
       - m3.auth-session-audit
+      - m5.aws-cloudtrail-logging-disabled
+      - m5.aws-cloudtrail-not-multiregion
+      - m5.aws-eks-audit-logging-off
+      - m5.aws-s3-logging-disabled
       - m6.sigma-hunt-rules
   - id: "11"
     title: "Test Security of Systems and Networks Regularly"

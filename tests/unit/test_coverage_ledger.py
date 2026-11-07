@@ -261,6 +261,43 @@ WP30_IDS: frozenset[str] = frozenset(
     }
 )
 
+#: WP-31's AWS read-only service posture family (REQ-DET-024); excluded for the same reason.
+WP31_IDS: frozenset[str] = frozenset(
+    {
+        "m5.aws-account-ebs-encryption-off",
+        "m5.aws-account-public-access-block-missing",
+        "m5.aws-cloudtrail-logging-disabled",
+        "m5.aws-cloudtrail-not-multiregion",
+        "m5.aws-ec2-ebs-unencrypted",
+        "m5.aws-ec2-imdsv1-allowed",
+        "m5.aws-ec2-security-group-open-rdp",
+        "m5.aws-ec2-security-group-open-ssh",
+        "m5.aws-ecr-repository-public",
+        "m5.aws-ecr-scan-on-push-disabled",
+        "m5.aws-eks-audit-logging-off",
+        "m5.aws-eks-public-endpoint",
+        "m5.aws-iam-password-policy-weak",
+        "m5.aws-iam-role-public-trust",
+        "m5.aws-iam-root-access-key",
+        "m5.aws-iam-root-mfa-disabled",
+        "m5.aws-iam-user-wildcard-policy",
+        "m5.aws-kms-key-policy-public",
+        "m5.aws-kms-rotation-disabled",
+        "m5.aws-lambda-policy-public",
+        "m5.aws-lambda-url-auth-none",
+        "m5.aws-rds-publicly-accessible",
+        "m5.aws-rds-unencrypted",
+        "m5.aws-s3-logging-disabled",
+        "m5.aws-s3-public-access-block-missing",
+        "m5.aws-s3-public-acl",
+        "m5.aws-s3-public-policy",
+        "m5.aws-s3-unencrypted",
+        "m5.aws-s3-versioning-disabled",
+        "m5.aws-sns-topic-public",
+        "m5.aws-sqs-policy-public",
+    }
+)
+
 
 @pytest.fixture(scope="module")
 def registry() -> ModuleRegistry:
@@ -332,6 +369,7 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     wp28 = {record.id for record in ledger.records if record.id in WP28_IDS}
     wp29 = {record.id for record in ledger.records if record.id in WP29_IDS}
     wp30 = {record.id for record in ledger.records if record.id in WP30_IDS}
+    wp31 = {record.id for record in ledger.records if record.id in WP31_IDS}
     assert (
         len(
             ids
@@ -348,6 +386,7 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
             - wp28
             - wp29
             - wp30
+            - wp31
         )
         == 152
     )
@@ -363,6 +402,7 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     assert len(wp28) == 24
     assert len(wp29) == 24
     assert len(wp30) == 24
+    assert len(wp31) == 31
 
 
 # ------------------------------------------------------------------ REQ-DET-003 WSTG

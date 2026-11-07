@@ -5,8 +5,8 @@
 # registry disagree, which is what makes 'generated, not maintained' enforceable.
 #
 # CIS Controls v8.1 — 153 safeguards.
-# Assessed: 64 safeguard(s) reached by at least one check (target 60 of 153).
-# Outside the assessed set: 89 safeguard(s), each named below with a
+# Assessed: 65 safeguard(s) reached by at least one check (target 60 of 153).
+# Outside the assessed set: 88 safeguard(s), each named below with a
 # reason — an unmapped control is reported, never omitted.
 #
 # Source: CIS Critical Security Controls v8.1, OSCAL catalog published by the Center for Internet Security: https://bitbucket.org/cis-it-workspace/cis-controls-v8.1_oscal/src/main/src/catalogs/json/cis-controls-v8.1_catalog.json (catalog metadata version 8.1.2, last-modified 2025-04-09)
@@ -47,23 +47,32 @@ controls:
     checks:
       - m2.os-fingerprint
       - m2.service-fingerprint
+      - m5.aws-account-ebs-encryption-off
+      - m5.aws-ec2-ebs-unencrypted
       - m5.image-scan
   - id: "2.2"
     title: "Ensure Authorized Software is Currently Supported"
     checks:
       - m2.cve-correlate
       - m2.legacy-services
+      - m5.aws-rds-unencrypted
       - m5.image-scan
   - id: "2.6"
     title: "Allowlist Authorized Libraries"
     checks:
       - m5.dep-confusion
       - m5.sbom-review
+  - id: "3.1"
+    title: "Establish and Maintain a Data Management Process"
+    checks:
+      - m5.aws-cloudtrail-logging-disabled
+      - m5.aws-cloudtrail-not-multiregion
   - id: "3.2"
     title: "Establish and Maintain a Data Inventory"
     checks:
       - m4.bucket-exposure
       - m4.datastore-surface
+      - m5.aws-s3-versioning-disabled
       - m5.managed-datastores
   - id: "3.3"
     title: "Configure Data Access Control Lists"
@@ -77,6 +86,11 @@ controls:
       - m3.idor-oracle
       - m4.bucket-exposure
       - m4.cors-config-review
+      - m5.aws-account-public-access-block-missing
+      - m5.aws-kms-key-policy-public
+      - m5.aws-s3-public-access-block-missing
+      - m5.aws-s3-public-acl
+      - m5.aws-s3-public-policy
       - m5.bucket-enumerator
       - m5.firebase-rules
       - m5.managed-datastores
@@ -86,10 +100,14 @@ controls:
     checks:
       - m2.tls-deep-scan
       - m4.tls-config-review
+      - m5.aws-eks-audit-logging-off
+      - m5.aws-s3-logging-disabled
   - id: "3.11"
     title: "Encrypt Sensitive Data at Rest"
     checks:
       - m4.datastore-surface
+      - m5.aws-kms-rotation-disabled
+      - m5.aws-s3-unencrypted
       - m5.firebase-rules
       - m5.managed-datastores
   - id: "4.1"
@@ -99,6 +117,10 @@ controls:
       - m4.cors-config-review
       - m4.security-header-review
       - m4.tls-config-review
+      - m5.aws-ec2-security-group-open-rdp
+      - m5.aws-ec2-security-group-open-ssh
+      - m5.aws-eks-public-endpoint
+      - m5.aws-rds-publicly-accessible
       - m5.k8s-exposure
       - m5.tfstate-exposure
   - id: "4.2"
@@ -107,6 +129,8 @@ controls:
       - m2.legacy-services
       - m2.smtp-transport
       - m2.tls-deep-scan
+      - m5.aws-ec2-security-group-open-rdp
+      - m5.aws-ec2-security-group-open-ssh
       - m5.k8s-exposure
   - id: "4.6"
     title: "Securely Manage Enterprise Assets and Software"
@@ -145,6 +169,14 @@ controls:
       - m2.kerberos-enum
       - m2.ldap-enum
       - m4.user-enumeration
+      - m5.aws-ecr-repository-public
+      - m5.aws-iam-password-policy-weak
+      - m5.aws-iam-role-public-trust
+      - m5.aws-iam-user-wildcard-policy
+      - m5.aws-lambda-policy-public
+      - m5.aws-lambda-url-auth-none
+      - m5.aws-sns-topic-public
+      - m5.aws-sqs-policy-public
       - m5.iam-review
   - id: "5.2"
     title: "Use Unique Passwords"
@@ -156,6 +188,7 @@ controls:
       - m4.docker-api-exposed
       - m4.key-exposure
       - m4.podman-api-exposed
+      - m5.aws-iam-password-policy-weak
   - id: "5.3"
     title: "Disable Dormant Accounts"
     checks:
@@ -170,6 +203,8 @@ controls:
       - m4.dashboard-exposure
       - m4.kubelet-readonly-exposed
       - m4.kubernetes-dashboard-exposed
+      - m5.aws-iam-root-access-key
+      - m5.aws-iam-root-mfa-disabled
       - m5.iam-review
   - id: "5.5"
     title: "Establish and Maintain an Inventory of Service Accounts"
@@ -198,6 +233,7 @@ controls:
       - m4.broker-console-exposed
       - m4.dashboard-exposure
       - m4.registry-dashboard-exposed
+      - m5.aws-iam-root-mfa-disabled
       - m5.k8s-exposure
   - id: "6.6"
     title: "Establish and Maintain an Inventory of Authentication and Authorization Systems"
@@ -431,10 +467,12 @@ controls:
       - m3.race-oracle
       - m3.ssrf-probe
       - m4.metadata-ssrf
+      - m5.aws-ec2-imdsv1-allowed
       - m5.imds-ssrf
   - id: "16.11"
     title: "Leverage Vetted Modules or Services for Application Security Components"
     checks:
+      - m5.aws-ecr-scan-on-push-disabled
       - m5.dep-confusion
       - m5.sbom-review
       - m5.supabase-rls
@@ -500,9 +538,6 @@ outside_assessed_set:
   - id: "2.7"
     title: "Allowlist Authorized Scripts"
     reason: "a software-inventory or allowlisting process, not a technical artefact a network scan produces"
-  - id: "3.1"
-    title: "Establish and Maintain a Data Management Process"
-    reason: "a data-governance process (classification, retention, disposal or loss prevention): the process leaves no artefact a scan can observe"
   - id: "3.4"
     title: "Enforce Data Retention"
     reason: "a data-governance process (classification, retention, disposal or loss prevention): the process leaves no artefact a scan can observe"

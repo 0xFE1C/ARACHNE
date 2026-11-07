@@ -29,7 +29,7 @@
 # disagree, so a plan can never describe a check differently from the code that runs it.
 # S4 adds the M2 rows the registry implements; M3-M6 below are still *planned* only and the
 # plan marks them `implemented: false`.
-catalog_version: "1.18"
+catalog_version: "1.19"
 checks:
   # ---------------------------------------------------------------- M1 recon & attack surface
   # Implemented in S3 (arachne/modules/m1/). The rows below are generated from the check
@@ -3943,3 +3943,375 @@ checks:
     target_kinds:
     - url
     estimated_requests: 0
+  - module: M5
+    name: aws-s3-public-acl
+    version: '1.0'
+    title: S3 bucket grants public access through its ACL
+    description: 'Lists the account''s buckets and reads each bucket ACL, then reports one whose grants name AllUsers or AuthenticatedUsers — the canned ACLs that make the objects readable (or writable) by anyone. The finding carries the grantee and the permission it was given. Read-only: ListBuckets and GetBucketAcl.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-732
+    target_kinds:
+    - cloud
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: aws-s3-public-policy
+    version: '1.0'
+    title: S3 bucket policy allows any principal
+    description: 'Reads each bucket''s policy and reports one whose Allow statement names Principal ''*'' with no condition restricting the audience. A policy whose wildcard principal is constrained by a source VPC, IP range, account or organisation condition is not reported. Read-only: ListBuckets and GetBucketPolicy.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-732
+    target_kinds:
+    - cloud
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: aws-s3-public-access-block-missing
+    version: '1.0'
+    title: S3 bucket has no complete public access block
+    description: 'Reads each bucket''s PublicAccessBlockConfiguration and reports one that is absent or leaves any of the four switches off. The block is the account''s own guard against a future public ACL or policy, so an incomplete one is the finding even while today''s bucket happens to be private. Read-only: ListBuckets and GetBucketPublicAccessBlock.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-16
+    target_kinds:
+    - cloud
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: aws-s3-unencrypted
+    version: '1.0'
+    title: S3 bucket has no default server-side encryption
+    description: 'Reads each bucket''s encryption configuration and reports one that declares no default rule, so objects written without an explicit encryption header land in the bucket unencrypted. Read-only: ListBuckets and GetBucketEncryption.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-311
+    target_kinds:
+    - cloud
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: aws-s3-versioning-disabled
+    version: '1.0'
+    title: S3 bucket versioning is not enabled
+    description: 'Reads each bucket''s versioning status and reports one whose Status is not Enabled — either suspended or never configured. Without versioning an overwrite or a ransomware encryption pass is unrecoverable, and the bucket cannot serve as the evidence of what was there before. Read-only: ListBuckets and GetBucketVersioning.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-16
+    target_kinds:
+    - cloud
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: aws-s3-logging-disabled
+    version: '1.0'
+    title: S3 bucket has no server access logging
+    description: 'Reads each bucket''s logging configuration and reports one with no LoggingEnabled block: no record of who read or wrote the objects exists to investigate. Read-only: ListBuckets and GetBucketLogging.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-778
+    target_kinds:
+    - cloud
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: aws-iam-root-mfa-disabled
+    version: '1.0'
+    title: AWS account root user has no MFA device
+    description: 'Reads the account summary and reports AccountMFAEnabled=0: the root identity, which cannot be scoped by policy, can be used with a password alone. Read-only: GetAccountSummary.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-308
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: aws-iam-root-access-key
+    version: '1.0'
+    title: AWS account root user has an active access key
+    description: 'Reads the account summary and reports AccountAccessKeysPresent=1: a long-lived access key exists on the root identity, which no IAM policy can restrict. Read-only: GetAccountSummary.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-798
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: aws-iam-password-policy-weak
+    version: '1.0'
+    title: IAM account password policy is absent or weaker than 14 characters
+    description: 'Reads the account password policy and reports its absence (the AWS default of six characters applies) or a MinimumPasswordLength below 14. Read-only: GetAccountPasswordPolicy.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-521
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: aws-iam-user-wildcard-policy
+    version: '1.0'
+    title: IAM policy grants every action on every resource
+    description: 'Reads the account authorization details and reports each user or role policy whose Allow statement grants Action ''*'' on Resource ''*''. That is the privilege-escalation ceiling this review exists to find. Read-only: GetAccountAuthorizationDetails.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-269
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: aws-iam-role-public-trust
+    version: '1.0'
+    title: IAM role trust policy allows any principal
+    description: 'Reads the account authorization details and reports each role whose AssumeRolePolicyDocument names Principal ''*'' with no condition: the role can be assumed from outside the account. Read-only: GetAccountAuthorizationDetails.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: aws-ec2-imdsv1-allowed
+    version: '1.0'
+    title: EC2 instance metadata service allows IMDSv1
+    description: 'Reads the account''s instances and reports each whose MetadataOptions does not require IMDSv2 tokens. IMDSv1 answers a plain GET, so any server-side request forgery on the instance can read its role credentials. Read-only: DescribeInstances.'
+    research_ref: ch05#4
+    proof: L1
+    cwe: CWE-918
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: aws-ec2-security-group-open-ssh
+    version: '1.0'
+    title: EC2 security group allows SSH from the internet
+    description: 'Reads the account''s security groups and reports each inbound rule that admits port 22 from 0.0.0.0/0 or ::/0. Read-only: DescribeSecurityGroups.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: aws-ec2-security-group-open-rdp
+    version: '1.0'
+    title: EC2 security group allows RDP from the internet
+    description: 'Reads the account''s security groups and reports each inbound rule that admits port 3389 from 0.0.0.0/0 or ::/0. Read-only: DescribeSecurityGroups.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: aws-ec2-ebs-unencrypted
+    version: '1.0'
+    title: EBS volume is not encrypted
+    description: 'Reads the account''s EBS volumes and reports each whose Encrypted flag is false: the volume''s data at rest is readable by anyone who obtains the snapshot. Read-only: DescribeVolumes.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-311
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: aws-rds-publicly-accessible
+    version: '1.0'
+    title: RDS instance is publicly accessible
+    description: 'Reads the account''s database instances and reports each with PubliclyAccessible true: the endpoint resolves to a public address, so reachability is a security-group question rather than a network one. Read-only: DescribeDBInstances.'
+    research_ref: ch05#20
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: aws-rds-unencrypted
+    version: '1.0'
+    title: RDS instance storage is not encrypted
+    description: 'Reads the account''s database instances and reports each with StorageEncrypted false: the instance''s storage and its automated snapshots are readable wherever the snapshot is copied. Read-only: DescribeDBInstances.'
+    research_ref: ch05#20
+    proof: L1
+    cwe: CWE-311
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: aws-eks-public-endpoint
+    version: '1.0'
+    title: EKS cluster endpoint is public to the internet
+    description: 'Lists the account''s clusters and reads each cluster''s VPC configuration, reporting one whose endpoint is public with 0.0.0.0/0 among its allowed CIDRs: the Kubernetes API server answers the internet, gated only by authentication. Read-only: ListClusters and DescribeCluster.'
+    research_ref: ch05#13
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: aws-eks-audit-logging-off
+    version: '1.0'
+    title: EKS cluster control-plane audit logging is disabled
+    description: 'Lists the account''s clusters and reads each cluster''s logging configuration, reporting one that does not enable the audit log type. Without it the API server''s own record of who did what to the cluster does not exist. Read-only: ListClusters and DescribeCluster.'
+    research_ref: ch05#13
+    proof: L1
+    cwe: CWE-778
+    target_kinds:
+    - cloud
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: aws-lambda-policy-public
+    version: '1.0'
+    title: Lambda function policy allows any principal
+    description: 'Lists the account''s functions and reads each function''s resource policy, reporting one whose Allow statement names Principal ''*'' with no source ARN, account or VPC condition: the function can be invoked from outside the account. Read-only: ListFunctions and GetPolicy.'
+    research_ref: ch05#9
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: aws-lambda-url-auth-none
+    version: '1.0'
+    title: Lambda function URL requires no authentication
+    description: 'Lists the account''s functions and reads each function URL configuration, reporting one whose AuthType is NONE: the function is callable by anyone who knows the URL. Read-only: ListFunctions and GetFunctionUrlConfig.'
+    research_ref: ch05#9
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - cloud
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: aws-cloudtrail-not-multiregion
+    version: '1.0'
+    title: CloudTrail trail is not multi-region
+    description: 'Reads the account''s trails and reports each whose IsMultiRegionTrail is false: activity in the other regions is not recorded by that trail. Read-only: DescribeTrails.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-778
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: aws-cloudtrail-logging-disabled
+    version: '1.0'
+    title: CloudTrail trail has logging stopped
+    description: 'Reads the account''s trails and each trail''s status, reporting one whose IsLogging is false: the trail exists but records nothing. Read-only: DescribeTrails and GetTrailStatus.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-778
+    target_kinds:
+    - cloud
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: aws-kms-key-policy-public
+    version: '1.0'
+    title: KMS key policy allows any principal
+    description: 'Lists the account''s keys and reads each key policy, reporting one whose Allow statement names Principal ''*'' with no condition: the key''s data can be decrypted by an unauthorized principal that is granted kms:Decrypt elsewhere. Read-only: ListKeys and GetKeyPolicy (JSON-RPC reads).'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 11
+    requires_active_checks: true
+  - module: M5
+    name: aws-kms-rotation-disabled
+    version: '1.0'
+    title: Customer-managed KMS key has automatic rotation disabled
+    description: 'Lists the account''s keys, keeps the customer-managed symmetric keys and reads each one''s rotation status, reporting a key with KeyRotationEnabled false: the same key material protects the data indefinitely. AWS-managed keys are skipped, because their rotation is the service''s decision and not the account''s. Read-only: ListKeys, DescribeKey and GetKeyRotationStatus.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-320
+    target_kinds:
+    - cloud
+    estimated_requests: 11
+    requires_active_checks: true
+  - module: M5
+    name: aws-sqs-policy-public
+    version: '1.0'
+    title: SQS queue policy allows any principal
+    description: 'Lists the account''s queues and reads each queue''s policy attribute, reporting one whose Allow statement names Principal ''*'' with no condition: any AWS principal can send to (and, with the matching action, receive from) the queue. Read-only: ListQueues and GetQueueAttributes.'
+    research_ref: ch05#21
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: aws-sns-topic-public
+    version: '1.0'
+    title: SNS topic policy allows any principal
+    description: 'Lists the account''s topics and reads each topic''s policy attribute, reporting one whose Allow statement names Principal ''*'' with no condition: any AWS principal can publish to the topic and reach every subscriber. Read-only: ListTopics and GetTopicAttributes.'
+    research_ref: ch05#21
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 6
+    requires_active_checks: true
+  - module: M5
+    name: aws-ecr-repository-public
+    version: '1.0'
+    title: ECR repository policy allows any principal
+    description: 'Lists the account''s repositories and reads each repository policy, reporting one whose Allow statement names Principal ''*'' with no condition: the images can be pulled (or pushed) from outside the account. Read-only: DescribeRepositories and GetRepositoryPolicy (JSON-RPC reads).'
+    research_ref: ch05#15
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 11
+    requires_active_checks: true
+  - module: M5
+    name: aws-ecr-scan-on-push-disabled
+    version: '1.0'
+    title: ECR repository does not scan images on push
+    description: 'Reads the account''s repositories and reports each whose imageScanningConfiguration leaves scanOnPush off: a vulnerable base image reaches the registry without the registry''s own advisory check. Read-only: DescribeRepositories.'
+    research_ref: ch05#15
+    proof: L1
+    cwe: CWE-1104
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: aws-account-public-access-block-missing
+    version: '1.0'
+    title: AWS account has no complete S3 public access block
+    description: 'Reads the account-level PublicAccessBlockConfiguration and reports it missing or incomplete. This is the default that decides whether *any* bucket in the account can be made public, present or future, so an absent one is the finding even when every current bucket is private. Read-only: GetPublicAccessBlock (S3 Control).'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-16
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: aws-account-ebs-encryption-off
+    version: '1.0'
+    title: AWS account does not enable EBS encryption by default
+    description: 'Reads the account''s EBS encryption default and reports EbsEncryptionByDefault=false: every new volume created without an explicit encryption argument — every volume in every launch template, ASG and AMI-based instance — is unencrypted. This is the account-level default that decides whether the EC2 checks find anything to report. Read-only: GetEbsEncryptionByDefault.'
+    research_ref: ch05#1
+    proof: L1
+    cwe: CWE-311
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true

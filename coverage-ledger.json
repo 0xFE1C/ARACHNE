@@ -2,7 +2,7 @@
   "ledger_version": "1.0",
   "generated_at": "2026-11-07",
   "registry_version": "registry-1.0",
-  "registry_digest": "sha256:47fa8df030f602a64264efb5c6f10e38e990fa5b28d67e85f1933ca04ab2d961",
+  "registry_digest": "sha256:ae282b6132b815a38eac99a48a332fba9f96c7b33035b58d3c833cbe322562d6",
   "framework_versions": {
     "WSTG": "4.2",
     "API": "2023",
@@ -13,7 +13,7 @@
   },
   "last_verified_note": "last_verified is the date the corpus was last exercised by the test suite: the ledger is regenerated after a full suite run, and every registered check is run by it. A per-check date arrives with the verification-record store (REQ-PROOF-*). It is committed content, not a wall-clock read, so --check is byte-stable.",
   "totals": {
-    "checks": 329,
+    "checks": 360,
     "cwe_only_checks": 0
   },
   "wstg": {
@@ -220,6 +220,16 @@
           "m2.nfs-enum",
           "m3.authenticated-surface",
           "m4.dashboard-exposure",
+          "m5.aws-ec2-security-group-open-rdp",
+          "m5.aws-ec2-security-group-open-ssh",
+          "m5.aws-ecr-repository-public",
+          "m5.aws-eks-public-endpoint",
+          "m5.aws-iam-role-public-trust",
+          "m5.aws-kms-key-policy-public",
+          "m5.aws-lambda-policy-public",
+          "m5.aws-rds-publicly-accessible",
+          "m5.aws-sns-topic-public",
+          "m5.aws-sqs-policy-public",
           "m5.firebase-rules",
           "m5.serverless-functions",
           "m5.supabase-rls"
@@ -354,6 +364,7 @@
           "m4.registry-catalog-exposed",
           "m4.registry-dashboard-exposed",
           "m4.unauth-api-audit",
+          "m5.aws-lambda-url-auth-none",
           "m5.docker-socket",
           "m5.k8s-exposure",
           "m6.agentic-rogue-runtime",
@@ -368,6 +379,7 @@
         "checks": [
           "m3.ssrf-probe",
           "m4.metadata-ssrf",
+          "m5.aws-ec2-imdsv1-allowed",
           "m5.azure-mi-audit",
           "m5.imds-ssrf",
           "m6.mcp-oauth-metadata"
@@ -5381,6 +5393,502 @@
       "cwe": "CWE-16"
     },
     {
+      "id": "m5.aws-s3-public-acl",
+      "module": "M5",
+      "title": "S3 bucket grants public access through its ACL",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-11",
+        "API8:2023",
+        "CWE-732"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-732"
+    },
+    {
+      "id": "m5.aws-s3-public-policy",
+      "module": "M5",
+      "title": "S3 bucket policy allows any principal",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-11",
+        "API8:2023",
+        "CWE-732"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-732"
+    },
+    {
+      "id": "m5.aws-s3-public-access-block-missing",
+      "module": "M5",
+      "title": "S3 bucket has no complete public access block",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-11",
+        "API8:2023",
+        "CWE-16"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-16"
+    },
+    {
+      "id": "m5.aws-s3-unencrypted",
+      "module": "M5",
+      "title": "S3 bucket has no default server-side encryption",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-11",
+        "API8:2023",
+        "CWE-311"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-311"
+    },
+    {
+      "id": "m5.aws-s3-versioning-disabled",
+      "module": "M5",
+      "title": "S3 bucket versioning is not enabled",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-11",
+        "API8:2023",
+        "CWE-16"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-16"
+    },
+    {
+      "id": "m5.aws-s3-logging-disabled",
+      "module": "M5",
+      "title": "S3 bucket has no server access logging",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-11",
+        "API8:2023",
+        "CWE-778"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-778"
+    },
+    {
+      "id": "m5.aws-iam-root-mfa-disabled",
+      "module": "M5",
+      "title": "AWS account root user has no MFA device",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-ATHN-04",
+        "API2:2023",
+        "CWE-308"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-308"
+    },
+    {
+      "id": "m5.aws-iam-root-access-key",
+      "module": "M5",
+      "title": "AWS account root user has an active access key",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-ATHN-04",
+        "API2:2023",
+        "CWE-798"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-798"
+    },
+    {
+      "id": "m5.aws-iam-password-policy-weak",
+      "module": "M5",
+      "title": "IAM account password policy is absent or weaker than 14 characters",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-ATHN-01",
+        "API2:2023",
+        "CWE-521"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-521"
+    },
+    {
+      "id": "m5.aws-iam-user-wildcard-policy",
+      "module": "M5",
+      "title": "IAM policy grants every action on every resource",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-ATHZ-03",
+        "API5:2023",
+        "CWE-269"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-269"
+    },
+    {
+      "id": "m5.aws-iam-role-public-trust",
+      "module": "M5",
+      "title": "IAM role trust policy allows any principal",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-ATHZ-03",
+        "API5:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.aws-ec2-imdsv1-allowed",
+      "module": "M5",
+      "title": "EC2 instance metadata service allows IMDSv1",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API7:2023",
+        "CWE-918"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-918"
+    },
+    {
+      "id": "m5.aws-ec2-security-group-open-ssh",
+      "module": "M5",
+      "title": "EC2 security group allows SSH from the internet",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.aws-ec2-security-group-open-rdp",
+      "module": "M5",
+      "title": "EC2 security group allows RDP from the internet",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.aws-ec2-ebs-unencrypted",
+      "module": "M5",
+      "title": "EBS volume is not encrypted",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-311"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-311"
+    },
+    {
+      "id": "m5.aws-rds-publicly-accessible",
+      "module": "M5",
+      "title": "RDS instance is publicly accessible",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.aws-rds-unencrypted",
+      "module": "M5",
+      "title": "RDS instance storage is not encrypted",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-311"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-311"
+    },
+    {
+      "id": "m5.aws-eks-public-endpoint",
+      "module": "M5",
+      "title": "EKS cluster endpoint is public to the internet",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.aws-eks-audit-logging-off",
+      "module": "M5",
+      "title": "EKS cluster control-plane audit logging is disabled",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-778"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-778"
+    },
+    {
+      "id": "m5.aws-lambda-policy-public",
+      "module": "M5",
+      "title": "Lambda function policy allows any principal",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-ATHZ-03",
+        "API5:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.aws-lambda-url-auth-none",
+      "module": "M5",
+      "title": "Lambda function URL requires no authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-ATHN-01",
+        "API2:2023",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m5.aws-cloudtrail-not-multiregion",
+      "module": "M5",
+      "title": "CloudTrail trail is not multi-region",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-778"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-778"
+    },
+    {
+      "id": "m5.aws-cloudtrail-logging-disabled",
+      "module": "M5",
+      "title": "CloudTrail trail has logging stopped",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-778"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-778"
+    },
+    {
+      "id": "m5.aws-kms-key-policy-public",
+      "module": "M5",
+      "title": "KMS key policy allows any principal",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-ATHZ-03",
+        "API5:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.aws-kms-rotation-disabled",
+      "module": "M5",
+      "title": "Customer-managed KMS key has automatic rotation disabled",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-320"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-320"
+    },
+    {
+      "id": "m5.aws-sqs-policy-public",
+      "module": "M5",
+      "title": "SQS queue policy allows any principal",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-ATHZ-03",
+        "API5:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.aws-sns-topic-public",
+      "module": "M5",
+      "title": "SNS topic policy allows any principal",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-ATHZ-03",
+        "API5:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.aws-ecr-repository-public",
+      "module": "M5",
+      "title": "ECR repository policy allows any principal",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-ATHZ-03",
+        "API5:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.aws-ecr-scan-on-push-disabled",
+      "module": "M5",
+      "title": "ECR repository does not scan images on push",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-1104"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-1104"
+    },
+    {
+      "id": "m5.aws-account-public-access-block-missing",
+      "module": "M5",
+      "title": "AWS account has no complete S3 public access block",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-11",
+        "API8:2023",
+        "CWE-16"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-16"
+    },
+    {
+      "id": "m5.aws-account-ebs-encryption-off",
+      "module": "M5",
+      "title": "AWS account does not enable EBS encryption by default",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-311"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-311"
+    },
+    {
       "id": "m5.bucket-enumerator",
       "module": "M5",
       "title": "Public cloud storage bucket enumerable",
@@ -6184,6 +6692,19 @@
         "m4.nginx-config-file-exposed",
         "m4.nginx-default-page",
         "m4.staging-exposure",
+        "m5.aws-account-ebs-encryption-off",
+        "m5.aws-cloudtrail-logging-disabled",
+        "m5.aws-cloudtrail-not-multiregion",
+        "m5.aws-ec2-ebs-unencrypted",
+        "m5.aws-ec2-imdsv1-allowed",
+        "m5.aws-ec2-security-group-open-rdp",
+        "m5.aws-ec2-security-group-open-ssh",
+        "m5.aws-ecr-scan-on-push-disabled",
+        "m5.aws-eks-audit-logging-off",
+        "m5.aws-eks-public-endpoint",
+        "m5.aws-kms-rotation-disabled",
+        "m5.aws-rds-publicly-accessible",
+        "m5.aws-rds-unencrypted",
         "m5.cicd-audit",
         "m5.cloud-posture",
         "m5.dep-confusion",
@@ -6390,6 +6911,13 @@
       "checks": [
         "m1.bucket-hunt",
         "m4.bucket-exposure",
+        "m5.aws-account-public-access-block-missing",
+        "m5.aws-s3-logging-disabled",
+        "m5.aws-s3-public-access-block-missing",
+        "m5.aws-s3-public-acl",
+        "m5.aws-s3-public-policy",
+        "m5.aws-s3-unencrypted",
+        "m5.aws-s3-versioning-disabled",
         "m5.bucket-enumerator",
         "m5.firebase-rules",
         "m5.supabase-rls"
@@ -6453,7 +6981,9 @@
       "title": "Testing for Credentials Transported over an Encrypted Channel",
       "checks": [
         "m3.auth-session-audit",
-        "m4.tls-config-review"
+        "m4.tls-config-review",
+        "m5.aws-iam-password-policy-weak",
+        "m5.aws-lambda-url-auth-none"
       ]
     },
     {
@@ -6483,6 +7013,8 @@
         "m3.saml-audit",
         "m3.wp-app-password-surface",
         "m3.wp-rest-app-passwords",
+        "m5.aws-iam-root-access-key",
+        "m5.aws-iam-root-mfa-disabled",
         "m6.agentic-memory-store"
       ]
     },
@@ -6553,6 +7085,13 @@
       "title": "Testing for Privilege Escalation",
       "checks": [
         "m2.adcs-enum",
+        "m5.aws-ecr-repository-public",
+        "m5.aws-iam-role-public-trust",
+        "m5.aws-iam-user-wildcard-policy",
+        "m5.aws-kms-key-policy-public",
+        "m5.aws-lambda-policy-public",
+        "m5.aws-sns-topic-public",
+        "m5.aws-sqs-policy-public",
         "m5.iam-review",
         "m6.ad-attack-path",
         "m6.lpe-discovery"
@@ -7097,10 +7636,98 @@
           "m5.bucket-enumerator",
           "m5.iam-review",
           "m5.cloud-posture",
-          "m5.leaked-cloud-keys"
+          "m5.leaked-cloud-keys",
+          "m5.aws-s3-public-acl",
+          "m5.aws-s3-public-policy",
+          "m5.aws-s3-public-access-block-missing",
+          "m5.aws-s3-unencrypted",
+          "m5.aws-s3-versioning-disabled",
+          "m5.aws-s3-logging-disabled",
+          "m5.aws-iam-root-mfa-disabled",
+          "m5.aws-iam-root-access-key",
+          "m5.aws-iam-password-policy-weak",
+          "m5.aws-iam-user-wildcard-policy",
+          "m5.aws-iam-role-public-trust",
+          "m5.aws-ec2-imdsv1-allowed",
+          "m5.aws-ec2-security-group-open-ssh",
+          "m5.aws-ec2-security-group-open-rdp",
+          "m5.aws-ec2-ebs-unencrypted",
+          "m5.aws-rds-publicly-accessible",
+          "m5.aws-rds-unencrypted",
+          "m5.aws-eks-public-endpoint",
+          "m5.aws-eks-audit-logging-off",
+          "m5.aws-lambda-policy-public",
+          "m5.aws-lambda-url-auth-none",
+          "m5.aws-cloudtrail-not-multiregion",
+          "m5.aws-cloudtrail-logging-disabled",
+          "m5.aws-kms-key-policy-public",
+          "m5.aws-kms-rotation-disabled",
+          "m5.aws-sqs-policy-public",
+          "m5.aws-sns-topic-public",
+          "m5.aws-ecr-repository-public",
+          "m5.aws-ecr-scan-on-push-disabled",
+          "m5.aws-account-public-access-block-missing",
+          "m5.aws-account-ebs-encryption-off"
         ],
-        "operations": [],
-        "reason": "Public storage, IAM policy, a declared read-only config snapshot and credential artifacts are covered by the existing read-only checks."
+        "operations": [
+          {
+            "method": "GET",
+            "path": "/s3/"
+          },
+          {
+            "method": "GET",
+            "path": "/s3/{bucket}"
+          },
+          {
+            "method": "GET",
+            "path": "/s3control/v20180820/configuration/publicAccessBlock"
+          },
+          {
+            "method": "GET",
+            "path": "/iam/"
+          },
+          {
+            "method": "GET",
+            "path": "/ec2/"
+          },
+          {
+            "method": "GET",
+            "path": "/rds/"
+          },
+          {
+            "method": "GET",
+            "path": "/eks/clusters"
+          },
+          {
+            "method": "GET",
+            "path": "/eks/clusters/{cluster}"
+          },
+          {
+            "method": "GET",
+            "path": "/lambda/2015-03-31/functions/"
+          },
+          {
+            "method": "GET",
+            "path": "/lambda/2015-03-31/functions/{function}/policy"
+          },
+          {
+            "method": "GET",
+            "path": "/lambda/2021-10-31/functions/{function}/url"
+          },
+          {
+            "method": "GET",
+            "path": "/cloudtrail/"
+          },
+          {
+            "method": "GET",
+            "path": "/sqs/"
+          },
+          {
+            "method": "GET",
+            "path": "/sns/"
+          }
+        ],
+        "reason": "Public storage, IAM policy, a declared read-only config snapshot and credential artifacts are covered by the existing read-only checks. WP-31 adds the read-only service posture family (S3, IAM, EC2 and instance metadata, RDS, EKS, Lambda, CloudTrail, KMS, SQS/SNS, ECR and the account-level defaults); its closed operation allowlist is ``arachne.modules.m5.aws_posture.AWS_READ_OPERATIONS``, whose GET half is declared here and whose other half is the two JSON-RPC ``POST`` reads KMS and ECR only expose (both read-verb actions, both refused by ``AwsReadOperation`` if they are not). No create, modify or delete call is representable."
       },
       {
         "provider": "azure",

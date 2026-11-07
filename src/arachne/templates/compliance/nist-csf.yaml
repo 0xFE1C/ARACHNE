@@ -57,6 +57,19 @@ controls:
       - m4.bucket-exposure
       - m4.cacheable-session-response
       - m4.datastore-surface
+      - m5.aws-account-ebs-encryption-off
+      - m5.aws-account-public-access-block-missing
+      - m5.aws-ec2-ebs-unencrypted
+      - m5.aws-ecr-repository-public
+      - m5.aws-kms-key-policy-public
+      - m5.aws-kms-rotation-disabled
+      - m5.aws-rds-unencrypted
+      - m5.aws-s3-public-access-block-missing
+      - m5.aws-s3-public-acl
+      - m5.aws-s3-public-policy
+      - m5.aws-s3-unencrypted
+      - m5.aws-sns-topic-public
+      - m5.aws-sqs-policy-public
       - m5.firebase-rules
       - m5.managed-datastores
       - m5.supabase-rls
@@ -66,6 +79,7 @@ controls:
       - m3.cors-audit
       - m3.ssrf-probe
       - m4.metadata-ssrf
+      - m5.aws-ec2-imdsv1-allowed
       - m5.imds-ssrf
   - id: "PR.PS-01"
     title: "Configuration management practices are established and applied"
@@ -74,11 +88,19 @@ controls:
       - m4.cors-config-review
       - m4.security-header-review
       - m4.tls-config-review
+      - m5.aws-ec2-security-group-open-rdp
+      - m5.aws-ec2-security-group-open-ssh
+      - m5.aws-eks-public-endpoint
+      - m5.aws-rds-publicly-accessible
       - m5.k8s-exposure
       - m5.tfstate-exposure
   - id: "DE.AE-02"
     title: "Potentially adverse events are analyzed to better understand associated activities"
     checks:
+      - m5.aws-cloudtrail-logging-disabled
+      - m5.aws-cloudtrail-not-multiregion
+      - m5.aws-eks-audit-logging-off
+      - m5.aws-s3-logging-disabled
       - m6.ad-attack-path
       - m6.sigma-hunt-rules
   - id: "ID.AM-02"
@@ -111,6 +133,7 @@ controls:
     title: "Cyber threat intelligence is received from information sharing forums and sources"
     checks:
       - m1.internetdb-triage
+      - m5.aws-ecr-scan-on-push-disabled
       - m6.cve-epss-correlation
   - id: "PR.AA-02"
     title: "Identities are proofed and bound to credentials based on the context of interactions"
@@ -122,6 +145,7 @@ controls:
     checks:
       - m2.tls-deep-scan
       - m4.tls-config-review
+      - m5.aws-s3-versioning-disabled
   - id: "PR.PS-02"
     title: "Software is maintained, replaced, and removed commensurate with risk"
     checks:
@@ -203,6 +227,13 @@ controls:
       - m4.dashboard-exposure
       - m4.kubernetes-dashboard-exposed
       - m4.unauth-api-audit
+      - m5.aws-iam-password-policy-weak
+      - m5.aws-iam-role-public-trust
+      - m5.aws-iam-root-access-key
+      - m5.aws-iam-root-mfa-disabled
+      - m5.aws-iam-user-wildcard-policy
+      - m5.aws-lambda-policy-public
+      - m5.aws-lambda-url-auth-none
       - m5.iam-review
   - id: "PR.PS-05"
     title: "Installation and execution of unauthorized software are prevented"

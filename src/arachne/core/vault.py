@@ -54,6 +54,7 @@ from arachne.core.safety import host_matches_glob, normalize_host, url_under_pre
 from arachne.core.secrets import decrypt_blob, encrypt_blob
 
 __all__ = [
+    "AWS_CREDENTIAL_KINDS",
     "CLOUD_CREDENTIAL_KINDS",
     "CREDENTIAL_KINDS",
     "SSH_AUTH_METHODS",
@@ -81,10 +82,12 @@ VAULT_MAGIC: Final = "ARACHNE-CV-1"
 #: drives a login flow, a protocol credential is offered to a raw-network check.
 #: ``ldap`` was added by WP-10 (REQ-DET-014): the AD CS enumeration binds to the directory with
 #: an operator-supplied credential. ``cloud-token`` was added by WP-12 (REQ-DET-017): the
-#: read-only DigitalOcean posture check spends a bearer token. Both are additive — the kind
-#: flows through the same scope check, the same single-release seam and the same audit record
-#: as the four before them.
-CredentialKind = Literal["web-form", "web-json", "ssh", "smb", "ldap", "cloud-token"]
+#: read-only DigitalOcean posture check spends a bearer token. ``aws-role`` was added by WP-31
+#: (REQ-DET-024): the AWS posture checks spend a least-privilege read-only role's static
+#: credential, which the broker uses to *sign* one request and never hands to a check. All
+#: three are additive — the kind flows through the same scope check, the same single-release
+#: seam and the same audit record as the four before them.
+CredentialKind = Literal["web-form", "web-json", "ssh", "smb", "ldap", "cloud-token", "aws-role"]
 CREDENTIAL_KINDS: Final[tuple[str, ...]] = (
     "web-form",
     "web-json",
@@ -92,6 +95,7 @@ CREDENTIAL_KINDS: Final[tuple[str, ...]] = (
     "smb",
     "ldap",
     "cloud-token",
+    "aws-role",
 )
 #: The kinds a web check may select (both are HTTP login flows; the difference is the body
 #: encoding, which the login spec may also override).
@@ -108,6 +112,13 @@ SSH_KEY_TYPES: Final[tuple[str, ...]] = ("ed25519",)
 #: (REQ-DET-017): the broker injects the bearer token into one request and hands the check
 #: the redacted exchange, so the material never crosses the module boundary.
 CLOUD_CREDENTIAL_KINDS: Final[tuple[str, ...]] = ("cloud-token",)
+
+#: The kinds an AWS read-only posture check may select. ``aws-role`` was added by WP-31
+#: (REQ-DET-024): the vault holds a least-privilege read-only role's static credential (the
+#: access key id in ``username``, the secret in ``secret`` and an optional session token in
+#: ``extra["session_token"]``) and the broker signs one request with it, so the material never
+#: crosses the module boundary.
+AWS_CREDENTIAL_KINDS: Final[tuple[str, ...]] = ("aws-role",)
 
 #: A vault is an operator's working set, not a credential database: cap it.
 MAX_ENTRIES: Final = 256

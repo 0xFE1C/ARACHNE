@@ -52,6 +52,7 @@ destructive: no object write, no image push, no account change, no alias claim.
 from __future__ import annotations
 
 from arachne.modules.base import Module
+from arachne.modules.m5.aws_posture import AWS_POSTURE_CHECKS
 from arachne.modules.m5.cloud import (
     AzureMiAudit,
     BucketEnumerator,
@@ -88,7 +89,9 @@ __all__ = ["M5", "M5_CHECKS"]
 
 #: Every M5 check, in run order: the read-only artifact reviews first (they cost nothing and
 #: make the default posture useful), then the endpoint probes, then the two opt-in metadata
-#: checks last.
+#: checks last. The AWS read-only posture family (WP-31, REQ-DET-024) runs with the cloud
+#: checks: each member is credential-gated and only ever applies to an ``aws-posture:``
+#: reference, so the family is inert unless an operator declares one.
 M5_CHECKS: tuple[type[Module], ...] = (
     LeakedCloudKeys,
     GcpSaKeys,
@@ -101,6 +104,7 @@ M5_CHECKS: tuple[type[Module], ...] = (
     TfstateExposure,
     ImageScan,
     DigitalOceanPosture,
+    *AWS_POSTURE_CHECKS,
     BucketEnumerator,
     FirebaseRules,
     SupabaseRls,
@@ -125,10 +129,12 @@ M5 = ModuleGroup(
         "Terraform state and IaC misconfiguration, anonymous kubelet/dashboard/Docker/registry "
         "endpoints, secrets in images and pipelines, dependency-confusion candidates, "
         "known-vulnerable components, IAM over-privilege, the cloud metadata services "
-        "reachable through an SSRF sink, and the continuous cloud-config posture/drift watch. "
+        "reachable through an SSRF sink, the continuous cloud-config posture/drift watch, and "
+        "the AWS read-only service posture family (S3, IAM, EC2 and metadata, RDS, EKS, Lambda, "
+        "CloudTrail, KMS, SQS/SNS, ECR and the account-level defaults). "
         "Read-only throughout; repo/pipeline analysis runs on local clones only."
     ),
-    version="1.1.0",
+    version="1.2.0",
     research_chapter="ch05",
     checks=M5_CHECKS,
 )
