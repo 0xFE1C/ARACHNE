@@ -97,6 +97,16 @@ Security = "https://github.com/0xFE1C/ARACHNE/security/advisories/new"
 [tool.hatch.build.targets.wheel]
 packages = ["src/arachne"]
 
+# The schema, not only the code. `arachne db upgrade` reads `alembic.ini` and `migrations/`
+# from the project root, so a wheel without them installs a package whose database cannot be
+# initialised — `pip install arachne` followed by `arachne db upgrade` would fail with
+# Alembic's advice to run its own `init`. The container image copies both explicitly; carrying
+# them inside the package makes the wheel a complete artefact too, and `_find_project_root`
+# looks in the package before it falls back to the working directory.
+[tool.hatch.build.targets.wheel.force-include]
+"migrations" = "arachne/_scaffold/migrations"
+"alembic.ini" = "arachne/_scaffold/alembic.ini"
+
 [tool.hatch.build.targets.sdist]
 # `only-include`, not `include`: hatchling's `include` *adds* to its own defaults, so the
 # surface it names is a floor, not a ceiling. Measured before this was written — with

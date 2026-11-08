@@ -35,7 +35,7 @@ __all__ = ["reason_app"]
 
 reason_app = typer.Typer(
     name="reason",
-    help="Agentic reasoning: the journal, offline replay and the operator kill switch (S21).",
+    help="Agentic reasoning: the journal, offline replay and the operator kill switch.",
     no_args_is_help=True,
 )
 
@@ -65,7 +65,7 @@ def reason_status(
     scan: Annotated[int, typer.Argument(help="Scan id to read the journal of.")],
     as_json: Annotated[bool, typer.Option("--json", help="Emit the journal document.")] = False,
 ) -> None:
-    """Show what the agent proposed, what it decided, and what it refused (REQ-AGENT-002)."""
+    """Show what the agent proposed, what it decided, and what it refused."""
     journal = _journal_of(scan)
     if as_json:
         typer.echo(json.dumps(journal.to_dict(), indent=2))
@@ -106,7 +106,7 @@ def reason_replay(
         bool, typer.Option("--json", help="Emit the replay report as JSON.")
     ] = False,
 ) -> None:
-    """Re-derive a run from its journal, offline (REQ-AGENT-002). Exits non-zero if it fails."""
+    """Re-derive a run from its journal, offline. Exits non-zero if it fails."""
     if path is None and scan is None:
         raise ArachneError("give a scan id or --file")
     if path is not None:
@@ -167,7 +167,7 @@ def reason_pause(
         bool, typer.Option("--all", help="Apply to every scan of this deployment.")
     ] = False,
 ) -> None:
-    """Pause agentic expansion between two hypotheses, leaving a resumable scan (REQ-AGENT-007)."""
+    """Pause agentic expansion between two hypotheses, leaving a resumable scan."""
     _directive(scan, every, "pause")
 
 
@@ -178,7 +178,7 @@ def reason_abort(
         bool, typer.Option("--all", help="Apply to every scan of this deployment.")
     ] = False,
 ) -> None:
-    """Abort agentic expansion between two hypotheses, leaving a resumable scan (REQ-AGENT-007)."""
+    """Abort agentic expansion between two hypotheses, leaving a resumable scan."""
     _directive(scan, every, "abort")
 
 

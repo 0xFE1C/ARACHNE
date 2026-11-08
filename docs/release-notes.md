@@ -109,7 +109,7 @@ a browser engine inside the scanner is a new attack surface and the operator opt
 - A **parity suite** proves both engines reach the same finding set on the ground-truth
   fixtures, so a report cannot tell which engine ran except through its provenance field.
 
-**AI provenance and evaluation — the "how do you know?" layer (WP-15)**
+**AI provenance and evaluation — the "how do you know?" layer**
 
 - **Every AI contribution is traceable, and AI changes are gateable.** Each analysis row persists
   a provenance record — origin (`ai`/`heuristic`), provider, model, prompt-template hash, prompt
@@ -154,7 +154,7 @@ a browser engine inside the scanner is a new attack surface and the operator opt
   edited, deleted, reordered or truncated trail, and verifies signed rows and per-scan seals.
 - **Every finding carries its verification record.** The proof level, the method, the
   observations, a reproducibility token, when it was verified and which version of the check did
-  it — required by report schema 1.12 (WP-13, REQ-PROOF-015). A finding reported without one is
+  it — required by report schema 1.12 (REQ-PROOF-015). A finding reported without one is
   forced to `info` and marked `unverified`. `arachne verify-finding <id>` re-runs that finding's
   own check against the same asset and reports `still-verified` / `no-longer-verified` /
   `inconclusive` / `refused`, re-checking scope **and** attestation before any request and never
@@ -168,22 +168,21 @@ a browser engine inside the scanner is a new attack surface and the operator opt
   change it authorized — asset, action, before-value *hash*, restore outcome, timestamp — with
   the verdict: zero residue, or the unrestored list and its repair instructions. It is signed
   with the deployment key when one is configured and **marked unsigned** when not, its hash is
-  linked into the audit chain, and a scan with residue is not reported as clean (WP-14,
-  REQ-PROOF-017).
+  linked into the audit chain, and a scan with residue is not reported as clean (REQ-PROOF-017).
 - **Evidence has a chain of custody.** Every stored blob's content hash is recorded in the audit
   chain as it is captured, and `arachne verify-chain` reports `evidence.mismatch` — naming the
   evidence id — when a stored payload is edited behind the store's back, and a deletion for a
-  blob whose scan still exists (WP-14, REQ-PROOF-018).
+  blob whose scan still exists (REQ-PROOF-018).
 - **Out-of-band callbacks are authenticated per scan.** A callback token carries an
   authenticator derived from the deployment key, single use is enforced with a bounded replay
   window, and callbacks for a scan that is not active or whose attestation has expired are
-  refused and audited (WP-14, REQ-PROOF-019).
+  refused and audited (REQ-PROOF-019).
 - **PII retention is implemented, not just documented.** `ARACHNE_PII_RETENTION_DAYS` is
   consumed by the retention pruner: a dry run reports counts by category without changing
   anything, the applied run masks older inline evidence under the project's policy and audits
   one event per blob, and a blob it cannot mask (an offloaded object) is reported explicitly.
   Re-masked rows are re-signed and their scans re-sealed, so `verify-chain` stays green
-  (WP-14, REQ-DATA-005).
+  (REQ-DATA-005).
 
 **Operation**
 
@@ -213,7 +212,7 @@ a browser engine inside the scanner is a new attack surface and the operator opt
 - Reports as **Markdown, HTML, JSON, PDF and SARIF**, with executive summary, OWASP mapping,
   evidence appendix and a diff against the previous scan.
 
-**Trust, compliance and detection validation (WP-19)**
+**Trust, compliance and detection validation**
 
 - **Ed25519 alongside HMAC.** A deployment can sign its audit chain, row signatures and seals
   with an asymmetric key (`ARACHNE_INTEGRITY_ALGORITHM=ed25519`), and an auditor who holds
@@ -264,7 +263,7 @@ a browser engine inside the scanner is a new attack surface and the operator opt
 
 | What | Result |
 |---|---|
-| Tests | **5,925** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Tests | **5,927** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
 | Primary safety suite | **59 tests** in `tests/test_safety.py`; **340** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol, mobile and API/modern-web fixtures with planted false-positive traps |
 | Strict type checking | clean under `mypy --strict` across the **450** Python modules in `src/` |
@@ -334,7 +333,7 @@ discover. Each is a candidate for a future release.
     project's policy and **reports** a payload that was offloaded to an object store
     (`pii.remask_unsupported`, with the reason in the plan) instead of rewriting the blob:
     rewriting would mint a new content-addressed key and orphan the old object, and reference
-    counting is the data-lifecycle package's (REQ-DATA-006, WP-21). A deployment with
+    counting is the data-lifecycle package's (REQ-DATA-006). A deployment with
     `ARACHNE_EVIDENCE_BACKEND` set therefore has a partial privacy control — and the largest
     payloads, where PII is most likely, are the ones it reports rather than rewrites.
 11. **`arachne coverage` reports 148 of 175 methods (84.6%) mapped.** The remaining 27 are
@@ -352,7 +351,7 @@ discover. Each is a candidate for a future release.
 15. **15 registered checks are not referenced by id in the test suite** (M4, M5 and M6
     clusters), so a regression in them could go unnoticed.
 
-**AI provenance and evaluation (WP-15) — what the new evidence does and does not cover**
+**AI provenance and evaluation — what the new evidence does and does not cover**
 
 19. **The evaluation suite measures the pipeline's information fidelity, not a model's
     quality.** It runs a *scripted* provider that answers from the rendered prompt, so a score
@@ -375,7 +374,7 @@ discover. Each is a candidate for a future release.
     because a hypothesis is a proposal, not an analysis of a finding; the citation requirement
     applies to the five stages that produce analysis content.
 
-**Trust, compliance and detection validation (WP-19) — the limits of the new evidence**
+**Trust, compliance and detection validation — the limits of the new evidence**
 
 23. **PCI DSS requirement 9 is assessed by no check, and the map says so.** Eleven of the
     twelve requirements are reachable (REQ-TRUST-009 asks for twelve); requirement 9 restricts

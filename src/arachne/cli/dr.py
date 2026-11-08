@@ -45,7 +45,7 @@ __all__ = ["dr_app"]
 
 dr_app = typer.Typer(
     name="dr",
-    help="Disaster recovery: backup, restore and the HA status view (S25, REQ-RESIL-005).",
+    help="Disaster recovery: backup, restore and the HA status view.",
     no_args_is_help=True,
 )
 
@@ -191,7 +191,7 @@ def dr_rehearse(
         Path,
         typer.Option(
             "--record",
-            help="Append one JSON line per run to this file (REQ-OPS-010).",
+            help="Append one JSON line per run to this file.",
         ),
     ] = Path("var/dr/rehearsals.jsonl"),
     rto_seconds: Annotated[

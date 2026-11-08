@@ -1,4 +1,4 @@
-"""Reference-counted, tenant-scoped evidence blobs (WP-21, area DATA, REQ-DATA-006).
+"""Reference-counted, tenant-scoped evidence blobs (area DATA, REQ-DATA-006).
 
 S20 made the evidence backend content-addressed, which deduplicated identical payloads — and
 introduced two defects the requirement names. First, the dedup was *global*: two tenants that
@@ -19,7 +19,7 @@ object*:
     the only authority to unlink a blob.
 
 The table starts empty. Existing offloaded objects keep working: the local backend still reads
-an object at its pre-WP-21 path for the default workspace, and an evidence row that no ledger
+an object at its pre-existing path for the default workspace, and an evidence row that no ledger
 row describes simply never becomes a sweep candidate — an orphan is the safe failure, a wrong
 unlink is not. An operator who wants the ledger to cover historic rows can let retention age
 them out and re-ingest; nothing here rewrites or guesses a count.

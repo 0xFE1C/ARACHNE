@@ -44,7 +44,7 @@ from arachne.fix.proposal import (
 
 __all__ = ["app"]
 
-app = typer.Typer(help="Remediation as code: propose, approve, submit, verify (S27).")
+app = typer.Typer(help="Remediation as code: propose, approve, submit, verify.")
 
 
 def _engine() -> Any:

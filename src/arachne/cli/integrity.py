@@ -35,7 +35,7 @@ __all__ = ["integrity_app", "verify_chain_command"]
 
 integrity_app = typer.Typer(
     name="integrity",
-    help="Tamper-evidence: anchor the audit chain and seal completed scans (S25).",
+    help="Tamper-evidence: anchor the audit chain and seal completed scans.",
     no_args_is_help=True,
 )
 

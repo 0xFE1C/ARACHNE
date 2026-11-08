@@ -151,6 +151,23 @@ def _chained_rows(session: Session, *, limit: int | None = None) -> list[AuditLo
     return chained
 
 
+def _chained_payload(row: AuditLog) -> dict[str, object]:
+    """The payload ``row`` was chained over, with a disagreement in ``actor`` made visible.
+
+    ``audit_log`` keeps ``actor`` in its own column *and* inside ``meta_json``. The JSON is
+    what the writer hashed, so an edit to the *column* would otherwise pass verification —
+    and the column is what a query and an export read, so it is exactly the copy an attacker
+    would change. Overwriting the payload with either copy would hide an edit to the other, so
+    the two are compared: when they agree the payload is byte-for-byte what was hashed and the
+    row verifies; when they disagree the payload is perturbed and the verifier reports the
+    modification, whichever side was edited.
+    """
+    payload = reconstruct_audit_payload(str(row.action), dict(row.meta_json or {}))
+    if payload.get("actor") != row.actor:
+        payload["actor"] = f"<column {row.actor!r} disagrees with payload {payload.get('actor')!r}>"
+    return payload
+
+
 def _newest_chained(session: Session) -> AuditLog | None:
     head = session.scalar(select(func.max(AuditLog.seq)))
     if head is None:
@@ -453,7 +470,7 @@ class IntegrityVerifier:
                     prev_hash=str(row.prev_hash or GENESIS_HASH),
                     hash=str(row.hash or ""),
                     signature=row.signature,
-                    payload=reconstruct_audit_payload(str(row.action), dict(row.meta_json or {})),
+                    payload=_chained_payload(row),
                 )
                 for row in rows
                 if int(row.seq or 0) >= since_seq

@@ -155,6 +155,30 @@ def test_an_edited_evidence_blob_names_its_id_and_exits_one(database: Path) -> N
     assert AuditAction.INTEGRITY_TAMPER.value in _actions(database)
 
 
+def test_an_edited_actor_column_is_detected(database: Path) -> None:
+    """``actor`` is stored in its own column as well as inside the hashed payload.
+
+    The column is the copy a query and an export return, so it is the one worth forging;
+    folding it back into the payload is what turns an edit there into a hash mismatch instead
+    of a change nothing reports.
+    """
+    _seed(database)
+    from arachne.data.db import create_sqlite_engine
+
+    engine = create_sqlite_engine(f"sqlite:///{database}")
+    with create_session_factory(engine)() as session:
+        row = session.scalars(select(AuditLog).order_by(AuditLog.seq)).first()
+        assert row is not None
+        row.actor = "someone-else"
+        session.commit()
+    engine.dispose()
+
+    result = runner.invoke(app, ["verify-chain"])
+    assert result.exit_code == 1, result.output
+    assert "[audit-chain.modified]" in result.output
+    assert "the event content was edited" in result.output
+
+
 def test_the_json_report_names_the_check_and_the_id(database: Path) -> None:
     seeded = _seed(database)
     _mutate(database, seeded["evidence"])

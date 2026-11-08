@@ -33,7 +33,7 @@ __all__ = ["ai_app"]
 
 ai_app = typer.Typer(
     name="ai",
-    help="AI provenance: what a model contributed to a scan, and what it cost (WP-15).",
+    help="AI provenance: what a model contributed to a scan, and what it cost.",
     no_args_is_help=True,
 )
 

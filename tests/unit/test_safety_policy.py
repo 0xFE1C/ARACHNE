@@ -78,6 +78,37 @@ async def test_private_ips_allowed_only_by_explicit_policy() -> None:
     assert resolved.addresses == ("10.0.0.1",)
 
 
+async def test_localhost_is_reachable_only_by_the_loopback_opt_in() -> None:
+    """``localhost`` names *this* machine, so the loopback switch governs it — and only it.
+
+    A self-hosted model server is named ``localhost`` in the path every deployment
+    documents, so the default must keep refusing it (the reserved ``.localhost`` spelling
+    stays internal) while an explicit ``allow_loopback`` reaches it. No other internal name
+    may ride along with that opt-in: those name a network, not this host.
+    """
+    scope = Scope(allowed_hosts=("localhost",))
+    with pytest.raises(UnsafeUrlError) as refused:
+        await validate_url("http://localhost/", scope, resolver=StaticResolver(("127.0.0.1",)))
+    assert refused.value.reason == "internal-hostname"
+
+    permissive = UrlSafetyPolicy(allow_loopback=True)
+    resolved = await validate_url(
+        "http://localhost/", scope, policy=permissive, resolver=StaticResolver(("127.0.0.1",))
+    )
+    assert resolved.host == "localhost"
+    assert resolved.addresses == ("127.0.0.1",)
+
+    for host in ("foo.localhost", "printer.local", "api.internal"):
+        with pytest.raises(UnsafeUrlError) as still_internal:
+            await validate_url(
+                f"http://{host}/",
+                Scope(allowed_hosts=(host,)),
+                policy=permissive,
+                resolver=StaticResolver(("127.0.0.1",)),
+            )
+        assert still_internal.value.reason == "internal-hostname"
+
+
 async def test_any_blocked_address_in_a_record_set_blocks_the_host() -> None:
     """A name resolving to one public and one private address is refused entirely."""
     scope = Scope(allowed_hosts=(TARGET_HOST,))

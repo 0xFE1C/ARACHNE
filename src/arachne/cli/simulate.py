@@ -41,9 +41,7 @@ from arachne.sim.whatif import SimulationRun, severity_sort_key, simulate
 
 __all__ = ["app"]
 
-app = typer.Typer(
-    help="Simulation & what-if modeling: the estate model and hypothetical states (S28)."
-)
+app = typer.Typer(help="Simulation & what-if modeling: the estate model and hypothetical states.")
 
 
 def _fail(message: str, code: int = 2) -> NoReturn:
@@ -104,7 +102,7 @@ def model_command(
     estate_key: Annotated[str, typer.Option("--estate", help="Key for this estate.")] = "",
     json_output: Annotated[bool, typer.Option("--json", help="Machine-readable output.")] = False,
 ) -> None:
-    """Build the estate model from scan data and show what it holds (REQ-SIM-001)."""
+    """Build the estate model from scan data and show what it holds."""
     services, graph = _services_and_graph(scan=scan, project=project, estate_key=estate_key)
     try:
         if json_output:
@@ -158,7 +156,7 @@ def what_if_command(
     estate_key: Annotated[str, typer.Option("--estate", help="Key for this estate.")] = "",
     json_output: Annotated[bool, typer.Option("--json", help="Machine-readable output.")] = False,
 ) -> None:
-    """Inject hypothetical states and print the paths they produce (REQ-SIM-002)."""
+    """Inject hypothetical states and print the paths they produce."""
     try:
         states = _hypotheses_from(hypothesis_inline, hypotheses)
     except ArachneError as exc:
@@ -239,7 +237,7 @@ def change_command(
     estate_key: Annotated[str, typer.Option("--estate", help="Key for this estate.")] = "",
     json_output: Annotated[bool, typer.Option("--json", help="Machine-readable output.")] = False,
 ) -> None:
-    """Simulate a proposed change and print the before/after exposure delta (REQ-SIM-005)."""
+    """Simulate a proposed change and print the before/after exposure delta."""
     try:
         change = load_change_set(change_path)
     except ArachneError as exc:
@@ -301,7 +299,7 @@ def trend_command(
     ] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Machine-readable output.")] = False,
 ) -> None:
-    """Show the re-simulation trend, optionally re-simulating once first (REQ-SIM-006)."""
+    """Show the re-simulation trend, optionally re-simulating once first."""
     from arachne.data.services import build_resimulator_for, build_services
 
     try:

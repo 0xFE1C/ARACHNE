@@ -33,7 +33,7 @@ __all__ = ["schedule_add", "schedule_app", "schedule_list", "schedule_remove", "
 
 schedule_app = typer.Typer(
     name="schedule",
-    help="Register, inspect and run recurring scans (F-01-05).",
+    help="Register, inspect and run recurring scans.",
     no_args_is_help=True,
 )
 
@@ -69,7 +69,7 @@ def schedule_add(
         str | None,
         typer.Option(
             "--purple-campaign",
-            help="Run this purple-team campaign instead of scanning --target (S24).",
+            help="Run this purple-team campaign instead of scanning --target.",
         ),
     ] = None,
 ) -> None:

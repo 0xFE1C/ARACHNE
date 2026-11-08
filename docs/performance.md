@@ -101,7 +101,7 @@ and analyses. That read is **constant** in the number of findings (REQ-SCALE-012
 | 10 | 5 | 2 | 7 |
 | 100 | 5 | 2 | 7 |
 
-Before WP-17 the same read was **3N+1**: one evidence query per finding, a *fresh session*
+Before this change the same read was **3N+1**: one evidence query per finding, a *fresh session*
 per finding for its asset identity, then one query each for the current verification record
 and the whole history — plus a `Finding` lookup per analysis row. Measured with the same
 counter at the same sizes: **6 / 51 / 501** candidate queries and **2 / 11 / 101** analysis
@@ -212,6 +212,14 @@ zero events in 15 trials is about **20 %**, so the figure is consistent with a t
 anywhere below that. It becomes informative as the corpus grows; the corpus version is
 recorded in the committed result precisely because the rate is only meaningful against a
 stated ground truth.
+
+**What this corpus does and does not cover.** The lab cases were authored with the original
+detection set, so this aggregate speaks for that set and not for every check the registry
+registers. The families added since are covered *per check* instead: each one's test drives a
+positive installation and a decoy installation and asserts the check fires on the first and
+stays silent on the second, with the decoy count printed for the handoff. That is a per-check
+statement rather than a corpus-wide rate; extending this corpus to the newer families is what
+would turn the two into the same number.
 
 **The trend.** Every release re-runs the measurement and commits a new
 `benchmarks/arachne-lab/baseline.json`. `--gate` fails when the rate rises by more than two

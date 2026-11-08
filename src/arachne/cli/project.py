@@ -23,7 +23,7 @@ __all__ = ["project_app"]
 
 project_app = typer.Typer(
     name="project",
-    help="Create and inspect tenants/workspaces (F-07-06).",
+    help="Create and inspect tenants/workspaces.",
     no_args_is_help=True,
 )
 
@@ -136,7 +136,7 @@ def project_pii(
     ] = None,
     clear: Annotated[bool, typer.Option("--clear", help="Remove the policy.")] = False,
 ) -> None:
-    """Set (or clear) a tenant's PII policy (S25, REQ-TRUST-006)."""
+    """Set (or clear) a tenant's PII policy."""
     if clear and enable:
         msg = "--clear cannot be combined with --enable"
         raise typer.BadParameter(msg)
@@ -178,7 +178,7 @@ def project_residency(
     ] = None,
     clear: Annotated[bool, typer.Option("--clear", help="Remove the pin.")] = False,
 ) -> None:
-    """Pin (or unpin) a tenant's evidence residency (S25, REQ-RESIL-004)."""
+    """Pin (or unpin) a tenant's evidence residency."""
     if clear and region:
         msg = "--clear cannot be combined with --region"
         raise typer.BadParameter(msg)
@@ -209,7 +209,7 @@ def project_locale(
     ] = None,
     clear: Annotated[bool, typer.Option("--clear", help="Inherit the deployment default.")] = False,
 ) -> None:
-    """Set (or clear) a tenant's default report language (S26, REQ-ECOS-005).
+    """Set (or clear) a tenant's default report language.
 
     A tenant that sets one gets its reports in that language by default; a single report can
     still be rendered in another (`arachne report --locale`, `?locale=`). ``--clear`` returns

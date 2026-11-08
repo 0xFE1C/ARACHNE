@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | accepted (WP-11) |
+| Status | accepted |
 | Date | 2026-11-03 |
 | Deciders | ARACHNE detection engineering, safety owner |
 | Supersedes | ADR-100.4 and ADR-S10-6 in the one respect they state: "DOM-sink verification in a browser is out of scope for this stage" |

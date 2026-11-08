@@ -67,7 +67,7 @@ def report_command(
         int | None,
         typer.Option(
             "--diff-with",
-            help="Compare this earlier scan with --scan and record the diff (F-06-05).",
+            help="Compare this earlier scan with --scan and record the diff.",
         ),
     ] = None,
     project: Annotated[
@@ -86,7 +86,7 @@ def report_command(
         typer.Option(
             "--locale",
             help=(
-                "Report language (e.g. en, fr; S26). Default: the project's locale, else "
+                "Report language (e.g. en, fr). Default: the project's locale, else "
                 "ARACHNE_REPORT_LOCALE, else en."
             ),
         ),
@@ -97,7 +97,7 @@ def report_command(
             "--simulate",
             help=(
                 "Attach a what-if simulation of this scan's estate, rendered in its own "
-                "section with 'simulated' provenance (S28, REQ-SIM-004)."
+                "section with 'simulated' provenance."
             ),
         ),
     ] = False,

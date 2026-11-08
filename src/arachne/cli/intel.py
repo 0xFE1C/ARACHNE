@@ -49,7 +49,7 @@ __all__ = ["intel_app"]
 
 intel_app = typer.Typer(
     name="intel",
-    help="Live threat intel: feed sync, CVE-index baseline, freshness (S18).",
+    help="Live threat intel: feed sync, CVE-index baseline, freshness.",
     no_args_is_help=True,
 )
 

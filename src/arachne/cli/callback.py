@@ -42,7 +42,7 @@ def callback_server_command(
             "--no-scan-gate",
             help=(
                 "Do not read the scan row: run as a pure listener, without refusing callbacks "
-                "for an inactive scan or an expired attestation (WP-14, REQ-PROOF-019)."
+                "for an inactive scan or an expired attestation."
             ),
         ),
     ] = True,

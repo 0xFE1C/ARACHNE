@@ -40,9 +40,9 @@ from arachne.posture.trend import (
 
 __all__ = ["app"]
 
-app = typer.Typer(help="Continuous exposure management (S23).")
+app = typer.Typer(help="Continuous exposure management.")
 
-cmdb_app = typer.Typer(help="CMDB asset-criticality imports (REQ-POSTURE-006).")
+cmdb_app = typer.Typer(help="CMDB asset-criticality imports.")
 app.add_typer(cmdb_app, name="cmdb")
 
 

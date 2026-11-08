@@ -98,6 +98,11 @@ def _find_project_root() -> Path:
     if from_env:
         candidates.append(Path(from_env).expanduser())
     candidates.append(Path(__file__).resolve().parents[3])
+    # An installed wheel carries the schema inside the package (see the wheel's
+    # ``force-include`` in ``pyproject.toml``), so a ``pip install`` can migrate its own
+    # database instead of depending on a checkout. An editable install resolves through
+    # ``parents[3]`` above and never reaches this.
+    candidates.append(Path(__file__).resolve().parent.parent / "_scaffold")
     candidates.append(Path.cwd())
     candidates.append(Path("/app"))  # the image's WORKDIR
 
@@ -147,10 +152,10 @@ app.add_typer(fix_app, name="fix")
 # re-simulation trend (area SIM).
 app.add_typer(simulate_app, name="simulate")
 app.add_typer(fuzz_app, name="fuzz")
-app.command("scan", help="Plan (--dry-run), run, or resume a scan (F-01-03/04/10).")(scan_command)
+app.command("scan", help="Plan (--dry-run), run, or resume a scan.")(scan_command)
 app.command(
     "verify-chain",
-    help="Verify the audit hash chain, the row signatures and the scan seals (S25).",
+    help="Verify the audit hash chain, the row signatures and the scan seals.",
 )(verify_chain_command)
 app.command("analyze", help="Analyse a stored scan's candidates with the heuristic engine.")(
     analyze_command
@@ -159,29 +164,27 @@ app.command("analyze", help="Analyse a stored scan's candidates with the heurist
 # when the re-verification is refused, so a script can tell "not answered" from "answered".
 app.command(
     "verify-finding",
-    help="Re-run the proof behind one finding against the same asset (WP-13, REQ-PROOF-016).",
+    help="Re-run the proof behind one finding against the same asset.",
 )(verify_finding_command)
-app.command("report", help="Render a stored scan as a Markdown or JSON report (F-06-02).")(
-    report_command
-)
+app.command("report", help="Render a stored scan as a Markdown or JSON report.")(report_command)
 # `coverage` is registered twice on purpose: as `arachne module coverage` (next to the
 # inventory it belongs to) and as top-level `arachne coverage`, which is the name the
 # roadmap's G-01 asks for. Since WP-07 the top-level form is a command group: `coverage
 # matrix` is the G-01 research-method matrix, `coverage ledger` is the generated framework
 # coverage ledger (REQ-DET-001).
 app.add_typer(coverage_app, name="coverage")
-app.command("serve", help="Serve the REST API and web UI (F-07-02/03, F-08-02).")(serve_command)
+app.command("serve", help="Serve the REST API and web UI.")(serve_command)
 app.command(
     "agent",
-    help="Run a scan worker of the fleet (S16): register, lease, execute, heartbeat, ack.",
+    help="Run a scan worker of the fleet: register, lease, execute, heartbeat, ack.",
 )(agent_command)
 app.command(
     "metrics",
-    help="Print the Prometheus metrics this deployment would expose (S20, REQ-OPS-003).",
+    help="Print the Prometheus metrics this deployment would expose.",
 )(metrics_command)
 app.command(
     "callback-server",
-    help="Run the out-of-band callback service (S15, REQ-PROOF-005): single-use "
+    help="Run the out-of-band callback service: single-use "
     "tokens, hits matched to findings, never dials out.",
 )(callback_server_command)
 
@@ -239,7 +242,7 @@ def db_upgrade(
     ] = None,
     dry_run: Annotated[
         bool,
-        typer.Option("--dry-run", help="Print the SQL without running any of it (REQ-OPS-008)."),
+        typer.Option("--dry-run", help="Print the SQL without running any of it."),
     ] = False,
     allow_destructive: Annotated[
         bool,
@@ -323,7 +326,7 @@ def db_migrations(
     ] = False,
     json_output: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = False,
 ) -> None:
-    """List every migration with its reversibility declaration (REQ-OPS-008)."""
+    """List every migration with its reversibility declaration."""
     versions_dir = PROJECT_ROOT / "migrations" / "versions"
     items = declarations(versions_dir)
     undeclared = [item for item in items if not item.declared]

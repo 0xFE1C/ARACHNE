@@ -33,7 +33,7 @@ __all__ = ["events_app"]
 
 events_app = typer.Typer(
     name="events",
-    help="The versioned catalogue of outbound webhook events (REQ-ECOS-009).",
+    help="The versioned catalogue of outbound webhook events.",
     no_args_is_help=True,
 )
 

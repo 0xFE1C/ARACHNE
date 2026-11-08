@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | accepted (WP-14) |
+| Status | accepted |
 | Date | 2026-11-03 |
 | Deciders | ARACHNE detection engineering, privacy owner, safety owner |
 | Extends | ADR-250 (the audit chain and seals) with evidence custody; ADR-200 (the proof ladder) with its outcome; ADR-290 (the PII policy) with retention |
@@ -94,8 +94,8 @@ keeps both properties.
 The pruner selects evidence older than the window, scoped to the project and excluding rows the
 same run will delete, and masks the payload under the **project's** policy. Offloaded payloads are
 **not** re-masked: their bytes live in an object store, rewriting them would mint a new
-content-addressed key and orphan the old object (reference counting is REQ-DATA-006, WP-21's
-work), and a partial control that says so is honest where a partial control that stays silent is
+content-addressed key and orphan the old object (reference counting is REQ-DATA-006), and a
+partial control that says so is honest where a partial control that stays silent is
 not. They are reported in the plan and in one `pii.remask_unsupported` line per run. A legal
 hold freezes the re-mask with the deletion.
 
@@ -117,6 +117,6 @@ already happened, and the chain will then report the blob, which is the honest o
 - **Costs:** one audit line per evidence blob at capture (bounded by the number of findings), one
   per re-masked blob, and one re-seal per affected scan per pruning run. Two nullable columns on
   `scans`. The report schema moves to 1.13 (additive; every golden changed by one version line).
-- **Not done here, deliberately:** re-masking object-store blobs (WP-21's reference counting),
+- **Not done here, deliberately:** re-masking object-store blobs (reference counting),
   and the web UI's Residue section (spec `06-ui-ux.md` §4.6) — the API field it reads
   (`GET /api/v1/scans/{id}` → `residue_attestation`) exists as of this ADR.

@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | accepted (WP-01) |
+| Status | accepted |
 | Date | 2026-11-02 |
 | Deciders | ARACHNE detection engineering, documentation owner |
 | Supersedes | ADR-341 (`Restore the research corpus rather than retire it`, status *Proposed*) |

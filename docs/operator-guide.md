@@ -220,7 +220,7 @@ at capture time, so they never reach evidence.
 | `ARACHNE_M4_METADATA_SSRF` | `false` | Allow `m4.metadata-ssrf` to send the metadata GET through a discovered sink. |
 | `ARACHNE_M4_PROBES` | *(bundled)* | Replace the M4 probe corpus/wordlists. |
 
-**Artifact exposure (WP-29, REQ-DET-022).** Twenty-four of M4's checks are the
+**Artifact exposure (REQ-DET-022).** Twenty-four of M4's checks are the
 source-control, CI and infrastructure-artifact family, and they are operated exactly like the
 rest of M4: read-only `GET` probes of bounded path inventories, no opt-in, no attestation.
 They cover the `.git` reflog and a DVCS configuration or credential store carrying
@@ -248,7 +248,7 @@ family:
   `credentialed-url`, `jwt`, `private-key`) and the key names — never a value. The two checks
   whose whole claim is the credential fire only when a detector fired on the served body.
 
-**Server, platform and runtime configuration (WP-30, REQ-DET-023).** The other twenty-four
+**Server, platform and runtime configuration (REQ-DET-023).** The other twenty-four
 checks of M4 are the server and platform family, operated the same way: read-only `GET` probes
 of bounded path inventories with no opt-in and no attestation, plus three checks that read the
 response headers of the crawl the scan already made and issue no request at all. They cover the
@@ -555,7 +555,7 @@ L2 variants are: SSRF (`m3.ssrf-probe`), time-free blind SQLi (`m3.sqli-oob`), O
 (`m3.xxe-oob`), blind command injection via an execution monitor (`m3.cmdi-oob`) and
 template injection (`m3.ssti-oob`).
 
-**Callback hardening (WP-14, REQ-PROOF-019).** A token is not just an unguessable nonce:
+**Callback hardening (REQ-PROOF-019).** A token is not just an unguessable nonce:
 
 * **A per-scan secret authenticates it.** The scanner derives a secret for the scan from
   `ARACHNE_INTEGRITY_KEY` and the token carries a short authenticator over itself
@@ -587,7 +587,7 @@ payloads and identity-store tables are refused in code. The end-of-scan cleanup 
 re-restores anything left, and every change is persisted with the scan (`stats.proof`):
 what, where, the before-value, and whether it was restored.
 
-**The residue attestation (WP-14, REQ-PROOF-017).** Every scan — including one that
+**The residue attestation (REQ-PROOF-017).** Every scan — including one that
 authorized no state change at all — ends with one artefact stating what it changed and
 whether it was put back:
 
@@ -974,7 +974,7 @@ if admins should be able to install through `POST /api/v1/plugins/install`. The 
 a data file (`ARACHNE_MARKETPLACE` points at your own index), so the workflow works
 air-gapped.
 
-### 15.1 Signing: fail-closed packs and a signed index (REQ-ECOS-008, WP-16)
+### 15.1 Signing: fail-closed packs and a signed index (REQ-ECOS-008)
 
 Two artifacts carry trust into a deployment: a **content pack** and the **marketplace index**
 that points at packs. Both are signature-verified before anything is loaded, and **both are
@@ -996,7 +996,7 @@ export ARACHNE_CONTENT_KEYS="old-key-1,old-key-2"             # comma- or newlin
 | `ARACHNE_PLUGIN_ALLOW_UNSIGNED` | `false` | Accept an unsigned *pack* (a lab). Recorded in the audit trail. |
 | `ARACHNE_PLUGIN_ALLOW_UNSIGNED_INDEX` | `false` | Accept an unsigned *index* from a path (a lab). Recorded by the caller. |
 
-**What changed in WP-16, and the migration.** Until WP-16 a marketplace index was read with no
+**What changed in this release, and the migration.** Until this release a marketplace index was read with no
 signature check at all, and a pack was refused only when its signature failed to verify. If you
 point `ARACHNE_MARKETPLACE` at your own index today, that index is now **refused** until it
 carries a signature:
@@ -1046,7 +1046,7 @@ anything: both keys verify during the overlap, so packs and indexes signed under
 loading. When every artifact is re-signed, drop the old key. Signing always uses
 `ARACHNE_INTEGRITY_KEY`, so a rotation key can verify but never mint.
 
-### 15.2 Writing a check: the SDK (REQ-ECOS-007, WP-16)
+### 15.2 Writing a check: the SDK (REQ-ECOS-007)
 
 The authoring path is one command and no reading:
 
@@ -1066,7 +1066,7 @@ build rather than the author. `docs/plugin-developer-guide.md` §2 is the worked
 mapping, an L2+ declaration without its opt-in, no decoy, or a finding with no
 verification-relevant evidence.
 
-### 15.3 Outbound event schemas (REQ-ECOS-009, WP-16)
+### 15.3 Outbound event schemas (REQ-ECOS-009)
 
 Every webhook payload — Slack, Teams, Jira, ServiceNow, DefectDojo and the SIEM export — carries
 `event` and `schema_version` in its body and the same two values in the `X-Arachne-Event` /
@@ -2017,7 +2017,7 @@ version, target, score). `--gate` compares a run against that baseline and exits
 detection drop or an FP-rate rise beyond the tolerances (`--max-detection-drop`,
 `--max-fp-rise`), and refuses to compare across suite versions.
 
-**The published artifact is reproducible (WP-19, REQ-TRUST-010).** A committed result now
+**The published artifact is reproducible (REQ-TRUST-010).** A committed result now
 carries the four things the claim needs — the **corpus version** (and its digest), the exact
 **command**, the **environment** (interpreter, platform, build epoch) and **raw per-case rows**,
 plus precision, recall and a per-case time-to-finding whose source is named — in
@@ -2069,7 +2069,7 @@ Four frameworks ship: **CIS Controls v8.1**, **PCI DSS v4.0**, **ISO/IEC 27001:2
 and **NIST CSF 2.0**. Each maps check ids onto the controls a finding is evidence about —
 `m3.sqli-oracle` speaks to ISO A.8.25, `m2.tls-deep-scan` to PCI 4, and so on.
 
-**The maps are generated, not maintained (WP-19, REQ-TRUST-009).** The source of truth is each
+**The maps are generated, not maintained (REQ-TRUST-009).** The source of truth is each
 check's `compliance=` declaration in `src/arachne/modules/`, validated at import against a
 pinned, complete inventory of the framework (`src/arachne/data/compliance/*.json` — each one
 records its source, retrieval date and cross-check). `python -m arachne.tools.compliance --write`
@@ -2195,7 +2195,7 @@ A tagged release (`v*`) runs `.github/workflows/release.yml`, which
 1. runs `pip-audit --strict` **as a release blocker** (on ordinary pushes CI's
    `dependencies` job stays advisory);
 2. generates the CycloneDX 1.5 SBOM with `python -m arachne.tools.sbom` **and validates it
-   against the vendored official schema** before attaching it to the release (WP-19);
+   against the vendored official schema** before attaching it to the release;
 3. builds the image, pushes it to GHCR **by digest**, signs the digest with **cosign
    keyless** (the signature's identity is the repository's GitHub OIDC claim — there is
    no long-lived key to rotate or leak), and attests the SBOM to the same digest;
@@ -2477,7 +2477,7 @@ inside the window. A test that cannot be distinguished from an attack is not a t
 project runs, and `tests/unit/test_purple_attack.py::test_no_evasion_anywhere_in_the_purple_package`
 fails the build if evasion-capable code ever appears in the package.
 
-**What is replayable, and against which taxonomy (WP-19, REQ-VALID-007).** The catalogue
+**What is replayable, and against which taxonomy (REQ-VALID-007).** The catalogue
 (`src/arachne/templates/purple/attck-map.yaml`, override with `ARACHNE_PURPLE_MAP`) covers
 **41 actions exercising 36 ATT&CK Enterprise v20 techniques across 10 tactics** — from active
 scanning and credential discovery through injection, cloud-storage collection and defense
@@ -2846,7 +2846,7 @@ rules:
 
 KEDA needs no adapter: its Prometheus scaler queries the API's `/metrics` directly.
 
-### 35.4 Upgrade safety: the dry run, the declaration, and the destructive gate (WP-18, REQ-OPS-008)
+### 35.4 Upgrade safety: the dry run, the declaration, and the destructive gate (REQ-OPS-008)
 
 Three things happen before a migration touches a database you care about.
 
@@ -2968,7 +2968,7 @@ arachne scan --dry-run ...      # a smoke scan against a lab target
 | Monthly | full restore rehearsal on an isolated instance; record the measured RTO |
 | Per release | re-run the rehearsal; re-check `head_migration.expand_only` |
 
-### 36.5 The rehearsal, unattended (WP-18, REQ-OPS-010)
+### 36.5 The rehearsal, unattended (REQ-OPS-010)
 
 The schedule above is advice. `arachne dr rehearse` is the mechanical version of it, and the
 one a scheduled job runs:
@@ -3033,7 +3033,7 @@ It checks five things:
 3. **Row signatures.** Every finding's and evidence row's deployment-key signature is
    re-verified, including the evidence payload's digest.
 4. **Evidence content hashes.** Every stored evidence blob's hash is recorded in the chain when
-   it is captured (WP-14, REQ-PROOF-018), and the recomputed digest of the stored payload is
+   it is captured (REQ-PROOF-018), and the recomputed digest of the stored payload is
    compared with that record — so an edit behind the store's back is found even on a deployment
    that configured no key. The verdict is `[evidence.mismatch]` and it names the evidence id;
    a recorded blob whose row is gone while its scan survives is `[evidence.deleted]`. Evidence
@@ -3055,7 +3055,7 @@ Exit codes: `0` intact, `1` not intact (issues on stderr), `2` the command could
 when `--require-signatures` was given). Every run is itself audited (`integrity.verified` or
 `integrity.tamper`).
 
-### 37.1 Verifying without the power to forge: Ed25519 (WP-19, REQ-TRUST-008)
+### 37.1 Verifying without the power to forge: Ed25519 (REQ-TRUST-008)
 
 An HMAC deployment key means the verifier holds the signing key. If a third party — an auditor,
 a customer, a regulator — must be able to check the chain, that is exactly the property they
@@ -3157,7 +3157,7 @@ the retention pruner, which is the mechanism for "we decided to mask later than 
 scanning". Both paths audit **counts by category** (`pii.masked` at capture, `pii.remasked` in
 the prune run), never a value.
 
-**The retention re-mask, precisely** (WP-14, REQ-DATA-005):
+**The retention re-mask, precisely** (REQ-DATA-005):
 
 * `ARACHNE_PII_RETENTION_DAYS=0` — the default — means **mask at capture only, never re-mask**.
   A deployment that has not asked for the pass has none of its stored payloads rewritten.
@@ -4345,7 +4345,7 @@ another host cannot.
 Never "fix" a failing chain by deleting the failing rows. A gap is a record.
 
 
-## 50. Re-verifying one finding: `arachne verify-finding` (WP-13, REQ-PROOF-016)
+## 50. Re-verifying one finding: `arachne verify-finding` (REQ-PROOF-016)
 
 ```bash
 arachne verify-finding 42            # re-run finding 42's own check against the same asset
@@ -4383,7 +4383,7 @@ Three properties worth knowing as an operator:
 
 ---
 
-## 51. Performance envelope and false-positive rate (WP-17, REQ-SCALE-009/012/013, REQ-QUAL-009)
+## 51. Performance envelope and false-positive rate (REQ-SCALE-009/012/013, REQ-QUAL-009)
 
 The full detail, the method and the caveats are in [performance.md](performance.md). What an
 operator needs here:
@@ -4436,7 +4436,7 @@ cooldown rather than once per request.
 **Release checklist.** `tests/perf` green, both gates above passing, and the two
 `benchmarks/` JSON files committed. The full list is in [performance.md](performance.md) §8.
 
-## 52. Service-level objectives and error budgets (WP-18, REQ-OPS-007)
+## 52. Service-level objectives and error budgets (REQ-OPS-007)
 
 This is the runbook the alerts link to. The objectives, the budgets and the alert rules are
 versioned artefacts in the repository, not panels in somebody's Grafana:
@@ -4561,7 +4561,7 @@ scraped shows up as a collapsing denominator — before you suspect the alert.
 4. Update the subsection above if the response changed. An alert whose runbook is wrong is worse
    than no alert.
 
-## 53. Mutation testing the safety core (WP-18, REQ-QUAL-008)
+## 53. Mutation testing the safety core (REQ-QUAL-008)
 
 Coverage says a line ran. Mutation says the assertion would have noticed if the line were
 wrong. On the scope gate, the proof ladder, the audit chain and the SQL proof helper, "the test

@@ -584,6 +584,14 @@ def _normalize_host(raw_host: str, *, policy: UrlSafetyPolicy) -> tuple[str, str
         return host, "metadata-endpoint"
     for suffix in _INTERNAL_HOST_SUFFIXES:
         if host == suffix.lstrip(".") or host.endswith(suffix):
+            # ``localhost`` is the bare spelling of the reserved ``.localhost`` TLD and names
+            # *this* machine, not an internal network. The explicit ``allow_loopback`` opt-in
+            # governs it, so a deployment that reaches its own model server may name it while
+            # the default still refuses it here. Every other spelling (``*.localhost``,
+            # ``.local``, ``.internal``, ...) keeps the internal classification: those name a
+            # network, and resolution cannot be trusted to say which one.
+            if host == "localhost" and policy.allow_loopback:
+                return host, None
             return host, "internal-hostname"
     if _AMBIGUOUS_IP_HOST.match(host):
         # 2130706433 / 0x7f000001 style encodings bypass naive string checks.

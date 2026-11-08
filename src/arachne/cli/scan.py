@@ -96,13 +96,13 @@ def scan_command(
         typer.Option(
             "--target",
             "-t",
-            help="Target definition fixture (YAML or JSON), F-01-01.",
+            help="Target definition fixture (YAML or JSON).",
             exists=False,
         ),
     ],
     dry_run: Annotated[
         bool,
-        typer.Option("--dry-run", help="Print the plan and make zero requests (F-01-10)."),
+        typer.Option("--dry-run", help="Print the plan and make zero requests."),
     ] = False,
     resume: Annotated[
         int | None,
@@ -115,7 +115,7 @@ def scan_command(
         bool | None,
         typer.Option(
             "--active-checks/--no-active-checks",
-            help="Opt in to active checks; the attestation must authorize them (F-01-09).",
+            help="Opt in to active checks; the attestation must authorize them.",
         ),
     ] = None,
     enable: Annotated[
@@ -144,7 +144,7 @@ def scan_command(
         typer.Option(
             "--project",
             help=(
-                "Tenant/workspace slug the scan belongs to (F-07-06). The target must fall "
+                "Tenant/workspace slug the scan belongs to. The target must fall "
                 "inside that project's scope; omit for the default workspace."
             ),
         ),
@@ -154,7 +154,7 @@ def scan_command(
         typer.Option(
             "--fail-on",
             help=(
-                "CI gate (F-07-05): exit 2 when a finding is at or above this severity "
+                "CI gate: exit 2 when a finding is at or above this severity "
                 "(info|low|medium|high|critical), 1 when findings exist below it, 0 when "
                 "clean. 'none' (or ARACHNE_CI_FAIL_ON unset) disables the gate."
             ),

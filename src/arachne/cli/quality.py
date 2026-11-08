@@ -32,7 +32,7 @@ __all__ = ["quality_app"]
 
 quality_app = typer.Typer(
     name="quality",
-    help="The FP workflow: suppression rules, risk acceptances and FP-rate trends (S21).",
+    help="The FP workflow: suppression rules, risk acceptances and FP-rate trends.",
     no_args_is_help=True,
 )
 
@@ -63,7 +63,7 @@ def quality_trends(
     ] = 3,
     as_json: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = False,
 ) -> None:
-    """Per-check false-positive rates over time, and which are rising (REQ-QUAL-004)."""
+    """Per-check false-positive rates over time, and which are rising."""
     services = _services()
     try:
         store = _quality(services)
@@ -124,7 +124,7 @@ def quality_suppress(
     ] = None,
     actor: Annotated[str | None, typer.Option("--actor", help="Who is deciding.")] = None,
 ) -> None:
-    """Record a suppression rule (REQ-QUAL-001/002)."""
+    """Record a suppression rule."""
     services = _services()
     try:
         kind = "finding" if finding is not None else "pattern" if asset else "rule"
@@ -204,7 +204,7 @@ def quality_accept(
     days: Annotated[int, typer.Option("--days", help="Days until the acceptance expires.")] = 30,
     actor: Annotated[str | None, typer.Option("--actor", help="Who is recording it.")] = None,
 ) -> None:
-    """Accept a risk: owner, justification and an expiry are all required (REQ-QUAL-003)."""
+    """Accept a risk: owner, justification and an expiry are all required."""
     services = _services()
     try:
         acceptance = RiskAcceptance(
@@ -275,7 +275,7 @@ def quality_withdraw(
 def quality_expire(
     as_json: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = False,
 ) -> None:
-    """Re-open every finding whose acceptance has expired (REQ-QUAL-003)."""
+    """Re-open every finding whose acceptance has expired."""
     services = _services()
     try:
         decisions = _quality(services).reopen_expired()

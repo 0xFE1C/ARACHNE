@@ -48,6 +48,6 @@
   <!-- wordmark -->
   <text x="268" y="118" font-family="'Segoe UI', Arial, sans-serif" font-size="58" font-weight="700" letter-spacing="7" fill="#F1F5F9">ARACHNE</text>
   <text x="272" y="152" font-family="'Segoe UI', Arial, sans-serif" font-size="19" fill="#94A3B8">Automated vulnerability detection &amp; reporting — with AI, or without it.</text>
-  <text x="272" y="182" font-family="'Segoe UI', Arial, sans-serif" font-size="13.5" fill="#64748B">dual engine · 152 checks · safe proof ladder L0–L4 · evidence-first · deny-by-default scope</text>
+  <text x="272" y="182" font-family="'Segoe UI', Arial, sans-serif" font-size="13.5" fill="#64748B">dual engine · 448 checks · safe proof ladder L0–L4 · evidence-first · deny-by-default scope</text>
   <text x="936" y="220" text-anchor="end" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#475569">by 0xFE1C · github.com/0xFE1C</text>
 </svg>

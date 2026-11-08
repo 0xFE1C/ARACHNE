@@ -45,7 +45,7 @@ __all__ = ["fp_app"]
 
 fp_app = typer.Typer(
     name="fp",
-    help="False-positive feedback and per-check threshold tuning (F-05-07).",
+    help="False-positive feedback and per-check threshold tuning.",
     no_args_is_help=True,
 )
 
@@ -96,7 +96,7 @@ def fp_mark(
         str | None, typer.Option("--actor", help="Who is recording this (audit + feedback row).")
     ] = None,
 ) -> None:
-    """Record operator false-positive feedback for a finding (F-05-07)."""
+    """Record operator false-positive feedback for a finding."""
     is_fp = not not_fp
     target_status = status or ("fp" if is_fp else "open")
     if target_status not in _STATUSES:
@@ -129,7 +129,7 @@ def fp_stats(
     ] = None,
     as_json: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = False,
 ) -> None:
-    """Show the learner table: marks, FP rate and thresholds per check (F-05-07)."""
+    """Show the learner table: marks, FP rate and thresholds per check."""
     services = _store()
     try:
         thresholds = load_fp_thresholds(services.settings.analysis.fp_thresholds)
@@ -183,7 +183,7 @@ def fp_tune(
     ] = 3,
     as_json: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = False,
 ) -> None:
-    """Suggest per-check thresholds from the feedback, and optionally write them (F-05-07).
+    """Suggest per-check thresholds from the feedback, and optionally write them.
 
     Only keys with at least ``--minimum-marks`` marks are suggested, because a 1/1 rate is
     noise. The suggestion is what the tuner already applies to a *new* finding from the key;

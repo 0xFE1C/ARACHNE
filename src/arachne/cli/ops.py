@@ -29,7 +29,7 @@ __all__ = ["slo_app"]
 
 slo_app = typer.Typer(
     name="slo",
-    help="Service-level objectives: targets, error budgets and burn-rate alerts (REQ-OPS-007).",
+    help="Service-level objectives: targets, error budgets and burn-rate alerts.",
     no_args_is_help=True,
 )
 

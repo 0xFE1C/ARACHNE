@@ -1,4 +1,4 @@
-"""The per-scan residue attestation's storage (WP-14, area PROOF, REQ-PROOF-017).
+"""The per-scan residue attestation's storage (area PROOF, REQ-PROOF-017).
 
 ``INV-7`` restores every state change an L4 proof makes, and the scan machine writes the
 restore outcome into the proof journal. What it could not do before this package was hand a
@@ -19,7 +19,7 @@ Two **nullable** columns on ``scans`` make the attestation a first-class row val
     what a later verifier recomputes.
 
 Nullability is the whole migration story: an existing database upgrades in place, every
-pre-WP-14 scan keeps ``NULL``, and a missing attestation is read as "not stated" rather than
+pre-existing scan keeps ``NULL``, and a missing attestation is read as "not stated" rather than
 as "clean" (:func:`arachne.proof.residue.attestation_is_clean`). Nothing is rewritten and
 nothing is backfilled — a backfilled attestation would be a signature over a claim nobody
 made at the time.

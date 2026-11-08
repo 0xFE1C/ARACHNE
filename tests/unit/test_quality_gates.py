@@ -39,24 +39,41 @@ def _pyproject() -> dict[str, object]:
 
 
 # ------------------------------------------------------------------ per-test timeout
-@pytest.mark.timeout(180)  # reviewed exception: it waits out the 60 s timeout it is proving
+#: The timeout the hanging fixture is run with. Deliberately shorter than the global 60 s
+#: default: the fixture's job is to prove a stuck test is killed and named, and 5 s proves
+#: exactly that while costing the suite 55 s less of pure sleep. The global default is
+#: asserted separately by ``test_every_test_runs_under_a_global_timeout``.
+_HANG_TIMEOUT_S = 5
+
+
+@pytest.mark.timeout(60)  # reviewed exception: it waits out the 5 s timeout it is proving
 def test_a_deliberately_hanging_test_fails_within_the_configured_timeout() -> None:
     """REQ-QUAL-012's acceptance criterion, end to end: the test fails and names itself."""
     started = time.monotonic()
     completed = subprocess.run(  # noqa: S603 - a literal argv naming our own interpreter
-        ["python", "-m", "pytest", str(HANGING_FIXTURE), "-q", "-p", "no:cacheprovider"],
+        [
+            "python",
+            "-m",
+            "pytest",
+            str(HANGING_FIXTURE),
+            "-q",
+            "-p",
+            "no:cacheprovider",
+            f"--timeout={_HANG_TIMEOUT_S}",
+        ],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
         check=False,
-        timeout=180,
+        timeout=60,
     )
     elapsed = time.monotonic() - started
     assert completed.returncode != 0, completed.stdout
     assert "test_this_test_hangs" in completed.stdout
     assert "Timeout" in completed.stdout, completed.stdout
-    timeout = _pyproject()["tool"]["pytest"]["ini_options"]["timeout"]  # type: ignore[index]
-    assert elapsed < timeout + 30, f"the hang was not cut off near the {timeout}s budget"
+    assert elapsed < _HANG_TIMEOUT_S + 30, (
+        f"the hang was not cut off near the {_HANG_TIMEOUT_S}s budget it was given"
+    )
 
 
 def test_every_test_runs_under_a_global_timeout() -> None:

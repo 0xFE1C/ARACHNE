@@ -219,6 +219,11 @@ def claims(values: dict[str, float] | None = None) -> tuple[Claim, ...]:
     out: list[Claim] = [
         Claim("README.md", f"checks-{total}-", "checks.total"),
         Claim("README.md", f"**{total} registered checks**", "checks.total"),
+        # The banner is the first thing a reader sees on the README, so it carries the same
+        # claim as the badge. It went stale once ("152 checks" while every other surface said
+        # 448) because the gate only ever read Markdown; a rendered SVG is still a document a
+        # user reads, so its number is pinned like any other.
+        Claim("docs/assets/banner.svg", f"· {total} checks ·", "checks.total"),
         Claim("README.md", f"checks, {modules} modules", "modules"),
         Claim("README.md", f"tests-{tests}-", "tests.collected"),
         Claim("README.md", f"**{tests} tests**", "tests.collected"),

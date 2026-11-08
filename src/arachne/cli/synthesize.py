@@ -34,7 +34,7 @@ __all__ = ["synthesize_app"]
 
 synthesize_app = typer.Typer(
     name="synthesize",
-    help="Turn threat-intel records into reviewable check proposals (S21, REQ-AGENT-004).",
+    help="Turn threat-intel records into reviewable check proposals.",
     no_args_is_help=True,
 )
 

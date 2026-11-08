@@ -1,4 +1,4 @@
-"""SCIM 2.0 provisioning storage (WP-20, area IDAM, REQ-IDAM-007).
+"""SCIM 2.0 provisioning storage (area IDAM, REQ-IDAM-007).
 
 SCIM is how an enterprise *provisions* people, and the design note that has been in the tree
 since S17 (``docs/scim-ldap-interface.md``) fixes the shape: a directory mirror, not a second

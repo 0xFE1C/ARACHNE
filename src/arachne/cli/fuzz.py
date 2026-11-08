@@ -46,7 +46,7 @@ from arachne.fuzz.wire import GRAMMAR_NAMES, get_grammar
 
 __all__ = ["app"]
 
-app = typer.Typer(help="Bounded safe fuzzing: bounded, attested, candidate-producing (S30).")
+app = typer.Typer(help="Bounded safe fuzzing: bounded, attested, candidate-producing.")
 
 
 def _fail(message: str, code: int = 2) -> NoReturn:

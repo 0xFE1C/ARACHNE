@@ -1,6 +1,6 @@
 """Verification records: one row per verification act, and the finding's current pointer.
 
-WP-13 (area PROOF, REQ-PROOF-015/016). The proof machinery already records *how far* a
+Area PROOF, REQ-PROOF-015/016. The proof machinery already records *how far* a
 check may go and what an L2/L3/L4 act did; this migration makes the record of an act a
 durable artefact on the finding rather than a payload a reader has to reconstruct.
 
@@ -10,7 +10,7 @@ Additive in the strict sense the work package asks for:
     One **nullable** column, indexed, naming the finding's current record. It is a logical
     reference, not a database-level foreign key: the reverse edge below already carries the
     cascade, and a mutual constraint would force SQLite to rebuild ``findings`` for what is
-    otherwise a single ``ALTER TABLE ADD COLUMN``. A pre-WP-13 finding simply has ``NULL``,
+    otherwise a single ``ALTER TABLE ADD COLUMN``. A pre-existing finding simply has ``NULL``,
     which the report reads as ``unverified``.
 ``finding_verifications``
     A new table holding the record type (level, method, observations, reproducibility token,

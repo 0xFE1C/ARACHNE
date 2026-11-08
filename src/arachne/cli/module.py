@@ -36,7 +36,7 @@ __all__ = ["coverage_app", "coverage_command", "module_app", "render_module_list
 
 module_app = typer.Typer(
     name="module",
-    help="Inspect the installed detection modules and checks (F-02-10, F-07-01).",
+    help="Inspect the installed detection modules and checks.",
     no_args_is_help=True,
 )
 
@@ -57,7 +57,7 @@ def module_list(
         str | None, typer.Option("--module", "-m", help="Limit the listing to one module id.")
     ] = None,
 ) -> None:
-    """List the installed modules and the checks each one provides (F-02-10)."""
+    """List the installed modules and the checks each one provides."""
     registry = ModuleRegistry.discover()
     if module is not None:
         selected = registry.group(module)
@@ -183,7 +183,7 @@ def coverage_ledger(
         typer.Option("--generated-at", help="Override the ledger's generation date (YYYY-MM-DD)."),
     ] = None,
 ) -> None:
-    """Emit the framework coverage ledger generated from the check registry (REQ-DET-001).
+    """Emit the framework coverage ledger generated from the check registry.
 
     One record per registered check — id, module, title, proof level, target kinds, framework
     items and last-verified date — plus the WSTG per-id states and the API Top 10 tally.

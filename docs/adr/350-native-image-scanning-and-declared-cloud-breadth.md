@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | accepted (WP-12) |
+| Status | accepted |
 | Date | 2026-11-03 |
 | Deciders | ARACHNE detection engineering, safety owner |
 | Extends | ADR-250.4 (the byte-exact read path) with a second documented call site; ADR-05 (one egress path) |
@@ -23,7 +23,7 @@ was implemented but not declared.
 2. **Cloud providers past the big three.** M5 covers AWS, Azure and GCP. A customer on OCI,
    Alibaba Cloud or DigitalOcean received neither posture coverage nor a statement that the
    product does not cover them. ADR-345 already decided that a declared gap beats a token check;
-   WP-12 has to make that declaration exist.
+   this work has to make that declaration exist.
 
 The first item is the highest-risk parsing work in the programme: an image layer is an
 attacker-controlled archive, and the layer content arrives from a host that may itself be

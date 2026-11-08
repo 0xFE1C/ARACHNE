@@ -21,7 +21,7 @@ __all__ = ["feeds_app"]
 
 feeds_app = typer.Typer(
     name="feeds",
-    help="Import and inspect CVE/EPSS feed artefacts (F-09-03).",
+    help="Import and inspect CVE/EPSS feed artefacts.",
     no_args_is_help=True,
 )
 

@@ -20,6 +20,7 @@ Four things are proven here:
 
 from __future__ import annotations
 
+import os
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -45,6 +46,23 @@ from arachne.modules.registry import ModuleRegistry
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 TARGET_FIXTURE = FIXTURES / "targets" / "m1-fixture.yaml"
 HTTP_FIXTURES = FIXTURES / "http"
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_ai_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Run this module against the AI configuration it declares, not the developer's shell.
+
+    Every test here asserts what happens when a deployment *has* or *has not* configured a
+    provider, so an ``ARACHNE_AI_*`` variable exported on the machine running the suite — a
+    workstation pointed at a real model server — must not leak in. ``Settings.from_env`` is
+    scoped to the document a test builds, but the AI layer resolves its own provider
+    overrides from the process environment, so the module clears that prefix instead of
+    assuming an empty shell. Without this, a configured developer box sees three failures
+    that describe its environment rather than the code.
+    """
+    for key in list(os.environ):
+        if key.startswith("ARACHNE_AI_"):
+            monkeypatch.delenv(key, raising=False)
 
 
 @pytest.fixture

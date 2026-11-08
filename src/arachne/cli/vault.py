@@ -35,7 +35,7 @@ __all__ = ["vault_app"]
 
 vault_app = typer.Typer(
     name="vault",
-    help="Manage the encrypted credential vault (S19).",
+    help="Manage the encrypted credential vault.",
     no_args_is_help=True,
 )
 

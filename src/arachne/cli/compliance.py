@@ -36,7 +36,7 @@ OUTSIDE_PREVIEW = 5
 
 compliance_app = typer.Typer(
     name="compliance",
-    help="Compliance framework maps and per-control evidence export (S22).",
+    help="Compliance framework maps and per-control evidence export.",
     no_args_is_help=True,
 )
 

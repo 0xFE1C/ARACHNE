@@ -41,7 +41,7 @@ __all__ = ["packs_app"]
 
 packs_app = typer.Typer(
     name="packs",
-    help="Signed offline content packs for air-gapped deployments (S25, REQ-RESIL-001).",
+    help="Signed offline content packs for air-gapped deployments.",
     no_args_is_help=True,
 )
 
@@ -75,7 +75,7 @@ def packs_export(
         typer.Option(
             "--pack-kind",
             help=(
-                "What the pack is: check | module | report-format | provider (S26). The review "
+                "What the pack is: check | module | report-format | provider. The review "
                 "pipeline's parity gate needs it; without a declaration a pack cannot be listed."
             ),
         ),
@@ -86,7 +86,7 @@ def packs_export(
             "--entry-point-group",
             help=(
                 "Where the pack registers (e.g. arachne.modules, arachne.report_formats). Must "
-                "agree with --pack-kind (S26)."
+                "agree with --pack-kind."
             ),
         ),
     ] = None,
@@ -95,7 +95,7 @@ def packs_export(
         typer.Option(
             "--check-id",
             help=(
-                "A check id the pack adds, repeatable (S26). Declared ids must not collide with "
+                "A check id the pack adds, repeatable. Declared ids must not collide with "
                 "the built-in catalogue: declaring them is what lets the parity gate tell 'adds "
                 "a check' from 'replaces one'."
             ),
@@ -103,7 +103,7 @@ def packs_export(
     ] = [],  # noqa: B006 - typer requires a list default for a repeatable option
     format_name: Annotated[
         list[str],
-        typer.Option("--format-name", help="A report format the pack adds, repeatable (S26)."),
+        typer.Option("--format-name", help="A report format the pack adds, repeatable."),
     ] = [],  # noqa: B006 - typer requires a list default for a repeatable option
     unsigned: Annotated[
         bool,
@@ -114,11 +114,11 @@ def packs_export(
     """Build a signed content pack from the shipped content (and any named roots).
 
     ``--pack-kind``/``--entry-point-group``/``--check-id``/``--format-name`` are the pack's
-    *declaration of itself* (S26, REQ-ECOS-001). ``arachne plugin review`` reads them for its
-    parity gate: a pack that says what it is can be listed, and a pack that claims a built-in
-    check id is refused, because that is a substitution rather than an addition. Omit them and
-    the pack is still built and signed — it simply cannot pass review, which is the honest
-    outcome for a pack that declares no provenance.
+    *declaration of itself*. ``arachne plugin review`` reads them for its parity gate: a pack
+    that says what it is can be listed, and a pack that claims a built-in check id is refused,
+    because that is a substitution rather than an addition. Omit them and the pack is still
+    built and signed — it simply cannot pass review, which is the honest outcome for a pack
+    that declares no provenance.
     """
     settings = get_settings()
     signer = None if unsigned else build_signer(settings)
@@ -229,10 +229,10 @@ def packs_import(
 ) -> None:
     """Verify and install a content pack; nothing is installed when anything fails.
 
-    When the deployment requires review (``ARACHNE_PLUGIN_REQUIRE_REVIEW``, on by default since
-    S26), the pack must also have a *listed* verdict recorded for these exact bytes (S26,
-    REQ-ECOS-001). Verification alone answers "did the operator sign this?"; the review answers
-    "and did the pipeline pass it?". Both are required before content reaches a scan.
+    When the deployment requires review (``ARACHNE_PLUGIN_REQUIRE_REVIEW``, on by default), the
+    pack must also have a *listed* verdict recorded for these exact bytes. Verification alone
+    answers "did the operator sign this?"; the review answers "and did the pipeline pass it?".
+    Both are required before content reaches a scan.
     """
     settings = get_settings()
     # The accepted key set: a pack signed by either key of a rotation overlap imports

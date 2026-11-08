@@ -77,9 +77,7 @@ def campaign_add(
             help="A replayable proof action (repeatable), e.g. m3.cmdi-oob.",
         ),
     ],
-    cron: Annotated[
-        str | None, typer.Option("--cron", help="Recurring schedule (REQ-VALID-006).")
-    ] = None,
+    cron: Annotated[str | None, typer.Option("--cron", help="Recurring schedule.")] = None,
     engine: Annotated[str, typer.Option("--engine", help="heuristic | hybrid | ai.")] = "heuristic",
     delay: Annotated[
         int,
@@ -365,7 +363,7 @@ def trend_command(
     limit: Annotated[int, typer.Option("--limit", help="How many runs to consider.")] = 30,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
-    """Control coverage over time, with the regression alerts between runs (REQ-VALID-006)."""
+    """Control coverage over time, with the regression alerts between runs."""
     from arachne.purple.coverage import detect_regressions
 
     services, service = _service()

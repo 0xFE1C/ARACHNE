@@ -202,7 +202,7 @@ never reaches a user and the shipped tree never names the scaffolding. With an a
 environment, from the repository root:
 
 ```bash
-python -m tools.wp_check WP-24          # verify a completed work package from the repository
+python -m tools.wp_check <pkg>          # verify a completed work package from the repository
 python -m tools.preamble_check .        # every prompt block matches the shared preamble
 ```
 

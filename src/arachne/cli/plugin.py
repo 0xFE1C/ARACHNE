@@ -47,7 +47,7 @@ __all__ = ["plugin_app"]
 
 plugin_app = typer.Typer(
     name="plugin",
-    help="List, install, review and browse check and report-format plugins (F-09-01, S26).",
+    help="List, install, review and browse check and report-format plugins.",
     no_args_is_help=True,
 )
 
@@ -106,11 +106,10 @@ def marketplace(
 ) -> None:
     """List the plugin catalogue and whether each entry is installed.
 
-    Each entry also carries its review status from the recorded pipeline runs (S26,
-    REQ-ECOS-001): ``reviewed`` when a listing verdict exists for these exact bytes,
-    ``rejected`` when the newest verdict refuses them, and ``unreviewed`` when nothing has
-    been reviewed. Nothing is hidden — the flag is how "listed only after review" is made
-    visible rather than enforced by omission.
+    Each entry also carries its review status from the recorded pipeline runs: ``reviewed``
+    when a listing verdict exists for these exact bytes, ``rejected`` when the newest verdict
+    refuses them, and ``unreviewed`` when nothing has been reviewed. Nothing is hidden — the
+    flag is how "listed only after review" is made visible rather than enforced by omission.
     """
     settings = get_settings()
     try:
@@ -192,16 +191,14 @@ def review_plugin(
     pack: Annotated[Path, typer.Argument(help="The signed content pack (.tar.gz) to review.")],
     publish: Annotated[
         bool,
-        typer.Option(
-            "--publish", help="Record the verdict in this deployment's provenance store (S26)."
-        ),
+        typer.Option("--publish", help="Record the verdict in this deployment's provenance store."),
     ] = False,
     allow_unsigned: Annotated[
         bool, typer.Option("--allow-unsigned", help="Review an unsigned pack (a lab only).")
     ] = False,
     json_output: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = False,
 ) -> None:
-    """Run the marketplace review pipeline over a content pack (S26, REQ-ECOS-001).
+    """Run the marketplace review pipeline over a content pack.
 
     The three gates — signature, safety (AST scan + proof-ladder consistency) and parity
     (declared kind/group, and no collision with a built-in check or format) — are reported with
@@ -283,7 +280,7 @@ def new_check(
         typer.Option(
             "--framework",
             help=(
-                "A framework item the check's evidence bears on, repeatable (REQ-DET-002). "
+                "A framework item the check's evidence bears on, repeatable. "
                 "Defaults to WSTG-CONF-07 and CWE-693."
             ),
         ),
@@ -293,7 +290,7 @@ def new_check(
     ] = False,
     json_output: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = False,
 ) -> None:
-    """Scaffold a check, its test, its mapping entry, its fixtures and a docs stub (REQ-ECOS-007).
+    """Scaffold a check, its test, its mapping entry, its fixtures and a docs stub.
 
     The output is a plugin package that is green in place: ``python -m pytest tests`` passes
     inside it with no edit and no install, because the whole point of a paved road is that the
@@ -344,7 +341,7 @@ def conform_check(
     ],
     json_output: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = False,
 ) -> None:
-    """Run the conformance kit over a candidate check (REQ-ECOS-007).
+    """Run the conformance kit over a candidate check.
 
     Four defect classes are refusals: no framework mapping, an L2+ declaration without its
     opt-in, no assigned decoy (or one the check fires on), and a finding with no
@@ -385,7 +382,7 @@ def install_plugin(
             "--entry",
             help=(
                 "Install the pack a marketplace entry names, after verifying the index and the "
-                "pack's signing key (REQ-ECOS-008). Refuses before downloading anything."
+                "pack's signing key. Refuses before downloading anything."
             ),
         ),
     ] = None,

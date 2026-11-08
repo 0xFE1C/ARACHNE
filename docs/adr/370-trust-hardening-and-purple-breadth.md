@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | accepted (WP-19) |
+| Status | accepted |
 | Date | 2026-11-05 |
 | Deciders | ARACHNE trust owner, detection engineering, compliance owner |
 | Extends | ADR-300.5 (the HMAC limitation this closes); ADR-290 (the purple catalogue this grows); ADR-04 (the framework maps, now generated) |

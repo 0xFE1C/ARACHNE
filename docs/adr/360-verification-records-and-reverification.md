@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | accepted (WP-13) |
+| Status | accepted |
 | Date | 2026-11-03 |
 | Deciders | ARACHNE detection engineering, safety owner |
 | Extends | ADR-200 (the proof ladder) with its persisted record; ADR-250 (the audit chain); ADR-110 (false-positive discipline) |

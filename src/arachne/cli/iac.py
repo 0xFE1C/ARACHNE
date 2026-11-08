@@ -47,7 +47,7 @@ from arachne.data.services import build_orchestrator, build_services
 
 __all__ = ["iac_gate_command"]
 
-app = typer.Typer(help="Pre-deploy IaC/CI scanning (S23, REQ-POSTURE-002).")
+app = typer.Typer(help="Pre-deploy IaC/CI scanning.")
 
 
 def _self_attestation(path: Path) -> AuthorizationAttestation:
@@ -102,7 +102,7 @@ def iac_gate_command(
         typer.Option(
             "--fail-on",
             help=(
-                "CI gate (F-07-05): exit 2 when a finding is at or above this severity "
+                "CI gate: exit 2 when a finding is at or above this severity "
                 "(info|low|medium|high|critical). Default: ARACHNE_CI_FAIL_ON, else 'high'."
             ),
         ),

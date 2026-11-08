@@ -1,4 +1,4 @@
-"""The AI provenance record's storage (WP-15, area AGENT, REQ-AGENT-008).
+"""The AI provenance record's storage (area AGENT, REQ-AGENT-008).
 
 "The AI found it" is unfalsifiable unless the claim carries its own audit: which provider and
 model answered, what prompt template and rendered-prompt hash asked the question, what it cost in
@@ -14,7 +14,7 @@ One **nullable** JSON column makes it one row value:
     counts, ``evidence_ids``, ``stages``, the ``change`` the AI half made and the ``fallback``
     marker. A scan emits one per analysis row, whether or not AI ran.
 
-Nullability is the whole migration story: an existing database upgrades in place, every pre-WP-15
+Nullability is the whole migration story: an existing database upgrades in place, every pre-existing
 row keeps ``NULL``, and a missing record reads as "not stated" rather than as "heuristic". Nothing
 is rewritten and nothing is backfilled — a provenance record backfilled after the fact would be a
 statement about a call nobody made at the time.

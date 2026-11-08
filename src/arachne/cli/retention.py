@@ -29,7 +29,7 @@ __all__ = ["retention_app"]
 
 retention_app = typer.Typer(
     name="retention",
-    help="Retention policies, storage quotas and the pruning job (S20, REQ-DATA-001/003).",
+    help="Retention policies, storage quotas and the pruning job.",
     no_args_is_help=True,
 )
 
@@ -169,7 +169,7 @@ def retention_quota(
     ] = None,
     clear: Annotated[bool, typer.Option("--clear", help="Remove the quota.")] = False,
 ) -> None:
-    """Set (or clear) a project's storage quota (REQ-DATA-003)."""
+    """Set (or clear) a project's storage quota."""
     if clear and bytes_limit is not None:
         msg = "--clear cannot be combined with --bytes"
         raise typer.BadParameter(msg)

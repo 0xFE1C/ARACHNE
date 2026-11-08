@@ -33,7 +33,7 @@ def serve_command(
         bool,
         typer.Option(
             "--insecure",
-            help="Allow serving plain HTTP (loopback development only; violates F-08-02).",
+            help="Allow serving plain HTTP (loopback development only).",
         ),
     ] = False,
     log_level: Annotated[str | None, typer.Option("--log-level", help="uvicorn log level.")] = None,
