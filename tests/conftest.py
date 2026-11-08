@@ -42,6 +42,14 @@ from arachne.tools.skip_gate import (
     load_quarantine,
 )
 
+# The CLI renders its help to the terminal's width, so on a narrow terminal an option name is
+# wrapped or dropped and a test asserting the name is present fails for a reason that has
+# nothing to do with the code. It is a real failure mode: the CI runner reports a narrower
+# width than a developer's terminal, and four help tests failed there while passing locally.
+# Pinning the width makes the rendered help identical in both places. Nothing in the suite
+# renders to a terminal except these help assertions, so no other test can observe it.
+os.environ["COLUMNS"] = "200"
+
 #: A documentation-range address (RFC 5737) that is never private.
 PUBLIC_IP = "93.184.216.34"
 #: A second public address, for multi-address resolution cases.
