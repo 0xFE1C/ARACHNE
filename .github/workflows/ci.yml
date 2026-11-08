@@ -197,7 +197,10 @@ jobs:
           arachne db upgrade 0015 --database-url "sqlite:///dryrun.db"
           arachne db upgrade --dry-run --database-url "sqlite:///dryrun.db" | tee /tmp/dry-run.sql
           grep -q "ADD COLUMN" /tmp/dry-run.sql
-          at=$(arachne db current --database-url "sqlite:///dryrun.db")
+          # `db current` exits non-zero when the database is behind head, which is exactly the
+          # state this step is proving (the dry run applied nothing), so the status is read
+          # for its text rather than for its exit code.
+          at=$(arachne db current --database-url "sqlite:///dryrun.db" || true)
           echo "$at" | grep -q "0015"
           test -n "$before"
       # REQ-OPS-008's acceptance criterion: an upgrade from two versions back on a database
@@ -251,8 +254,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      # The gate is shipped code, so CI runs exactly what an operator would: a plain
-      # interpreter over the checkout, no test harness and no import path setup.
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      # The gate is shipped code, so CI runs exactly what an operator would: the console
+      # script over the checkout, no test harness involved. It still has to be installed —
+      # the runner starts with an empty environment, and the gate is not on the default path.
+      - run: pip install .
       - run: python -m arachne.tools.credentials_gate .
 
   iac-gate:
@@ -266,6 +273,9 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - run: pip install -e ".[dev]"
+      # The review stores its findings, so the evidence store has to exist first: without a
+      # schema the command fails with "run `arachne db upgrade` first" rather than reviewing.
+      - run: python -m arachne.cli.main db upgrade
       # The offline IaC/CI tree review, emitted as GitHub annotations for the PR.
       - run: python -m arachne.tools.ci_annotate --path examples --fail-on high --format all --output-dir ci-annotations
       - uses: actions/upload-artifact@v4
@@ -280,18 +290,20 @@ jobs:
       - uses: actions/checkout@v4
       - uses: azure/setup-helm@v4
       # The chart refuses to render without credentials (REQ-OPS-006), so the smoke
-      # passes throwaway values that are generated here and never committed.
-      - run: helm lint deploy/helm/arachne --set api.auth.apiKeys="ui:viewer:render-only-smoke"
-      - run: helm template arachne deploy/helm/arachne --set api.auth.apiKeys="ui:viewer:render-only-smoke" > /dev/null
+      # passes throwaway values that are generated here and never committed. Both the UI key
+      # and the database password are required: the chart has no default for either.
+      - name: collect the throwaway render values
+        run: |
+          echo 'RENDER_VALUES=--set api.auth.apiKeys=ui:viewer:render-only-smoke --set postgres.auth.password=render-only-smoke' >> "$GITHUB_ENV"
+      - run: helm lint deploy/helm/arachne $RENDER_VALUES
+      - run: helm template arachne deploy/helm/arachne $RENDER_VALUES > /dev/null
       # REQ-OPS-009: with queue-depth autoscaling enabled the chart must render an
       # HorizontalPodAutoscaler on the documented metric, and lint clean with it on.
       - name: the queue-depth HPA renders against the documented metric
         run: |
-          helm lint deploy/helm/arachne \
-            --set api.auth.apiKeys="ui:viewer:render-only-smoke" \
+          helm lint deploy/helm/arachne $RENDER_VALUES \
             --set autoscaling.enabled=true
-          helm template arachne deploy/helm/arachne \
-            --set api.auth.apiKeys="ui:viewer:render-only-smoke" \
+          helm template arachne deploy/helm/arachne $RENDER_VALUES \
             --set autoscaling.enabled=true > /tmp/hpa.yaml
           grep -q "^kind: HorizontalPodAutoscaler" /tmp/hpa.yaml
           grep -q "arachne_queue_depth" /tmp/hpa.yaml
@@ -301,8 +313,7 @@ jobs:
           ! grep -q "^kind: ScaledObject" /tmp/hpa.yaml
       - name: the KEDA ScaledObject renders instead when KEDA owns the pool
         run: |
-          helm template arachne deploy/helm/arachne \
-            --set api.auth.apiKeys="ui:viewer:render-only-smoke" \
+          helm template arachne deploy/helm/arachne $RENDER_VALUES \
             --set autoscaling.enabled=true \
             --set autoscaling.keda.enabled=true > /tmp/keda.yaml
           grep -q "^kind: ScaledObject" /tmp/keda.yaml

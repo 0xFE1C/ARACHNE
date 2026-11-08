@@ -161,7 +161,7 @@ class ComplianceInventory:
 
 @lru_cache(maxsize=len(FRAMEWORK_FILES))
 def _load(framework: str) -> ComplianceInventory:
-    node = files(_FRAMEWORKS_PACKAGE).joinpath(_FRAMEWORKS_DIR, _FILES_BY_NAME[framework])
+    node = files(_FRAMEWORKS_PACKAGE).joinpath(_FRAMEWORKS_DIR).joinpath(_FILES_BY_NAME[framework])
     try:
         data: Any = json.loads(node.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:  # pragma: no cover - a packaging defect

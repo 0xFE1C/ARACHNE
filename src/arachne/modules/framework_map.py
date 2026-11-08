@@ -196,7 +196,10 @@ def frameworks() -> tuple[Framework, ...]:
 
 @lru_cache(maxsize=len(FRAMEWORK_FILES))
 def _load(name: str, filename: str) -> Framework:
-    node = files(_FRAMEWORKS_PACKAGE).joinpath(_FRAMEWORKS_DIR, filename)
+    # Chained rather than ``joinpath(dir, filename)``: ``files()`` returns a
+    # ``MultiplexedPath`` when the target is a namespace directory (which ``data`` is — it has
+    # no ``__init__.py``), and its ``joinpath`` accepted a single argument before 3.13.
+    node = files(_FRAMEWORKS_PACKAGE).joinpath(_FRAMEWORKS_DIR).joinpath(filename)
     try:
         data: Any = json.loads(node.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:  # pragma: no cover - a packaging defect

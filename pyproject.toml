@@ -254,6 +254,14 @@ ignore_missing_imports = true
 module = ["playwright", "playwright.*"]
 ignore_missing_imports = true
 
+# aioquic is the optional HTTP/3 client (extra `http3`): the same shape as Playwright — no
+# type information, a guarded import, and a module whose availability check is the assertion.
+# Newer mypy releases report the unguarded subclass as an error where older ones did not, so
+# the override is stated rather than left to the version installed.
+[[tool.mypy.overrides]]
+module = ["aioquic", "aioquic.*"]
+ignore_missing_imports = true
+
 # ---------------------------------------------------------------- pytest
 [tool.pytest.ini_options]
 minversion = "8.0"

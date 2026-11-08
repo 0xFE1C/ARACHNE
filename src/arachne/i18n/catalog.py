@@ -185,7 +185,7 @@ def load_catalog(locale: str = DEFAULT_LOCALE, *, path: str | Path | None = None
             raise ConfigurationError(f"cannot read i18n catalogue {resolved}: {exc}") from exc
         return parse_catalog(_safe_yaml(text, source=str(resolved)), source=str(resolved))
 
-    resource = files("arachne.templates").joinpath(DEFAULT_I18N_DIR, f"{locale}.yaml")
+    resource = files("arachne.templates").joinpath(DEFAULT_I18N_DIR).joinpath(f"{locale}.yaml")
     try:
         text = resource.read_text(encoding="utf-8")
     except (FileNotFoundError, OSError) as exc:  # pragma: no cover - packaging failure

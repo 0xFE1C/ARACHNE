@@ -357,7 +357,7 @@ def load_wordlist(
                 if text:
                     break
     if not text:
-        node = files("arachne.templates").joinpath("m6", name)
+        node = files("arachne.templates").joinpath("m6").joinpath(name)
         try:
             text = node.read_text(encoding="utf-8")
         except (FileNotFoundError, OSError):

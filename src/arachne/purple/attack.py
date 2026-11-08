@@ -337,7 +337,7 @@ class TechniqueMap:
 
 
 def _bundled_map_path() -> Path:
-    resource = resources.files("arachne.templates").joinpath("purple", "attck-map.yaml")
+    resource = resources.files("arachne.templates").joinpath("purple").joinpath("attck-map.yaml")
     return Path(str(resource))
 
 

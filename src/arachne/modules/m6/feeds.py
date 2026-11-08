@@ -318,7 +318,7 @@ def _parse_rule(data: Any, *, source: str) -> SigmaRule:
 def load_sigma_rules(directory: str | Path | None = None) -> tuple[SigmaRule, ...]:
     """Load every ``*.yml``/``*.yaml`` Sigma rule from ``directory`` (or the bundled set)."""
     if directory is None:
-        node = files("arachne.templates").joinpath("m6", "sigma")
+        node = files("arachne.templates").joinpath("m6").joinpath("sigma")
         paths = sorted(
             (node.joinpath(name) for name in _resource_names(node)),
             key=str,
