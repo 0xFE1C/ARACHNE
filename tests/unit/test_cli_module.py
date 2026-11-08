@@ -31,7 +31,7 @@ def test_module_list_shows_m1_and_every_check_with_its_version() -> None:
     for check in M1.checks:
         assert check.metadata.id in output
         assert check.metadata.research_ref in output
-    assert "9 check(s)" in output
+    assert "25 check(s)" in output
     # The flags an operator has to know about: the opt-in check and its credential.
     assert "opt-in" in output
     assert "needs github_token" in output

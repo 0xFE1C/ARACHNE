@@ -206,6 +206,27 @@ controls:
       - m4.podman-api-exposed
       - m4.registry-catalog-exposed
       - m4.registry-dashboard-exposed
+      - m6.airflow-config
+      - m6.airflow-dags
+      - m6.chroma-heartbeat
+      - m6.chroma-tenants
+      - m6.dify-app-parameters
+      - m6.flowise-chatflows
+      - m6.jupyter-kernels
+      - m6.jupyter-status
+      - m6.langflow-flows
+      - m6.lmstudio-model-list
+      - m6.n8n-workflows
+      - m6.ollama-model-list
+      - m6.ollama-version
+      - m6.qdrant-cluster
+      - m6.qdrant-collections
+      - m6.triton-model-repository
+      - m6.triton-server-metadata
+      - m6.vllm-model-list
+      - m6.weaviate-meta
+      - m6.weaviate-schema
+      - m6.zeppelin-notebooks
   - id: "4.8"
     title: "Uninstall or Disable Unnecessary Services on Enterprise Assets and Software"
     checks:

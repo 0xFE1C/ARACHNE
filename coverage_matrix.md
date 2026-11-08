@@ -6,20 +6,20 @@ the numbered methods in `docs/research/`.
 
 - research corpus: `docs/research`
 - source roots: `src/arachne/modules`
-- references found: **419**
-- coverage: **151/175 (86.3%)**
+- references found: **448**
+- coverage: **155/175 (88.6%)**
 
 ## Summary
 
 | Chapter | Mapped | Total | Percent | Title |
 |---|---|---|---|---|
-| ch01 | 19 | 30 | 63.3% | Passive Reconnaissance and OSINT |
+| ch01 | 23 | 30 | 76.7% | Passive Reconnaissance and OSINT |
 | ch02 | 28 | 30 | 93.3% | Active Scanning and Enumeration |
 | ch03 | 34 | 35 | 97.1% | Web Application Vulnerability Testing |
 | ch04 | 30 | 30 | 100.0% | Exposure and Misconfiguration Discovery |
 | ch05 | 24 | 25 | 96.0% | Cloud and Supply-Chain Exposure |
 | ch06 | 16 | 25 | 64.0% | Vulnerability Correlation, Threat Detection and Adversary Emulation |
-| **total** | **151** | **175** | **86.3%** | |
+| **total** | **155** | **175** | **88.6%** | |
 
 ## Methods
 
@@ -32,13 +32,13 @@ the numbered methods in `docs/research/`.
 | 3 | Provider-indexed service exposure drift | yes | `service-exposure-drift` |
 | 4 | Provider scan-view comparison | yes | `service-exposure-drift` |
 | 5 | InternetDB triage of an address | yes | `internetdb-triage` |
-| 6 | WHOIS and registration archaeology | no | — |
+| 6 | WHOIS and registration archaeology | yes | `mail-infrastructure-inventory`, `nameserver-inventory` |
 | 7 | FOFA and alternative search engines | no | — |
 | 8 | Certificate Transparency log lookup | yes | `ct-lookup`, `ct-surprise` |
 | 9 | Certificate Transparency surprise-host detection | yes | `ct-surprise` |
 | 10 | Search-engine cache and snippet reuse | no | — |
 | 11 | Passive DNS resolution history | yes | `passive-dns` |
-| 12 | Reverse-IP hosted-domain clustering | no | — |
+| 12 | Reverse-IP hosted-domain clustering | yes | `reverse-ip-cluster` |
 | 13 | Passive subdomain enumeration | yes | `subdomain-passive` |
 | 14 | Wayback Machine snapshot harvesting | yes | `webarchive-harvest` |
 | 15 | Archived parameter and endpoint recovery | yes | `webarchive-harvest` |
@@ -50,10 +50,10 @@ the numbered methods in `docs/research/`.
 | 21 | Mobile application store listings | no | — |
 | 22 | Public document metadata extraction | yes | `doc-metadata` |
 | 23 | Favicon hashing for asset correlation | yes | `favicon-hash` |
-| 24 | TLS certificate expiry monitoring | no | — |
+| 24 | TLS certificate expiry monitoring | yes | `certificate-expiry`, `certificate-inventory` |
 | 25 | DNS TXT record mining | yes | `dns-txt-mining` |
 | 26 | JavaScript asset and bundle analysis | yes | `js-asset-scan`, `mobile-artifact` |
-| 27 | Cloud IP-range attribution | no | — |
+| 27 | Cloud IP-range attribution | yes | `asn-network-attribution` |
 | 28 | Third-party DNS history services | no | — |
 | 29 | Domain-similarity and typosquat listing | no | — |
 | 30 | Derived cloud-storage bucket name probing | yes | `bucket-hunt` |
@@ -71,9 +71,9 @@ the numbered methods in `docs/research/`.
 | 7 | Port-state change detection | yes | `port-scan` |
 | 8 | Operating-system fingerprinting | yes | `os-fingerprint` |
 | 9 | Service banner grabbing | yes | `grpc-reflection`, `service-fingerprint` |
-| 10 | Application protocol fingerprinting | yes | `grpc-reflection`, `service-fingerprint` |
+| 10 | Application protocol fingerprinting | yes | `grpc-reflection`, `service-fingerprint`, `technology-inventory` |
 | 11 | Masscan-scale stateless sweeping | no | — |
-| 12 | HTTP server fingerprinting | yes | `grpc-metadata-leak`, `grpc-plaintext`, `http-fingerprint`, `http3-probe` |
+| 12 | HTTP server fingerprinting | yes | `grpc-metadata-leak`, `grpc-plaintext`, `http-fingerprint`, `http3-probe`, `vhost-discovery` |
 | 13 | HTTP title and favicon fingerprinting | yes | `favicon-hash` |
 | 14 | TLS configuration deep scan | yes | `tls-deep-scan`, `tls-mutual-auth` |
 | 15 | SNMP community enumeration | yes | `snmp-enum` |
@@ -215,7 +215,7 @@ the numbered methods in `docs/research/`.
 | 11 | Dark-web and leak-site monitoring | no | — |
 | 12 | Honeypot and decoy deployment | no | — |
 | 13 | Autonomous agentic exploitation | no | — |
-| 14 | GenAI application attack-surface mapping | yes | `attack-surface-genai` |
+| 14 | GenAI application attack-surface mapping | yes | `airflow-config`, `airflow-dags`, `attack-surface-genai`, `chroma-heartbeat`, `chroma-tenants`, `dify-app-parameters`, `flowise-chatflows`, `jupyter-kernels`, `jupyter-status`, `langflow-flows`, `lmstudio-model-list`, `n8n-workflows`, `ollama-model-list`, `ollama-version`, `qdrant-cluster`, `qdrant-collections`, `triton-model-repository`, `triton-server-metadata`, `vllm-model-list`, `weaviate-meta`, `weaviate-schema`, `zeppelin-notebooks` |
 | 15 | LLM prompt-injection surface mapping | yes | `agentic-human-trust`, `agentic-memory-store`, `agentic-rogue-runtime`, `agentic-tool-manifest`, `attack-surface-genai`, `mcp-oauth-metadata`, `mcp-session-auth`, `mcp-token-audience` |
 | 16 | Local privilege-escalation discovery | yes | `lpe-discovery` |
 | 17 | Credential store hunting | yes | `credential-hunt` |
@@ -230,15 +230,11 @@ the numbered methods in `docs/research/`.
 
 ## Unmapped methods
 
-- `ch01#6`
 - `ch01#7`
 - `ch01#10`
-- `ch01#12`
 - `ch01#19`
 - `ch01#20`
 - `ch01#21`
-- `ch01#24`
-- `ch01#27`
 - `ch01#28`
 - `ch01#29`
 - `ch02#11`

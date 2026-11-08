@@ -23,7 +23,15 @@ check                                    ref         what it does
 ``m1.bucket-hunt``                       ch01#30     public cloud-storage listings
 ``m1.service-exposure-drift``            ch01#3-4    provider vs. scan view (opt-in, keyed)
 ``m1.ct-surprise``                       ch01#8-9    new certs + out-of-scope CT names (opt-in)
-``m1.breach-exposure``                   ch01#18     HIBP breach summary (opt-in, keyed)
+``m1.breach-exposure``                    ch01#18     HIBP breach summary (opt-in, keyed)
+``m1.nameserver-inventory``              ch01#6      DNS delegation set (WP-34)
+``m1.mail-infrastructure-inventory``     ch01#6      mail exchangers (WP-34)
+``m1.certificate-inventory``             ch01#24     certificate issuers and windows (WP-34)
+``m1.certificate-expiry``                ch01#24     expired/expiring certificates (WP-34)
+``m1.asn-network-attribution``           ch01#27     the network an address is allocated from
+``m1.reverse-ip-cluster``                ch01#12     hostnames co-located on one address
+``m1.technology-inventory``              ch02#10     published-technology breadth (from the crawl)
+``m1.vhost-discovery``                   ch02#12     alternate names the address serves
 ======================================  ==========  =====================================
 
 A note on the ``research_ref`` values: the M1 table lists a reference number per
@@ -58,6 +66,7 @@ from arachne.modules.m1.inventory import (
     WebArchiveHarvest,
 )
 from arachne.modules.m1.mobile import MobileArtifactScan
+from arachne.modules.m1.recon_breadth import RECON_BREADTH_CHECKS
 from arachne.modules.registry import ModuleGroup
 
 __all__ = ["M1", "M1_CHECKS"]
@@ -83,6 +92,9 @@ M1_CHECKS: tuple[type[Module], ...] = (
     # S29 detection depth expansion (REQ-DEPTH-005): offline APK/IPA analysis. Passive (L0 —
     # it contacts nothing), opt-in, and gated by a scope dimension of its own.
     MobileArtifactScan,
+    # WP-34 reconnaissance breadth (REQ-DET-027): DNS/RDAP/CT enumeration, ASN attribution,
+    # reverse-IP clustering and the two crawl readers (technology breadth, virtual hosts).
+    *RECON_BREADTH_CHECKS,
 )
 
 #: The M1 module group . Its version is the module's own: bump it when
@@ -94,7 +106,7 @@ M1 = ModuleGroup(
         "Passive reconnaissance and OSINT: map the target's surface from third-party and "
         "read-only sources before any active contact, and feed the asset inventory."
     ),
-    version="1.2.0",
+    version="1.3.0",
     research_chapter="ch01",
     checks=M1_CHECKS,
 )

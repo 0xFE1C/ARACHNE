@@ -205,9 +205,9 @@ def test_mask_secret_never_reveals_a_usable_value() -> None:
 # ------------------------------------------------------------------ the M1 module group
 def test_m1_is_complete_versioned_and_in_step_order() -> None:
     assert M1.id == "M1"
-    assert M1.version == "1.2.0"
+    assert M1.version == "1.3.0"
     assert M1.research_chapter == "ch01"
-    assert len(M1.checks) == 17
+    assert len(M1.checks) == 25
     assert all(check.metadata.module == "M1" for check in M1.checks)
 
 
@@ -245,6 +245,16 @@ def test_m1_check_ids_and_defaults() -> None:
         # S29 (REQ-DEPTH-005): the offline mobile-artifact analysis. Opt-in: reading a local
         # file is a scope decision of its own (Scope.allowed_artifacts).
         "m1.mobile-artifact": ("ch01#26", False),
+        # WP-34 (REQ-DET-027): the reconnaissance-breadth family. All default-on read-only
+        # enumerations (the two crawl readers issue no request of their own).
+        "m1.nameserver-inventory": ("ch01#6", True),
+        "m1.mail-infrastructure-inventory": ("ch01#6", True),
+        "m1.certificate-inventory": ("ch01#24", True),
+        "m1.certificate-expiry": ("ch01#24", True),
+        "m1.asn-network-attribution": ("ch01#27", True),
+        "m1.reverse-ip-cluster": ("ch01#12", True),
+        "m1.technology-inventory": ("ch02#10", True),
+        "m1.vhost-discovery": ("ch02#12", True),
     }
     actual = {
         check.metadata.id: (check.metadata.research_ref, check.metadata.enabled_by_default)
@@ -275,6 +285,9 @@ def test_m1_is_passive_except_the_read_only_hybrids() -> None:
         "m1.js-asset-scan",
         "m1.favicon-hash",
         "m1.doc-metadata",
+        # WP-34: the virtual-host probe reads the crawl and then sends one GET per candidate
+        # name — a read-only hybrid like the three above.
+        "m1.vhost-discovery",
     }
     assert all(c.metadata.safe for c in M1.checks)
     # The one active M1 check is the bucket hunt, which probes third-party provider hosts;

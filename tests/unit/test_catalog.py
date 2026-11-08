@@ -57,8 +57,10 @@ def test_bundled_catalogue_covers_every_module_and_is_versioned() -> None:
     # 1.19 (WP-31) the AWS read-only service posture family (REQ-DET-024);
     # 1.20 (WP-32) the Azure, GCP and Kubernetes read-only posture families (REQ-DET-025);
     # 1.21 (WP-33) the exposed management and data service breadth family (REQ-DET-026).
+    # 1.22 (WP-34) the reconnaissance-breadth family and the AI-era serving surface
+    # (REQ-DET-027).
     # tests/unit/test_registry.py keeps the catalogue and the registry in step.
-    assert catalog.catalog_version == "1.21"
+    assert catalog.catalog_version == "1.22"
     assert catalog.modules() == ("M1", "M2", "M3", "M4", "M5", "M6")
     assert len(catalog.checks) >= 30
     # "Version everything" : every check carries a version and a
@@ -78,14 +80,15 @@ def test_bundled_catalogue_covers_every_module_and_is_versioned() -> None:
     # 273; WP-29's twenty-four L1 infrastructure-artifact rows bring it to 297; WP-30's
     # twenty-four L1 server/platform rows bring it to 321; WP-31's thirty-one L1 AWS
     # posture rows bring it to 352; WP-32's twenty-eight L1 Azure/GCP/Kubernetes posture
-    # rows bring it to 380; WP-33's thirty-one L1 exposed-service rows bring it to 411.
+    # rows bring it to 380; WP-33's thirty-one L1 exposed-service rows bring it to 411;
+    # WP-34's eight recon-breadth rows and twenty-one AI-era serving rows bring it to 440.
     # The seven L2+ rows are opt-in, and only rce-echo/state-marker demand the
     # state-change attestation.
     # (S29's tenth depth row, m1.mobile-artifact, declares L0 — it is the one check that
     # contacts nothing at all — so it is in neither list and is pinned here explicitly.)
     originals = [check for check in catalog.checks if check.proof.value == "L1"]
     ladder = [check for check in catalog.checks if check.proof.value in {"L2", "L3", "L4"}]
-    assert len(originals) == 411
+    assert len(originals) == 440
     assert {check.name for check in catalog.checks if check.proof.value == "L0"} == {
         "mobile-artifact"
     }

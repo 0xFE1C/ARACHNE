@@ -2,7 +2,7 @@
   "ledger_version": "1.0",
   "generated_at": "2026-11-08",
   "registry_version": "registry-1.0",
-  "registry_digest": "sha256:55815837052bcaa664171ea636b1cbfb549bdbdc952b02ea5738dbb8abab3944",
+  "registry_digest": "sha256:39b37c25d65345f7af3f72c0cdf13617eaf05f9e9028a74a291391cfcb89480e",
   "framework_versions": {
     "WSTG": "4.2",
     "API": "2023",
@@ -13,7 +13,7 @@
   },
   "last_verified_note": "last_verified is the date the corpus was last exercised by the test suite: the ledger is regenerated after a full suite run, and every registered check is run by it. A per-check date arrives with the verification-record store (REQ-PROOF-*). It is committed content, not a wall-clock read, so --check is byte-stable.",
   "totals": {
-    "checks": 419,
+    "checks": 448,
     "cwe_only_checks": 0
   },
   "wstg": {
@@ -28,12 +28,10 @@
     "total": 10
   },
   "asi_top10": {
-    "mapped": 6,
+    "mapped": 8,
     "total": 10,
     "gap": [
       "ASI01:2026",
-      "ASI04:2026",
-      "ASI05:2026",
       "ASI08:2026"
     ],
     "items": [
@@ -63,15 +61,26 @@
       },
       {
         "id": "ASI04:2026",
-        "state": "gap",
+        "state": "mapped",
         "title": "Agentic Supply Chain Vulnerabilities",
-        "checks": []
+        "checks": [
+          "m6.airflow-dags",
+          "m6.dify-app-parameters",
+          "m6.flowise-chatflows",
+          "m6.langflow-flows",
+          "m6.n8n-workflows"
+        ]
       },
       {
         "id": "ASI05:2026",
-        "state": "gap",
+        "state": "mapped",
         "title": "Unexpected Code Execution",
-        "checks": []
+        "checks": [
+          "m6.jupyter-kernels",
+          "m6.jupyter-status",
+          "m6.langflow-flows",
+          "m6.zeppelin-notebooks"
+        ]
       },
       {
         "id": "ASI06:2026",
@@ -110,6 +119,113 @@
         "title": "Rogue Agents",
         "checks": [
           "m6.agentic-rogue-runtime"
+        ]
+      }
+    ]
+  },
+  "llm_top10": {
+    "mapped": 8,
+    "total": 10,
+    "gap": [
+      "LLM05:2025",
+      "LLM09:2025"
+    ],
+    "items": [
+      {
+        "id": "LLM01:2025",
+        "state": "mapped",
+        "title": "Prompt Injection",
+        "checks": [
+          "m6.attack-surface-genai"
+        ]
+      },
+      {
+        "id": "LLM02:2025",
+        "state": "mapped",
+        "title": "Sensitive Information Disclosure",
+        "checks": [
+          "m6.airflow-config",
+          "m6.attack-surface-genai",
+          "m6.jupyter-status",
+          "m6.lmstudio-model-list",
+          "m6.ollama-model-list",
+          "m6.ollama-version",
+          "m6.triton-server-metadata"
+        ]
+      },
+      {
+        "id": "LLM03:2025",
+        "state": "mapped",
+        "title": "Supply Chain",
+        "checks": [
+          "m6.lmstudio-model-list",
+          "m6.ollama-model-list",
+          "m6.triton-model-repository",
+          "m6.vllm-model-list"
+        ]
+      },
+      {
+        "id": "LLM04:2025",
+        "state": "mapped",
+        "title": "Data and Model Poisoning",
+        "checks": [
+          "m6.agentic-memory-store"
+        ]
+      },
+      {
+        "id": "LLM05:2025",
+        "state": "gap",
+        "title": "Improper Output Handling",
+        "checks": []
+      },
+      {
+        "id": "LLM06:2025",
+        "state": "mapped",
+        "title": "Excessive Agency",
+        "checks": [
+          "m6.agentic-human-trust",
+          "m6.agentic-tool-manifest",
+          "m6.airflow-dags",
+          "m6.n8n-workflows"
+        ]
+      },
+      {
+        "id": "LLM07:2025",
+        "state": "mapped",
+        "title": "System Prompt Leakage",
+        "checks": [
+          "m6.attack-surface-genai",
+          "m6.dify-app-parameters",
+          "m6.flowise-chatflows"
+        ]
+      },
+      {
+        "id": "LLM08:2025",
+        "state": "mapped",
+        "title": "Vector and Embedding Weaknesses",
+        "checks": [
+          "m6.agentic-memory-store",
+          "m6.chroma-heartbeat",
+          "m6.chroma-tenants",
+          "m6.qdrant-cluster",
+          "m6.qdrant-collections",
+          "m6.weaviate-meta",
+          "m6.weaviate-schema"
+        ]
+      },
+      {
+        "id": "LLM09:2025",
+        "state": "gap",
+        "title": "Misinformation",
+        "checks": []
+      },
+      {
+        "id": "LLM10:2025",
+        "state": "mapped",
+        "title": "Unbounded Consumption",
+        "checks": [
+          "m6.attack-surface-genai",
+          "m6.vllm-model-list"
         ]
       }
     ]
@@ -254,12 +370,19 @@
         "in_scope": true,
         "covered": true,
         "checks": [
+          "m1.asn-network-attribution",
+          "m1.certificate-inventory",
           "m1.ct-surprise",
           "m1.dns-txt-mining",
           "m1.doc-metadata",
           "m1.dork-sweep",
           "m1.favicon-hash",
           "m1.js-asset-scan",
+          "m1.mail-infrastructure-inventory",
+          "m1.nameserver-inventory",
+          "m1.reverse-ip-cluster",
+          "m1.technology-inventory",
+          "m1.vhost-discovery",
           "m1.webarchive-harvest",
           "m2.dns-active",
           "m2.favicon-hash",
@@ -349,7 +472,13 @@
           "m4.server-version-disclosure",
           "m4.stack-header-disclosure",
           "m4.wordpress-surface",
-          "m6.template-scan"
+          "m6.airflow-config",
+          "m6.chroma-heartbeat",
+          "m6.ollama-version",
+          "m6.qdrant-cluster",
+          "m6.template-scan",
+          "m6.triton-server-metadata",
+          "m6.weaviate-meta"
         ]
       },
       {
@@ -413,7 +542,22 @@
           "m5.k8s-exposure",
           "m5.k8s-kubelet-anonymous-auth",
           "m6.agentic-rogue-runtime",
-          "m6.mcp-session-auth"
+          "m6.airflow-dags",
+          "m6.chroma-tenants",
+          "m6.dify-app-parameters",
+          "m6.flowise-chatflows",
+          "m6.jupyter-kernels",
+          "m6.jupyter-status",
+          "m6.langflow-flows",
+          "m6.lmstudio-model-list",
+          "m6.mcp-session-auth",
+          "m6.n8n-workflows",
+          "m6.ollama-model-list",
+          "m6.qdrant-collections",
+          "m6.triton-model-repository",
+          "m6.vllm-model-list",
+          "m6.weaviate-schema",
+          "m6.zeppelin-notebooks"
         ]
       },
       {
@@ -811,6 +955,130 @@
       ],
       "last_verified": "2026-11-08",
       "cwe": "CWE-798"
+    },
+    {
+      "id": "m1.nameserver-inventory",
+      "module": "M1",
+      "title": "Nameserver delegation inventory",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-INFO-04",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m1.mail-infrastructure-inventory",
+      "module": "M1",
+      "title": "Mail-exchanger inventory",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-INFO-10",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m1.certificate-inventory",
+      "module": "M1",
+      "title": "Certificate-issuance inventory",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-INFO-04",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m1.certificate-expiry",
+      "module": "M1",
+      "title": "Certificate expiry review",
+      "proof": "L1",
+      "target_kinds": [
+        "domain",
+        "domain_pattern"
+      ],
+      "framework": [
+        "WSTG-INFO-04",
+        "CWE-295"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-295"
+    },
+    {
+      "id": "m1.asn-network-attribution",
+      "module": "M1",
+      "title": "Network (ASN) attribution of an address",
+      "proof": "L1",
+      "target_kinds": [
+        "ip"
+      ],
+      "framework": [
+        "WSTG-INFO-01",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m1.reverse-ip-cluster",
+      "module": "M1",
+      "title": "Reverse-IP host clustering",
+      "proof": "L1",
+      "target_kinds": [
+        "ip"
+      ],
+      "framework": [
+        "WSTG-INFO-04",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m1.technology-inventory",
+      "module": "M1",
+      "title": "Published-technology inventory",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-02",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m1.vhost-discovery",
+      "module": "M1",
+      "title": "Virtual-host discovery",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-INFO-04",
+        "CWE-200"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-200"
     },
     {
       "id": "m2.host-discovery",
@@ -7444,6 +7712,367 @@
       "cwe": "CWE-306"
     },
     {
+      "id": "m6.ollama-model-list",
+      "module": "M6",
+      "title": "Ollama model index readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API8:2023",
+        "CWE-306",
+        "LLM02:2025",
+        "LLM03:2025"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m6.ollama-version",
+      "module": "M6",
+      "title": "Ollama server version disclosed without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "CWE-200",
+        "LLM02:2025"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m6.vllm-model-list",
+      "module": "M6",
+      "title": "vLLM served-model index readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API8:2023",
+        "CWE-306",
+        "LLM03:2025",
+        "LLM10:2025"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m6.triton-server-metadata",
+      "module": "M6",
+      "title": "Triton inference server metadata readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "CWE-200",
+        "LLM02:2025"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m6.triton-model-repository",
+      "module": "M6",
+      "title": "Triton model repository index readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API8:2023",
+        "CWE-306",
+        "LLM03:2025"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m6.lmstudio-model-list",
+      "module": "M6",
+      "title": "LM Studio model index readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API8:2023",
+        "CWE-306",
+        "LLM02:2025",
+        "LLM03:2025"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m6.qdrant-collections",
+      "module": "M6",
+      "title": "Qdrant collection listing readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API8:2023",
+        "CWE-306",
+        "LLM08:2025"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m6.qdrant-cluster",
+      "module": "M6",
+      "title": "Qdrant cluster status readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "CWE-200",
+        "LLM08:2025"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m6.weaviate-meta",
+      "module": "M6",
+      "title": "Weaviate server metadata readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API8:2023",
+        "CWE-200",
+        "LLM08:2025"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m6.weaviate-schema",
+      "module": "M6",
+      "title": "Weaviate schema (class inventory) readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API8:2023",
+        "CWE-306",
+        "LLM08:2025"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m6.chroma-heartbeat",
+      "module": "M6",
+      "title": "Chroma server heartbeat readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "CWE-200",
+        "LLM08:2025"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m6.chroma-tenants",
+      "module": "M6",
+      "title": "Chroma tenant listing readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API8:2023",
+        "CWE-306",
+        "LLM08:2025"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m6.flowise-chatflows",
+      "module": "M6",
+      "title": "Flowise chatflow listing readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API8:2023",
+        "CWE-306",
+        "LLM07:2025",
+        "ASI04:2026"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m6.n8n-workflows",
+      "module": "M6",
+      "title": "n8n workflow listing readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API8:2023",
+        "CWE-306",
+        "LLM06:2025",
+        "ASI04:2026"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m6.dify-app-parameters",
+      "module": "M6",
+      "title": "Dify application parameters readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API8:2023",
+        "CWE-306",
+        "LLM07:2025",
+        "ASI04:2026"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m6.airflow-dags",
+      "module": "M6",
+      "title": "Airflow DAG listing readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API8:2023",
+        "CWE-306",
+        "LLM06:2025",
+        "ASI04:2026"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m6.airflow-config",
+      "module": "M6",
+      "title": "Airflow configuration readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "CWE-200",
+        "LLM02:2025"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-200"
+    },
+    {
+      "id": "m6.langflow-flows",
+      "module": "M6",
+      "title": "Langflow flow listing readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API8:2023",
+        "CWE-306",
+        "ASI04:2026",
+        "ASI05:2026"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m6.jupyter-status",
+      "module": "M6",
+      "title": "Jupyter server status readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API8:2023",
+        "CWE-306",
+        "LLM02:2025",
+        "ASI05:2026"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m6.jupyter-kernels",
+      "module": "M6",
+      "title": "Jupyter kernel listing readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API8:2023",
+        "CWE-306",
+        "ASI05:2026"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m6.zeppelin-notebooks",
+      "module": "M6",
+      "title": "Zeppelin notebook listing readable without authentication",
+      "proof": "L1",
+      "target_kinds": [
+        "url"
+      ],
+      "framework": [
+        "WSTG-CONF-05",
+        "API8:2023",
+        "CWE-306",
+        "ASI05:2026"
+      ],
+      "last_verified": "2026-11-08",
+      "cwe": "CWE-306"
+    },
+    {
       "id": "m6.sigma-hunt-rules",
       "module": "M6",
       "title": "Post-exploitation Sigma hunt rules",
@@ -7554,6 +8183,7 @@
       "state": "mapped",
       "title": "Conduct Search Engine Discovery Reconnaissance for Information Leakage",
       "checks": [
+        "m1.asn-network-attribution",
         "m1.breach-exposure",
         "m1.code-secret-mining",
         "m1.dork-sweep",
@@ -7566,6 +8196,7 @@
       "state": "mapped",
       "title": "Fingerprint Web Server",
       "checks": [
+        "m1.technology-inventory",
         "m2.http-fingerprint",
         "m3.coldfusion-version-disclosure",
         "m3.iis-short-name-disclosure",
@@ -7594,10 +8225,15 @@
       "state": "mapped",
       "title": "Enumerate Applications on Webserver",
       "checks": [
+        "m1.certificate-expiry",
+        "m1.certificate-inventory",
         "m1.ct-lookup",
         "m1.ct-surprise",
+        "m1.nameserver-inventory",
         "m1.passive-dns",
+        "m1.reverse-ip-cluster",
         "m1.subdomain-passive",
+        "m1.vhost-discovery",
         "m3.wp-plugin-readme",
         "m3.wp-plugins-listing",
         "m3.wp-theme-stylesheet",
@@ -7744,6 +8380,7 @@
       "title": "Map Application Architecture",
       "checks": [
         "m1.dns-txt-mining",
+        "m1.mail-infrastructure-inventory",
         "m2.dns-active"
       ]
     },
@@ -8093,7 +8730,28 @@
         "m5.k8s-exposure",
         "m5.registry-scan",
         "m5.search-platform-exposure",
-        "m5.serverless-functions"
+        "m5.serverless-functions",
+        "m6.airflow-config",
+        "m6.airflow-dags",
+        "m6.chroma-heartbeat",
+        "m6.chroma-tenants",
+        "m6.dify-app-parameters",
+        "m6.flowise-chatflows",
+        "m6.jupyter-kernels",
+        "m6.jupyter-status",
+        "m6.langflow-flows",
+        "m6.lmstudio-model-list",
+        "m6.n8n-workflows",
+        "m6.ollama-model-list",
+        "m6.ollama-version",
+        "m6.qdrant-cluster",
+        "m6.qdrant-collections",
+        "m6.triton-model-repository",
+        "m6.triton-server-metadata",
+        "m6.vllm-model-list",
+        "m6.weaviate-meta",
+        "m6.weaviate-schema",
+        "m6.zeppelin-notebooks"
       ]
     },
     {

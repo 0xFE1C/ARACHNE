@@ -1,0 +1,82 @@
+{
+  "description": "Recorded answers for the WP-34 reconnaissance-breadth family (REQ-DET-027): DNS-over-HTTPS delegation and mail-exchanger queries, the crt.sh certificate view (a domain with an expired certificate and one with only future ones), InternetDB address entries (one with co-located hostnames, one without) and RDAP address objects (one attributed to a network, one unattributed). `ARACHNE_OSINT_FIXTURES` points a real run at a directory of these.",
+  "responses": [
+    {
+      "method": "GET",
+      "url": "https://dns.google/resolve?name=recon.example.com&type=NS",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"Status\":0,\"Answer\":[{\"name\":\"recon.example.com\",\"type\":2,\"TTL\":3600,\"data\":\"ns1.example.net.\"},{\"name\":\"recon.example.com\",\"type\":2,\"TTL\":3600,\"data\":\"ns2.example.net.\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://dns.google/resolve?name=recon.example.com&type=MX",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"Status\":0,\"Answer\":[{\"name\":\"recon.example.com\",\"type\":15,\"TTL\":3600,\"data\":\"10 mail.recon.example.com.\"},{\"name\":\"recon.example.com\",\"type\":15,\"TTL\":3600,\"data\":\"20 mail2.recon.example.com.\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://crt.sh/?q=%25.recon.example.com&output=json",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "[{\"issuer_ca_id\": 1, \"issuer_name\": \"C=US, O=Example CA\", \"common_name\": \"recon.example.com\", \"name_value\": \"recon.example.com\", \"not_before\": \"2023-01-01T00:00:00\", \"not_after\": \"2024-01-01T00:00:00\", \"entry_timestamp\": \"2023-01-02T00:00:00\"}, {\"issuer_ca_id\": 1, \"issuer_name\": \"C=US, O=Example CA\", \"common_name\": \"www.recon.example.com\", \"name_value\": \"www.recon.example.com\", \"not_before\": \"2026-01-01T00:00:00\", \"not_after\": \"2027-01-01T00:00:00\", \"entry_timestamp\": \"2026-01-02T00:00:00\"}]"
+    },
+    {
+      "method": "GET",
+      "url": "https://internetdb.shodan.io/198.51.100.10",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"cpes\": [\"cpe:/a:igor_sysoev:nginx:1.18.0\"], \"hostnames\": [\"recon.example.com\", \"shop.recon.example.com\", \"cdn.example.net\"], \"ip\": \"198.51.100.10\", \"ports\": [80, 443], \"tags\": [], \"vulns\": []}"
+    },
+    {
+      "method": "GET",
+      "url": "https://rdap.org/ip/198.51.100.10",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"handle\": \"NET-198-51-100-0-1\", \"name\": \"EXAMPLE-NET\", \"startAddress\": \"198.51.100.0\", \"endAddress\": \"198.51.100.255\", \"type\": \"ASSIGNED PA\", \"country\": \"US\", \"ipVersion\": \"v4\"}"
+    },
+    {
+      "method": "GET",
+      "url": "https://dns.google/resolve?name=clean.recon.example.com&type=NS",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"Status\":3}"
+    },
+    {
+      "method": "GET",
+      "url": "https://dns.google/resolve?name=clean.recon.example.com&type=MX",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"Status\":0,\"Answer\":[]}"
+    },
+    {
+      "method": "GET",
+      "url": "https://crt.sh/?q=%25.clean.recon.example.com&output=json",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "[]"
+    },
+    {
+      "method": "GET",
+      "url": "https://crt.sh/?q=%25.fresh.recon.example.com&output=json",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "[{\"issuer_ca_id\": 2, \"issuer_name\": \"C=US, O=Fresh CA\", \"common_name\": \"fresh.recon.example.com\", \"name_value\": \"fresh.recon.example.com\", \"not_before\": \"2026-06-01T00:00:00\", \"not_after\": \"2099-01-01T00:00:00\", \"entry_timestamp\": \"2026-06-02T00:00:00\"}]"
+    },
+    {
+      "method": "GET",
+      "url": "https://internetdb.shodan.io/198.51.100.11",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"cpes\": [], \"hostnames\": [\"198.51.100.11\"], \"ip\": \"198.51.100.11\", \"ports\": [], \"tags\": [], \"vulns\": []}"
+    },
+    {
+      "method": "GET",
+      "url": "https://rdap.org/ip/198.51.100.11",
+      "status": 404,
+      "headers": {"content-type": "application/json"},
+      "body": "{\"errorCode\": 404, \"title\": \"Not Found\"}"
+    }
+  ]
+}

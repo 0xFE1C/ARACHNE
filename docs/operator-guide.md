@@ -746,7 +746,7 @@ arachne coverage --include-templates               # also count catalogue refere
 
 The tool greps `research_ref` values out of `src/arachne/modules` and compares them with the
 numbered methods in `docs/research/`. `arachne module coverage` is the same command under the
-`module` group. `arachne coverage` reports **151/175 (86.3%)** of the research methods mapped
+`module` group. `arachne coverage` reports **155/175 (88.6%)** of the research methods mapped
 to checks; the per-chapter breakdown is printed with the matrix.
 
 > **Note.** The generated matrix is committed at `coverage_matrix.md`, and a test fails when

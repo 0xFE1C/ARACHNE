@@ -29,7 +29,7 @@
 # disagree, so a plan can never describe a check differently from the code that runs it.
 # S4 adds the M2 rows the registry implements; M3-M6 below are still *planned* only and the
 # plan marks them `implemented: false`.
-catalog_version: "1.21"
+catalog_version: "1.22"
 checks:
   # ---------------------------------------------------------------- M1 recon & attack surface
   # Implemented in S3 (arachne/modules/m1/). The rows below are generated from the check
@@ -5147,3 +5147,330 @@ checks:
     - cloud
     estimated_requests: 1
     requires_active_checks: true
+
+  # ---------------------------------------------------------------- WP-34 (REQ-DET-027)
+  # Reconnaissance breadth (M1) and the AI-era serving surface (M6). Generated from the
+  # check metadata; tests/unit/test_registry.py fails the build if the two ever disagree.
+  - module: M1
+    name: nameserver-inventory
+    version: '1.0'
+    title: Nameserver delegation inventory
+    description: 'Reads the domain''s NS records through a DNS-over-HTTPS resolver and reports the delegation set it publishes. The set names the providers the domain''s resolution depends on — the first fact an enumeration wants and the input to the zone''s shape. It is an inventory, not a finding: a delegation set that resolves proves nothing on its own. Read-only: one resolver query.'
+    research_ref: ch01#6
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - domain
+    - domain_pattern
+    estimated_requests: 1
+  - module: M1
+    name: mail-infrastructure-inventory
+    version: '1.0'
+    title: Mail-exchanger inventory
+    description: 'Reads the domain''s MX records through a DNS-over-HTTPS resolver and reports the mail exchangers it publishes, in the resolver''s preference order. The set names the mail estate (and, through it, the provider the organisation uses) — a different record class from the delegation set, and an inventory rather than a finding. Read-only: one resolver query.'
+    research_ref: ch01#6
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - domain
+    - domain_pattern
+    estimated_requests: 1
+  - module: M1
+    name: certificate-inventory
+    version: '1.0'
+    title: Certificate-issuance inventory
+    description: 'Reads the certificate-transparency log for the declared domain and reports the distinct certificates that name it: their issuers, their validity windows and their count. It is the certificate *fingerprinting* view — which authorities issue for this name, and over what period — and it is an inventory, not a finding. A different claim from ``m1.ct-lookup``, which records the *hostnames* the same log exposes. Read-only: one log query.'
+    research_ref: ch01#24
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - domain
+    - domain_pattern
+    estimated_requests: 1
+  - module: M1
+    name: certificate-expiry
+    version: '1.0'
+    title: Certificate expiry review
+    description: 'Reads the certificate-transparency log for the declared domain and reports the certificates whose own ``not_after`` has passed or falls inside the next 30 days. Unlike the inventory beside it this raises a candidate, because the finding rests on a date the certificate itself states rather than on a fingerprint: an expired certificate is still being served somewhere, and an expiring one is an operational cliff. Read-only: one log query; the certificate is not fetched or re-validated.'
+    research_ref: ch01#24
+    proof: L1
+    cwe: CWE-295
+    target_kinds:
+    - domain
+    - domain_pattern
+    estimated_requests: 1
+  - module: M1
+    name: asn-network-attribution
+    version: '1.0'
+    title: Network (ASN) attribution of an address
+    description: 'Reads the registration-data (RDAP) address object for the declared address and reports the network it is allocated from: the registry handle and name, the address range and the country. The range is what an ASN-level enumeration works from — the owning network''s own statement, not a guess from a reverse lookup. It is an inventory, so it emits an info result. Read-only: one registry query through the opt-in ``whois`` provider.'
+    research_ref: ch01#27
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - ip
+    estimated_requests: 1
+  - module: M1
+    name: reverse-ip-cluster
+    version: '1.0'
+    title: Reverse-IP host clustering
+    description: 'Reads the third-party index entry for the declared address and reports the hostnames it records as resolving there, recording each as a scoped asset. The co-tenancy view is how an enumeration finds the siblings of a name — the input to reverse-IP clustering — and it is an inventory, not a finding. A different claim from ``m1.internetdb-triage``, which reports the *services and CVEs* of one address; this reports the names beside it. Read-only: one index query.'
+    research_ref: ch01#12
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - ip
+    estimated_requests: 1
+  - module: M1
+    name: technology-inventory
+    version: '1.0'
+    title: Published-technology inventory
+    description: 'Reads the crawl the checks step already built and reports the technologies the application itself publishes — its server header, its powered-by header, its generator meta and its framework markers — with the version each one discloses. It is fingerprint breadth as an inventory: a technology name is a signal that steers the next step, and only a version the application states about itself is reported, never a guess from a loose substring. Reads the crawl only; it issues no request of its own (estimated_requests = 0). Distinct from ``m2.http-fingerprint``, which reads a socket banner.'
+    research_ref: ch02#10
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 0
+  - module: M1
+    name: vhost-discovery
+    version: '1.0'
+    title: Virtual-host discovery
+    description: 'Takes the other hostnames the crawl''s pages name, asks the declared origin for each one with that name in the Host header, and reports the names whose answer is a *different, successful* application than the origin''s own — a corroborated virtual host, not a banner guess. Only the Host header a browser would send is added to a plain GET: no body, no other verb, nothing written. The candidate set is bounded and comes from the target''s own content.'
+    research_ref: ch02#12
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 6
+  - module: M6
+    name: ollama-model-list
+    version: '1.0'
+    title: Ollama model index readable without authentication
+    description: 'Reads Ollama''s own local-model index with one anonymous GET and reports it when the server answers with its model list and no authentication challenge. The list names every model the host carries and its digest, which is both an inventory disclosure and the supply-chain surface of an inference host that anyone can reach. Read-only: a model index is parsed, never loaded, and no generation endpoint is named or called.'
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: ollama-version
+    version: '1.0'
+    title: Ollama server version disclosed without authentication
+    description: 'Reads Ollama''s version document with one anonymous GET and reports it when the server answers its own version field without a challenge. A disclosed server version is a patch-level signal — it is never a finding on its own, and this check reports the *exposure* of the version endpoint, not a vulnerability in that version. Read-only. This is a different claim from the model-index check: a deployment can publish its version and refuse its index.'
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: vllm-model-list
+    version: '1.0'
+    title: vLLM served-model index readable without authentication
+    description: 'Reads the OpenAI-compatible model index a vLLM server publishes and reports it when the server answers its own model list with no authentication challenge. An unauthenticated inference server is unbounded consumption: anyone who can route to it can spend the host''s compute. Read-only GET of the index; no completion, chat or embedding route is named or called.'
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: triton-server-metadata
+    version: '1.0'
+    title: Triton inference server metadata readable without authentication
+    description: Reads the server-metadata document a Triton inference server publishes at its API root and reports it when the server answers its own name and version fields with no challenge. The document confirms the server is an unauthenticated inference endpoint. Read-only GET of the metadata document; no model is loaded, invoked or inferred from.
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: triton-model-repository
+    version: '1.0'
+    title: Triton model repository index readable without authentication
+    description: 'Reads the repository index a Triton server publishes and reports it when the server answers the models it serves, their versions and their load state with no challenge. It is a second, independent claim from the server metadata: a deployment can hide its metadata document and still publish its repository, and the repository is the model supply-chain surface. Read-only GET of the index; the check never asks the server to load or unload a model.'
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: lmstudio-model-list
+    version: '1.0'
+    title: LM Studio model index readable without authentication
+    description: Reads the local-model index an LM Studio server publishes and reports it when the server answers its own model list with no authentication challenge. The index names the models a desktop host has loaded, which is both a disclosure and an unauthenticated inference surface. Read-only GET of the index; no chat, completion or embedding route is named or called.
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: qdrant-collections
+    version: '1.0'
+    title: Qdrant collection listing readable without authentication
+    description: 'Reads the collection listing a Qdrant vector database publishes and reports it when the server answers the collections it holds with no challenge. A vector store reachable without a credential is the embedding-weakness surface: the collections are the retrieval corpus an agent grounds its answers on. Read-only GET of the listing; no vector, point or payload is ever read and nothing is written.'
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: qdrant-cluster
+    version: '1.0'
+    title: Qdrant cluster status readable without authentication
+    description: Reads the cluster-status document a Qdrant node publishes and reports it when the node answers its own peer and consensus state with no challenge. It is a different claim from the collection listing — a deployment can refuse the collections and still publish its topology — and it maps the store's peers and shard layout. Read-only GET of the status document.
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: weaviate-meta
+    version: '1.0'
+    title: Weaviate server metadata readable without authentication
+    description: Reads the metadata document a Weaviate vector database publishes and reports it when the server answers its own version and loaded-module fields with no challenge. The module list names the vectorizer and generative integrations the store is wired to, which is the embedding pipeline's shape. Read-only GET of the metadata document.
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: weaviate-schema
+    version: '1.0'
+    title: Weaviate schema (class inventory) readable without authentication
+    description: 'Reads the schema document a Weaviate store publishes and reports it when the server answers its classes, their properties and their vectorizer settings with no challenge. A second, independent claim from the metadata document: the schema is the retrieval model an agent''s grounding depends on. Read-only GET of the schema; no object, vector or tenant is read and nothing is written.'
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: chroma-heartbeat
+    version: '1.0'
+    title: Chroma server heartbeat readable without authentication
+    description: Reads the heartbeat document a Chroma vector database publishes and reports it when the server answers its own liveness field with no challenge. The heartbeat confirms an unauthenticated vector store is reachable. Read-only GET of the liveness document; no collection, embedding or document is read.
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: chroma-tenants
+    version: '1.0'
+    title: Chroma tenant listing readable without authentication
+    description: 'Reads the tenant listing a Chroma server publishes and reports it when the server answers the tenants it holds with no challenge. It is a different claim from the heartbeat: a deployment can answer a liveness probe and still expose the multi-tenant namespace inventory. Read-only GET of the listing; no collection or embedding is read and nothing is written.'
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: flowise-chatflows
+    version: '1.0'
+    title: Flowise chatflow listing readable without authentication
+    description: Reads the chatflow listing a Flowise agent platform publishes and reports it when the server answers the flows it holds with no challenge. A chatflow document carries the flow's own configuration — its prompt, its tools and its model — so publishing it is the system-prompt-leakage and agentic-supply-chain condition. Read-only GET of the listing; the check never drives a flow, sends a chat turn or invokes a tool.
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: n8n-workflows
+    version: '1.0'
+    title: n8n workflow listing readable without authentication
+    description: Reads the workflow listing an n8n automation platform publishes and reports it when the server answers the workflows it holds — their nodes, their connections and their credential references — with no challenge. The workflow definitions are the automation supply chain, and a caller with no identity can read them. Read-only GET of the listing; no workflow is started, executed or published.
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: dify-app-parameters
+    version: '1.0'
+    title: Dify application parameters readable without authentication
+    description: Reads the parameter document a Dify LLM application publishes and reports it when the app answers its input form, its system-parameter block and its opening statement with no challenge. The document describes the application's prompt surface and its model configuration — the system-prompt-leakage and agentic supply-chain condition. Read-only GET of the parameter document; the check never sends a message or runs the app.
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: airflow-dags
+    version: '1.0'
+    title: Airflow DAG listing readable without authentication
+    description: 'Reads the DAG listing an Airflow orchestration API publishes and reports it when the API answers the pipelines it holds, their schedules and their tags, with no challenge. An unauthenticated orchestrator is the automation supply chain exposed and the excessive-agency surface: the estate''s automated actions are readable by anyone who can route to the API. Read-only GET of the listing; no DAG is triggered, paused or modified.'
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: airflow-config
+    version: '1.0'
+    title: Airflow configuration readable without authentication
+    description: 'Reads the configuration document an Airflow API publishes and reports it when the API answers its configuration sections — connection settings, executor, secrets backend — with no challenge. It is a different claim from the DAG listing: a deployment can refuse its pipelines and still expose its configuration. The document is reported, never a secret value in it (the client redacts credentials at capture time). Read-only GET of the configuration document.'
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-200
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: langflow-flows
+    version: '1.0'
+    title: Langflow flow listing readable without authentication
+    description: Reads the flow listing a Langflow agent platform publishes and reports it when the server answers the flows it holds with no challenge. A flow document is an executable agent graph — its components, its tools and its model wiring — so publishing it is the agentic-supply-chain and unexpected-code-execution condition. Read-only GET of the listing; the check never builds or runs a flow.
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: jupyter-status
+    version: '1.0'
+    title: Jupyter server status readable without authentication
+    description: Reads the status document a Jupyter server publishes and reports it when the server answers its kernel and connection counters with no challenge. The counters disclose the server's execution surface, and an unauthenticated notebook server is a code-execution surface — the exposure is the finding. Read-only GET of the status document; the check never opens a notebook or runs a cell.
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: jupyter-kernels
+    version: '1.0'
+    title: Jupyter kernel listing readable without authentication
+    description: 'Reads the kernel listing a Jupyter server publishes and reports it when the server answers its live kernels, their state and their last activity with no challenge. It is a stronger, independent claim than the status counters: the listing names the execution sessions themselves. The exposure of an unauthenticated execution surface is the finding; the check never attaches to a kernel, opens a websocket or runs a cell. Read-only GET of the listing.'
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 1
+  - module: M6
+    name: zeppelin-notebooks
+    version: '1.0'
+    title: Zeppelin notebook listing readable without authentication
+    description: Reads the notebook listing an Apache Zeppelin server publishes and reports it when the server answers its notebooks and their paragraphs with no challenge. An unauthenticated notebook server is a code-execution surface, and the notebook list is the analyst work product itself. Read-only GET of the listing; no paragraph is run, no note is created and no interpreter is started.
+    research_ref: ch06#14
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - url
+    estimated_requests: 1

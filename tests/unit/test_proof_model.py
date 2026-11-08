@@ -145,8 +145,10 @@ def test_the_shipped_checks_are_annotated_l1() -> None:
     # still a read) -> 353. WP-32's twenty-eight Azure/GCP/Kubernetes posture checks are all
     # L1 reads for the same reason, and none of them is opt-in -> 381. WP-33's thirty-one
     # exposed-service checks are all L1 reads too (an HTTP GET or one wire protocol read
-    # command), and none of them is opt-in -> 412.
-    assert len(original) == 412
+    # command), and none of them is opt-in -> 412. WP-34's eight reconnaissance-breadth
+    # checks and twenty-one AI-era serving checks are all L1 reads (a provider query, a crawl
+    # read or one anonymous GET of a status document), and none of them is opt-in -> 441.
+    assert len(original) == 441
     assert all(m.proof in {ProofLevel.L0, ProofLevel.L1} for m in original)
     assert {m.id for m in original if m.proof is ProofLevel.L0} == {"m1.mobile-artifact"}
     assert all(not m.requires_state_attestation for m in original)

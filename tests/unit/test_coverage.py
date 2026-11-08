@@ -116,13 +116,17 @@ def test_build_coverage_reports_the_m1_m2_m3_and_m4_rows() -> None:
     # Kubernetes posture checks reference three ch05 methods no earlier check mapped: #10 (the
     # CloudTrail/audit-log coverage review, by the GKE logging check), #18 (the cloud
     # networking and security-group review, by the Azure NSG checks) and #19 (the managed
-    # key-management review, by the Key Vault checks) -> 151.
-    assert report.mapped == 151
+    # key-management review, by the Key Vault checks) -> 151. WP-34's reconnaissance-breadth
+    # family references four ch01 methods no earlier check mapped: #6 (registration and
+    # delegation data, by the nameserver and mail-exchanger inventories), #12 (reverse-IP
+    # clustering), #24 (certificate expiry and the issuance inventory) and #27 (ASN/network
+    # attribution) -> 155.
+    assert report.mapped == 155
     assert report.percent > 0
 
     ch01 = next(chapter for chapter in report.chapters if chapter.chapter == "ch01")
     assert ch01.total == 30
-    assert ch01.mapped == 19
+    assert ch01.mapped == 23
 
     ch02 = next(chapter for chapter in report.chapters if chapter.chapter == "ch02")
     assert ch02.total == 30
@@ -223,8 +227,15 @@ def test_build_coverage_reports_the_m1_m2_m3_and_m4_rows() -> None:
     assert mapped["ch01#26"] == ("js-asset-scan", "mobile-artifact")
     assert mapped["ch01#23"] == ("favicon-hash",)  # S13
     assert mapped["ch01#25"] == ("dns-txt-mining",)  # S13
+    # WP-34 maps the registration/delegation method (the nameserver and mail-exchanger
+    # inventories), the reverse-IP method, the certificate-expiry method and the network-
+    # attribution method.
+    assert mapped["ch01#6"] == ("mail-infrastructure-inventory", "nameserver-inventory")
+    assert mapped["ch01#12"] == ("reverse-ip-cluster",)
+    assert mapped["ch01#24"] == ("certificate-expiry", "certificate-inventory")
+    assert mapped["ch01#27"] == ("asn-network-attribution",)
     # A method the M1 checks do not cover is reported as unmapped, with no guesswork.
-    assert "ch01#6" in report.unmapped  # WHOIS/registration archaeology: no check reads it
+    assert "ch01#19" in report.unmapped  # paste-site and forum monitoring: not implemented
     assert not [item for item in ch01.methods if item.method.ref == "ch01#7" and item.mapped]
 
 
@@ -248,7 +259,7 @@ def test_text_rendering_lists_every_method_and_the_totals() -> None:
     text = render_coverage_text(build_coverage())
     assert "coverage matrix" in text
     assert "ch01" in text and "ch06" in text
-    assert "151/175" in text
+    assert "155/175" in text
     assert "[x] ch01#1" in text
     assert "[ ] ch02#11" in text
 
@@ -257,7 +268,7 @@ def test_markdown_rendering_is_a_report() -> None:
     markdown = render_coverage_markdown(build_coverage())
     assert markdown.startswith("# ARACHNE coverage matrix (G-01)")
     assert "| Chapter | Mapped | Total | Percent | Title |" in markdown
-    assert "| ch01 | 19 | 30 | 63.3% |" in markdown
+    assert "| ch01 | 23 | 30 | 76.7% |" in markdown
     assert "| ch02 | 28 | 30 | 93.3% |" in markdown
     assert "| ch03 | 34 | 35 | 97.1% |" in markdown
     assert "| ch04 | 30 | 30 | 100.0% |" in markdown
@@ -293,7 +304,7 @@ def test_the_json_view_round_trips() -> None:
 
     payload = json.loads(build_coverage().to_json())
     assert payload["total"] == 175
-    assert payload["mapped"] == 151
+    assert payload["mapped"] == 155
     assert isinstance(payload["chapters"], list)
     assert payload["chapters"][0]["methods"][0]["ref"] == "ch01#1"
 
@@ -303,7 +314,7 @@ def test_cli_reports_the_matrix() -> None:
     result = CliRunner().invoke(app, ["coverage", "matrix"])
     assert result.exit_code == 0, result.output
     assert "coverage matrix" in result.output
-    assert "151/175" in result.output
+    assert "155/175" in result.output
     assert "ch01#1" in result.output
 
 

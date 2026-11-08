@@ -107,6 +107,27 @@ controls:
       - m5.gcp-gcs-uniform-access-off
       - m5.iam-review
       - m5.k8s-rbac-secrets-exposed
+      - m6.airflow-config
+      - m6.airflow-dags
+      - m6.chroma-heartbeat
+      - m6.chroma-tenants
+      - m6.dify-app-parameters
+      - m6.flowise-chatflows
+      - m6.jupyter-kernels
+      - m6.jupyter-status
+      - m6.langflow-flows
+      - m6.lmstudio-model-list
+      - m6.n8n-workflows
+      - m6.ollama-model-list
+      - m6.ollama-version
+      - m6.qdrant-cluster
+      - m6.qdrant-collections
+      - m6.triton-model-repository
+      - m6.triton-server-metadata
+      - m6.vllm-model-list
+      - m6.weaviate-meta
+      - m6.weaviate-schema
+      - m6.zeppelin-notebooks
   - id: "A.5.16"
     title: "Identity management"
     checks:
@@ -250,6 +271,21 @@ controls:
       - m4.unauth-api-audit
       - m5.aws-iam-root-access-key
       - m5.iam-review
+      - m6.airflow-dags
+      - m6.chroma-tenants
+      - m6.dify-app-parameters
+      - m6.flowise-chatflows
+      - m6.jupyter-kernels
+      - m6.jupyter-status
+      - m6.langflow-flows
+      - m6.lmstudio-model-list
+      - m6.n8n-workflows
+      - m6.ollama-model-list
+      - m6.qdrant-collections
+      - m6.triton-model-repository
+      - m6.vllm-model-list
+      - m6.weaviate-schema
+      - m6.zeppelin-notebooks
   - id: "A.8.3"
     title: "Information access restriction"
     checks:
@@ -417,6 +453,12 @@ controls:
       - m4.terraform-state-exposed
       - m4.vcs-exposure
       - m4.vim-swap-exposed
+      - m6.airflow-config
+      - m6.chroma-heartbeat
+      - m6.ollama-version
+      - m6.qdrant-cluster
+      - m6.triton-server-metadata
+      - m6.weaviate-meta
   - id: "A.8.13"
     title: "Information backup"
     checks:

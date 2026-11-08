@@ -43,6 +43,7 @@ from arachne.modules.framework_map import (
     cwe_top25_coverage,
     cwe_top25_framework,
     framework_versions,
+    llm_top10_coverage,
     sorted_items,
     wstg_coverage,
 )
@@ -569,6 +570,9 @@ class CoverageLedger:
     cwe_version: str = ""
     #: The Agentic Top 10 per-item states (REQ-DET-013). Empty only for a ledger built by hand.
     asi_items: tuple[dict[str, Any], ...] = ()
+    #: The LLM Top 10 per-item states (REQ-DET-027): each item either ``mapped`` or a ``gap``
+    #: named individually, beside the ASI tally. Empty only for a ledger built by hand.
+    llm_items: tuple[dict[str, Any], ...] = ()
     #: The cloud-provider coverage rows (REQ-DET-017): every provider is either
     #: ``supported`` with its checks or ``not_supported`` with a reason. Empty only for a
     #: ledger built by hand.
@@ -613,6 +617,14 @@ class CoverageLedger:
             "mapped": sum(1 for item in self.asi_items if item["state"] == "mapped"),
             "total": len(self.asi_items),
             "gap": [str(item["id"]) for item in self.asi_items if item["state"] == "gap"],
+        }
+
+    def llm_counts(self) -> dict[str, Any]:
+        """The REQ-DET-027 tally: ``mapped / 10`` with every unmapped item named as a gap."""
+        return {
+            "mapped": sum(1 for item in self.llm_items if item["state"] == "mapped"),
+            "total": len(self.llm_items),
+            "gap": [str(item["id"]) for item in self.llm_items if item["state"] == "gap"],
         }
 
     def cloud_provider_counts(self) -> dict[str, Any]:
@@ -666,6 +678,7 @@ class CoverageLedger:
             "wstg": self.wstg_counts(),
             "api_top10": self.api_counts(),
             "asi_top10": {**self.asi_counts(), "items": [dict(item) for item in self.asi_items]},
+            "llm_top10": {**self.llm_counts(), "items": [dict(item) for item in self.llm_items]},
             "cwe_top25": {
                 "version": self.cwe_version,
                 **self.cwe_counts(),
@@ -774,6 +787,15 @@ def build_ledger(
         }
         for state in asi_top10_coverage(by_item)
     )
+    llm_items = tuple(
+        {
+            "id": state.id,
+            "state": state.state,
+            "title": state.item.title,
+            "checks": list(state.checks),
+        }
+        for state in llm_top10_coverage(by_item)
+    )
     from arachne.modules.cloud_providers import (
         CLOUD_PROVIDER_MATRIX,
         PROVIDER_LEDGER_VERSION,
@@ -787,6 +809,7 @@ def build_ledger(
         api_items=api_items,
         cwe_items=cwe_items,
         asi_items=asi_items,
+        llm_items=llm_items,
         cloud_provider_items=cloud_provider_items,
         cloud_provider_version=PROVIDER_LEDGER_VERSION,
         cwe_version=cwe_top25_framework().version,
@@ -805,6 +828,7 @@ def render_ledger_markdown(ledger: CoverageLedger) -> str:
     wstg = ledger.wstg_counts()
     api = ledger.api_counts()
     asi = ledger.asi_counts()
+    llm = ledger.llm_counts()
     cwe = ledger.cwe_counts()
     versions = ", ".join(f"{name} {version}" for name, version in ledger.framework_versions.items())
     lines = [
@@ -823,6 +847,8 @@ def render_ledger_markdown(ledger: CoverageLedger) -> str:
         f"- WSTG v4.2: **{wstg['mapped']}/{wstg['total']} mapped**, "
         f"{wstg['in_scope']} in scope, {wstg['out_of_scope']} out of scope, {wstg['gap']} gap",
         f"- OWASP API Top 10 (2023): **{api['mapped']}/{api['total']} mapped**",
+        f"- OWASP LLM Top 10 (2025): **{llm['mapped']}/{llm['total']} mapped**; gap: "
+        + (", ".join(f"`{item}`" for item in llm["gap"]) if llm["gap"] else "none"),
         f"- OWASP Agentic Top 10 (2026): **{asi['mapped']}/{asi['total']} mapped**; gap: "
         + (", ".join(f"`{item}`" for item in asi["gap"]) if asi["gap"] else "none"),
         f"- CWE Top 25 (2025), in scope: **{cwe['in_scope']['covered']}/"
@@ -862,6 +888,24 @@ def render_ledger_markdown(ledger: CoverageLedger) -> str:
         "|---|---|---|---|",
     ]
     for item in ledger.api_items:
+        checks = ", ".join(f"`{check}`" for check in item["checks"]) or "—"
+        lines.append(f"| `{item['id']}` | {item['state']} | {checks} | {item['title']} |")
+    lines += [
+        "",
+        f"## OWASP LLM Top 10 (2025) — {llm['mapped']}/{llm['total']} mapped (REQ-DET-027)",
+        "",
+        "An item is `mapped` when at least one registered check names it in its framework",
+        "mapping (`CheckMetadata.framework`) and `gap` when none does. The unmapped items are",
+        "named individually: they are the requirement's remaining coverage debt, not a silent",
+        "shortfall. `LLM05` (improper output handling) and `LLM09` (misinformation) are the",
+        "honest gaps — both describe what an application does with model *output*, which a",
+        "read-only scan cannot establish without sending a prompt, and sending one is out of",
+        "scope permanently.",
+        "",
+        "| LLM id | State | Checks | Item |",
+        "|---|---|---|---|",
+    ]
+    for item in ledger.llm_items:
         checks = ", ".join(f"`{check}`" for check in item["checks"]) or "—"
         lines.append(f"| `{item['id']}` | {item['state']} | {checks} | {item['title']} |")
     lines += [

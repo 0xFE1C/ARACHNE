@@ -23,6 +23,7 @@ check                                      ref          what it establishes
 ``m6.agentic-memory-store``                ch06#15      agentic ASI06 context store (WP-10)
 ``m6.agentic-human-trust``                 ch06#15      agentic ASI09 human gate (WP-10)
 ``m6.agentic-rogue-runtime``               ch06#15      agentic ASI10 unmanaged runtime (WP-10)
+``m6.ai-*``                                ch06#14      AI-era serving surface (WP-34)
 ========================================  ===========  ============================================
 
 **Numbering.** As for M1-M5, ``research_ref`` values are the canonical method numbers of
@@ -45,6 +46,7 @@ from __future__ import annotations
 
 from arachne.modules.base import Module
 from arachne.modules.m6.agentic import AGENTIC_CHECKS
+from arachne.modules.m6.ai_surface import AI_SURFACE_CHECKS
 from arachne.modules.m6.exposure import CveEpssCorrelation, LpeDiscovery
 from arachne.modules.m6.genai import AttackSurfaceGenai
 from arachne.modules.m6.hardening import CredentialHunt, ExploitMatch, TemplateScan
@@ -68,6 +70,7 @@ M6_CHECKS: tuple[type[Module], ...] = (
     AttackSurfaceGenai,
     *MCP_CHECKS,
     *AGENTIC_CHECKS,
+    *AI_SURFACE_CHECKS,
     SigmaHuntRules,
     DeceptionListeners,
     AdAttackPath,
@@ -90,11 +93,14 @@ M6 = ModuleGroup(
         "rules with an opt-in log-ingest path, local-privilege-escalation CVE matching, "
         "read-only AD attack-path analysis, honeytoken trigger monitoring, and the read-only "
         "OWASP Agentic Top 10 surface (agent tool manifests, memory stores, published agent "
-        "policy and unmanaged agent runtimes — ASI02, ASI06, ASI09, ASI10). File-read-only "
+        "policy and unmanaged agent runtimes — ASI02, ASI06, ASI09, ASI10), and the served "
+        "AI-era surface (read-only status and index documents of inference servers, vector "
+        "databases, agent and workflow frameworks and notebook servers). File-read-only "
         "throughout; nothing performs a post-exploitation action and no check prompts, starts "
-        "or writes to a target agent."
+        "or writes to a target agent, and no check sends a prompt or an instruction to a model "
+        "endpoint."
     ),
-    version="1.1.0",
+    version="1.2.0",
     research_chapter="ch06",
     checks=M6_CHECKS,
 )

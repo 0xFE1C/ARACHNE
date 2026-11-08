@@ -66,6 +66,7 @@ __all__ = [
     "framework_versions",
     "frameworks",
     "item_error",
+    "llm_top10_coverage",
     "sorted_items",
     "validate_items",
     "wstg_coverage",
@@ -377,6 +378,19 @@ def asi_top10_coverage(mapped: Mapping[str, Sequence[str]]) -> tuple[WstgState, 
     the unmapped items named individually rather than only as a shortfall.
     """
     return _item_coverage("ASI", mapped)
+
+
+def llm_top10_coverage(mapped: Mapping[str, Sequence[str]]) -> tuple[WstgState, ...]:
+    """The ten LLM Top 10 ids with their mapped checks (REQ-DET-027).
+
+    The same rule as :func:`asi_top10_coverage`: an item is ``mapped`` when a registered check
+    names it in its framework mapping and ``gap`` when none does, so the ledger names every
+    unmapped item individually. ``LLM05`` (improper output handling) and ``LLM09``
+    (misinformation) are the honest gaps: both describe what an application *does* with model
+    output, which a read-only scan cannot establish without sending the application a prompt —
+    and sending one is permanently out of scope.
+    """
+    return _item_coverage("LLM", mapped)
 
 
 def _item_coverage(

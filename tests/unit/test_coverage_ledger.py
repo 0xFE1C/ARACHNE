@@ -372,6 +372,7 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     wp31 = {record.id for record in ledger.records if record.id in WP31_IDS}
     wp32 = {record.id for record in ledger.records if record.id in WP32_IDS}
     wp33 = {record.id for record in ledger.records if record.id in WP33_IDS}
+    wp34 = {record.id for record in ledger.records if record.id in WP34_IDS}
     assert (
         len(
             ids
@@ -391,6 +392,7 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
             - wp31
             - wp32
             - wp33
+            - wp34
         )
         == 152
     )
@@ -409,6 +411,7 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     assert len(wp31) == 31
     assert len(wp32) == 28
     assert len(wp33) == 31
+    assert len(wp34) == 29
 
 
 #: WP-32's Azure, GCP and Kubernetes read-only posture families (REQ-DET-025);
@@ -665,3 +668,40 @@ def test_the_cli_check_mode_passes_on_the_committed_ledger() -> None:
     result = runner.invoke(app, ["coverage", "ledger", "--check"])
     assert result.exit_code == 0, result.output
     assert "up to date" in result.output
+
+
+#: WP-34's reconnaissance-breadth family and AI-era serving surface (REQ-DET-027);
+#: excluded from the 152-check baseline for the same reason as the later families.
+WP34_IDS: frozenset[str] = frozenset(
+    {
+        "m1.asn-network-attribution",
+        "m1.certificate-expiry",
+        "m1.certificate-inventory",
+        "m1.mail-infrastructure-inventory",
+        "m1.nameserver-inventory",
+        "m1.reverse-ip-cluster",
+        "m1.technology-inventory",
+        "m1.vhost-discovery",
+        "m6.airflow-config",
+        "m6.airflow-dags",
+        "m6.chroma-heartbeat",
+        "m6.chroma-tenants",
+        "m6.dify-app-parameters",
+        "m6.flowise-chatflows",
+        "m6.jupyter-kernels",
+        "m6.jupyter-status",
+        "m6.langflow-flows",
+        "m6.lmstudio-model-list",
+        "m6.n8n-workflows",
+        "m6.ollama-model-list",
+        "m6.ollama-version",
+        "m6.qdrant-cluster",
+        "m6.qdrant-collections",
+        "m6.triton-model-repository",
+        "m6.triton-server-metadata",
+        "m6.vllm-model-list",
+        "m6.weaviate-meta",
+        "m6.weaviate-schema",
+        "m6.zeppelin-notebooks",
+    }
+)

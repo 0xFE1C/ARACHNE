@@ -125,8 +125,13 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # probes over IPMI/Redfish, the container daemon API, etcd, Consul, Vault, ZooKeeper, Kafka,
     # Elasticsearch, RabbitMQ, Jenkins, Grafana, Prometheus, Kibana, CouchDB, Redis and
     # memcached, every one an HTTP GET or a single entry of a wire protocol's closed read
-    # vocabulary -> 419.
-    assert len(registry.checks()) == 419
+    # vocabulary -> 419. WP-34 adds the reconnaissance-breadth family (REQ-DET-027) — eight
+    # read-only enumeration checks (DNS delegation and mail exchangers, the certificate
+    # inventory and its expiry review, RDAP address attribution, reverse-IP clustering and the
+    # two crawl readers) — and the AI-era serving surface (REQ-DET-027) — twenty-one anonymous
+    # GETs of the status/index documents of inference servers, vector databases, agent and
+    # workflow frameworks and notebook servers -> 448.
+    assert len(registry.checks()) == 448
     # M1's code-secret-mining, M2's SNMP and ICS checks, M4's metadata-ssrf and
     # default-credentials checks, M3's ssrf-probe, M5's imds-ssrf / azure-mi-audit and
     # M6's deception-listeners / ad-attack-path, S13's m1.bucket-hunt, S15's six
@@ -275,8 +280,8 @@ def test_a_plugin_extends_an_existing_module(monkeypatch) -> None:  # type: igno
     )
     registry = ModuleRegistry.discover()
     assert registry.module_ids() == ("M1", "M2", "M3", "M4", "M5", "M6")
-    # The shipped set (419 at WP-33) plus the plugin's one extra check.
-    assert len(registry.checks()) == 420
+    # The shipped set (448 at WP-34) plus the plugin's one extra check.
+    assert len(registry.checks()) == 449
     assert registry.group("M1").origin == "builtin+extra"  # type: ignore[union-attr]
 
 
