@@ -262,6 +262,13 @@ ignore_missing_imports = true
 module = ["aioquic", "aioquic.*"]
 ignore_missing_imports = true
 
+# The adapter subclasses a class from that untyped optional client, so the base resolves to
+# `Any` and `strict` refuses to subclass it. Narrowed to this one module: the alternative —
+# turning the check off repository-wide — would hide the same mistake where it does matter.
+[[tool.mypy.overrides]]
+module = ["arachne.modules.m2.http3"]
+disallow_subclassing_any = false
+
 # ---------------------------------------------------------------- pytest
 [tool.pytest.ini_options]
 minversion = "8.0"

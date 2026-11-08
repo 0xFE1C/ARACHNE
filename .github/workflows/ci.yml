@@ -290,11 +290,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: azure/setup-helm@v4
       # The chart refuses to render without credentials (REQ-OPS-006), so the smoke
-      # passes throwaway values that are generated here and never committed. Both the UI key
-      # and the database password are required: the chart has no default for either.
+      # passes throwaway values that are generated here and never committed. All three the
+      # chart demands are supplied: the API key table, the agent key and the database
+      # password — it ships no default for any of them.
       - name: collect the throwaway render values
         run: |
-          echo 'RENDER_VALUES=--set api.auth.apiKeys=ui:viewer:render-only-smoke --set postgres.auth.password=render-only-smoke' >> "$GITHUB_ENV"
+          echo 'RENDER_VALUES=--set api.auth.apiKeys=ui:viewer:render-only-smoke --set agent.auth.apiKey=render-only-smoke --set postgres.auth.password=render-only-smoke' >> "$GITHUB_ENV"
       - run: helm lint deploy/helm/arachne $RENDER_VALUES
       - run: helm template arachne deploy/helm/arachne $RENDER_VALUES > /dev/null
       # REQ-OPS-009: with queue-depth autoscaling enabled the chart must render an

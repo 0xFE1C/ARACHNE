@@ -1,21 +1,28 @@
 """HTTP/3 transport against a real QUIC fixture (REQ-DET-006).
 
 This file needs the optional extra (``arachne[quic]``). The rest of the suite does not: when
-``aioquic`` is absent the whole module skips, which is asserted by
+``aioquic`` is absent these tests skip, which is asserted by
 ``tests/unit/test_http3_probe.py``'s degradation test being independent of it.
+
+The skip is a marker rather than a module-level ``importorskip`` on purpose. Their module
+keeps them *collected*, so the suite's documented test count is the same whether or not a
+developer has the extra installed; an import-time skip would make the count depend on their
+environment and the documentation gate would then fail for reasons they cannot see.
 """
 
 from __future__ import annotations
 
 import pytest
+from tests.lab.quic_lab import aioquic_available, start_http3_lab
 
 from arachne.modules.m2 import http3
 
-pytest.importorskip("aioquic", reason="the optional extra arachne[quic] is not installed")
-
-from tests.lab.quic_lab import start_http3_lab
-
-pytestmark = pytest.mark.lab
+pytestmark = [
+    pytest.mark.lab,
+    pytest.mark.skipif(
+        not aioquic_available(), reason="the optional extra arachne[quic] is not installed"
+    ),
+]
 
 
 async def test_a_quic_fixture_is_detected_and_its_headers_read() -> None:
