@@ -41,12 +41,16 @@ jobs:
         continue-on-error: true
         run: |
           echo "COLUMNS=${COLUMNS:-unset} LINES=${LINES:-unset} TERM=${TERM:-unset}"
-          python -c "import typer, click, rich, sys; print('typer', typer.__version__, 'click', click.__version__, 'rich', rich.__version__, 'py', sys.version.split()[0])"
-          python -m arachne.cli.main --help 2>&1 | head -25
+          python -c "import importlib.metadata as m; print({n: m.version(n) for n in ('typer', 'click', 'rich')})" || echo 'version probe failed'
+          echo '--- does the root help carry --version on this runner? ---'
+          python -m arachne.cli.main --help > /tmp/help.txt 2>&1 || echo 'help command failed'
+          grep -c -- '--version' /tmp/help.txt || echo 'no --version found'
+          wc -l /tmp/help.txt
+          head -30 /tmp/help.txt || true
           echo '--- does the loopback lab zone resolve on this runner? ---'
           getent hosts lab.arachne.test || echo 'getent: no entry'
           python -c "import socket; print(socket.gethostbyname('lab.arachne.test'))" || echo 'gethostbyname raised'
-          cat /etc/resolv.conf
+          cat /etc/resolv.conf || true
       # The whole repository, not `src tests`: a gate that does not cover the tree is not a
       # gate (REQ-QUAL-006). No path exclusions hide a violation.
       - run: ruff check .
