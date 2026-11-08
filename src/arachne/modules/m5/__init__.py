@@ -30,6 +30,10 @@ check                                      ref         what it establishes
 ``m5.managed-datastores``                  ch05#20     reachable managed DB console/proxy
 ``m5.search-platform-exposure``            ch05#21     anonymous Elasticsearch/Kibana
 ``m5.cloud-posture``                       ch05#1      continuous cloud-config posture + drift
+``m5.aws-*`` (31 checks)                   ch05#1-20   AWS read-only service posture
+``m5.azure-*`` (11 checks)                 ch05#2-20   Azure read-only service posture
+``m5.gcp-*`` (8 checks)                    ch05#2-20   GCP read-only service posture
+``m5.k8s-*`` (9 checks)                    ch05#13-14  Kubernetes read-only API posture
 ========================================  ==========  ==========================================
 
 **Numbering.** As for M1-M4, ``research_ref`` values are the canonical method numbers of
@@ -53,6 +57,7 @@ from __future__ import annotations
 
 from arachne.modules.base import Module
 from arachne.modules.m5.aws_posture import AWS_POSTURE_CHECKS
+from arachne.modules.m5.azure_posture import AZURE_POSTURE_CHECKS
 from arachne.modules.m5.cloud import (
     AzureMiAudit,
     BucketEnumerator,
@@ -62,12 +67,14 @@ from arachne.modules.m5.cloud import (
     LeakedCloudKeys,
 )
 from arachne.modules.m5.cloud_posture import CloudPosture
+from arachne.modules.m5.gcp_posture import GCP_POSTURE_CHECKS
 from arachne.modules.m5.hardening import (
     ManagedDatastores,
     SearchPlatformExposure,
     ServerlessFunctions,
 )
 from arachne.modules.m5.image import ImageScan
+from arachne.modules.m5.k8s_posture import K8S_POSTURE_CHECKS
 from arachne.modules.m5.platform import (
     DockerSocket,
     FirebaseRules,
@@ -105,6 +112,9 @@ M5_CHECKS: tuple[type[Module], ...] = (
     ImageScan,
     DigitalOceanPosture,
     *AWS_POSTURE_CHECKS,
+    *AZURE_POSTURE_CHECKS,
+    *GCP_POSTURE_CHECKS,
+    *K8S_POSTURE_CHECKS,
     BucketEnumerator,
     FirebaseRules,
     SupabaseRls,
@@ -131,10 +141,14 @@ M5 = ModuleGroup(
         "known-vulnerable components, IAM over-privilege, the cloud metadata services "
         "reachable through an SSRF sink, the continuous cloud-config posture/drift watch, and "
         "the AWS read-only service posture family (S3, IAM, EC2 and metadata, RDS, EKS, Lambda, "
-        "CloudTrail, KMS, SQS/SNS, ECR and the account-level defaults). "
+        "CloudTrail, KMS, SQS/SNS, ECR and the account-level defaults), and the WP-32 read-only "
+        "posture families for Azure (storage, network security groups, Key Vault, SQL, AKS and "
+        "App Service), GCP (object storage, GKE, IAM, Cloud SQL and functions) and Kubernetes "
+        "(RBAC, secrets metadata, the API server, workloads, the dashboard, the kubelet and "
+        "admission). "
         "Read-only throughout; repo/pipeline analysis runs on local clones only."
     ),
-    version="1.2.0",
+    version="1.3.0",
     research_chapter="ch05",
     checks=M5_CHECKS,
 )

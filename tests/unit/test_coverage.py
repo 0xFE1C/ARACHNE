@@ -112,8 +112,12 @@ def test_build_coverage_reports_the_m1_m2_m3_and_m4_rows() -> None:
     assert report.total == 175
     # S13 adds 25 checks that lift the mapped total from 119 to 144 (see ADR-180.1); S18's
     # three intel checks map four more methods (Shodan #3, Censys #4, WHOIS/RDAP #9, breach
-    # lookups #18), closing part of the paid-feed OSINT gap -> 148.
-    assert report.mapped == 148
+    # lookups #18), closing part of the paid-feed OSINT gap -> 148. WP-32's Azure, GCP and
+    # Kubernetes posture checks reference three ch05 methods no earlier check mapped: #10 (the
+    # CloudTrail/audit-log coverage review, by the GKE logging check), #18 (the cloud
+    # networking and security-group review, by the Azure NSG checks) and #19 (the managed
+    # key-management review, by the Key Vault checks) -> 151.
+    assert report.mapped == 151
     assert report.percent > 0
 
     ch01 = next(chapter for chapter in report.chapters if chapter.chapter == "ch01")
@@ -244,7 +248,7 @@ def test_text_rendering_lists_every_method_and_the_totals() -> None:
     text = render_coverage_text(build_coverage())
     assert "coverage matrix" in text
     assert "ch01" in text and "ch06" in text
-    assert "148/175" in text
+    assert "151/175" in text
     assert "[x] ch01#1" in text
     assert "[ ] ch02#11" in text
 
@@ -257,7 +261,7 @@ def test_markdown_rendering_is_a_report() -> None:
     assert "| ch02 | 28 | 30 | 93.3% |" in markdown
     assert "| ch03 | 34 | 35 | 97.1% |" in markdown
     assert "| ch04 | 30 | 30 | 100.0% |" in markdown
-    assert "| ch05 | 21 | 25 | 84.0% |" in markdown
+    assert "| ch05 | 24 | 25 | 96.0% |" in markdown
     assert "| ch06 | 16 | 25 | 64.0% |" in markdown
     assert "### ch01 —" in markdown
     assert "## Unmapped methods" in markdown
@@ -289,7 +293,7 @@ def test_the_json_view_round_trips() -> None:
 
     payload = json.loads(build_coverage().to_json())
     assert payload["total"] == 175
-    assert payload["mapped"] == 148
+    assert payload["mapped"] == 151
     assert isinstance(payload["chapters"], list)
     assert payload["chapters"][0]["methods"][0]["ref"] == "ch01#1"
 
@@ -299,7 +303,7 @@ def test_cli_reports_the_matrix() -> None:
     result = CliRunner().invoke(app, ["coverage", "matrix"])
     assert result.exit_code == 0, result.output
     assert "coverage matrix" in result.output
-    assert "148/175" in result.output
+    assert "151/175" in result.output
     assert "ch01#1" in result.output
 
 

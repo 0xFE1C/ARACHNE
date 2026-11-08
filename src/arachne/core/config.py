@@ -740,6 +740,19 @@ class M5Settings:
     #: pitfall is the reason: a finding is established from the first page, so the bound is
     #: deliberate and raising it costs rate budget rather than accuracy.
     aws_max_resources: int = 5
+    #: The Azure subscription the read-only ARM posture checks scope their paths to (WP-32,
+    #: REQ-DET-025). ARM resource paths carry it, so the checks read it from here and skip when
+    #: it is unset rather than guessing an identifier the operator never declared. Empty by
+    #: default: the family is inert until an operator names a subscription.
+    azure_subscription_id: str = ""
+    #: The GCP project the read-only posture checks scope their paths to (WP-32, REQ-DET-025).
+    #: Same contract as ``azure_subscription_id``: unset means the checks skip.
+    gcp_project_id: str = ""
+    #: How many resources one Azure/GCP/Kubernetes posture check enumerates before it stops
+    #: (WP-32, REQ-DET-025). The same reasoning as ``aws_max_resources``: a finding is
+    #: established from the first page, so the bound keeps one check from becoming an estate
+    #: dump. A separate knob from the AWS one so a family can be tuned without moving the other.
+    cloud_max_resources: int = 5
 
     def __post_init__(self) -> None:
         for label, value in (
@@ -751,6 +764,7 @@ class M5Settings:
             ("posture_max_resources", self.posture_max_resources),
             ("posture_max_bytes", self.posture_max_bytes),
             ("aws_max_resources", self.aws_max_resources),
+            ("cloud_max_resources", self.cloud_max_resources),
             ("image_max_layers", self.image_max_layers),
             ("image_max_layer_bytes", self.image_max_layer_bytes),
             ("image_max_unpacked_bytes", self.image_max_unpacked_bytes),
@@ -2779,6 +2793,9 @@ class Settings:
                 posture_token=_env_secret(source, "ARACHNE_M5_POSTURE_TOKEN"),
                 aws_region=_env_str(source, "ARACHNE_M5_AWS_REGION") or "us-east-1",
                 aws_max_resources=_env_int(source, "ARACHNE_M5_AWS_MAX_RESOURCES", 5),
+                azure_subscription_id=_env_str(source, "ARACHNE_M5_AZURE_SUBSCRIPTION_ID") or "",
+                gcp_project_id=_env_str(source, "ARACHNE_M5_GCP_PROJECT_ID") or "",
+                cloud_max_resources=_env_int(source, "ARACHNE_M5_CLOUD_MAX_RESOURCES", 5),
             ),
             m5_probes=_env_str(source, "ARACHNE_M5_PROBES") or None,
             m6=M6Settings(

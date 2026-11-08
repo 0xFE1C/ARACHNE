@@ -167,20 +167,80 @@ CLOUD_PROVIDER_MATRIX: tuple[CloudProviderEntry, ...] = (
         provider="azure",
         display="Microsoft Azure",
         state="supported",
-        check_ids=("m5.bucket-enumerator", "m5.azure-mi-audit", "m5.cloud-posture"),
+        check_ids=(
+            "m5.bucket-enumerator",
+            "m5.azure-mi-audit",
+            "m5.cloud-posture",
+            # WP-32 (REQ-DET-025): the read-only ARM service posture family.
+            "m5.azure-storage-public-blob",
+            "m5.azure-storage-min-tls",
+            "m5.azure-storage-public-network",
+            "m5.azure-nsg-open-ssh",
+            "m5.azure-nsg-open-rdp",
+            "m5.azure-keyvault-public-network",
+            "m5.azure-keyvault-purge-protection-off",
+            "m5.azure-sql-public-network",
+            "m5.azure-aks-public-api",
+            "m5.azure-aks-rbac-disabled",
+            "m5.azure-appservice-https-only",
+        ),
         reason=(
             "Blob exposure, managed-identity metadata and a declared read-only config "
-            "snapshot are covered by the existing read-only checks."
+            "snapshot are covered by the existing read-only checks. WP-32 adds the read-only "
+            "ARM service posture family (storage, network security groups, Key Vault, SQL, "
+            "AKS and App Service); its closed operation allowlist is "
+            "``arachne.modules.m5.azure_posture.AZURE_READ_OPERATIONS``, a GET-only table "
+            "declared here in full, so no create, modify or delete call is representable."
+        ),
+        operations=(
+            ("GET", "/subscriptions/{subscription}/providers/Microsoft.Storage/storageAccounts"),
+            (
+                "GET",
+                "/subscriptions/{subscription}/providers/Microsoft.Network/networkSecurityGroups",
+            ),
+            ("GET", "/subscriptions/{subscription}/providers/Microsoft.KeyVault/vaults"),
+            ("GET", "/subscriptions/{subscription}/providers/Microsoft.Sql/servers"),
+            (
+                "GET",
+                "/subscriptions/{subscription}/providers/Microsoft.ContainerService/managedClusters",
+            ),
+            ("GET", "/subscriptions/{subscription}/providers/Microsoft.Web/sites"),
         ),
     ),
     CloudProviderEntry(
         provider="gcp",
         display="Google Cloud Platform",
         state="supported",
-        check_ids=("m5.bucket-enumerator", "m5.gcp-sa-keys", "m5.cloud-posture"),
+        check_ids=(
+            "m5.bucket-enumerator",
+            "m5.gcp-sa-keys",
+            "m5.cloud-posture",
+            # WP-32 (REQ-DET-025): the read-only service posture family.
+            "m5.gcp-gcs-public-prevention-off",
+            "m5.gcp-gcs-uniform-access-off",
+            "m5.gcp-gke-public-control-plane",
+            "m5.gcp-gke-logging-disabled",
+            "m5.gcp-iam-sa-user-keys",
+            "m5.gcp-sql-public-ip",
+            "m5.gcp-sql-ssl-not-required",
+            "m5.gcp-function-public-ingress",
+        ),
         reason=(
             "Storage exposure, service-account key material and a declared read-only config "
-            "snapshot are covered by the existing read-only checks."
+            "snapshot are covered by the existing read-only checks. WP-32 adds the read-only "
+            "service posture family (object storage, GKE, IAM, Cloud SQL and functions); its "
+            "closed operation allowlist is "
+            "``arachne.modules.m5.gcp_posture.GCP_READ_OPERATIONS``, a GET-only table declared "
+            "here in full. The key check reads key *metadata* only — no operation in the table "
+            "returns private key material."
+        ),
+        operations=(
+            ("GET", "/storage/v1/b"),
+            ("GET", "/container/v1/projects/{project}/locations/-/clusters"),
+            ("GET", "/v1/projects/{project}/serviceAccounts"),
+            ("GET", "/v1/projects/{project}/serviceAccounts/{account}/keys"),
+            ("GET", "/sql/v1beta4/projects/{project}/instances"),
+            ("GET", "/v1/projects/{project}/locations/-/functions"),
         ),
     ),
     CloudProviderEntry(

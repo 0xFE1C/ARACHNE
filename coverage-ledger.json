@@ -2,7 +2,7 @@
   "ledger_version": "1.0",
   "generated_at": "2026-11-07",
   "registry_version": "registry-1.0",
-  "registry_digest": "sha256:ae282b6132b815a38eac99a48a332fba9f96c7b33035b58d3c833cbe322562d6",
+  "registry_digest": "sha256:0b94d187f51e3abe9f5b64586ee3fecad201f952432cba33a810c416ea6b4ff0",
   "framework_versions": {
     "WSTG": "4.2",
     "API": "2023",
@@ -13,7 +13,7 @@
   },
   "last_verified_note": "last_verified is the date the corpus was last exercised by the test suite: the ledger is regenerated after a full suite run, and every registered check is run by it. A per-check date arrives with the verification-record store (REQ-PROOF-*). It is committed content, not a wall-clock read, so --check is byte-stable.",
   "totals": {
-    "checks": 360,
+    "checks": 388,
     "cwe_only_checks": 0
   },
   "wstg": {
@@ -165,7 +165,8 @@
         "checks": [
           "m3.graphql-resolver-auth",
           "m3.wp-rest-app-passwords",
-          "m3.wp-rest-settings-unauth"
+          "m3.wp-rest-settings-unauth",
+          "m5.azure-aks-rbac-disabled"
         ]
       },
       {
@@ -230,7 +231,19 @@
           "m5.aws-rds-publicly-accessible",
           "m5.aws-sns-topic-public",
           "m5.aws-sqs-policy-public",
+          "m5.azure-aks-public-api",
+          "m5.azure-keyvault-public-network",
+          "m5.azure-nsg-open-rdp",
+          "m5.azure-nsg-open-ssh",
+          "m5.azure-sql-public-network",
+          "m5.azure-storage-public-network",
           "m5.firebase-rules",
+          "m5.gcp-function-public-ingress",
+          "m5.gcp-gcs-uniform-access-off",
+          "m5.gcp-gke-public-control-plane",
+          "m5.gcp-sql-public-ip",
+          "m5.k8s-api-anonymous-binding",
+          "m5.k8s-dashboard-public-service",
           "m5.serverless-functions",
           "m5.supabase-rls"
         ]
@@ -367,6 +380,7 @@
           "m5.aws-lambda-url-auth-none",
           "m5.docker-socket",
           "m5.k8s-exposure",
+          "m5.k8s-kubelet-anonymous-auth",
           "m6.agentic-rogue-runtime",
           "m6.mcp-session-auth"
         ]
@@ -5889,6 +5903,454 @@
       "cwe": "CWE-311"
     },
     {
+      "id": "m5.azure-storage-public-blob",
+      "module": "M5",
+      "title": "Azure storage account permits anonymous blob access",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-11",
+        "API8:2023",
+        "CWE-732"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-732"
+    },
+    {
+      "id": "m5.azure-storage-min-tls",
+      "module": "M5",
+      "title": "Azure storage account accepts TLS 1.0 or 1.1",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "API8:2023",
+        "CWE-326"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-326"
+    },
+    {
+      "id": "m5.azure-storage-public-network",
+      "module": "M5",
+      "title": "Azure storage account default network action allows all networks",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.azure-nsg-open-ssh",
+      "module": "M5",
+      "title": "Azure network security group admits SSH from any source",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.azure-nsg-open-rdp",
+      "module": "M5",
+      "title": "Azure network security group admits RDP from any source",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.azure-keyvault-public-network",
+      "module": "M5",
+      "title": "Azure Key Vault is reachable from the public internet",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.azure-keyvault-purge-protection-off",
+      "module": "M5",
+      "title": "Azure Key Vault does not enable purge protection",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-693"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-693"
+    },
+    {
+      "id": "m5.azure-sql-public-network",
+      "module": "M5",
+      "title": "Azure SQL server allows public network access",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.azure-aks-public-api",
+      "module": "M5",
+      "title": "Azure Kubernetes Service cluster exposes a public API server",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.azure-aks-rbac-disabled",
+      "module": "M5",
+      "title": "Azure Kubernetes Service cluster does not enable Kubernetes RBAC",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-862"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-862"
+    },
+    {
+      "id": "m5.azure-appservice-https-only",
+      "module": "M5",
+      "title": "Azure App Service web app does not force HTTPS",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "API8:2023",
+        "CWE-319"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-319"
+    },
+    {
+      "id": "m5.gcp-gcs-public-prevention-off",
+      "module": "M5",
+      "title": "GCS bucket does not enforce public access prevention",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-11",
+        "API8:2023",
+        "CWE-732"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-732"
+    },
+    {
+      "id": "m5.gcp-gcs-uniform-access-off",
+      "module": "M5",
+      "title": "GCS bucket does not use uniform bucket-level access",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.gcp-gke-public-control-plane",
+      "module": "M5",
+      "title": "GKE cluster exposes its control plane to the internet",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.gcp-gke-logging-disabled",
+      "module": "M5",
+      "title": "GKE cluster has Cloud Logging disabled",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-778"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-778"
+    },
+    {
+      "id": "m5.gcp-iam-sa-user-keys",
+      "module": "M5",
+      "title": "GCP service account has user-managed keys",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-522"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-522"
+    },
+    {
+      "id": "m5.gcp-sql-public-ip",
+      "module": "M5",
+      "title": "Cloud SQL instance has a public IPv4 address",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.gcp-sql-ssl-not-required",
+      "module": "M5",
+      "title": "Cloud SQL instance does not require an encrypted connection",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-01",
+        "API8:2023",
+        "CWE-319"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-319"
+    },
+    {
+      "id": "m5.gcp-function-public-ingress",
+      "module": "M5",
+      "title": "Cloud Function allows ingress from every source",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.k8s-rbac-wildcard-clusterrole",
+      "module": "M5",
+      "title": "Custom ClusterRole grants a wildcard on every resource",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-269"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-269"
+    },
+    {
+      "id": "m5.k8s-rbac-cluster-admin-binding",
+      "module": "M5",
+      "title": "ClusterRoleBinding grants cluster-admin to a broad group",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-269"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-269"
+    },
+    {
+      "id": "m5.k8s-rbac-secrets-exposed",
+      "module": "M5",
+      "title": "Kubernetes secrets are listable by a broad group",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-522"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-522"
+    },
+    {
+      "id": "m5.k8s-api-anonymous-binding",
+      "module": "M5",
+      "title": "Kubernetes API server grants a role to the anonymous group",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.k8s-pod-privileged",
+      "module": "M5",
+      "title": "Kubernetes pod runs a privileged container",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-250"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-250"
+    },
+    {
+      "id": "m5.k8s-pod-hostpath",
+      "module": "M5",
+      "title": "Kubernetes pod mounts a host path volume",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-250"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-250"
+    },
+    {
+      "id": "m5.k8s-dashboard-public-service",
+      "module": "M5",
+      "title": "Kubernetes Dashboard is published on a public service type",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-284"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-284"
+    },
+    {
+      "id": "m5.k8s-kubelet-anonymous-auth",
+      "module": "M5",
+      "title": "Kubelet allows anonymous requests or serves the read-only port",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-306"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-306"
+    },
+    {
+      "id": "m5.k8s-admission-webhook-fail-open",
+      "module": "M5",
+      "title": "Kubernetes validating admission webhook fails open",
+      "proof": "L1",
+      "target_kinds": [
+        "cloud"
+      ],
+      "framework": [
+        "WSTG-CONF-02",
+        "API8:2023",
+        "CWE-693"
+      ],
+      "last_verified": "2026-11-07",
+      "cwe": "CWE-693"
+    },
+    {
       "id": "m5.bucket-enumerator",
       "module": "M5",
       "title": "Public cloud storage bucket enumerable",
@@ -6644,6 +7106,9 @@
         "m4.podman-api-exposed",
         "m4.registry-catalog-exposed",
         "m4.registry-dashboard-exposed",
+        "m5.azure-appservice-https-only",
+        "m5.azure-storage-min-tls",
+        "m5.gcp-sql-ssl-not-required",
         "m5.managed-datastores",
         "m6.ad-attack-path",
         "m6.cve-epss-correlation",
@@ -6705,11 +7170,34 @@
         "m5.aws-kms-rotation-disabled",
         "m5.aws-rds-publicly-accessible",
         "m5.aws-rds-unencrypted",
+        "m5.azure-aks-public-api",
+        "m5.azure-aks-rbac-disabled",
+        "m5.azure-keyvault-public-network",
+        "m5.azure-keyvault-purge-protection-off",
+        "m5.azure-nsg-open-rdp",
+        "m5.azure-nsg-open-ssh",
+        "m5.azure-sql-public-network",
+        "m5.azure-storage-public-network",
         "m5.cicd-audit",
         "m5.cloud-posture",
         "m5.dep-confusion",
         "m5.do-posture",
+        "m5.gcp-function-public-ingress",
+        "m5.gcp-gcs-uniform-access-off",
+        "m5.gcp-gke-logging-disabled",
+        "m5.gcp-gke-public-control-plane",
+        "m5.gcp-iam-sa-user-keys",
+        "m5.gcp-sql-public-ip",
         "m5.image-scan",
+        "m5.k8s-admission-webhook-fail-open",
+        "m5.k8s-api-anonymous-binding",
+        "m5.k8s-dashboard-public-service",
+        "m5.k8s-kubelet-anonymous-auth",
+        "m5.k8s-pod-hostpath",
+        "m5.k8s-pod-privileged",
+        "m5.k8s-rbac-cluster-admin-binding",
+        "m5.k8s-rbac-secrets-exposed",
+        "m5.k8s-rbac-wildcard-clusterrole",
         "m5.sbom-review"
       ]
     },
@@ -6918,8 +7406,10 @@
         "m5.aws-s3-public-policy",
         "m5.aws-s3-unencrypted",
         "m5.aws-s3-versioning-disabled",
+        "m5.azure-storage-public-blob",
         "m5.bucket-enumerator",
         "m5.firebase-rules",
+        "m5.gcp-gcs-public-prevention-off",
         "m5.supabase-rls"
       ]
     },
@@ -7736,10 +8226,46 @@
         "checks": [
           "m5.bucket-enumerator",
           "m5.azure-mi-audit",
-          "m5.cloud-posture"
+          "m5.cloud-posture",
+          "m5.azure-storage-public-blob",
+          "m5.azure-storage-min-tls",
+          "m5.azure-storage-public-network",
+          "m5.azure-nsg-open-ssh",
+          "m5.azure-nsg-open-rdp",
+          "m5.azure-keyvault-public-network",
+          "m5.azure-keyvault-purge-protection-off",
+          "m5.azure-sql-public-network",
+          "m5.azure-aks-public-api",
+          "m5.azure-aks-rbac-disabled",
+          "m5.azure-appservice-https-only"
         ],
-        "operations": [],
-        "reason": "Blob exposure, managed-identity metadata and a declared read-only config snapshot are covered by the existing read-only checks."
+        "operations": [
+          {
+            "method": "GET",
+            "path": "/subscriptions/{subscription}/providers/Microsoft.Storage/storageAccounts"
+          },
+          {
+            "method": "GET",
+            "path": "/subscriptions/{subscription}/providers/Microsoft.Network/networkSecurityGroups"
+          },
+          {
+            "method": "GET",
+            "path": "/subscriptions/{subscription}/providers/Microsoft.KeyVault/vaults"
+          },
+          {
+            "method": "GET",
+            "path": "/subscriptions/{subscription}/providers/Microsoft.Sql/servers"
+          },
+          {
+            "method": "GET",
+            "path": "/subscriptions/{subscription}/providers/Microsoft.ContainerService/managedClusters"
+          },
+          {
+            "method": "GET",
+            "path": "/subscriptions/{subscription}/providers/Microsoft.Web/sites"
+          }
+        ],
+        "reason": "Blob exposure, managed-identity metadata and a declared read-only config snapshot are covered by the existing read-only checks. WP-32 adds the read-only ARM service posture family (storage, network security groups, Key Vault, SQL, AKS and App Service); its closed operation allowlist is ``arachne.modules.m5.azure_posture.AZURE_READ_OPERATIONS``, a GET-only table declared here in full, so no create, modify or delete call is representable."
       },
       {
         "provider": "gcp",
@@ -7748,10 +8274,43 @@
         "checks": [
           "m5.bucket-enumerator",
           "m5.gcp-sa-keys",
-          "m5.cloud-posture"
+          "m5.cloud-posture",
+          "m5.gcp-gcs-public-prevention-off",
+          "m5.gcp-gcs-uniform-access-off",
+          "m5.gcp-gke-public-control-plane",
+          "m5.gcp-gke-logging-disabled",
+          "m5.gcp-iam-sa-user-keys",
+          "m5.gcp-sql-public-ip",
+          "m5.gcp-sql-ssl-not-required",
+          "m5.gcp-function-public-ingress"
         ],
-        "operations": [],
-        "reason": "Storage exposure, service-account key material and a declared read-only config snapshot are covered by the existing read-only checks."
+        "operations": [
+          {
+            "method": "GET",
+            "path": "/storage/v1/b"
+          },
+          {
+            "method": "GET",
+            "path": "/container/v1/projects/{project}/locations/-/clusters"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/projects/{project}/serviceAccounts"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/projects/{project}/serviceAccounts/{account}/keys"
+          },
+          {
+            "method": "GET",
+            "path": "/sql/v1beta4/projects/{project}/instances"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/projects/{project}/locations/-/functions"
+          }
+        ],
+        "reason": "Storage exposure, service-account key material and a declared read-only config snapshot are covered by the existing read-only checks. WP-32 adds the read-only service posture family (object storage, GKE, IAM, Cloud SQL and functions); its closed operation allowlist is ``arachne.modules.m5.gcp_posture.GCP_READ_OPERATIONS``, a GET-only table declared here in full. The key check reads key *metadata* only \u2014 no operation in the table returns private key material."
       },
       {
         "provider": "digitalocean",

@@ -5,8 +5,8 @@
 # registry disagree, which is what makes 'generated, not maintained' enforceable.
 #
 # CIS Controls v8.1 — 153 safeguards.
-# Assessed: 65 safeguard(s) reached by at least one check (target 60 of 153).
-# Outside the assessed set: 88 safeguard(s), each named below with a
+# Assessed: 67 safeguard(s) reached by at least one check (target 60 of 153).
+# Outside the assessed set: 86 safeguard(s), each named below with a
 # reason — an unmapped control is reported, never omitted.
 #
 # Source: CIS Critical Security Controls v8.1, OSCAL catalog published by the Center for Internet Security: https://bitbucket.org/cis-it-workspace/cis-controls-v8.1_oscal/src/main/src/catalogs/json/cis-controls-v8.1_catalog.json (catalog metadata version 8.1.2, last-modified 2025-04-09)
@@ -36,6 +36,10 @@ controls:
       - m2.host-discovery
       - m2.port-scan
       - m2.ssdp-discovery
+  - id: "1.4"
+    title: "Use Dynamic Host Configuration Protocol (DHCP) Logging to Update Enterprise Asset Inventory"
+    checks:
+      - m5.gcp-iam-sa-user-keys
   - id: "1.5"
     title: "Use a Passive Asset Discovery Tool"
     checks:
@@ -91,10 +95,18 @@ controls:
       - m5.aws-s3-public-access-block-missing
       - m5.aws-s3-public-acl
       - m5.aws-s3-public-policy
+      - m5.azure-storage-public-blob
       - m5.bucket-enumerator
       - m5.firebase-rules
+      - m5.gcp-gcs-public-prevention-off
+      - m5.gcp-gcs-uniform-access-off
       - m5.managed-datastores
       - m5.supabase-rls
+  - id: "3.7"
+    title: "Establish and Maintain a Data Classification Scheme"
+    checks:
+      - m5.azure-keyvault-public-network
+      - m5.azure-storage-public-network
   - id: "3.10"
     title: "Encrypt Sensitive Data in Transit"
     checks:
@@ -121,6 +133,13 @@ controls:
       - m5.aws-ec2-security-group-open-ssh
       - m5.aws-eks-public-endpoint
       - m5.aws-rds-publicly-accessible
+      - m5.azure-aks-public-api
+      - m5.azure-nsg-open-rdp
+      - m5.azure-nsg-open-ssh
+      - m5.azure-sql-public-network
+      - m5.gcp-function-public-ingress
+      - m5.gcp-gke-public-control-plane
+      - m5.gcp-sql-public-ip
       - m5.k8s-exposure
       - m5.tfstate-exposure
   - id: "4.2"
@@ -177,7 +196,17 @@ controls:
       - m5.aws-lambda-url-auth-none
       - m5.aws-sns-topic-public
       - m5.aws-sqs-policy-public
+      - m5.azure-aks-rbac-disabled
       - m5.iam-review
+      - m5.k8s-admission-webhook-fail-open
+      - m5.k8s-api-anonymous-binding
+      - m5.k8s-dashboard-public-service
+      - m5.k8s-kubelet-anonymous-auth
+      - m5.k8s-pod-hostpath
+      - m5.k8s-pod-privileged
+      - m5.k8s-rbac-cluster-admin-binding
+      - m5.k8s-rbac-secrets-exposed
+      - m5.k8s-rbac-wildcard-clusterrole
   - id: "5.2"
     title: "Use Unique Passwords"
     checks:
@@ -304,6 +333,7 @@ controls:
     title: "Collect Audit Logs"
     checks:
       - m3.auth-session-audit
+      - m5.gcp-gke-logging-disabled
       - m6.sigma-hunt-rules
   - id: "8.5"
     title: "Collect Detailed Audit Logs"
@@ -523,9 +553,6 @@ outside_assessed_set:
   - id: "1.2"
     title: "Address Unauthorized Assets"
     reason: "an asset-inventory process: the inventory itself is not something a scan of the target observes"
-  - id: "1.4"
-    title: "Use Dynamic Host Configuration Protocol (DHCP) Logging to Update Enterprise Asset Inventory"
-    reason: "an asset-inventory process: the inventory itself is not something a scan of the target observes"
   - id: "2.3"
     title: "Address Unauthorized Software"
     reason: "a software-inventory or allowlisting process, not a technical artefact a network scan produces"
@@ -546,9 +573,6 @@ outside_assessed_set:
     reason: "a data-governance process (classification, retention, disposal or loss prevention): the process leaves no artefact a scan can observe"
   - id: "3.6"
     title: "Encrypt Data on End-User Devices"
-    reason: "a data-governance process (classification, retention, disposal or loss prevention): the process leaves no artefact a scan can observe"
-  - id: "3.7"
-    title: "Establish and Maintain a Data Classification Scheme"
     reason: "a data-governance process (classification, retention, disposal or loss prevention): the process leaves no artefact a scan can observe"
   - id: "3.8"
     title: "Document Data Flows"

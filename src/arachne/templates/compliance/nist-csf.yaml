@@ -70,7 +70,12 @@ controls:
       - m5.aws-s3-unencrypted
       - m5.aws-sns-topic-public
       - m5.aws-sqs-policy-public
+      - m5.azure-appservice-https-only
+      - m5.azure-storage-min-tls
+      - m5.azure-storage-public-blob
       - m5.firebase-rules
+      - m5.gcp-gcs-public-prevention-off
+      - m5.gcp-sql-ssl-not-required
       - m5.managed-datastores
       - m5.supabase-rls
   - id: "PR.IR-01"
@@ -92,6 +97,7 @@ controls:
       - m5.aws-ec2-security-group-open-ssh
       - m5.aws-eks-public-endpoint
       - m5.aws-rds-publicly-accessible
+      - m5.gcp-gke-logging-disabled
       - m5.k8s-exposure
       - m5.tfstate-exposure
   - id: "DE.AE-02"
@@ -181,6 +187,7 @@ controls:
       - m2.ssh-auth
       - m3.session-logout
       - m4.default-credentials
+      - m5.azure-aks-rbac-disabled
   - id: "DE.AE-04"
     title: "The estimated impact and scope of adverse events are understood"
     checks:
@@ -212,6 +219,7 @@ controls:
     title: "Log records are generated and made available for continuous monitoring"
     checks:
       - m3.auth-session-audit
+      - m5.k8s-admission-webhook-fail-open
       - m6.sigma-hunt-rules
   - id: "ID.RA-05"
     title: "Threats, vulnerabilities, likelihoods, and impacts are used to understand inherent risk and inform risk response prioritization"
@@ -234,7 +242,26 @@ controls:
       - m5.aws-iam-user-wildcard-policy
       - m5.aws-lambda-policy-public
       - m5.aws-lambda-url-auth-none
+      - m5.azure-aks-public-api
+      - m5.azure-keyvault-public-network
+      - m5.azure-nsg-open-rdp
+      - m5.azure-nsg-open-ssh
+      - m5.azure-sql-public-network
+      - m5.azure-storage-public-network
+      - m5.gcp-function-public-ingress
+      - m5.gcp-gcs-uniform-access-off
+      - m5.gcp-gke-public-control-plane
+      - m5.gcp-iam-sa-user-keys
+      - m5.gcp-sql-public-ip
       - m5.iam-review
+      - m5.k8s-api-anonymous-binding
+      - m5.k8s-dashboard-public-service
+      - m5.k8s-kubelet-anonymous-auth
+      - m5.k8s-pod-hostpath
+      - m5.k8s-pod-privileged
+      - m5.k8s-rbac-cluster-admin-binding
+      - m5.k8s-rbac-secrets-exposed
+      - m5.k8s-rbac-wildcard-clusterrole
   - id: "PR.PS-05"
     title: "Installation and execution of unauthorized software are prevented"
     checks:
@@ -318,6 +345,7 @@ controls:
     title: "Backups of data are created, protected, maintained, and tested"
     checks:
       - m4.backup-file-hunt
+      - m5.azure-keyvault-purge-protection-off
       - m5.managed-datastores
 outside_assessed_set:
   - id: "GV.OC-01"

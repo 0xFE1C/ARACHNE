@@ -29,7 +29,7 @@
 # disagree, so a plan can never describe a check differently from the code that runs it.
 # S4 adds the M2 rows the registry implements; M3-M6 below are still *planned* only and the
 # plan marks them `implemented: false`.
-catalog_version: "1.19"
+catalog_version: "1.20"
 checks:
   # ---------------------------------------------------------------- M1 recon & attack surface
   # Implemented in S3 (arachne/modules/m1/). The rows below are generated from the check
@@ -4311,6 +4311,342 @@ checks:
     research_ref: ch05#1
     proof: L1
     cwe: CWE-311
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: azure-storage-public-blob
+    version: '1.0'
+    title: Azure storage account permits anonymous blob access
+    description: 'Lists the subscription''s storage accounts and reports one whose properties.allowBlobPublicAccess is true: every container in the account may then be exposed to anonymous read by its own access level, so the account-level switch that would stop it is off. Read-only: listStorageAccounts.'
+    research_ref: ch05#2
+    proof: L1
+    cwe: CWE-732
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: azure-storage-min-tls
+    version: '1.0'
+    title: Azure storage account accepts TLS 1.0 or 1.1
+    description: 'Lists the subscription''s storage accounts and reports one whose properties.minimumTlsVersion is not TLS1_2: the endpoint still negotiates a protocol version deprecated for its known weaknesses. Read-only: listStorageAccounts.'
+    research_ref: ch05#2
+    proof: L1
+    cwe: CWE-326
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: azure-storage-public-network
+    version: '1.0'
+    title: Azure storage account default network action allows all networks
+    description: 'Lists the subscription''s storage accounts and reports one whose properties.networkAcls.defaultAction is Allow: the firewall is not restricting traffic to declared virtual networks or addresses, so the account is reachable from any source the credential rules permit. Read-only: listStorageAccounts.'
+    research_ref: ch05#18
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: azure-nsg-open-ssh
+    version: '1.0'
+    title: Azure network security group admits SSH from any source
+    description: 'Lists the subscription''s network security groups and reports an inbound Allow rule whose destination port range is 22 and whose source is the internet (*, 0.0.0.0/0, ::/0 or the Internet service tag). Read-only: listNetworkSecurityGroups.'
+    research_ref: ch05#18
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: azure-nsg-open-rdp
+    version: '1.0'
+    title: Azure network security group admits RDP from any source
+    description: 'Lists the subscription''s network security groups and reports an inbound Allow rule whose destination port range is 3389 and whose source is the internet (*, 0.0.0.0/0, ::/0 or the Internet service tag). Read-only: listNetworkSecurityGroups.'
+    research_ref: ch05#18
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: azure-keyvault-public-network
+    version: '1.0'
+    title: Azure Key Vault is reachable from the public internet
+    description: 'Lists the subscription''s Key Vaults and reports one whose properties.publicNetworkAccess is Enabled (or whose network ACL default action is Allow): the vault''s keys, secrets and certificates are reachable from any source the access policy or RBAC permits, with no private endpoint in front of it. Read-only: listKeyVaults.'
+    research_ref: ch05#19
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: azure-keyvault-purge-protection-off
+    version: '1.0'
+    title: Azure Key Vault does not enable purge protection
+    description: 'Lists the subscription''s Key Vaults and reports one whose properties.enablePurgeProtection is not true: a deleted vault and its secret material can be destroyed immediately instead of surviving the soft-delete retention window, so neither an accidental delete nor a destructive actor can be recovered from. Read-only: listKeyVaults.'
+    research_ref: ch05#19
+    proof: L1
+    cwe: CWE-693
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: azure-sql-public-network
+    version: '1.0'
+    title: Azure SQL server allows public network access
+    description: 'Lists the subscription''s SQL servers and reports one whose properties.publicNetworkAccess is Enabled: the logical server''s endpoint resolves publicly and admits connections from the firewall rules and the AllowAzureServices rule rather than from a private endpoint only. Read-only: listSqlServers.'
+    research_ref: ch05#20
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: azure-aks-public-api
+    version: '1.0'
+    title: Azure Kubernetes Service cluster exposes a public API server
+    description: 'Lists the subscription''s AKS managed clusters and reports one whose properties.apiServerAccessProfile does not enable a private cluster and declares no authorized IP range: the Kubernetes API server is then reachable from any source that can route to it. Read-only: listManagedClusters.'
+    research_ref: ch05#13
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: azure-aks-rbac-disabled
+    version: '1.0'
+    title: Azure Kubernetes Service cluster does not enable Kubernetes RBAC
+    description: 'Lists the subscription''s AKS managed clusters and reports one whose properties.enableRBAC is false: every authenticated principal then has the cluster''s full permissions and Kubernetes cannot restrict what a namespace or a service account may do. Read-only: listManagedClusters.'
+    research_ref: ch05#13
+    proof: L1
+    cwe: CWE-862
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: azure-appservice-https-only
+    version: '1.0'
+    title: Azure App Service web app does not force HTTPS
+    description: 'Lists the subscription''s App Service web apps and reports one whose properties.httpsOnly is false: the app answers plain HTTP, so a request — and the session cookie or credential it carries — can be read or rewritten in transit. Read-only: listWebApps.'
+    research_ref: ch05#9
+    proof: L1
+    cwe: CWE-319
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: gcp-gcs-public-prevention-off
+    version: '1.0'
+    title: GCS bucket does not enforce public access prevention
+    description: 'Lists the project''s buckets and reports one whose iamConfiguration.publicAccessPrevention is not enforced: the bucket-level override that would refuse an allUsers or allAuthenticatedUsers grant is off, so an IAM change alone can make the objects world-readable. Read-only: listBuckets.'
+    research_ref: ch05#2
+    proof: L1
+    cwe: CWE-732
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: gcp-gcs-uniform-access-off
+    version: '1.0'
+    title: GCS bucket does not use uniform bucket-level access
+    description: 'Lists the project''s buckets and reports one whose iamConfiguration.uniformBucketLevelAccess.enabled is false: per-object ACLs are in force, so an object can be shared with the world even when the bucket''s IAM policy says otherwise, and no single policy describes who can read the data. Read-only: listBuckets.'
+    research_ref: ch05#2
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: gcp-gke-public-control-plane
+    version: '1.0'
+    title: GKE cluster exposes its control plane to the internet
+    description: 'Lists the project''s GKE clusters and reports one whose masterAuthorizedNetworksConfig is not enabled and which is not a private cluster: the Kubernetes control plane then accepts connections from any source that can route to its address. Read-only: listClusters.'
+    research_ref: ch05#13
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: gcp-gke-logging-disabled
+    version: '1.0'
+    title: GKE cluster has Cloud Logging disabled
+    description: 'Lists the project''s GKE clusters and reports one whose loggingService is none: the control-plane and workload events a GKE cluster normally ships to Cloud Logging are discarded, so an audit of what the cluster did is impossible. Read-only: listClusters.'
+    research_ref: ch05#10
+    proof: L1
+    cwe: CWE-778
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: gcp-iam-sa-user-keys
+    version: '1.0'
+    title: GCP service account has user-managed keys
+    description: 'Lists the project''s service accounts and, for each, reads the key *metadata* the API returns without any private material; reports an account with a USER_MANAGED key — a long-lived credential that survives the principal''s deletion and has to be rotated by hand, unlike a short-lived token. The check never requests a key''s private material. Read-only: listServiceAccounts and listServiceAccountKeys.'
+    research_ref: ch05#6
+    proof: L1
+    cwe: CWE-522
+    target_kinds:
+    - cloud
+    estimated_requests: 5
+    requires_active_checks: true
+  - module: M5
+    name: gcp-sql-public-ip
+    version: '1.0'
+    title: Cloud SQL instance has a public IPv4 address
+    description: 'Lists the project''s Cloud SQL instances and reports one whose settings.ipConfiguration.ipv4Enabled is true and which declares fewer than two authorized networks (never the full address space): the instance''s address is reachable from the internet rather than only from the declared networks. Read-only: listSqlInstances.'
+    research_ref: ch05#20
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: gcp-sql-ssl-not-required
+    version: '1.0'
+    title: Cloud SQL instance does not require an encrypted connection
+    description: 'Lists the project''s Cloud SQL instances and reports one whose settings.ipConfiguration.requireSsl is false: a client may connect without TLS, so credentials and query results can cross the network in the clear. Read-only: listSqlInstances.'
+    research_ref: ch05#20
+    proof: L1
+    cwe: CWE-319
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: gcp-function-public-ingress
+    version: '1.0'
+    title: Cloud Function allows ingress from every source
+    description: 'Lists the project''s Cloud Functions and reports one whose ingressSettings is ALLOW_ALL: the function''s endpoint accepts requests from the internet, not only from the project''s own networks or the load balancer, so its own IAM check is the only control left in front of it. Read-only: listFunctions.'
+    research_ref: ch05#9
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: k8s-rbac-wildcard-clusterrole
+    version: '1.0'
+    title: Custom ClusterRole grants a wildcard on every resource
+    description: 'Lists the cluster''s ClusterRoles and reports a custom one (not a built-in and not under the system: prefix) whose rules grant the verb * or the resource *, with no resourceNames restriction: the role is unbounded, so every principal bound to it may act on every object in every namespace. Read-only: listClusterRoles.'
+    research_ref: ch05#14
+    proof: L1
+    cwe: CWE-269
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: k8s-rbac-cluster-admin-binding
+    version: '1.0'
+    title: ClusterRoleBinding grants cluster-admin to a broad group
+    description: 'Lists the cluster''s ClusterRoleBindings and reports one whose roleRef is the built-in cluster-admin and whose subjects name a broad group (system:authenticated, system:unauthenticated, system:serviceaccounts or *): the cluster''s full authority is handed to everything that can reach the API server rather than to a named principal. Read-only: listClusterRoleBindings.'
+    research_ref: ch05#13
+    proof: L1
+    cwe: CWE-269
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: k8s-rbac-secrets-exposed
+    version: '1.0'
+    title: Kubernetes secrets are listable by a broad group
+    description: 'Lists the cluster''s ClusterRoles and ClusterRoleBindings and reports a custom ClusterRole whose rules grant get/list/watch on the secrets resource (or * on every resource) and a ClusterRoleBinding that hands it to a broad group (system:authenticated, system:unauthenticated, system:serviceaccounts or *). Exposure is established from the RBAC metadata alone: the check never requests a secret, so it establishes that the secrets are *listable*, not what they contain. Read-only: listClusterRoles and listClusterRoleBindings.'
+    research_ref: ch05#14
+    proof: L1
+    cwe: CWE-522
+    target_kinds:
+    - cloud
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M5
+    name: k8s-api-anonymous-binding
+    version: '1.0'
+    title: Kubernetes API server grants a role to the anonymous group
+    description: 'Lists the cluster''s ClusterRoleBindings and reports one whose subjects name the group system:unauthenticated: the API server then authorizes requests that carry no credential at all, so anything that can reach the API server''s port is a principal. Read-only: listClusterRoleBindings.'
+    research_ref: ch05#13
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: k8s-pod-privileged
+    version: '1.0'
+    title: Kubernetes pod runs a privileged container
+    description: 'Lists the cluster''s pods and reports one whose container or initContainer securityContext.privileged is true: the container holds the host''s capabilities and devices, so a workload compromise is a node compromise. Read-only: listPods.'
+    research_ref: ch05#14
+    proof: L1
+    cwe: CWE-250
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: k8s-pod-hostpath
+    version: '1.0'
+    title: Kubernetes pod mounts a host path volume
+    description: 'Lists the cluster''s pods and reports one that declares a hostPath volume: the pod reads and writes the node''s own filesystem, which gives a container access to the kubelet''s credentials, the container runtime''s socket and every other pod''s data on that node. Read-only: listPods.'
+    research_ref: ch05#14
+    proof: L1
+    cwe: CWE-250
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: k8s-dashboard-public-service
+    version: '1.0'
+    title: Kubernetes Dashboard is published on a public service type
+    description: 'Lists the cluster''s services and reports one whose name names the Dashboard and whose type is LoadBalancer or NodePort: the dashboard is then reachable from outside the cluster, where its skip-login option, an over-broad service account or a weak credential is the only control in front of it. Read-only: listServices.'
+    research_ref: ch05#13
+    proof: L1
+    cwe: CWE-284
+    target_kinds:
+    - cloud
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M5
+    name: k8s-kubelet-anonymous-auth
+    version: '1.0'
+    title: Kubelet allows anonymous requests or serves the read-only port
+    description: 'Lists the cluster''s nodes and reads each kubelet''s own configuration through the API server''s node proxy; reports a node whose authentication.anonymous.enabled is true or whose readOnlyPort is set, because the kubelet then answers unauthenticated requests for its pod list, pod specs and statistics. Read-only: listNodes and getNodeProxyConfigz.'
+    research_ref: ch05#13
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - cloud
+    estimated_requests: 5
+    requires_active_checks: true
+  - module: M5
+    name: k8s-admission-webhook-fail-open
+    version: '1.0'
+    title: Kubernetes validating admission webhook fails open
+    description: 'Lists the cluster''s validating admission webhook configurations and reports one with a webhook whose failurePolicy is Ignore: when the webhook is unreachable — the very moment it matters — the API server admits the object instead of refusing it, so the control disappears exactly when it is needed. Read-only: listValidatingWebhookConfigurations.'
+    research_ref: ch05#14
+    proof: L1
+    cwe: CWE-693
     target_kinds:
     - cloud
     estimated_requests: 1

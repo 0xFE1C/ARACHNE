@@ -73,7 +73,9 @@ controls:
       - m5.aws-lambda-url-auth-none
       - m5.aws-sns-topic-public
       - m5.aws-sqs-policy-public
+      - m5.gcp-gcs-uniform-access-off
       - m5.iam-review
+      - m5.k8s-rbac-secrets-exposed
   - id: "A.5.16"
     title: "Identity management"
     checks:
@@ -100,6 +102,7 @@ controls:
       - m5.aws-iam-password-policy-weak
       - m5.aws-iam-root-access-key
       - m5.aws-iam-root-mfa-disabled
+      - m5.gcp-iam-sa-user-keys
       - m5.gcp-sa-keys
       - m5.image-history-secrets
       - m5.leaked-cloud-keys
@@ -133,8 +136,10 @@ controls:
     checks:
       - m5.aws-s3-public-acl
       - m5.aws-s3-public-policy
+      - m5.azure-storage-public-blob
       - m5.bucket-enumerator
       - m5.firebase-rules
+      - m5.gcp-gcs-public-prevention-off
       - m5.iam-review
       - m5.k8s-exposure
       - m5.leaked-cloud-keys
@@ -163,6 +168,7 @@ controls:
     title: "Protection of records"
     checks:
       - m4.backup-file-hunt
+      - m5.azure-keyvault-purge-protection-off
       - m5.tfstate-exposure
   - id: "A.5.34"
     title: "Privacy and protection of PII"
@@ -211,7 +217,14 @@ controls:
       - m5.aws-s3-public-access-block-missing
       - m5.aws-s3-public-acl
       - m5.aws-s3-public-policy
+      - m5.azure-aks-rbac-disabled
+      - m5.azure-storage-public-blob
       - m5.firebase-rules
+      - m5.gcp-gcs-public-prevention-off
+      - m5.k8s-pod-hostpath
+      - m5.k8s-pod-privileged
+      - m5.k8s-rbac-cluster-admin-binding
+      - m5.k8s-rbac-wildcard-clusterrole
       - m5.supabase-rls
   - id: "A.8.4"
     title: "Access to source code"
@@ -236,6 +249,8 @@ controls:
       - m3.session-logout
       - m4.default-credentials
       - m5.aws-iam-root-mfa-disabled
+      - m5.k8s-api-anonymous-binding
+      - m5.k8s-kubelet-anonymous-auth
   - id: "A.8.6"
     title: "Capacity management"
     checks:
@@ -354,10 +369,12 @@ controls:
       - m5.aws-cloudtrail-not-multiregion
       - m5.aws-eks-audit-logging-off
       - m5.aws-s3-logging-disabled
+      - m5.gcp-gke-logging-disabled
   - id: "A.8.16"
     title: "Monitoring activities"
     checks:
       - m1.service-exposure-drift
+      - m5.k8s-admission-webhook-fail-open
       - m6.deception-listeners
   - id: "A.8.18"
     title: "Use of privileged utility programs"
@@ -382,6 +399,15 @@ controls:
       - m5.aws-ec2-security-group-open-ssh
       - m5.aws-eks-public-endpoint
       - m5.aws-rds-publicly-accessible
+      - m5.azure-aks-public-api
+      - m5.azure-nsg-open-rdp
+      - m5.azure-nsg-open-ssh
+      - m5.azure-sql-public-network
+      - m5.azure-storage-public-network
+      - m5.gcp-function-public-ingress
+      - m5.gcp-gke-public-control-plane
+      - m5.gcp-sql-public-ip
+      - m5.k8s-dashboard-public-service
   - id: "A.8.21"
     title: "Security of network services"
     checks:
@@ -410,6 +436,10 @@ controls:
       - m5.aws-kms-rotation-disabled
       - m5.aws-rds-unencrypted
       - m5.aws-s3-unencrypted
+      - m5.azure-appservice-https-only
+      - m5.azure-keyvault-public-network
+      - m5.azure-storage-min-tls
+      - m5.gcp-sql-ssl-not-required
   - id: "A.8.25"
     title: "Secure development life cycle"
     checks:

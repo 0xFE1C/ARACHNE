@@ -370,6 +370,7 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     wp29 = {record.id for record in ledger.records if record.id in WP29_IDS}
     wp30 = {record.id for record in ledger.records if record.id in WP30_IDS}
     wp31 = {record.id for record in ledger.records if record.id in WP31_IDS}
+    wp32 = {record.id for record in ledger.records if record.id in WP32_IDS}
     assert (
         len(
             ids
@@ -387,6 +388,7 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
             - wp29
             - wp30
             - wp31
+            - wp32
         )
         == 152
     )
@@ -403,6 +405,43 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     assert len(wp29) == 24
     assert len(wp30) == 24
     assert len(wp31) == 31
+    assert len(wp32) == 28
+
+
+#: WP-32's Azure, GCP and Kubernetes read-only posture families (REQ-DET-025);
+#: excluded for the same reason.
+WP32_IDS: frozenset[str] = frozenset(
+    {
+        "m5.azure-aks-public-api",
+        "m5.azure-aks-rbac-disabled",
+        "m5.azure-appservice-https-only",
+        "m5.azure-keyvault-public-network",
+        "m5.azure-keyvault-purge-protection-off",
+        "m5.azure-nsg-open-rdp",
+        "m5.azure-nsg-open-ssh",
+        "m5.azure-sql-public-network",
+        "m5.azure-storage-min-tls",
+        "m5.azure-storage-public-blob",
+        "m5.azure-storage-public-network",
+        "m5.gcp-function-public-ingress",
+        "m5.gcp-gcs-public-prevention-off",
+        "m5.gcp-gcs-uniform-access-off",
+        "m5.gcp-gke-logging-disabled",
+        "m5.gcp-gke-public-control-plane",
+        "m5.gcp-iam-sa-user-keys",
+        "m5.gcp-sql-public-ip",
+        "m5.gcp-sql-ssl-not-required",
+        "m5.k8s-admission-webhook-fail-open",
+        "m5.k8s-api-anonymous-binding",
+        "m5.k8s-dashboard-public-service",
+        "m5.k8s-kubelet-anonymous-auth",
+        "m5.k8s-pod-hostpath",
+        "m5.k8s-pod-privileged",
+        "m5.k8s-rbac-cluster-admin-binding",
+        "m5.k8s-rbac-secrets-exposed",
+        "m5.k8s-rbac-wildcard-clusterrole",
+    }
+)
 
 
 # ------------------------------------------------------------------ REQ-DET-003 WSTG

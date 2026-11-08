@@ -6,8 +6,8 @@ the numbered methods in `docs/research/`.
 
 - research corpus: `docs/research`
 - source roots: `src/arachne/modules`
-- references found: **360**
-- coverage: **148/175 (84.6%)**
+- references found: **388**
+- coverage: **151/175 (86.3%)**
 
 ## Summary
 
@@ -17,9 +17,9 @@ the numbered methods in `docs/research/`.
 | ch02 | 28 | 30 | 93.3% | Active Scanning and Enumeration |
 | ch03 | 34 | 35 | 97.1% | Web Application Vulnerability Testing |
 | ch04 | 30 | 30 | 100.0% | Exposure and Misconfiguration Discovery |
-| ch05 | 21 | 25 | 84.0% | Cloud and Supply-Chain Exposure |
+| ch05 | 24 | 25 | 96.0% | Cloud and Supply-Chain Exposure |
 | ch06 | 16 | 25 | 64.0% | Vulnerability Correlation, Threat Detection and Adversary Emulation |
-| **total** | **148** | **175** | **84.6%** | |
+| **total** | **151** | **175** | **86.3%** | |
 
 ## Methods
 
@@ -173,25 +173,25 @@ the numbered methods in `docs/research/`.
 | # | Method | Mapped | Checks |
 |---|---|---|---|
 | 1 | Cloud IAM policy review | yes | `aws-account-ebs-encryption-off`, `aws-account-public-access-block-missing`, `aws-cloudtrail-logging-disabled`, `aws-cloudtrail-not-multiregion`, `aws-ec2-ebs-unencrypted`, `aws-ec2-security-group-open-rdp`, `aws-ec2-security-group-open-ssh`, `aws-iam-password-policy-weak`, `aws-iam-role-public-trust`, `aws-iam-root-access-key`, `aws-iam-root-mfa-disabled`, `aws-iam-user-wildcard-policy`, `aws-kms-key-policy-public`, `aws-kms-rotation-disabled`, `aws-s3-logging-disabled`, `aws-s3-public-access-block-missing`, `aws-s3-public-acl`, `aws-s3-public-policy`, `aws-s3-unencrypted`, `aws-s3-versioning-disabled`, `cloud-posture`, `do-posture`, `iam-review` |
-| 2 | Cloud storage bucket enumeration | yes | `bucket-enumerator` |
+| 2 | Cloud storage bucket enumeration | yes | `azure-storage-min-tls`, `azure-storage-public-blob`, `bucket-enumerator`, `gcp-gcs-public-prevention-off`, `gcp-gcs-uniform-access-off` |
 | 3 | Leaked cloud credential detection | yes | `leaked-cloud-keys` |
 | 4 | Instance metadata service exposure | yes | `aws-ec2-imdsv1-allowed`, `imds-ssrf` |
 | 5 | Azure managed identity audit | yes | `azure-mi-audit` |
-| 6 | GCP service-account key exposure | yes | `gcp-sa-keys` |
+| 6 | GCP service-account key exposure | yes | `gcp-iam-sa-user-keys`, `gcp-sa-keys` |
 | 7 | Firebase rules exposure | yes | `firebase-rules` |
 | 8 | Supabase row-level security review | yes | `supabase-rls` |
-| 9 | Serverless function exposure | yes | `aws-lambda-policy-public`, `aws-lambda-url-auth-none`, `serverless-functions` |
-| 10 | CloudTrail and audit-log coverage review | no | — |
+| 9 | Serverless function exposure | yes | `aws-lambda-policy-public`, `aws-lambda-url-auth-none`, `azure-appservice-https-only`, `gcp-function-public-ingress`, `serverless-functions` |
+| 10 | CloudTrail and audit-log coverage review | yes | `gcp-gke-logging-disabled` |
 | 11 | Terraform state exposure | yes | `tfstate-exposure` |
 | 12 | Terraform state secret extraction | yes | `tfstate-exposure` |
-| 13 | Kubernetes API exposure | yes | `aws-eks-audit-logging-off`, `aws-eks-public-endpoint`, `k8s-exposure` |
-| 14 | Kubernetes manifest misconfiguration | yes | `k8s-exposure` |
+| 13 | Kubernetes API exposure | yes | `aws-eks-audit-logging-off`, `aws-eks-public-endpoint`, `azure-aks-public-api`, `azure-aks-rbac-disabled`, `gcp-gke-public-control-plane`, `k8s-api-anonymous-binding`, `k8s-dashboard-public-service`, `k8s-exposure`, `k8s-kubelet-anonymous-auth`, `k8s-rbac-cluster-admin-binding` |
+| 14 | Kubernetes manifest misconfiguration | yes | `k8s-admission-webhook-fail-open`, `k8s-exposure`, `k8s-pod-hostpath`, `k8s-pod-privileged`, `k8s-rbac-secrets-exposed`, `k8s-rbac-wildcard-clusterrole` |
 | 15 | Container registry image scanning | yes | `aws-ecr-repository-public`, `aws-ecr-scan-on-push-disabled`, `image-scan`, `registry-scan` |
 | 16 | Docker socket exposure | yes | `docker-socket` |
 | 17 | Image layer and history secret extraction | yes | `image-history-secrets` |
-| 18 | Cloud networking and security-group review | no | — |
-| 19 | Managed key management review | no | — |
-| 20 | Managed database exposure | yes | `aws-rds-publicly-accessible`, `aws-rds-unencrypted`, `managed-datastores` |
+| 18 | Cloud networking and security-group review | yes | `azure-nsg-open-rdp`, `azure-nsg-open-ssh`, `azure-storage-public-network` |
+| 19 | Managed key management review | yes | `azure-keyvault-public-network`, `azure-keyvault-purge-protection-off` |
+| 20 | Managed database exposure | yes | `aws-rds-publicly-accessible`, `aws-rds-unencrypted`, `azure-sql-public-network`, `gcp-sql-public-ip`, `gcp-sql-ssl-not-required`, `managed-datastores` |
 | 21 | Search platform exposure | yes | `aws-sns-topic-public`, `aws-sqs-policy-public`, `search-platform-exposure` |
 | 22 | Third-party SaaS integration inventory | no | — |
 | 23 | CI/CD pipeline audit | yes | `cicd-audit` |
@@ -244,9 +244,6 @@ the numbered methods in `docs/research/`.
 - `ch02#11`
 - `ch02#30`
 - `ch03#28`
-- `ch05#10`
-- `ch05#18`
-- `ch05#19`
 - `ch05#22`
 - `ch06#1`
 - `ch06#2`

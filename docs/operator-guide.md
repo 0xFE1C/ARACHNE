@@ -285,6 +285,9 @@ a shared cache may store. Four properties matter when you read one of these find
 | `ARACHNE_M5_MAX_BUCKET_NAMES` | `8` | Bucket-name candidates from one domain. |
 | `ARACHNE_M5_AWS_REGION` | `us-east-1` | Region the AWS read-only posture checks sign their requests for. |
 | `ARACHNE_M5_AWS_MAX_RESOURCES` | `5` | How many resources one AWS posture check enumerates before it stops. |
+| `ARACHNE_M5_AZURE_SUBSCRIPTION_ID` | *(empty)* | Subscription the read-only ARM posture checks scope their paths to. Empty means the Azure family skips rather than guessing one. |
+| `ARACHNE_M5_GCP_PROJECT_ID` | *(empty)* | Project the read-only GCP posture checks scope their paths to. Empty means the GCP family skips. |
+| `ARACHNE_M5_CLOUD_MAX_RESOURCES` | `5` | How many resources one Azure/GCP/Kubernetes posture check enumerates before it stops. |
 | `ARACHNE_M5_IMDS_PROBE` | `false` | Allow `m5.imds-ssrf` to send the metadata GET. |
 | `ARACHNE_M5_VALIDATE_CLOUD_KEYS` | `false` | Allow read-only validation call for a found cloud key. |
 | `ARACHNE_M5_IMAGE_SCAN` | `true` | Native container-image scanning: resolve the manifest, fetch the layers in scope, unpack into a temporary directory and match advisories. No external tool. |
@@ -743,7 +746,7 @@ arachne coverage --include-templates               # also count catalogue refere
 
 The tool greps `research_ref` values out of `src/arachne/modules` and compares them with the
 numbered methods in `docs/research/`. `arachne module coverage` is the same command under the
-`module` group. `arachne coverage` reports **148/175 (84.6%)** of the research methods mapped
+`module` group. `arachne coverage` reports **151/175 (86.3%)** of the research methods mapped
 to checks; the per-chapter breakdown is printed with the matrix.
 
 > **Note.** The generated matrix is committed at `coverage_matrix.md`, and a test fails when
@@ -2259,6 +2262,48 @@ create, modify or delete call is representable, and the only `POST` entries are 
 JSON-RPC services whose *read* API is `POST` (KMS and ECR). With no credential selected the
 family skips and sends nothing; with one that the API refuses it skips rather than reporting a
 clean account.
+
+### Azure, GCP and Kubernetes read-only posture (REQ-DET-025)
+
+Three further families audit a **read-only API base** the operator declares, with a
+`cloud-token` credential in the vault (the bearer token a least-privilege reader is issued):
+
+```
+# Azure Resource Manager: scope the base to management.azure.com and name the subscription
+arachne vault put azure-read-only --kind cloud-token --username reader --host management.azure.com
+ARACHNE_M5_AZURE_SUBSCRIPTION_ID=<subscription-id> \
+  arachne scan --target azure-posture:https://management.azure.com --credential azure-read-only
+
+# GCP: scope the base to the API host and name the project
+arachne vault put gcp-read-only --kind cloud-token --username reader --host cloudresourcemanager.googleapis.com
+ARACHNE_M5_GCP_PROJECT_ID=<project-id> \
+  arachne scan --target gcp-posture:https://cloudresourcemanager.googleapis.com --credential gcp-read-only
+
+# Kubernetes: the API server base and a read-only service-account token
+arachne vault put k8s-read-only --kind cloud-token --username reader --host 10.0.0.10
+arachne scan --target k8s-posture:https://10.0.0.10:6443 --credential k8s-read-only
+```
+
+The bearer token is injected into one request per release by the credential broker, so no check
+sees it. Each family's operation allowlist is a closed, `GET`-only table
+(`AZURE_READ_OPERATIONS`, `GCP_READ_OPERATIONS`, `K8S_READ_OPERATIONS` in the matching module
+under `arachne.modules.m5`): there is no create, modify or delete entry, and the Kubernetes
+table has **no operation that returns a secret**, because `m5.k8s-rbac-secrets-exposed`
+establishes that secrets are *listable* from RBAC metadata and never reads one. With no
+credential — or, for Azure and GCP, with no subscription/project declared — the family skips
+and sends nothing; with one the API refuses it skips rather than reporting a clean estate.
+
+The Azure family covers storage accounts (anonymous blob access, deprecated TLS, firewall
+default action), network security groups (SSH and RDP open to the internet), Key Vault (public
+reachability, purge protection), SQL servers (public network access), AKS (public API server,
+Kubernetes RBAC) and App Service (forced HTTPS). The GCP family covers object storage (public
+access prevention, uniform access), GKE (master authorized networks, Cloud Logging), IAM
+(user-managed service-account keys — metadata only, never key material), Cloud SQL (public IPv4,
+required SSL) and Cloud Functions (ingress settings). The Kubernetes family covers RBAC (custom
+wildcard roles, `cluster-admin` bound to a broad group, anonymous bindings), secrets (RBAC
+metadata), workloads (privileged containers, hostPath mounts), the Dashboard service type, the
+kubelet's anonymous authentication and read-only port (read through the API server's node
+proxy) and admission webhooks that fail open.
 
 `m5.cloud-posture` reads a cloud-config **state snapshot** with one bounded read-only
 GET. The canonical input is the normalized export
