@@ -165,10 +165,16 @@ def _iter_text_files(root: Path) -> list[Path]:
 
 
 def check_repository(root: Path) -> list[Violation]:
-    """Check the repository: every copy matches, and the preamble has one source."""
+    """Check the repository: every copy matches, and the preamble has one source.
+
+    The prompt library is build-time scaffolding. The release cleanup removes it and leaves
+    this gate in place (REQ-DOC-006, REQ-QUAL-015), so an absent library is a clean result:
+    there is no canonical text and no copy that could drift from it. A *present* library is
+    checked exactly as before.
+    """
     prompt = root / PROMPT_NAME
     if not prompt.is_file():
-        return [Violation(PROMPT_NAME, f"not found under {root}")]
+        return []
     text = prompt.read_text(encoding="utf-8")
     violations = check_text(text)
     canonical_blocks = 1 if extract_canonical(text) is not None else 0
@@ -261,14 +267,25 @@ def main(argv: list[str] | None = None) -> int:
         _err(f"preamble_check: no such directory: {', '.join(str(p) for p in missing)}")
         return 2
     violations: list[Violation] = []
+    present: list[Path] = []
     for root in roots:
+        prompt = root / PROMPT_NAME
+        if not prompt.is_file():
+            # Optional at release: the cleanup removes the scaffolding and keeps the gate
+            # (REQ-DOC-006, REQ-QUAL-015). Nothing to sync is not a failure.
+            _out(f"preamble_check: {prompt} is not present; nothing to sync")
+            continue
+        present.append(prompt)
         violations.extend(check_repository(root))
     for violation in violations:
         _out(violation.render())
     if violations:
         _err(f"preamble_check: {len(violations)} problem(s)")
         return 1
-    copies = len(extract_copies((roots[0] / PROMPT_NAME).read_text(encoding="utf-8")))
+    if not present:
+        _out("preamble_check: clean (no prompt library present; nothing to sync)")
+        return 0
+    copies = len(extract_copies(present[0].read_text(encoding="utf-8")))
     _out(f"preamble_check: clean ({copies} work-package block(s) match the §2 preamble)")
     return 0
 

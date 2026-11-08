@@ -28,11 +28,9 @@ from tools.wp_check import (
     _remove_worktree,
     load_handoff_exceptions,
     load_mapping,
-    load_work_area,
+    main,
     run_checks,
 )
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
 
 PROMPT = """## 4. Mapping table
 
@@ -315,34 +313,28 @@ def test_a_gate_that_times_out_is_reported_not_raised(
     assert "pytest" in check.detail, check.detail
 
 
-# ------------------------------------------------------------------ the parser reads the real files
-def test_the_mapping_is_read_from_prompt_md(tmp_path: Path) -> None:
+# ------------------------------------------------------------------ the parser, on fixtures
+def test_the_mapping_is_read_from_prompt_md() -> None:
     mapping = load_mapping(PROMPT)
     assert mapping["WP-02"] == ["REQ-QUAL-006", "REQ-QUAL-007"]
     assert mapping["WP-01"] == ["REQ-DOC-001"]
 
 
-def test_the_real_repository_mapping_and_area_are_parsed() -> None:
-    prompt = (REPO_ROOT / PROMPT_NAME).read_text(encoding="utf-8")
-    state = (REPO_ROOT / STATE_NAME).read_text(encoding="utf-8")
-    mapping = load_mapping(prompt)
-    assert mapping["WP-02"] == [
-        "REQ-QUAL-006",
-        "REQ-QUAL-007",
-        "REQ-QUAL-010",
-        "REQ-QUAL-011",
-        "REQ-QUAL-012",
-        "REQ-QUAL-013",
-        "REQ-QUAL-014",
-    ]
-    # The mapping the file states is the mapping the plan states: WP-24 owns the three
-    # requirements this package exists to satisfy (REQ-QUAL-013/014/015).
-    assert mapping["WP-24"] == ["REQ-QUAL-013", "REQ-QUAL-014", "REQ-QUAL-015"]
-    assert "src/arachne/tools/" in load_work_area(state, "WP-02")
-    assert "tests/" in load_work_area(state, "WP-02")
+def test_a_handoff_without_exceptions_parses_to_an_empty_list() -> None:
+    """No ``Work-area exceptions:`` line is an empty list, not a crash."""
+    without = HANDOFF.replace(f"- Work-area exceptions: {PROMPT_NAME}\n", "")
+    assert load_handoff_exceptions(STATE.format(status="`done`", handoff=without), "WP-01") == []
 
 
-def test_the_real_handoff_exceptions_are_parsed() -> None:
-    state = (REPO_ROOT / STATE_NAME).read_text(encoding="utf-8")
-    # WP-01's handoff declares no exceptions; the parser returns an empty list, not a crash.
-    assert load_handoff_exceptions(state, "WP-01") == []
+# ------------------------------------------------------------------ the release checkout
+def test_an_absent_scaffolding_tree_is_reported_not_crashed(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    """The cleanup removes the tracker and the prompt library (REQ-DOC-006).
+
+    The handoff gate stays in place (REQ-QUAL-015), so it must answer the only question such
+    a tree can pose — there is nothing to verify — and say so. It exits non-zero rather than
+    raising ``FileNotFoundError``, because a check that cannot apply is never a pass.
+    """
+    with pytest.raises(ValueError, match="build-time scaffolding is not present"):
+        run_checks(tmp_path, "WP-02", gates=False)
+    assert main(["--repo", str(tmp_path), "WP-02", "--no-gates"]) == 2
+    assert "build-time scaffolding is not present" in capsys.readouterr().err

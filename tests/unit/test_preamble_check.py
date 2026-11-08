@@ -26,8 +26,8 @@ from tools.preamble_check import (
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 #: The prompt library carries one block per work package: WP-01 ... WP-35 at the time of
-#: writing. The count is asserted so a block added without its preamble cannot hide in a
-#: shorter file.
+#: writing. The synthetic library below uses the same count, so a block added without its
+#: preamble cannot hide in a shorter file.
 EXPECTED_BLOCKS = 35
 
 
@@ -49,9 +49,22 @@ def _prompt(*, blocks: int = 2, drift: int | None = None, bare: int | None = Non
     return "".join(parts)
 
 
-def test_the_shipped_prompt_library_is_in_sync() -> None:
+def test_the_gate_is_clean_over_the_real_tree() -> None:
+    """The real repository, whether or not the build-time scaffolding is present.
+
+    Before the release cleanup the library is present and must be in sync; afterwards it is
+    gone and the gate must report that as clean rather than fail (REQ-DOC-006, REQ-QUAL-015).
+    Both are the same assertion: the gate exits 0 over this tree.
+    """
     assert check_repository(REPO_ROOT) == []
     assert main([str(REPO_ROOT)]) == 0
+
+
+def test_an_absent_prompt_library_is_clean_and_reported(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    """Nothing to sync is a clean result, and it says so instead of passing silently."""
+    assert check_repository(tmp_path) == []
+    assert main([str(tmp_path)]) == 0
+    assert "not present" in capsys.readouterr().out
 
 
 def test_a_one_character_edit_to_one_block_fails_and_names_the_block() -> None:
@@ -76,8 +89,13 @@ def test_a_second_source_of_the_preamble_is_reported(tmp_path: Path) -> None:
     assert [v.block for v in violations] == ["NOTES.md"]
 
 
-def test_the_canonical_text_and_copies_are_byte_identical_in_the_real_file() -> None:
-    text = (REPO_ROOT / PROMPT_NAME).read_text(encoding="utf-8")
+def test_every_block_copy_matches_the_canonical_block_byte_for_byte() -> None:
+    """One canonical block and one identical copy per work-package block, byte for byte.
+
+    Exercised on a synthetic library of the shipped size (one block per work package), so the
+    property is asserted without reading a build-time artefact that the release deletes.
+    """
+    text = _prompt(blocks=EXPECTED_BLOCKS)
     canonical = extract_canonical(text)
     assert canonical is not None
     copies = extract_copies(text)

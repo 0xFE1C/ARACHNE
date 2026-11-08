@@ -38,6 +38,15 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 #: these two, and ``grep -rn <names> src tests`` returning nothing is the printed evidence.
 SOURCE_TREES = ("src", "tests")
 
+#: The packaged tree alone: what a ``pip install arachne`` actually receives. REQ-DOC-006
+#: says no file *inside the packaged tree* may name a build-time artefact, which is the
+#: strictest of the three surfaces because there is no user who could have it.
+PACKAGED_TREE = "src/arachne"
+
+#: The development tooling that must stay *outside* the distribution (REQ-QUAL-015). Its
+#: subject is the scaffolding, so its bytes name it by design; the archives must not carry it.
+TOOLING_PACKAGE = "tools"
+
 #: The documentation surface. The same requirement says "no shipped source, **test or
 #: document**", so the document half is asserted here too. The link checker cannot see a
 #: citation whose first path segment starts with a dot, which is exactly the shape these
@@ -127,6 +136,55 @@ def test_the_distributions_carry_the_product_and_its_suite(
     )
     assert any(member.endswith("tests/conftest.py") for member in sdist_members), (
         "the sdist dropped the suite a source contributor runs"
+    )
+
+
+def _relative_member(name: str) -> str:
+    """Drop an sdist's top-level ``arachne-<version>/`` directory from a member name."""
+    head, _, rest = name.partition("/")
+    return rest if head.startswith("arachne-") and rest else name
+
+
+def test_the_distributions_carry_neither_scaffolding_nor_development_tooling(
+    distributions: tuple[Path, Path],
+) -> None:
+    """The release surface, in one measurement: no scaffolding and no tooling.
+
+    The same two properties are asserted per module above and in the tooling module — this is
+    the single check the release criterion states as one sentence, over the same archives, so
+    neither absence can be satisfied by hiding behind the other's test. It also prints the
+    member count of each archive, which is the negative control the two searches need: an
+    empty archive satisfies every absence.
+    """
+    needles = artefact_names()
+    for archive_name, members in _members(*distributions):
+        offenders = sorted(
+            {
+                member
+                for member in members
+                if any(needle in member for needle in needles)
+                or _relative_member(member) == TOOLING_PACKAGE
+                or _relative_member(member).startswith(f"{TOOLING_PACKAGE}/")
+            }
+        )
+        assert offenders == [], (
+            f"{archive_name} carries build-time scaffolding or development tooling:\n"
+            + "\n".join(offenders)
+        )
+        print(f"{archive_name}: {len(members)} members, 0 artefacts, 0 tooling files")
+
+
+def test_no_packaged_module_names_a_build_time_artefact() -> None:
+    """REQ-DOC-006, on the strictest surface: the package itself.
+
+    ``src/arachne`` is what the wheel installs. A name it cannot resolve is a bug the moment
+    the artefact is removed, and the artefact is removed at release — so this search is the
+    packaged tree only, with no tests or documents to dilute it.
+    """
+    offenders = references_to_scaffolding((PACKAGED_TREE,))
+    assert offenders == [], (
+        "these packaged modules name a build-time artefact that a user never receives:\n"
+        + "\n".join(offenders)
     )
 
 

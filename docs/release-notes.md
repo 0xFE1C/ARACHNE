@@ -264,12 +264,12 @@ a browser engine inside the scanner is a new attack surface and the operator opt
 
 | What | Result |
 |---|---|
-| Tests | **5,918** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Tests | **5,925** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
 | Primary safety suite | **59 tests** in `tests/test_safety.py`; **340** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol, mobile and API/modern-web fixtures with planted false-positive traps |
 | Strict type checking | clean under `mypy --strict` across the **450** Python modules in `src/` |
 | Lint | clean over the whole repository (the badge's scope is the tree, not `src/` and `tests/`) |
-| Research coverage | **151/175 (86.3%)** of the corpus's numbered methods have an implementing check |
+| Research coverage | **155/175 (88.6%)** of the corpus's numbered methods have an implementing check |
 
 Every figure here is generated rather than typed: `python -m arachne.tools.counts --check`
 fails the build when one of them drifts from the registry, the suite or the coverage tool.

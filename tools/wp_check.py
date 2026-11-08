@@ -455,6 +455,16 @@ def _commit_checks(
 
 def run_checks(repo: Path, wp: str, *, gates: bool = True) -> list[Check]:
     """Run every check for ``wp`` and return the verdicts in order."""
+    missing = [name for name in (PROMPT_NAME, STATE_NAME) if not (repo / name).is_file()]
+    if missing:
+        # The tracker and the prompt library are build-time scaffolding; the release cleanup
+        # removes them and leaves this gate in place (REQ-DOC-006, REQ-QUAL-015). With no
+        # handoff to verify, the gate must say so — a check that cannot apply is never a pass.
+        names = ", ".join(missing)
+        raise ValueError(
+            f"the build-time scaffolding is not present in this tree ({names}); this is a "
+            "release checkout and the handoff gate has nothing to verify"
+        )
     prompt_text = (repo / PROMPT_NAME).read_text(encoding="utf-8")
     state_text = (repo / STATE_NAME).read_text(encoding="utf-8")
     mapping = load_mapping(prompt_text)
