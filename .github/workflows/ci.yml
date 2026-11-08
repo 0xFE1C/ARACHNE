@@ -38,17 +38,14 @@ jobs:
       # help tests pass on a developer machine and fail on this runner. This prints what the
       # runner actually renders and with which terminal geometry.
       - name: diagnostic — how this runner renders help
+        continue-on-error: true
         run: |
           echo "COLUMNS=${COLUMNS:-unset} LINES=${LINES:-unset} TERM=${TERM:-unset}"
           python -c "import typer, click, rich, sys; print('typer', typer.__version__, 'click', click.__version__, 'rich', rich.__version__, 'py', sys.version.split()[0])"
           python -m arachne.cli.main --help 2>&1 | head -25
           echo '--- does the loopback lab zone resolve on this runner? ---'
           getent hosts lab.arachne.test || echo 'getent: no entry'
-          python -c "import socket
-          try:
-              print('getaddrinfo:', socket.getaddrinfo('lab.arachne.test', 80))
-          except OSError as exc:
-              print('getaddrinfo raised:', type(exc).__name__, exc)"
+          python -c "import socket; print(socket.gethostbyname('lab.arachne.test'))" || echo 'gethostbyname raised'
           cat /etc/resolv.conf
       # The whole repository, not `src tests`: a gate that does not cover the tree is not a
       # gate (REQ-QUAL-006). No path exclusions hide a violation.
