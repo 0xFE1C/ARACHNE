@@ -29,7 +29,7 @@
 # disagree, so a plan can never describe a check differently from the code that runs it.
 # S4 adds the M2 rows the registry implements; M3-M6 below are still *planned* only and the
 # plan marks them `implemented: false`.
-catalog_version: "1.20"
+catalog_version: "1.21"
 checks:
   # ---------------------------------------------------------------- M1 recon & attack surface
   # Implemented in S3 (arachne/modules/m1/). The rows below are generated from the check
@@ -353,6 +353,502 @@ checks:
     requires_active_checks: false
 
   # ---------------------------------------------------------------- M3 web application
+  - module: M2
+    name: redfish-service-root-exposed
+    version: '1.0'
+    title: BMC Redfish management API answers without authentication
+    description: 'Requests the Redfish service root a baseboard management controller publishes and reports it when the controller''s own service document is served to an unauthenticated caller. The baseboard controller is the machine''s out-of-band control plane: it can power the host off, mount virtual media and read the sensor and firmware inventory, so an unauthenticated service root is a management interface reachable by anyone who can route to it. Read-only GET; nothing is powered, mounted or reset.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M2
+    name: redfish-systems-exposed
+    version: '1.0'
+    title: BMC Redfish system inventory readable without authentication
+    description: 'Requests the Redfish computer-system collection and reports it when the controller answers unauthenticated with the collection''s own document. It names the managed hosts, their power state, their boot order and their firmware inventory — the mapping an attacker wants before touching the hardware. A different claim from the service-root check: the root proves the API answers, this proves the host inventory is readable. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M2
+    name: container-api-info-exposed
+    version: '1.0'
+    title: Container daemon API answers without authentication (daemon configuration)
+    description: 'Performs a single read-only GET of the container daemon''s own information document and reports it when the daemon answers with that document (confirmed by its own fields: the root directory, the running-container counter, the server version). Nothing else is asked of the daemon: no container is listed, started, stopped, inspected or exec''d, and no image is pulled — the evidence records ``command_issued: false``. An unauthenticated daemon socket is a remote-control interface, so the read proves reachability and deliberately stops at the door. This is a different claim from ``m4.docker-api-exposed``, which reads the version endpoint alone. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 3
+    requires_active_checks: true
+  - module: M2
+    name: etcd-version-exposed
+    version: '1.0'
+    title: etcd key-value store answers without authentication
+    description: 'Requests the etcd version endpoint and reports it when the store answers unauthenticated with its own version document. etcd is the cluster''s source of truth — Kubernetes stores every object it holds there, often including service account tokens — so an API that answers without a client certificate or token is a data-exposure finding rather than a banner. Only the version document is read; no key is listed and no value is returned. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: etcd-members-exposed
+    version: '1.0'
+    title: etcd cluster membership readable without authentication
+    description: 'Requests etcd''s member list and reports it when the store answers unauthenticated with the cluster''s own membership document. The list names every node of the quorum and their peer and client URLs — the topology needed to move against the rest of the cluster — while returning no stored data at all. It is a deliberately different claim from the version check: this one is readable even where the version endpoint is filtered. Read-only GET; no key is listed.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: consul-catalog-exposed
+    version: '1.0'
+    title: Consul service catalog answers without authentication
+    description: 'Requests Consul''s service catalog and reports it when the agent answers unauthenticated with the catalog document. The catalog names every registered service, the tags that describe them and their health — the service mesh''s own inventory — and an agent that answers it without an ACL token also answers its KV store, so this is the exposure that makes the rest reachable. Read-only GET; no KV value is returned.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: consul-kv-keys-exposed
+    version: '1.0'
+    title: Consul KV key names readable without authentication
+    description: 'Requests the *names* of Consul''s KV entries (the ``?keys`` projection) and reports it when the agent answers unauthenticated. Only key names and their folder structure are read — no value is requested and none can be returned by this projection — because the names alone disclose the configuration layout an operator keeps in the KV store (per-service settings, feature flags, and often the paths that hold credentials). Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: vault-seal-status-exposed
+    version: '1.0'
+    title: Vault management endpoint answers without authentication
+    description: 'Requests Vault''s seal-status document and reports it when the server answers unauthenticated. Vault is the secrets store, and its management endpoints are meant to be unreachable without a token; an answer that carries the server''s own seal/initialization state proves the management API is exposed from the scanning position. The check reads the status document only — no secret path is requested and no token is presented. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M2
+    name: vault-auth-methods-exposed
+    version: '1.0'
+    title: Vault auth-method configuration readable without authentication
+    description: 'Requests Vault''s auth-method listing and reports it when the server answers unauthenticated with the mount document. The listing names every enabled auth method — the LDAP, Kubernetes and AppRole mounts included — which is the map of how an attacker would try to obtain a token, and it is a management read that normally requires a root token. No secret path is read and no credential is presented. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M2
+    name: zookeeper-admin-stat-exposed
+    version: '1.0'
+    title: ZooKeeper AdminServer answers without authentication
+    description: 'Requests the ZooKeeper AdminServer''s stat report and reports it when the server answers unauthenticated with its own version and mode lines. The AdminServer publishes the ensemble''s role, its clients, its latency and its outstanding requests; an unauthenticated caller also reaches the four-letter administration words, so this is a coordination-service exposure rather than a banner. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M2
+    name: zookeeper-monitor-exposed
+    version: '1.0'
+    title: ZooKeeper monitor four-letter word answers without authentication
+    description: 'Issues the read-only ``mntr`` four-letter word — the monitor report, whose whole output is the server''s version, role and counters — and reports it when the ensemble answers it without authentication. The four-letter words are the reason ZooKeeper''s client port belongs on an internal network: once unauthenticated, the administration half of that vocabulary is reachable too. Only ``mntr`` is sent; no administration word is issued. Read-only command.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: kafka-topics-exposed
+    version: '1.0'
+    title: Kafka REST proxy answers its topic list without authentication
+    description: 'Requests the topic list from the Kafka REST proxy and reports it when the proxy answers unauthenticated with the broker''s own topic names. The topic names are the event backbone''s data model — who publishes what — and a REST proxy that serves the list also serves the produce endpoint, which is why the list is the finding rather than the banner. The check reads the list only; no message is produced, consumed or acked and no topic is created or deleted. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: kafka-brokers-exposed
+    version: '1.0'
+    title: Kafka REST proxy answers its broker list without authentication
+    description: 'Requests the broker list from the Kafka REST proxy and reports it when the proxy answers unauthenticated with the cluster''s own broker documents. Each broker record names its host and port, so the answer maps the cluster''s nodes — useful even where the topic list itself is filtered. No message, consumer group or offset is requested. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: elasticsearch-cluster-exposed
+    version: '1.0'
+    title: Elasticsearch cluster API answers without authentication
+    description: 'Requests the Elasticsearch cluster-health document and reports it when the cluster answers unauthenticated with its own fields. Elasticsearch holds logs, traces and often application data, and an API that serves the cluster document without a credential also serves ``_search``, so this is the exposure that makes the stored documents reachable. A different claim from ``m2.db-service-probe``, which reads the service root and the index list. No search is performed and no document is read or written. Read-only GET.'
+    research_ref: ch02#23
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: elasticsearch-nodes-exposed
+    version: '1.0'
+    title: Elasticsearch node inventory readable without authentication
+    description: 'Requests the cluster''s node view and reports it when the cluster answers unauthenticated with the nodes'' own records. Each line names a node, its address, its role and its heap and disk pressure — the cluster''s topology and the sizing an operator would not publish. It is a deliberate second claim: a deployment can filter the index list and still serve the node view. No search is performed. Read-only GET.'
+    research_ref: ch02#23
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M2
+    name: rabbitmq-queues-exposed
+    version: '1.0'
+    title: RabbitMQ management API answers its queue list without authentication
+    description: 'Requests the broker''s queue list from the RabbitMQ management API and reports it when the broker answers unauthenticated with the queues'' own documents. Each queue record names the vhost, the queue and its message counts, so the answer maps the messaging model. The management API that serves it also serves the publish endpoint, which is why the list is reported rather than dismissed as monitoring. No message is published, acknowledged or purged. A different endpoint from ``m4.dashboard-exposure``, which fingerprints the console''s overview. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M2
+    name: rabbitmq-nodes-exposed
+    version: '1.0'
+    title: RabbitMQ management API answers its node inventory without authentication
+    description: 'Requests the broker''s node list from the RabbitMQ management API and reports it when the broker answers unauthenticated with the nodes'' own documents. The records name each node, its memory and file-descriptor usage and its uptime — the cluster''s shape and sizing. It is a second, independent claim: an operator may shield the queue list and leave the node view reachable. No message is published or consumed. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: jenkins-api-exposed
+    version: '1.0'
+    title: Jenkins JSON API answers without authentication
+    description: 'Requests Jenkins'' JSON API summary and reports it when the controller answers unauthenticated with the summary document (its jobs and its assigned labels). The summary lists every job and pipeline the controller holds, which is the build surface an authenticated attacker would then trigger — and a controller that serves the API without a credential usually serves the script console too. No job is started, no build is triggered and no configuration is submitted. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M2
+    name: jenkins-computers-exposed
+    version: '1.0'
+    title: Jenkins agent inventory readable without authentication
+    description: 'Requests Jenkins'' computer (agent) list and reports it when the controller answers unauthenticated with the agents'' own documents. The list names every build agent, its labels and its executors — the machines the pipelines run on, which is the second half of the build estate the job list only names. No agent is connected to, configured or taken off-line. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M2
+    name: grafana-datasources-exposed
+    version: '1.0'
+    title: Grafana datasource configuration readable without authentication
+    description: 'Requests Grafana''s datasource list and reports it when the instance answers unauthenticated with the datasources'' own documents. Each record names a datasource''s type, URL and database — the connection map of the monitoring estate, and often the internal hostnames of the systems behind it. Grafana''s ``/api/health`` is anonymous by design and is deliberately **not** what this check reads. A different endpoint from ``m4.dashboard-exposure``, which fingerprints the login page. No datasource is queried, created or changed. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M2
+    name: grafana-dashboards-exposed
+    version: '1.0'
+    title: Grafana dashboard inventory readable without authentication
+    description: 'Requests Grafana''s dashboard search and reports it when the instance answers unauthenticated with the search document (whose own result types are ``dash-db``/``dash-folder``). The results name every dashboard and folder, which is the operator''s monitoring map — the services tracked, the SLOs published and the internal names they carry. No dashboard is opened beyond the search result metadata and nothing is created, saved or deleted. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M2
+    name: prometheus-targets-exposed
+    version: '1.0'
+    title: Prometheus target API answers without authentication
+    description: 'Requests Prometheus'' target API and reports it when the server answers unauthenticated with the targets'' own documents. Every target record names a scrape URL — the internal addresses and ports of the estate Prometheus monitors — which is a host inventory the operator never published. The server''s ``/metrics`` and build-info endpoints are public by design and are not what this check reads. A different endpoint from ``m4.dashboard-exposure``, which fingerprints the graph UI. No query is evaluated and no target is reloaded. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M2
+    name: prometheus-config-exposed
+    version: '1.0'
+    title: Prometheus configuration readable without authentication
+    description: 'Requests Prometheus'' status/config endpoint and reports it when the server answers unauthenticated with the loaded configuration. The document is the scrape configuration itself — every job, its targets and its labels, and for many deployments the basic-auth credentials a scrape job carries — which is why it is a management read rather than a status page. The check reads the returned document; the redaction gate strips anything credential-shaped at capture. No configuration is reloaded or submitted. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M2
+    name: kibana-saved-objects-exposed
+    version: '1.0'
+    title: Kibana saved-object index answers without authentication
+    description: 'Requests Kibana''s saved-object search and reports it when the instance answers unauthenticated with the search document. The results name the space''s saved objects — dashboards, searches and index patterns — which is the operator''s view of the data behind Kibana, and an instance that serves it also serves the query API over the same indices. No index is queried and no document is read. A different endpoint from ``m4.dashboard-exposure``, which fingerprints the app shell. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: kibana-spaces-exposed
+    version: '1.0'
+    title: Kibana space inventory readable without authentication
+    description: 'Requests Kibana''s space list and reports it when the instance answers unauthenticated with the spaces'' own records (each carrying its id, name and initials). The list names the instance''s tenancy model — which teams'' views live here — and is a management read the login layer is supposed to guard. It is a second, independent claim: a deployment can restrict the saved-object search and leave the space list open. Read-only GET.'
+    research_ref: ch02#22
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: couchdb-config-exposed
+    version: '1.0'
+    title: CouchDB node configuration readable without authentication
+    description: 'Requests CouchDB''s node configuration document and reports it when the server answers unauthenticated with the configuration''s own sections (``httpd``, ``couchdb``, ``log``). The document names the bind address, the authentication handler and the database directories — the settings that decide what else on the node is reachable — and it is a management read the admin party is supposed to guard. A different endpoint from ``m2.db-service-probe``, which reads the database list. No document is read, written or deleted. Read-only GET.'
+    research_ref: ch02#23
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 2
+    requires_active_checks: true
+  - module: M2
+    name: couchdb-session-exposed
+    version: '1.0'
+    title: CouchDB session context answers without authentication
+    description: 'Requests CouchDB''s session endpoint and reports it when the server answers with the session document''s own fields. The document carries the ``userCtx`` and the authentication handler, which is how the server tells a caller whether it is in the admin party — the default state in which every database is readable and writable by anyone who can reach the port. Only the context is read; no document is opened and no credential is presented. Read-only GET.'
+    research_ref: ch02#23
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: redis-replication-exposed
+    version: '1.0'
+    title: Redis replication topology readable without authentication
+    description: 'Issues the read-only ``INFO replication`` section and reports it when the instance answers it without a credential. The section names the server''s role, its replicas and their offsets — the topology of the cache tier — and it is a different claim from ``m2.db-service-probe``, which sends ``PING`` and ``INFO server`` to establish the instance is open at all. Only the section is read; no key is fetched, set or deleted. Read-only command.'
+    research_ref: ch02#23
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: redis-persistence-exposed
+    version: '1.0'
+    title: Redis persistence configuration readable without authentication
+    description: 'Issues the read-only ``INFO persistence`` section and reports it when the instance answers it without a credential. The section reports the snapshot and append-only-file state — where the dataset is written and whether the last dump succeeded — which tells a reader how the cache is persisted and, with the directory setting, where its dumps live. Only the section is read; no key is fetched and no dump is triggered (``BGSAVE`` is not issued). Read-only command.'
+    research_ref: ch02#23
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: memcached-settings-exposed
+    version: '1.0'
+    title: memcached settings readable without authentication
+    description: 'Issues the read-only ``stats settings`` command and reports it when the daemon answers it without authentication. The reply is the daemon''s configuration — its memory ceiling, connection limit, growth factor and eviction policy — which sizes the cache and shows whether it is a shared or per-tenant instance. memcached has no authentication by design, so reachability is the finding. Only the settings view is read; no item is fetched, stored or flushed (``stats items`` is not issued and neither is ``flush_all``). Read-only command.'
+    research_ref: ch02#23
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 1
+    requires_active_checks: true
+  - module: M2
+    name: memcached-slabs-exposed
+    version: '1.0'
+    title: memcached slab allocator state readable without authentication
+    description: 'Issues the read-only ``stats slabs`` command and reports it when the daemon answers it without authentication. The reply counts the allocated slab classes and the memory they hold, which shows how much data the cache is carrying and how it is shaped. It is a second, independent claim from the settings view: a daemon can be reached for one statistic view and filtered for another. Only the allocator view is read; no item is fetched or stored. Read-only command.'
+    research_ref: ch02#23
+    proof: L1
+    cwe: CWE-306
+    target_kinds:
+    - ip
+    - cidr
+    - domain
+    - domain_pattern
+    - url
+    estimated_requests: 1
+    requires_active_checks: true
   - module: M3
     name: security-headers
     version: '1.0'

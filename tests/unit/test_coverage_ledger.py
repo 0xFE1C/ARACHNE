@@ -371,6 +371,7 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     wp30 = {record.id for record in ledger.records if record.id in WP30_IDS}
     wp31 = {record.id for record in ledger.records if record.id in WP31_IDS}
     wp32 = {record.id for record in ledger.records if record.id in WP32_IDS}
+    wp33 = {record.id for record in ledger.records if record.id in WP33_IDS}
     assert (
         len(
             ids
@@ -389,6 +390,7 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
             - wp30
             - wp31
             - wp32
+            - wp33
         )
         == 152
     )
@@ -406,6 +408,7 @@ def test_the_original_152_checks_are_all_present_and_mapped(ledger) -> None:  # 
     assert len(wp30) == 24
     assert len(wp31) == 31
     assert len(wp32) == 28
+    assert len(wp33) == 31
 
 
 #: WP-32's Azure, GCP and Kubernetes read-only posture families (REQ-DET-025);
@@ -440,6 +443,45 @@ WP32_IDS: frozenset[str] = frozenset(
         "m5.k8s-rbac-cluster-admin-binding",
         "m5.k8s-rbac-secrets-exposed",
         "m5.k8s-rbac-wildcard-clusterrole",
+    }
+)
+
+
+#: WP-33's exposed management and data service breadth family (REQ-DET-026);
+#: excluded for the same reason.
+WP33_IDS: frozenset[str] = frozenset(
+    {
+        "m2.consul-catalog-exposed",
+        "m2.consul-kv-keys-exposed",
+        "m2.container-api-info-exposed",
+        "m2.couchdb-config-exposed",
+        "m2.couchdb-session-exposed",
+        "m2.elasticsearch-cluster-exposed",
+        "m2.elasticsearch-nodes-exposed",
+        "m2.etcd-members-exposed",
+        "m2.etcd-version-exposed",
+        "m2.grafana-dashboards-exposed",
+        "m2.grafana-datasources-exposed",
+        "m2.jenkins-api-exposed",
+        "m2.jenkins-computers-exposed",
+        "m2.kafka-brokers-exposed",
+        "m2.kafka-topics-exposed",
+        "m2.kibana-saved-objects-exposed",
+        "m2.kibana-spaces-exposed",
+        "m2.memcached-settings-exposed",
+        "m2.memcached-slabs-exposed",
+        "m2.prometheus-config-exposed",
+        "m2.prometheus-targets-exposed",
+        "m2.rabbitmq-nodes-exposed",
+        "m2.rabbitmq-queues-exposed",
+        "m2.redfish-service-root-exposed",
+        "m2.redfish-systems-exposed",
+        "m2.redis-persistence-exposed",
+        "m2.redis-replication-exposed",
+        "m2.vault-auth-methods-exposed",
+        "m2.vault-seal-status-exposed",
+        "m2.zookeeper-admin-stat-exposed",
+        "m2.zookeeper-monitor-exposed",
     }
 )
 

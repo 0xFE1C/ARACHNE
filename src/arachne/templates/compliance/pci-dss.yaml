@@ -134,6 +134,37 @@ controls:
   - id: "7"
     title: "Restrict Access to System Components and Cardholder Data by Business Need to Know"
     checks:
+      - m2.consul-catalog-exposed
+      - m2.consul-kv-keys-exposed
+      - m2.container-api-info-exposed
+      - m2.couchdb-config-exposed
+      - m2.couchdb-session-exposed
+      - m2.elasticsearch-cluster-exposed
+      - m2.elasticsearch-nodes-exposed
+      - m2.etcd-members-exposed
+      - m2.etcd-version-exposed
+      - m2.grafana-dashboards-exposed
+      - m2.grafana-datasources-exposed
+      - m2.jenkins-api-exposed
+      - m2.jenkins-computers-exposed
+      - m2.kafka-brokers-exposed
+      - m2.kafka-topics-exposed
+      - m2.kibana-saved-objects-exposed
+      - m2.kibana-spaces-exposed
+      - m2.memcached-settings-exposed
+      - m2.memcached-slabs-exposed
+      - m2.prometheus-config-exposed
+      - m2.prometheus-targets-exposed
+      - m2.rabbitmq-nodes-exposed
+      - m2.rabbitmq-queues-exposed
+      - m2.redfish-service-root-exposed
+      - m2.redfish-systems-exposed
+      - m2.redis-persistence-exposed
+      - m2.redis-replication-exposed
+      - m2.vault-auth-methods-exposed
+      - m2.vault-seal-status-exposed
+      - m2.zookeeper-admin-stat-exposed
+      - m2.zookeeper-monitor-exposed
       - m3.authz-bypass
       - m3.idor-oracle
       - m3.mass-assign-audit

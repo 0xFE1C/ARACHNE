@@ -121,7 +121,12 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # Vault, SQL, AKS and App Service), eight GCP reads (object storage, GKE, IAM, Cloud SQL and
     # functions) and nine Kubernetes API reads (RBAC, secrets metadata, the API server,
     # workloads, the dashboard, the kubelet and admission), all credential-gated L1 reads -> 388.
-    assert len(registry.checks()) == 388
+    # WP-33 adds the exposed-service breadth family (REQ-DET-026) — thirty-one read-only L1
+    # probes over IPMI/Redfish, the container daemon API, etcd, Consul, Vault, ZooKeeper, Kafka,
+    # Elasticsearch, RabbitMQ, Jenkins, Grafana, Prometheus, Kibana, CouchDB, Redis and
+    # memcached, every one an HTTP GET or a single entry of a wire protocol's closed read
+    # vocabulary -> 419.
+    assert len(registry.checks()) == 419
     # M1's code-secret-mining, M2's SNMP and ICS checks, M4's metadata-ssrf and
     # default-credentials checks, M3's ssrf-probe, M5's imds-ssrf / azure-mi-audit and
     # M6's deception-listeners / ad-attack-path, S13's m1.bucket-hunt, S15's six
@@ -146,8 +151,9 @@ def test_builtin_registry_exposes_the_shipped_modules() -> None:
     # infrastructure-artifact checks are all plain GETs, so the active count does not move.
     # WP-30's twenty-four server checks are plain GETs too. WP-31's thirty-one AWS posture
     # checks are all active (they make a credentialed API read) -> 134. WP-32's twenty-eight
-    # Azure/GCP/Kubernetes posture checks are active for the same reason -> 162.
-    assert registry.totals()["active_checks"] == 162
+    # Azure/GCP/Kubernetes posture checks are active for the same reason -> 162. WP-33's
+    # thirty-one exposed-service checks are active too (each contacts the service) -> 193.
+    assert registry.totals()["active_checks"] == 193
     # S15: the six L2+ declarations are exactly the proof ladder's opt-in rows. S29 adds one
     # more: m3.client-secret-verify, the L2 dynamic verification of a client-side credential.
     assert registry.totals()["proof_l2plus"] == 7
@@ -269,8 +275,8 @@ def test_a_plugin_extends_an_existing_module(monkeypatch) -> None:  # type: igno
     )
     registry = ModuleRegistry.discover()
     assert registry.module_ids() == ("M1", "M2", "M3", "M4", "M5", "M6")
-    # The shipped set (388 at WP-32) plus the plugin's one extra check.
-    assert len(registry.checks()) == 389
+    # The shipped set (419 at WP-33) plus the plugin's one extra check.
+    assert len(registry.checks()) == 420
     assert registry.group("M1").origin == "builtin+extra"  # type: ignore[union-attr]
 
 

@@ -2305,6 +2305,37 @@ metadata), workloads (privileged containers, hostPath mounts), the Dashboard ser
 kubelet's anonymous authentication and read-only port (read through the API server's node
 proxy) and admission webhooks that fail open.
 
+### Exposed management and data services (REQ-DET-026)
+
+The `m2.*-exposed` family probes the management and data services a default deployment
+leaves reachable **without authentication** — IPMI/Redfish, the container daemon API, etcd,
+Consul, Vault, ZooKeeper, Kafka, Elasticsearch, RabbitMQ, Jenkins, Grafana, Prometheus,
+Kibana, CouchDB, Redis and memcached. It is an active M2 family, so it needs the same
+`--active-checks` opt-in and authorization attestation as every other network probe, and it
+runs against the hosts and services the discovery step already established (`m2.port-scan`
+and `m2.service-fingerprint`); a host with no recorded service is skipped, not guessed at.
+
+The whole family goes through one shared, read-only helper
+(`arachne.modules.m2.service_read`). An HTTP probe is a `GET` **by construction** — the probe
+shape has no request-method field to name another verb — and a wire probe may only name a
+command in its protocol's closed read vocabulary (`TCP_READ_COMMANDS`: the Redis `INFO`
+sections, memcached's `stats` views and ZooKeeper's `mntr` four-letter word). There is no
+`DELETE`, `FLUSHALL`, topic-creation, job-trigger or publish call anywhere in the family, and
+none is representable: a check cannot construct a probe outside the vocabulary.
+
+**A service that answers is not a service that is exposed.** A finding requires a `2xx` whose
+content is the service's *own* document (a marker the check names up front), or a wire reply
+that carries the protocol's own fields, with **no** authentication error in the answer. A
+service behind a challenge — the requirement's decoy: the same service on a non-default port,
+behind authentication — answers `401`/`403` (HTTP) or its protocol's auth error (wire) and is
+reported as a non-finding: it is there, and a caller who has not authenticated cannot read it.
+
+Each check makes a claim the shipped corpus does not already make: the family reads the
+services' own data and status APIs (`/api/search` rather than Grafana's login page,
+`/api/queues` rather than the RabbitMQ console overview, `INFO replication` rather than Redis'
+`PING`), so `m4.dashboard-exposure` and `m2.db-service-probe` and this family can never report
+the same fact twice.
+
 `m5.cloud-posture` reads a cloud-config **state snapshot** with one bounded read-only
 GET. The canonical input is the normalized export
 (`{"provider": ..., "resources": [{"id", "service", "type", "config", ...}]}`) served by

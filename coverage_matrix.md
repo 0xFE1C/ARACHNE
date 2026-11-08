@@ -6,7 +6,7 @@ the numbered methods in `docs/research/`.
 
 - research corpus: `docs/research`
 - source roots: `src/arachne/modules`
-- references found: **388**
+- references found: **419**
 - coverage: **151/175 (86.3%)**
 
 ## Summary
@@ -83,8 +83,8 @@ the numbered methods in `docs/research/`.
 | 19 | Kerberos user enumeration | yes | `kerberos-enum` |
 | 20 | SMTP banner and relay probing | yes | `smtp-enum`, `smtp-transport` |
 | 21 | Anonymous FTP access check | yes | `ftp-anonymous` |
-| 22 | Database service probing | yes | `db-service-probe` |
-| 23 | Database default-configuration probing | yes | `db-service-probe` |
+| 22 | Database service probing | yes | `consul-catalog-exposed`, `consul-kv-keys-exposed`, `container-api-info-exposed`, `db-service-probe`, `etcd-members-exposed`, `etcd-version-exposed`, `grafana-dashboards-exposed`, `grafana-datasources-exposed`, `jenkins-api-exposed`, `jenkins-computers-exposed`, `kafka-brokers-exposed`, `kafka-topics-exposed`, `kibana-saved-objects-exposed`, `kibana-spaces-exposed`, `prometheus-config-exposed`, `prometheus-targets-exposed`, `rabbitmq-nodes-exposed`, `rabbitmq-queues-exposed`, `redfish-service-root-exposed`, `redfish-systems-exposed`, `vault-auth-methods-exposed`, `vault-seal-status-exposed`, `zookeeper-admin-stat-exposed`, `zookeeper-monitor-exposed` |
+| 23 | Database default-configuration probing | yes | `couchdb-config-exposed`, `couchdb-session-exposed`, `db-service-probe`, `elasticsearch-cluster-exposed`, `elasticsearch-nodes-exposed`, `memcached-settings-exposed`, `memcached-slabs-exposed`, `redis-persistence-exposed`, `redis-replication-exposed` |
 | 24 | SSH algorithm and auth enumeration | yes | `ssh-auth`, `ssh-enum` |
 | 25 | RDP and VNC service detection | yes | `rdp-vnc-detect` |
 | 26 | SSDP and UPnP discovery | yes | `ssdp-discovery` |

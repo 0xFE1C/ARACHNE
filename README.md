@@ -5,8 +5,8 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3b82f6" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white" alt="Python 3.11+">
-  <img src="https://img.shields.io/badge/checks-388-8b5cf6" alt="388 registered checks">
-  <img src="https://img.shields.io/badge/tests-5,845-22c55e" alt="5,845 tests">
+  <img src="https://img.shields.io/badge/checks-419-8b5cf6" alt="419 registered checks">
+  <img src="https://img.shields.io/badge/tests-5,882-22c55e" alt="5,882 tests">
   <img src="https://img.shields.io/badge/engine-heuristic_%2B_AI-f59e0b" alt="Dual engine">
   <img src="https://img.shields.io/badge/proof_ladder-L0%E2%80%93L4-ef4444" alt="Proof ladder L0–L4">
   <img src="https://img.shields.io/badge/mypy-strict-0ea5e9" alt="mypy strict">
@@ -46,11 +46,11 @@ it — safely — and to **show its work**:
 
 | | |
 |:---|:---|
-| 🕷️ **388 registered checks** | 6 modules: recon/OSINT · network · web · misconfiguration · cloud/supply-chain · AI-era |
+| 🕷️ **419 registered checks** | 6 modules: recon/OSINT · network · web · misconfiguration · cloud/supply-chain · AI-era |
 | 🪜 **Proof ladder L0–L4** | passive → read-only → out-of-band → one-shot command → minimal state change (auto-restored) |
 | ⚙️ **Dual engine** | heuristic (127 rules, deterministic) + AI (7 provider adapters) — parity-guaranteed |
 | 🖥️ **Run it your way** | CLI · REST API + web UI · scheduler · distributed agents · CI gate · air-gapped |
-| 🧪 **5,845 tests** | incl. a 59-test safety suite and ground-truth labs with false-positive traps |
+| 🧪 **5,882 tests** | incl. a 59-test safety suite and ground-truth labs with false-positive traps |
 | 🔏 **Tamper-evident** | hash-chained audit trail; `arachne verify-chain` detects any modification |
 | 🔑 **Asymmetric signing** | Ed25519 alongside HMAC — an auditor with only the public key verifies and cannot forge |
 | 📋 **Generated compliance maps** | CIS · ISO 27001 · NIST CSF · PCI DSS, built from check metadata with the unassessed remainder named |
@@ -70,7 +70,7 @@ flowchart LR
         GATES["Safety gates<br/>scope · attestation · proof"]
         RUN["Scoped execution<br/>rate-limited · redacted · audited"]
     end
-    subgraph modules["Detection — 388 checks, 6 modules"]
+    subgraph modules["Detection — 419 checks, 6 modules"]
         M1["M1<br/>Recon/OSINT"]
         M2["M2<br/>Network"]
         M3["M3<br/>Web"]
@@ -160,7 +160,7 @@ own.
 | Module | Checks | What it covers |
 |---|:---:|---|
 | **M1** Recon & OSINT | 17 | dork sweeps, subdomains, certificate transparency, breach exposure, provider drift (Shodan/Censys) |
-| **M2** Network & Services | 32 | ports, fingerprints, TLS & mTLS enforcement, DNS/AXFR, SMB and SSH auth, database & ICS probing, SMTP transport, HTTP/3 parity, read-only AD CS enumeration, CVE correlation |
+| **M2** Network & Services | 63 | ports, fingerprints, TLS & mTLS enforcement, DNS/AXFR, SMB and SSH auth, database & ICS probing, SMTP transport, HTTP/3 parity, read-only AD CS enumeration, CVE correlation, and the exposed-service breadth family (read-only probes of IPMI/Redfish, the container daemon API, etcd, Consul, Vault, ZooKeeper, Kafka, Elasticsearch, RabbitMQ, Jenkins, Grafana, Prometheus, Kibana, CouchDB, Redis and memcached) |
 | **M3** Web Application | 162 | SQLi/XSS/SSRF/IDOR, command & template injection, XXE, smuggling, cache poisoning, GraphQL, JWT/OAuth/SAML, DOM-XSS in a headless browser, the WordPress and CMS-family-B (Joomla/Drupal/Moodle/PrestaShop/Magento) surface inventories, the application-server family (Spring Boot, Django, Rails, Laravel, Tomcat, JBoss, WebLogic, ColdFusion, IIS), and the API and modern-web surface (OpenAPI/Swagger documents and an unauthenticated declared operation, GraphQL introspection/suggestions/IDE, the browser-facing gRPC surface, WebSocket origin handling, serverless and edge-function endpoints, and CORS) |
 | **M4** Misconfiguration | 77 | `.env`/`.git` exposure, backups, debug endpoints, headers, cookies, default credentials, and the source-control, CI and infrastructure artifacts (git reflog and credential stores, CI pipeline definitions and their secrets, Terraform state/plan/lock, cloud credential files, container and orchestration manifests, editor residue, credential and authorization files, environment-file variants), and the server, platform and runtime configuration defaults (nginx/Apache/IIS/Caddy default pages and configuration files, the machine-readable directory indexes, the Docker and Podman version endpoints, the orchestration and registry dashboards, the message-broker consoles, and the header, cookie and caching defaults) |
 | **M5** Cloud & Supply Chain | 81 | IMDS/metadata, buckets, Kubernetes, registries, native image scanning, CI/CD, dependency confusion, IAM, DigitalOcean posture, the AWS read-only service posture family (S3, IAM, EC2 and instance metadata, RDS, EKS, Lambda, CloudTrail, KMS, SQS/SNS, ECR and the account-level defaults), and the Azure, GCP and Kubernetes read-only posture families (Azure storage, security groups, Key Vault, SQL, AKS and App Service; GCP object storage, GKE, IAM, Cloud SQL and functions; Kubernetes RBAC, secrets metadata, the API server, workloads, the dashboard, the kubelet and admission), each read with a vault-supplied credential |

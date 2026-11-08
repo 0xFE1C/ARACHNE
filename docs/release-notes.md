@@ -80,12 +80,12 @@ matters.
 
 ### What is in this snapshot
 
-**Detection — 388 registered checks across six modules**
+**Detection — 419 registered checks across six modules**
 
 | Module | Checks | Surface |
 |---|---:|---|
 | M1 Reconnaissance & OSINT | 17 | dork sweeps, subdomain enumeration, certificate transparency, breach exposure, provider drift |
-| M2 Network & services | 32 | ports, fingerprints, TLS, mTLS and X.509, DNS and AXFR, SMB, databases, OT protocols, SMTP transport, HTTP/3, read-only AD CS enumeration, CVE correlation |
+| M2 Network & services | 63 | ports, fingerprints, TLS, mTLS and X.509, DNS and AXFR, SMB, databases, OT protocols, SMTP transport, HTTP/3, read-only AD CS enumeration, CVE correlation, and the exposed-service breadth family (read-only probes of IPMI/Redfish, the container daemon API, etcd, Consul, Vault, ZooKeeper, Kafka, Elasticsearch, RabbitMQ, Jenkins, Grafana, Prometheus, Kibana, CouchDB, Redis and memcached) |
 | M3 Web application | 162 | injection, access control, session and identity, request smuggling, cache poisoning, GraphQL, WebSocket, gRPC, client-side code, DOM-XSS in a headless browser (optional extra), mobile artifacts, the WordPress ecosystem surface (configuration and backup exposure, XML-RPC and REST, user enumeration, plugin and theme inventory), the CMS family B surface (Joomla, Drupal, Moodle, PrestaShop and Magento configuration, backup, administrative-login, version, installer-residue and API-route exposure), the application-server surface (Spring Boot actuator and heap dump, Django debug and media paths, Rails and Laravel debug surfaces, Tomcat manager and host-manager, the JBoss, WebLogic and ColdFusion consoles, and the IIS extension and short-name behaviour), and the API and modern-web surface (OpenAPI/Swagger document exposure and an unauthenticated declared operation, GraphQL introspection/suggestions/IDE and the mutation inventory a schema publishes, the browser-facing gRPC surface, WebSocket origin handling, serverless and edge-function endpoints, and CORS permissiveness) |
 | M4 Misconfiguration & exposure | 77 | exposed `.env`/`.git`, backups, debug endpoints, headers, cookies, default credentials, the source-control, CI and infrastructure artifacts (REQ-DET-022), and the server, platform and runtime configuration defaults (REQ-DET-023) |
 | M5 Cloud, container & supply chain | 81 | instance metadata, buckets, Kubernetes, registries, native container-image scanning, CI/CD, dependency confusion, IAM posture, DigitalOcean posture, the AWS read-only service posture family, and the Azure, GCP and Kubernetes read-only posture families (Azure storage, network security groups, Key Vault, SQL, AKS and App Service; GCP object storage, GKE, IAM, Cloud SQL and functions; Kubernetes RBAC, secrets metadata, the API server, workloads, the dashboard, the kubelet and admission) |
@@ -264,10 +264,10 @@ a browser engine inside the scanner is a new attack surface and the operator opt
 
 | What | Result |
 |---|---|
-| Tests | **5,845** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
+| Tests | **5,882** tests collected (the scope CI runs: `pytest tests -m "not perf"`) |
 | Primary safety suite | **59 tests** in `tests/test_safety.py`; **340** in the safety files |
 | Ground-truth labs | web, cloud, GraphQL, gRPC, fuzzing, protocol, mobile and API/modern-web fixtures with planted false-positive traps |
-| Strict type checking | clean under `mypy --strict` across the **446** Python modules in `src/` |
+| Strict type checking | clean under `mypy --strict` across the **448** Python modules in `src/` |
 | Lint | clean over the whole repository (the badge's scope is the tree, not `src/` and `tests/`) |
 | Research coverage | **151/175 (86.3%)** of the corpus's numbered methods have an implementing check |
 

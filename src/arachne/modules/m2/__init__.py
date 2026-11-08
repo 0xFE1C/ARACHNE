@@ -45,6 +45,15 @@ check                                    ref         what it establishes
 ``m2.adcs-enum``                         ch02#18     AD CS templates/CA, read-only (WP-10, L1)
 ======================================  ==========  ==========================================
 
+WP-33 (REQ-DET-026) adds the **exposed service breadth** family, registered after the
+protocol checks: thirty-one read-only L1 probes over the management and data services a
+default deployment leaves reachable without authentication — IPMI/Redfish, the container
+daemon API, etcd, Consul, Vault, ZooKeeper, Kafka, Elasticsearch, RabbitMQ, Jenkins, Grafana,
+Prometheus, Kibana, CouchDB, Redis and memcached. Their reachability logic lives once, in
+:mod:`arachne.modules.m2.service_read`: an HTTP probe is a ``GET`` by construction and a wire
+probe may only name a command in its protocol's closed read vocabulary, so no check in the
+family can issue a mutating call.
+
 **Safety.** Every check here is active (they all contact the target) except ``cve-correlate``,
 so F-01-09 applies: they need ``--active-checks`` *and* an attestation that authorizes active
 checks, and a plan withholds them otherwise. On top of that gate, UDP probing and the ICS
@@ -74,6 +83,7 @@ from arachne.modules.m2.discovery import (
     PortScan,
     ServiceFingerprint,
 )
+from arachne.modules.m2.exposed_services import ExposedServiceChecks
 from arachne.modules.m2.grpc import GrpcMetadataLeak, GrpcPlaintext, GrpcReflection
 from arachne.modules.m2.hardening import (
     FaviconHash,
@@ -140,6 +150,12 @@ M2_CHECKS: tuple[type[Module], ...] = (
     # WP-10 (REQ-DET-014): the read-only AD CS enumeration. Credentialed (kind ``ldap``), L1,
     # and read-only by construction: it reads two LDAP object classes and never reaches the CA.
     AdcsEnumeration,
+    # WP-33 (REQ-DET-026): the exposed management and data service breadth family. Every member
+    # is a single read-only probe through ``m2.service_read`` — an HTTP ``GET`` or one entry of
+    # a wire protocol's closed read vocabulary — over IPMI/Redfish, the container daemon API,
+    # etcd, Consul, Vault, ZooKeeper, Kafka, Elasticsearch, RabbitMQ, Jenkins, Grafana,
+    # Prometheus, Kibana, CouchDB, Redis and memcached.
+    *ExposedServiceChecks,
 )
 
 #: The M2 module group . Bump the version when the check set or a check's
@@ -160,7 +176,7 @@ M2 = ModuleGroup(
         "the configuration conditions associated with the published ESC classes and never "
         "attempts exploitation."
     ),
-    version="1.4.0",
+    version="1.5.0",
     research_chapter="ch02",
     checks=M2_CHECKS,
 )
