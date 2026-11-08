@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 
 import pytest
+from tests.conftest import plain
 from typer.testing import CliRunner
 
 from arachne.cli.main import app
@@ -108,7 +109,7 @@ def test_the_secret_is_never_taken_from_the_command_line(env: dict[str, str]) ->
     """There is no ``--secret`` option; the value comes from the environment or a prompt."""
     code, output = run(["put", "--help"])
     assert code == 0
-    assert "--secret-env" in output
+    assert "--secret-env" in plain(output)
     assert "--secret " not in output
 
 

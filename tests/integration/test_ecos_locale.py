@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 
 import pytest
+from tests.conftest import plain
 from tests.helpers.api import ADMIN_KEY, VIEWER_KEY, ApiHarness, auth, make_api_harness
 from typer.testing import CliRunner
 
@@ -159,7 +160,7 @@ def test_the_project_locale_command_refuses_a_contradiction(
         app, ["project", "locale", "--project", "acme", "--locale", "fr", "--clear"]
     )
     assert result.exit_code != 0
-    assert "--clear cannot be combined with --locale" in result.output
+    assert "--clear cannot be combined with --locale" in plain(result.output)
 
 
 def test_a_malformed_language_tag_is_refused_by_the_store(

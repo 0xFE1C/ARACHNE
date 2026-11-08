@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from tests.conftest import plain
 from typer.testing import CliRunner
 
 from arachne import __version__
@@ -34,7 +35,7 @@ def test_help_lists_the_s1_command_groups() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
     for expected in ("--version", "db", "info"):
-        assert expected in result.stdout
+        assert expected in plain(result.stdout)
 
 
 def test_info_reports_effective_configuration_without_secrets() -> None:

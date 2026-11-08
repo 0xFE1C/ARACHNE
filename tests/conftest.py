@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import time
 from collections.abc import AsyncIterator, Callable, Iterable, Iterator, Mapping
 from datetime import UTC, datetime
@@ -53,6 +54,22 @@ os.environ["COLUMNS"] = "200"
 # comparing styling decisions as well, and the runner's console enables escapes where this
 # machine's does not. Turning it off makes the text the thing under test.
 os.environ["NO_COLOR"] = "1"
+
+#: A terminal escape sequence, as rich emits them.
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+
+
+def plain(text: str) -> str:
+    """Rendered output with the terminal escapes removed.
+
+    The help is styled, and a style boundary can land *inside* a token: on the CI runner rich
+    emits ``-`` ``escape`` ``-version`` for an option the terminal shows as ``--version``, so
+    the bytes are not the text and an assertion against them fails while the help looks right.
+    An assertion about what the help says is an assertion about the text, never the styling,
+    so every help assertion compares this form.
+    """
+    return _ANSI_RE.sub("", text)
+
 
 #: A documentation-range address (RFC 5737) that is never private.
 PUBLIC_IP = "93.184.216.34"

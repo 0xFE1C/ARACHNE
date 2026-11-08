@@ -34,24 +34,6 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - run: pip install -e ".[dev]"
-      # TEMPORARY DIAGNOSTIC (remove once the help-rendering difference is understood): four
-      # help tests pass on a developer machine and fail on this runner. This prints what the
-      # runner actually renders and with which terminal geometry.
-      - name: diagnostic — how this runner renders help
-        continue-on-error: true
-        run: |
-          echo "COLUMNS=${COLUMNS:-unset} LINES=${LINES:-unset} TERM=${TERM:-unset}"
-          python -c "import importlib.metadata as m; print({n: m.version(n) for n in ('typer', 'click', 'rich')})" || echo 'version probe failed'
-          echo '--- does the root help carry --version on this runner? ---'
-          python -m arachne.cli.main --help > /tmp/help.txt 2>&1 || echo 'help command failed'
-          grep -c -- '--version' /tmp/help.txt || echo 'no --version found'
-          wc -l /tmp/help.txt
-          python -c "d=open('/tmp/help.txt','rb').read(); i=d.find(b'version'); print('bytes around version:', repr(d[max(0,i-40):i+12]) if i>=0 else 'no version bytes at all')" || echo 'byte probe failed'
-          head -30 /tmp/help.txt || true
-          echo '--- does the loopback lab zone resolve on this runner? ---'
-          getent hosts lab.arachne.test || echo 'getent: no entry'
-          python -c "import socket; print(socket.gethostbyname('lab.arachne.test'))" || echo 'gethostbyname raised'
-          cat /etc/resolv.conf || true
       # The whole repository, not `src tests`: a gate that does not cover the tree is not a
       # gate (REQ-QUAL-006). No path exclusions hide a violation.
       - run: ruff check .

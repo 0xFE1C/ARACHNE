@@ -21,7 +21,7 @@ from pathlib import Path
 import httpx
 import pytest
 from sqlalchemy import create_engine, text
-from tests.conftest import EXAMPLES_DIR
+from tests.conftest import EXAMPLES_DIR, plain
 
 from arachne.browser.driver import browser_available
 from arachne.cli.main import run
@@ -483,4 +483,4 @@ def test_scan_help_lists_the_s2_flags(cli: Callable[..., CliResult]) -> None:
     result = cli("scan", "--help")
     assert result.code == 0
     for flag in ("--target", "--dry-run", "--resume", "--engine", "--active-checks"):
-        assert flag in result.stdout
+        assert flag in plain(result.stdout)
