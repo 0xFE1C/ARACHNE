@@ -49,6 +49,10 @@ from arachne.tools.skip_gate import (
 # Pinning the width makes the rendered help identical in both places. Nothing in the suite
 # renders to a terminal except these help assertions, so no other test can observe it.
 os.environ["COLUMNS"] = "200"
+# Colour is the same problem in a different guise: an assertion that compares rendered text is
+# comparing styling decisions as well, and the runner's console enables escapes where this
+# machine's does not. Turning it off makes the text the thing under test.
+os.environ["NO_COLOR"] = "1"
 
 #: A documentation-range address (RFC 5737) that is never private.
 PUBLIC_IP = "93.184.216.34"
