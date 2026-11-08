@@ -48,6 +48,12 @@ dev = [
   "jsonschema>=4.21",
   # Provider tests (S9): cassettes record/replay the real HTTP path of the AI adapters.
   "vcrpy>=6.0",
+  # `cryptography` is not used by the product — the Ed25519 signer is implemented here — but
+  # `tests/unit/test_ed25519.py` uses it as the *independent* implementation to check this
+  # one against, which is the whole value of that test. It was declared nowhere, so on a
+  # runner without it the cross-check skipped, and the suite's own quality gate reported the
+  # skip as unlisted. Declaring it is what makes the check actually run.
+  "cryptography>=42",
   # The release-surface test builds the wheel and the sdist and reads their contents
   # (`tests/doc/test_release_surface.py`, REQ-DOC-006). `build` is the front end; `hatchling`
   # is the backend `[build-system]` already names, and it is listed here so the test can run
