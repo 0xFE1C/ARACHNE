@@ -58,6 +58,12 @@ from arachne.sim.whatif import simulate
 LAB_HOST = "127.0.0.1"
 ESTATE = "lab-estate"
 
+# The module-scoped fixture below builds the estate model from a real lab scan before any test
+# body runs, which measures ~24 s here and is correspondingly longer on a shared CI runner —
+# the same reviewed exception ``test_proof_ladder.py`` records, for the same reason: a scan
+# that is legitimately this long names its own bound instead of the default being widened.
+pytestmark = pytest.mark.timeout(300)
+
 #: The five stages, in order — a chain strictly increases through them (the S21 rule the
 #: simulation deliberately shares rather than restates).
 _STAGE_RANK = {"exposure": 0, "credentials": 1, "access": 2, "execution": 3, "impact": 4}

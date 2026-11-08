@@ -54,6 +54,14 @@ from arachne.data.finding_store import MemoryFindingStore
 from arachne.modules.handlers import build_handlers
 from arachne.modules.registry import ModuleRegistry
 
+# The module-scoped fixture behind these tests drives two complete live scans — real
+# handshakes, real banners, real timeouts — before any test body runs. That takes about 20 s
+# on a development machine and over a minute on a shared CI runner, past the suite-wide 60 s
+# default, which killed the fixture and reported all eight tests as errors. This is the
+# reviewed exception REQ-QUAL-012 describes: the test that is genuinely slower names its own
+# bound, rather than the default being raised for everything else.
+pytestmark = pytest.mark.timeout(300)
+
 #: The lab descriptions the fixture plants, and the CVE each one should resolve to.
 PLANTED_VERSIONS = {
     "openssh": ("8.5p1", "CVE-2024-6387"),
