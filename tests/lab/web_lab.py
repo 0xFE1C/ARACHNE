@@ -484,13 +484,18 @@ _APP_JS = (
     "//# sourceMappingURL=app.js.map\n"
 )
 
+#: The Google-shaped key the lab plants so the M3 checks have something to find. Split for the
+#: same reason ``tests/unit/test_redaction.py`` splits its fixtures: the whole literal trips
+#: GitHub's secret scanner, and the served bytes are identical either way.
+_LAB_GOOGLE_KEY = "AIza" + "SyA-not-a-real-google-key-value-000"
+
 _APP_MAP = json.dumps(
     {
         "version": 3,
         "file": "app.js",
         "sources": ["webpack:///./src/config.ts", "webpack:///./src/api.ts"],
         "sourcesContent": [
-            "export const config = { apiKey: 'AIzaSyA-not-a-real-google-key-value-000' };",
+            f"export const config = {{ apiKey: '{_LAB_GOOGLE_KEY}' }};",
             "export const base = '/api/internal/users';",
         ],
         "mappings": "AAAA",
